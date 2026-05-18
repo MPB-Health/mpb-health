@@ -4,6 +4,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabaseUrl } from '@mpbhealth/database';
 import { navigationService, type QuickLink } from '@mpbhealth/advisor-core';
 import SafeImage from '../components/SafeImage';
+import { useAdvisorPageDebugLog } from '../hooks/useAdvisorPageDebugLog';
+import { useAdvisorQueryReady } from '../hooks/useAdvisorQueryReady';
 
 const STORAGE_BASE = `${supabaseUrl}/storage/v1/object/public/advisor-documents`;
 
@@ -140,12 +142,17 @@ function LinkCard({
 }
 
 export default function QuickLinks() {
+  useAdvisorPageDebugLog('QuickLinks');
   const [popupLink, setPopupLink] = useState<{ label: string; url: string } | null>(null);
   const queryClient = useQueryClient();
+  const { advisorReady } = useAdvisorQueryReady();
 
   const { data: cmsQuickLinks = [], isLoading: loading } = useQuery({
     queryKey: ['quickLinks'],
     queryFn: () => navigationService.getResourceCenterQuickLinks(),
+    enabled: advisorReady,
+    staleTime: 2 * 60 * 1000,
+    retry: 1,
   });
 
   useEffect(() => {

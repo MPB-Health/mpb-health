@@ -24,13 +24,20 @@ import { useOrganization } from './useOrganization';
 // ============================================================================
 
 export function useComplianceDocuments(options: { category?: string; activeOnly?: boolean } = {}) {
-  const { organization } = useOrganization();
+  const { organization, loading: orgLoading } = useOrganization();
   const [documents, setDocuments] = useState<ComplianceDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   const refresh = useCallback(async () => {
-    if (!organization?.id) return;
+    if (orgLoading) return;
+
+    if (!organization?.id) {
+      setDocuments([]);
+      setError(null);
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
     try {
@@ -42,7 +49,7 @@ export function useComplianceDocuments(options: { category?: string; activeOnly?
     } finally {
       setLoading(false);
     }
-  }, [organization?.id, options.category, options.activeOnly]);
+  }, [organization?.id, orgLoading, options.category, options.activeOnly]);
 
   useEffect(() => {
     refresh();
@@ -92,7 +99,12 @@ export function useUserAcknowledgments(userId: string | undefined, options: { st
   const [error, setError] = useState<Error | null>(null);
 
   const refresh = useCallback(async () => {
-    if (!userId) return;
+    if (!userId) {
+      setAcknowledgments([]);
+      setError(null);
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
     try {
@@ -122,7 +134,12 @@ export function usePendingAcknowledgments(userId: string | undefined) {
   const [error, setError] = useState<Error | null>(null);
 
   const refresh = useCallback(async () => {
-    if (!userId) return;
+    if (!userId) {
+      setPending([]);
+      setError(null);
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
     try {
@@ -148,13 +165,20 @@ export function usePendingAcknowledgments(userId: string | undefined) {
 // ============================================================================
 
 export function useUserComplianceStatus(userId: string | undefined) {
-  const { organization } = useOrganization();
+  const { organization, loading: orgLoading } = useOrganization();
   const [status, setStatus] = useState<UserComplianceStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   const refresh = useCallback(async () => {
-    if (!organization?.id || !userId) return;
+    if (orgLoading) return;
+
+    if (!organization?.id || !userId) {
+      setStatus(null);
+      setError(null);
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
     try {
@@ -166,7 +190,7 @@ export function useUserComplianceStatus(userId: string | undefined) {
     } finally {
       setLoading(false);
     }
-  }, [organization?.id, userId]);
+  }, [organization?.id, orgLoading, userId]);
 
   useEffect(() => {
     refresh();
@@ -176,13 +200,20 @@ export function useUserComplianceStatus(userId: string | undefined) {
 }
 
 export function useOrgComplianceSummary() {
-  const { organization } = useOrganization();
+  const { organization, loading: orgLoading } = useOrganization();
   const [summary, setSummary] = useState<OrgComplianceSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   const refresh = useCallback(async () => {
-    if (!organization?.id) return;
+    if (orgLoading) return;
+
+    if (!organization?.id) {
+      setSummary(null);
+      setError(null);
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
     try {
@@ -194,7 +225,7 @@ export function useOrgComplianceSummary() {
     } finally {
       setLoading(false);
     }
-  }, [organization?.id]);
+  }, [organization?.id, orgLoading]);
 
   useEffect(() => {
     refresh();
@@ -208,13 +239,20 @@ export function useOrgComplianceSummary() {
 // ============================================================================
 
 export function useViolations(options: { status?: string; severity?: string; userId?: string; limit?: number } = {}) {
-  const { organization } = useOrganization();
+  const { organization, loading: orgLoading } = useOrganization();
   const [violations, setViolations] = useState<ComplianceViolation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   const refresh = useCallback(async () => {
-    if (!organization?.id) return;
+    if (orgLoading) return;
+
+    if (!organization?.id) {
+      setViolations([]);
+      setError(null);
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
     try {
@@ -226,7 +264,7 @@ export function useViolations(options: { status?: string; severity?: string; use
     } finally {
       setLoading(false);
     }
-  }, [organization?.id, options.status, options.severity, options.userId, options.limit]);
+  }, [organization?.id, orgLoading, options.status, options.severity, options.userId, options.limit]);
 
   useEffect(() => {
     refresh();
@@ -248,14 +286,22 @@ export function useAuditLogs(options: {
   limit?: number;
   offset?: number;
 } = {}) {
-  const { organization } = useOrganization();
+  const { organization, loading: orgLoading } = useOrganization();
   const [logs, setLogs] = useState<AuditLogDetailed[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   const refresh = useCallback(async () => {
-    if (!organization?.id) return;
+    if (orgLoading) return;
+
+    if (!organization?.id) {
+      setLogs([]);
+      setTotal(0);
+      setError(null);
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
     try {
@@ -268,7 +314,17 @@ export function useAuditLogs(options: {
     } finally {
       setLoading(false);
     }
-  }, [organization?.id, JSON.stringify(options)]);
+  }, [
+    organization?.id,
+    orgLoading,
+    options.userId,
+    options.action,
+    options.resourceType,
+    options.startDate,
+    options.endDate,
+    options.limit,
+    options.offset,
+  ]);
 
   useEffect(() => {
     refresh();
@@ -287,7 +343,12 @@ export function useAISuggestions(userId: string | undefined, options: { type?: s
   const [error, setError] = useState<Error | null>(null);
 
   const refresh = useCallback(async () => {
-    if (!userId) return;
+    if (!userId) {
+      setSuggestions([]);
+      setError(null);
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
     try {
@@ -319,7 +380,12 @@ export function usePendingAISuggestions(userId: string | undefined, context: { l
   const [error, setError] = useState<Error | null>(null);
 
   const refresh = useCallback(async () => {
-    if (!userId) return;
+    if (!userId) {
+      setSuggestions([]);
+      setError(null);
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
     try {
@@ -350,7 +416,12 @@ export function useLeadScoringFactors(leadId: string | undefined) {
   const [error, setError] = useState<Error | null>(null);
 
   const refresh = useCallback(async () => {
-    if (!leadId) return;
+    if (!leadId) {
+      setFactors([]);
+      setError(null);
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
     try {
@@ -510,7 +581,7 @@ export function useComplianceActions() {
 // ============================================================================
 
 export function useAISuggestionStats(options: { userId?: string; days?: number } = {}) {
-  const { organization } = useOrganization();
+  const { organization, loading: orgLoading } = useOrganization();
   const [stats, setStats] = useState<{
     total: number;
     accepted: number;
@@ -523,7 +594,14 @@ export function useAISuggestionStats(options: { userId?: string; days?: number }
   const [error, setError] = useState<Error | null>(null);
 
   const refresh = useCallback(async () => {
-    if (!organization?.id) return;
+    if (orgLoading) return;
+
+    if (!organization?.id) {
+      setStats(null);
+      setError(null);
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
     try {
@@ -535,7 +613,7 @@ export function useAISuggestionStats(options: { userId?: string; days?: number }
     } finally {
       setLoading(false);
     }
-  }, [organization?.id, options.userId, options.days]);
+  }, [organization?.id, orgLoading, options.userId, options.days]);
 
   useEffect(() => {
     refresh();

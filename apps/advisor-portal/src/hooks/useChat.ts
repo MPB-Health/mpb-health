@@ -85,6 +85,7 @@ export function useChat() {
 
   // Initial fetch + cleanup
   useEffect(() => {
+    mountedRef.current = true;
     fetchConversations();
 
     return () => {
@@ -93,9 +94,18 @@ export function useChat() {
     };
   }, [fetchConversations]);
 
-  // Unmount guard
+  // Timed recovery — never leave sidebar spinning indefinitely (hung auth, SW, or edge cold-start)
   useEffect(() => {
-    mountedRef.current = true;
+    if (!loading) return;
+    const t = window.setTimeout(() => {
+      if (!mountedRef.current) return;
+      setLoading(false);
+      setError('Still loading — check your connection, then use refresh or reload the page.');
+    }, 45_000);
+    return () => clearTimeout(t);
+  }, [loading]);
+
+  useEffect(() => {
     return () => {
       mountedRef.current = false;
     };
@@ -199,6 +209,15 @@ export function useChatMessages(conversationId: string | null) {
       abortRef.current?.abort();
     };
   }, [fetchMessages]);
+
+  useEffect(() => {
+    if (!loading) return;
+    const t = window.setTimeout(() => {
+      if (!mountedRef.current) return;
+      setLoading(false);
+    }, 45_000);
+    return () => clearTimeout(t);
+  }, [loading]);
 
   // Unmount guard
   useEffect(() => {

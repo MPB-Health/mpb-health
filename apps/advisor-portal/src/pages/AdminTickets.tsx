@@ -15,6 +15,8 @@ import {
   XCircle,
   Send,
   User,
+  UserCheck,
+  UserRound,
   PlusCircle,
   X,
   Lock,
@@ -38,6 +40,7 @@ import {
 } from '@mpbhealth/advisor-core';
 import { isAdmin } from '@mpbhealth/auth';
 import { useAdvisor } from '../contexts/AdvisorContext';
+import { useAdvisorQueryReady } from '../hooks/useAdvisorQueryReady';
 import { useTicketAuth } from '../components/TicketAuthWrapper';
 import toast from 'react-hot-toast';
 import { sanitizeHtml } from '@mpbhealth/utils';
@@ -46,11 +49,33 @@ import {
   TicketRichReplyEditor,
   type TicketRichReplyEditorRef,
 } from '../components/tickets/TicketRichReplyEditor';
+import { useAdvisorPageDebugLog } from '../hooks/useAdvisorPageDebugLog';
 
 const richTicketEditor = true;
 
 const MAX_REPLY_ATTACHMENTS = 10;
 const MAX_REPLY_FILE_BYTES = 15 * 1024 * 1024;
+const REPLY_SEND_TOTAL_TIMEOUT_MS = 240_000;
+
+function withDeadline<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const t = window.setTimeout(() => reject(new Error(label)), ms);
+    promise.then(
+      (v) => {
+        window.clearTimeout(t);
+        resolve(v);
+      },
+      (e) => {
+        window.clearTimeout(t);
+        reject(e);
+      },
+    );
+  });
+}
+
+function looksLikeEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
   new: { label: 'New', color: 'bg-blue-100 text-blue-700', icon: <CircleDot className="w-3.5 h-3.5" /> },
@@ -74,7 +99,9 @@ const PRIORITY_CONFIG: Record<string, { label: string; color: string }> = {
 const FALLBACK_PRIORITY = { label: 'Unknown', color: 'bg-neutral-100 text-neutral-500' };
 
 export default function AdminTickets() {
-  const { profile } = useAdvisor();
+  useAdvisorPageDebugLog('AdminTickets');
+  const { profile, profileLoading } = useAdvisor();
+  const { advisorReady } = useAdvisorQueryReady();
   const { executeWithAuth } = useTicketAuth();
   const [adminCheck, setAdminCheck] = useState<boolean | null>(null);
   const filterMetadataRequestedRef = useRef(false);
@@ -192,30 +219,51 @@ export default function AdminTickets() {
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState('');
 
-  // Role check — with 5 s timeout so the spinner never stays forever
+  // Role check — wait for advisorReady AND profile load to finish so we don't race
+  // AdvisorContext's slow-auth recovery (~8s) + loadProfile; isAdmin() hits Supabase and
+  // can stay pending until the client session is ready. Cap matches profile load budget.
+  const ADMIN_IS_ROLE_CHECK_MS = 25_000;
   useEffect(() => {
-    if (profile?.user_id) {
-      const timeout = setTimeout(() => {
-        setAdminCheck((prev) => {
-          if (prev === null) {
-            console.warn('[AdminTickets] isAdmin() timed out after 5 s — denying access');
-            return false;
-          }
-          return prev;
-        });
-      }, 5_000);
-
-      isAdmin(profile.user_id)
-        .then(setAdminCheck)
-        .catch(() => setAdminCheck(false))
-        .finally(() => clearTimeout(timeout));
-
-      return () => clearTimeout(timeout);
-    } else if (profile !== undefined) {
-      // profile loaded but has no user_id — not an admin
-      setAdminCheck(false);
+    if (!advisorReady) {
+      setAdminCheck(null);
+      return;
     }
-  }, [profile?.user_id]);
+
+    if (!profile?.user_id) {
+      setAdminCheck(false);
+      return;
+    }
+
+    // Keep prior adminCheck during background profile refresh (don't flash deny/spinner).
+    if (profileLoading) {
+      return;
+    }
+
+    let cancelled = false;
+    const timeout = setTimeout(() => {
+      setAdminCheck((prev) => {
+        if (cancelled || prev !== null) return prev;
+        console.warn('[AdminTickets] isAdmin() still pending after long wait — denying access');
+        return false;
+      });
+    }, ADMIN_IS_ROLE_CHECK_MS);
+
+    isAdmin(profile.user_id)
+      .then((v) => {
+        if (!cancelled) setAdminCheck(v);
+      })
+      .catch(() => {
+        if (!cancelled) setAdminCheck(false);
+      })
+      .finally(() => {
+        clearTimeout(timeout);
+      });
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timeout);
+    };
+  }, [advisorReady, profileLoading, profile?.user_id]);
 
   // Debounce search
   useEffect(() => {
@@ -230,30 +278,46 @@ export default function AdminTickets() {
   const retryTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const retryCountRef = useRef(0);
   const mountedRef = useRef(true);
+  const listFetchGenRef = useRef(0);
+  const listAbortRef = useRef<AbortController | null>(null);
   const MAX_PAGE_RETRIES = 3;
   const PAGE_RETRY_DELAYS = [1_500, 3_000, 5_000];
 
-  useEffect(() => () => { mountedRef.current = false; clearTimeout(retryTimerRef.current); }, []);
+  useEffect(() => () => {
+    mountedRef.current = false;
+    clearTimeout(retryTimerRef.current);
+    listAbortRef.current?.abort();
+  }, []);
 
   const loadTickets = useCallback(async () => {
+    listAbortRef.current?.abort();
+    const ac = new AbortController();
+    listAbortRef.current = ac;
+    const gen = ++listFetchGenRef.current;
+
     setLoading(true);
     setError('');
     try {
-      const result = await executeWithAuth(() => ticketService.getAllTickets({
-        status: statusFilter || undefined,
-        priority: priorityFilter || undefined,
-        search: searchDebounced || undefined,
-        requesterId: advisorFilter || undefined,
-        sortBy,
-        sortOrder,
-        page,
-        perPage,
-      }));
-      if (!mountedRef.current) return;
+      const result = await executeWithAuth(() =>
+        ticketService.getAllTickets(
+          {
+            status: statusFilter || undefined,
+            priority: priorityFilter || undefined,
+            search: searchDebounced || undefined,
+            requesterId: advisorFilter || undefined,
+            sortBy,
+            sortOrder,
+            page,
+            perPage,
+          },
+          { signal: ac.signal },
+        ));
+      if (!mountedRef.current || gen !== listFetchGenRef.current || ac.signal.aborted) return;
       setTickets(result.tickets);
       setTotal(result.total);
       retryCountRef.current = 0;
     } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') return;
       if (!mountedRef.current) return;
 
       if (err instanceof Error && err.message === 'SESSION_EXPIRED') {
@@ -273,6 +337,7 @@ export default function AdminTickets() {
 
       setError('We\u2019re having trouble loading tickets right now. Please check your internet connection and try again.');
     } finally {
+      if (gen !== listFetchGenRef.current || ac.signal.aborted) return;
       if (mountedRef.current && (retryCountRef.current === 0 || retryCountRef.current >= MAX_PAGE_RETRIES)) {
         setLoading(false);
       }
@@ -296,6 +361,22 @@ export default function AdminTickets() {
   useEffect(() => {
     if (adminCheck) loadStats();
   }, [adminCheck, loadStats]);
+
+  /** Never leave the list spinner running forever (hung auth, abort/finally edge cases). */
+  useEffect(() => {
+    if (!adminCheck || !loading) return;
+    const t = window.setTimeout(() => {
+      if (!mountedRef.current) return;
+      clearTimeout(retryTimerRef.current);
+      retryCountRef.current = 0;
+      setLoading(false);
+      setError((msg) =>
+        msg ||
+        'Ticket list is taking too long to load. Try Refresh, check your connection, or reload the page.',
+      );
+    }, 60_000);
+    return () => window.clearTimeout(t);
+  }, [adminCheck, loading]);
 
   // Build the requester dropdown from already-loaded tickets (no extra API call).
   useEffect(() => {
@@ -409,29 +490,40 @@ export default function AdminTickets() {
     setReplySending(true);
     setReplyError('');
     try {
-      if (richTicketEditor) {
-        let html = sanitizeHtml(richReplyRef.current?.getHtml() ?? '');
-        if (replyAttachments.length > 0) {
-          const uploads = await ticketService.uploadFilesForTicketReply(
-            selectedTicket.ticket.id,
-            replyAttachments,
-          );
-          html = appendTicketAttachmentsHtml(html, uploads);
-        }
-        html = sanitizeHtml(html);
-        await ticketService.addComment(selectedTicket.ticket.id, html, false, 'html');
-      } else {
-        await ticketService.addComment(selectedTicket.ticket.id, replyContent.trim(), false, 'plain');
-      }
-      // Refresh detail
-      const detail = await ticketService.getTicketDetailAdmin(selectedTicket.ticket.id);
-      setSelectedTicket(detail);
-      setReplyContent('');
-      setReplyAttachments([]);
-      setReplyEditorKey((k) => k + 1);
-      richReplyRef.current?.clear();
+      await withDeadline(
+        (async () => {
+          if (richTicketEditor) {
+            let html = sanitizeHtml(richReplyRef.current?.getHtml() ?? '');
+            if (replyAttachments.length > 0) {
+              const uploads = await ticketService.uploadFilesForTicketReply(
+                selectedTicket.ticket.id,
+                replyAttachments,
+              );
+              html = appendTicketAttachmentsHtml(html, uploads);
+            }
+            html = sanitizeHtml(html);
+            await ticketService.addComment(selectedTicket.ticket.id, html, false, 'html');
+          } else {
+            await ticketService.addComment(selectedTicket.ticket.id, replyContent.trim(), false, 'plain');
+          }
+          const detail = await ticketService.getTicketDetailAdmin(selectedTicket.ticket.id);
+          setSelectedTicket(detail);
+          setReplyContent('');
+          setReplyAttachments([]);
+          setReplyEditorKey((k) => k + 1);
+          richReplyRef.current?.clear();
+        })(),
+        REPLY_SEND_TOTAL_TIMEOUT_MS,
+        'SEND_REPLY_TIMEOUT',
+      );
     } catch (err) {
       if (err instanceof Error && err.message === 'SESSION_EXPIRED') { window.location.href = '/login'; return; }
+      if (err instanceof Error && err.message === 'SEND_REPLY_TIMEOUT') {
+        setReplyError(
+          'Sending timed out. If you attached large files, try fewer files or a smaller size, then try again.',
+        );
+        return;
+      }
       console.error('Ticket reply failed:', err);
       const msg = err instanceof Error ? err.message : 'Failed to send reply';
       setReplyError(msg.length > 200 ? 'Your reply could not be sent. Please try again.' : msg);
@@ -557,6 +649,39 @@ export default function AdminTickets() {
               </div>
               {/* Status & Priority controls */}
               <div className="flex flex-wrap items-center gap-2">
+                {ticket.assignee_id ? (
+                  <span
+                    className="inline-flex max-w-[min(100%,20rem)] items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-100"
+                    title="Ticket assignee"
+                  >
+                    <UserCheck className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                    <span className="min-w-0 truncate">
+                      {(() => {
+                        const who = ticket.assignee_name?.trim() || '';
+                        if (!who) return 'Assigned — support agent';
+                        if (looksLikeEmail(who)) {
+                          return (
+                            <>
+                              Assigned to{' '}
+                              <a href={`mailto:${who}`} className="underline underline-offset-2">
+                                {who}
+                              </a>
+                            </>
+                          );
+                        }
+                        return <>Assigned to {who}</>;
+                      })()}
+                    </span>
+                  </span>
+                ) : (
+                  <span
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs font-semibold text-amber-950 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100"
+                    title="No agent assigned yet"
+                  >
+                    <UserRound className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                    Unassigned
+                  </span>
+                )}
                 <select
                   value={ticket.status}
                   onChange={(e) => handleStatusChange(e.target.value as TicketStatus)}
@@ -1096,6 +1221,25 @@ export default function AdminTickets() {
                         <span className="text-xs text-th-text-secondary">{ticket.requester_company}</span>
                       </>
                     )}
+                    <span className="text-xs text-th-text-tertiary">·</span>
+                    <span
+                      className={
+                        ticket.assignee_id
+                          ? 'text-xs text-th-text-secondary'
+                          : 'text-xs font-medium text-amber-800 dark:text-amber-300'
+                      }
+                    >
+                      {ticket.assignee_id ? (
+                        <>
+                          Assigned to{' '}
+                          <span className="font-semibold text-th-text-primary">
+                            {ticket.assignee_name?.trim() || '—'}
+                          </span>
+                        </>
+                      ) : (
+                        'Unassigned'
+                      )}
+                    </span>
                     <span className="text-xs text-th-text-tertiary">·</span>
                     <span className="text-xs text-th-text-tertiary">
                       {formatDistanceToNow(new Date(ticket.created_at), { addSuffix: true })}

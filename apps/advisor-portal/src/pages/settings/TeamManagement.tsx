@@ -21,6 +21,7 @@ import {
 import { useTeamManagement } from '../../hooks/useSettings';
 import type { OrgMember, OrganizationInvitation, CreateInvitationInput } from '@mpbhealth/champion-core';
 import { Button } from '@mpbhealth/ui';
+import { useAdvisorPageDebugLog } from '../../hooks/useAdvisorPageDebugLog';
 
 const ROLES = [
   { value: 'admin', label: 'Admin', description: 'Full access to all features and settings' },
@@ -89,8 +90,8 @@ function getStatusBadge(status: string): { color: string; icon: typeof CheckCirc
 }
 
 export default function TeamManagement() {
-  const {
-    members,
+  useAdvisorPageDebugLog('TeamManagement');
+  const {    members,
     invitations,
     loading,
     error,

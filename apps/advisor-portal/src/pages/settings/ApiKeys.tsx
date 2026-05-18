@@ -20,6 +20,7 @@ import {
 import { useApiKeys } from '../../hooks/useSettings';
 import type { ApiKey, CreateApiKeyInput } from '@mpbhealth/champion-core';
 import { Button } from '@mpbhealth/ui';
+import { useAdvisorPageDebugLog } from '../../hooks/useAdvisorPageDebugLog';
 
 const AVAILABLE_SCOPES = [
   { value: 'leads:read', label: 'Read Leads', description: 'View lead information' },
@@ -45,6 +46,7 @@ function maskKey(prefix: string): string {
 }
 
 export default function ApiKeys() {
+  useAdvisorPageDebugLog('ApiKeys');
   const { apiKeys, loading, error, createApiKey, revokeApiKey, deleteApiKey } = useApiKeys();
 
   const [showCreateModal, setShowCreateModal] = useState(false);

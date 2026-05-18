@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useCallback, useTransition } from 'react';
-import { getBrandLogo } from '@mpbhealth/ui';
-import { Outlet, NavLink, useNavigate, Navigate } from 'react-router-dom';
+import { useEffect, useMemo, useCallback } from 'react';
+import { getBrandLogo, AppLayout, PortalSwitcher, Button, type NavItem, type PortalKey } from '@mpbhealth/ui';
+import { Outlet, NavLink, useNavigate, Navigate, useLocation } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import type { LucideIcon } from 'lucide-react';
@@ -53,12 +53,12 @@ import {
   Pill,
   Compass,
 } from 'lucide-react';
-import { AppLayout, PortalSwitcher, type NavItem, type PortalKey } from '@mpbhealth/ui';
 import { getPortalUrl } from '@mpbhealth/config';
 import { isAdmin as checkIsAdmin, usePortalAccess, buildPortalSSOUrl, useSSONavigation } from '@mpbhealth/auth';
 import { supabase } from '@mpbhealth/database';
 import { navigationService, type NavMenuItem, isAdvisorExemptFromTrainingGate } from '@mpbhealth/advisor-core';
 import { useAdvisor } from '../contexts/AdvisorContext';
+import { useAdvisorQueryReady } from '../hooks/useAdvisorQueryReady';
 import { NotificationCenter } from '../components/notifications';
 import { CommandPalette } from '../components/command-palette';
 import { MobileBottomNav } from '../components/mobile';
@@ -73,6 +73,7 @@ import { useUserPreferences } from '../hooks/useSettings';
 import { GlobalSearch } from '../components/GlobalSearch';
 import { setClearQueryCache } from '../utils/navCache';
 import { prefetchRouteByPath } from '../App';
+import { AdvisorPageLoader } from '../components/loading';
 
 // Icon mapping for dynamic icons from CMS
 // NOTE: Keep this as named imports only — never use `import * as LucideIcons`
@@ -208,8 +209,19 @@ function mapMenuItemsToNavItems(items: NavMenuItem[]): NavItem[] {
 
 export default function MainLayout() {
   const navigate = useNavigate();
-  const { profile, sessionUserCreatedAt, unreadBulletinCount, logout, loading, profileLoading } = useAdvisor();
-  const [isPending, startTransition] = useTransition();
+  const location = useLocation();
+  const {
+    profile,
+    sessionUserCreatedAt,
+    unreadBulletinCount,
+    logout,
+    loading,
+    profileLoading,
+    hasSession,
+    error: profileError,
+    refreshProfile,
+  } = useAdvisor();
+  const { advisorReady } = useAdvisorQueryReady();
   const { open: openCommandPalette } = useCommandPalette();
   const { showShortcutsModal, setShowShortcutsModal } = useKeyboardShortcuts();
   const { preferences: userPreferences } = useUserPreferences();
@@ -225,12 +237,16 @@ export default function MainLayout() {
   setClearQueryCache(clearQuery);
 
   // Admin role check via React Query (deduped + cached)
-  const { data: isAdminUser = false } = useQuery({
+  const {
+    data: isAdminUser = false,
+    isPending: isAdminQueryPending,
+  } = useQuery({
     queryKey: ['isAdmin', profile?.user_id],
     queryFn: () => checkIsAdmin(profile!.user_id),
-    enabled: !!profile?.user_id,
+    enabled: advisorReady,
     staleTime: 5 * 60 * 1000,
   });
+  const isAdminRolePending = advisorReady && isAdminQueryPending;
 
   // Portal access from global user_roles table
   const { canAccessAdmin, canAccessAdvisor, canAccessCrm } = usePortalAccess(profile?.user_id);
@@ -387,9 +403,33 @@ export default function MainLayout() {
     return { isMeetingDay, nextMeeting };
   }, []);
 
-  // Redirect to login only when auth check is done AND profile fetch is done AND no profile
-  if (!loading && !profile && !profileLoading) {
+  // No Supabase session — send to login (avoid kicking users who have a session but a failed profile fetch)
+  if (!loading && !hasSession) {
     return <Navigate to="/login" replace />;
+  }
+
+  // Session exists but profile never hydrated — recovery UI (not login; session is still valid)
+  if (!loading && hasSession && !profile && !profileLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[rgb(var(--surface-primary))] p-6">
+        <div className="max-w-md w-full rounded-2xl border border-th-border bg-th-surface-secondary p-8 shadow-lg text-center space-y-4">
+          <AlertCircle className="w-12 h-12 text-amber-500 mx-auto" />
+          <h1 className="text-lg font-semibold text-th-text-primary">Couldn&apos;t load your profile</h1>
+          <p className="text-sm text-th-text-secondary">
+            {profileError ||
+              'Something went wrong while loading your account. You are still signed in — try again, or sign out and back in.'}
+          </p>
+          <div className="flex flex-col sm:flex-row gap-2 justify-center">
+            <Button type="button" variant="primary" onClick={() => void refreshProfile()}>
+              Try again
+            </Button>
+            <Button type="button" variant="secondary" onClick={() => void logout()}>
+              Sign out
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   // Force password change for newly imported accounts
@@ -572,7 +612,9 @@ export default function MainLayout() {
             onClick={(e) => {
               e.preventDefault();
               props.onClick?.();
-              startTransition(() => { navigate(item.href); });
+              // Do not wrap in startTransition — same issue as v7_startTransition: lazy routes + Outlet can
+              // desync (blank main content until a full reload). See main.tsx BrowserRouter future flags.
+              navigate(item.href);
             }}
             onMouseEnter={() => prefetchRouteByPath(item.href)}
             onFocus={() => prefetchRouteByPath(item.href)}
@@ -606,7 +648,7 @@ export default function MainLayout() {
               onClick={(e) => {
                 e.preventDefault();
                 props.onClick?.();
-                startTransition(() => { navigate(child.href); });
+                navigate(child.href);
               }}
             >
               {props.children}
@@ -615,23 +657,15 @@ export default function MainLayout() {
         }
       >
         {isShellLoading ? (
-          <div className="space-y-6 animate-pulse">
-            <div className="h-8 w-48 bg-surface-tertiary rounded-lg" />
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="h-32 bg-surface-tertiary rounded-xl" />
-              ))}
-            </div>
-            <div className="h-64 bg-surface-tertiary rounded-xl" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {[1, 2].map(i => (
-                <div key={i} className="h-48 bg-surface-tertiary rounded-xl" />
-              ))}
-            </div>
-          </div>
+          <AdvisorPageLoader
+            message="Loading your workspace…"
+            subtitle="Setting up your profile and navigation."
+          />
         ) : (
-          <div className={isPending ? 'opacity-60 pointer-events-none transition-opacity duration-150' : 'transition-opacity duration-150'}>
-            <TrainingGate isAdmin={isAdminUser}>
+          <div className="relative min-h-[12rem]">
+            <TrainingGate isAdmin={isAdminUser} isAdminPending={isAdminRolePending}>
+              {/* Avoid key={pathname}: remounting the whole outlet on every navigation fights lazy routes and
+                  Suspense, and contributed to blank content until refresh alongside deferred navigation updates. */}
               <Outlet />
             </TrainingGate>
           </div>

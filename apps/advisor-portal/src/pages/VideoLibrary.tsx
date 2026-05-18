@@ -19,6 +19,8 @@ import { Button, GradientHeader } from '@mpbhealth/ui';
 import { videoService, type AdvisorVideo } from '@mpbhealth/advisor-core';
 import { supabase } from '@mpbhealth/database';
 import SafeImage from '../components/SafeImage';
+import { useAdvisorPageDebugLog } from '../hooks/useAdvisorPageDebugLog';
+import { useAdvisorQueryReady } from '../hooks/useAdvisorQueryReady';
 
 type VideoCategory = 'all' | 'training' | 'marketing';
 
@@ -27,8 +29,10 @@ function getThumbnail(video: AdvisorVideo): string {
 }
 
 export default function VideoLibrary() {
+  useAdvisorPageDebugLog('VideoLibrary');
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { advisorReady } = useAdvisorQueryReady();
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<VideoCategory>('all');
   const [playingVideo, setPlayingVideo] = useState<AdvisorVideo | null>(null);
@@ -38,6 +42,9 @@ export default function VideoLibrary() {
   const { data: videos = [], isLoading: loading } = useQuery({
     queryKey: ['videos'],
     queryFn: () => videoService.getVideos(),
+    enabled: advisorReady,
+    staleTime: 2 * 60 * 1000,
+    retry: 1,
   });
 
   // Realtime: refresh when admin adds/edits/removes videos

@@ -16,11 +16,13 @@ import {
 import { Button, GradientHeader, MetricCard, SkeletonAvatar, SkeletonLine } from '@mpbhealth/ui';
 import { useConversations, useInboxSummary, useInboxActions } from '../hooks/useInbox';
 import type { ConversationWithLead } from '@mpbhealth/champion-core';
+import { useAdvisorPageDebugLog } from '../hooks/useAdvisorPageDebugLog';
 
 type ChannelFilter = 'all' | 'sms' | 'email';
 type StatusFilter = 'active' | 'archived';
 
 export default function Inbox() {
+  useAdvisorPageDebugLog('Inbox');
   const navigate = useNavigate();
   const [channelFilter, setChannelFilter] = useState<ChannelFilter>('all');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('active');

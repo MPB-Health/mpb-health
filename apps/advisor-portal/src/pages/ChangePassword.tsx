@@ -4,8 +4,9 @@ import { supabase, isSupabaseConfigured } from '@mpbhealth/database';
 import toast from 'react-hot-toast';
 import { Lock, Eye, EyeOff, CheckCircle2, AlertCircle, ShieldCheck } from 'lucide-react';
 import { useAdvisor } from '../contexts/AdvisorContext';
+import { useAdvisorPageDebugLog } from '../hooks/useAdvisorPageDebugLog';
 
-const PASSWORD_UPDATE_TIMEOUT_MS = 15_000; // 15 seconds — auth should respond well within this
+const PASSWORD_UPDATE_TIMEOUT_MS = 15_000;
 const RETRY_DELAY_MS = 2000;
 const MAX_RETRIES = 1; // 1 retry max → 2 attempts × 15s + 2s = ~32s worst case
 
@@ -24,6 +25,7 @@ function isRetryableError(err: unknown): boolean {
 }
 
 export default function ChangePassword() {
+  useAdvisorPageDebugLog('ChangePassword');
   const navigate = useNavigate();
   const { profile, refreshProfile } = useAdvisor();
   const [password, setPassword] = useState('');

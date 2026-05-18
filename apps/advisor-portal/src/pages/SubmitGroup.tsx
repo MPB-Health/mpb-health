@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   UsersRound,
   Search,
@@ -13,6 +14,7 @@ import {
   type AdvisorForm,
 } from '@mpbhealth/advisor-core';
 import { sanitizeHtml } from '@mpbhealth/utils';
+import { useAdvisorPageDebugLog } from '../hooks/useAdvisorPageDebugLog';
 
 const WEBSITE_BASE_URL = 'https://mpb.health';
 
@@ -83,11 +85,26 @@ const fallbackGroups: AdvisorForm[] = [
 ];
 
 export default function SubmitGroup() {
+  useAdvisorPageDebugLog('SubmitGroup');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedForm, setSelectedForm] = useState<AdvisorForm | null>(null);
-  const [forms, setForms] = useState<AdvisorForm[]>([]);
-  const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const { data: forms = [], isPending: loading } = useQuery({
+    queryKey: ['advisorForms', 'employer'],
+    queryFn: async () => {
+      try {
+        const cms = await formsService.getForms('employer');
+        return cms.length > 0 ? cms : fallbackGroups;
+      } catch (err) {
+        console.error('Failed to load employer forms:', err);
+        return fallbackGroups;
+      }
+    },
+    staleTime: 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    retry: 2,
+  });
 
   const handleCopyLink = useCallback((e: React.MouseEvent, form: AdvisorForm) => {
     e.stopPropagation();
@@ -96,31 +113,6 @@ export default function SubmitGroup() {
     navigator.clipboard.writeText(url);
     setCopiedId(form.id);
     setTimeout(() => setCopiedId(null), 2000);
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const timeout = setTimeout(() => {
-      if (!cancelled) { setForms(fallbackGroups); setLoading(false); }
-    }, 10_000);
-
-    const loadForms = async () => {
-      try {
-        const cmsForms = await formsService.getForms('employer');
-        if (cancelled) return;
-        setForms(cmsForms.length > 0 ? cmsForms : fallbackGroups);
-      } catch (err) {
-        if (cancelled) return;
-        console.error('Failed to load employer forms:', err);
-        setForms(fallbackGroups);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-
-    loadForms();
-    return () => { cancelled = true; clearTimeout(timeout); };
   }, []);
 
   const filteredForms = forms.filter((form) => {

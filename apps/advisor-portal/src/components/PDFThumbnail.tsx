@@ -10,6 +10,14 @@ if (typeof window !== 'undefined' && !pdfjsLib.GlobalWorkerOptions.workerSrc) {
   pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
 }
 
+/** Teardown / StrictMode double-mount — not a user-visible failure. */
+function isBenignPdfJsError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return /worker was destroyed|rendering cancelled|transport destroyed|loading task|getDocument.*destroy/i.test(
+    msg,
+  );
+}
+
 interface PDFThumbnailProps {
   url: string;
   alt?: string;
@@ -48,6 +56,8 @@ export default function PDFThumbnail({
 
   useEffect(() => {
     let cancelled = false;
+    /** Must cancel before `loadingTask.destroy()` or the worker tears down mid-render (React StrictMode). */
+    let activeRender: { cancel(): void } | null = null;
     const loadingTask = pdfjsLib.getDocument({ url, isEvalSupported: false });
 
     (async () => {
@@ -79,9 +89,16 @@ export default function PDFThumbnail({
           return;
         }
 
-        await page.render({ canvasContext: ctx, viewport }).promise;
+        const renderTask = page.render({ canvasContext: ctx, viewport });
+        activeRender = renderTask;
+        try {
+          await renderTask.promise;
+        } finally {
+          if (activeRender === renderTask) activeRender = null;
+        }
         if (!cancelled) setState('ready');
       } catch (err) {
+        if (cancelled || isBenignPdfJsError(err)) return;
         console.warn('PDFThumbnail render failed:', err);
         if (!cancelled) setState('error');
       }
@@ -89,6 +106,12 @@ export default function PDFThumbnail({
 
     return () => {
       cancelled = true;
+      try {
+        activeRender?.cancel();
+      } catch {
+        /* noop */
+      }
+      activeRender = null;
       try {
         loadingTask.destroy();
       } catch {

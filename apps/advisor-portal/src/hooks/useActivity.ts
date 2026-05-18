@@ -25,7 +25,8 @@ export function useActivityFeed(options: {
   types?: ActivityType[];
   limit?: number;
 } = {}) {
-  const { profile } = useAdvisor();
+  const { profile, loading: authLoading, profileLoading } = useAdvisor();
+  const orgContextLoading = authLoading || profileLoading;
   const orgId = profile?.org_id;
 
   const [activities, setActivities] = useState<ActivityFeedItem[]>([]);
@@ -34,7 +35,15 @@ export function useActivityFeed(options: {
   const [hasMore, setHasMore] = useState(true);
 
   const fetchActivities = useCallback(async (offset: number = 0) => {
-    if (!orgId) return;
+    if (orgContextLoading) return;
+
+    if (!orgId) {
+      setActivities([]);
+      setHasMore(false);
+      setError(null);
+      setLoading(false);
+      return;
+    }
 
     try {
       if (offset === 0) setLoading(true);
@@ -60,7 +69,7 @@ export function useActivityFeed(options: {
     } finally {
       setLoading(false);
     }
-  }, [orgId, options.leadId, options.userId, options.types, options.limit]);
+  }, [orgId, orgContextLoading, options.leadId, options.userId, options.types, options.limit]);
 
   useEffect(() => {
     fetchActivities(0);
@@ -132,7 +141,8 @@ export function useNotifications(options: {
   unreadOnly?: boolean;
   limit?: number;
 } = {}) {
-  const { profile } = useAdvisor();
+  const { profile, loading: authLoading, profileLoading } = useAdvisor();
+  const ctxLoading = authLoading || profileLoading;
   const userId = profile?.user_id;
 
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -140,7 +150,14 @@ export function useNotifications(options: {
   const [error, setError] = useState<string | null>(null);
 
   const fetchNotifications = useCallback(async () => {
-    if (!userId) return;
+    if (ctxLoading) return;
+
+    if (!userId) {
+      setNotifications([]);
+      setError(null);
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
@@ -156,7 +173,7 @@ export function useNotifications(options: {
     } finally {
       setLoading(false);
     }
-  }, [userId, options.unreadOnly, options.limit]);
+  }, [userId, ctxLoading, options.unreadOnly, options.limit]);
 
   useEffect(() => {
     fetchNotifications();
@@ -266,7 +283,8 @@ export function useUnreadNotificationCount() {
 // ============================================================================
 
 export function useNotificationSummary() {
-  const { profile } = useAdvisor();
+  const { profile, loading: authLoading, profileLoading } = useAdvisor();
+  const ctxLoading = authLoading || profileLoading;
   const userId = profile?.user_id;
 
   const [summary, setSummary] = useState<NotificationSummary | null>(null);
@@ -274,7 +292,14 @@ export function useNotificationSummary() {
   const [error, setError] = useState<string | null>(null);
 
   const fetchSummary = useCallback(async () => {
-    if (!userId) return;
+    if (ctxLoading) return;
+
+    if (!userId) {
+      setSummary(null);
+      setError(null);
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
@@ -287,7 +312,7 @@ export function useNotificationSummary() {
     } finally {
       setLoading(false);
     }
-  }, [userId]);
+  }, [userId, ctxLoading]);
 
   useEffect(() => {
     fetchSummary();

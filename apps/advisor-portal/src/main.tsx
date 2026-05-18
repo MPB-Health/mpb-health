@@ -1,50 +1,35 @@
 import React from 'react';
-import ReactDOM from 'react-dom/client';
+import ReactDOM, { type Root } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 import { ThemeProvider, initBrand } from '@mpbhealth/ui';
 import App from './App';
-
-function isAuthError(error: unknown): boolean {
-  if (error && typeof error === 'object') {
-    const status = (error as { status?: number }).status ?? (error as { code?: number }).code;
-    if (status === 401 || status === 403) return true;
-    const msg = String((error as { message?: string }).message ?? '');
-    if (/unauthorized|forbidden|jwt expired|invalid.*token/i.test(msg)) return true;
-  }
-  return false;
-}
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 2 * 60 * 1000,
-      gcTime: 5 * 60 * 1000,
-      retry: (failureCount, error) => {
-        if (isAuthError(error)) return false;
-        return failureCount < 1;
-      },
-      refetchOnWindowFocus: false,
-      networkMode: 'online',
-    },
-    mutations: {
-      retry: 0,
-      networkMode: 'online',
-    },
-  },
-});
+import { QueryStaleRecovery } from './components/QueryStaleRecovery';
+import { getAdvisorQueryClient } from './query/advisorQueryClient';
+import { setupServiceWorker } from './registerServiceWorker';
 import './index.css';
 import '@mpbhealth/ui/brand/aryx-brand.css';
 import '@mpbhealth/ui/login-animations.css';
+
+declare global {
+  interface Window {
+    __advisorSwReloadListener?: boolean;
+  }
+}
+
+const queryClient = getAdvisorQueryClient();
 
 // Stamp <html class="brand-mpb"> or "brand-aryx" before first render so the
 // overlay CSS applies on first paint (no flash of mpb-blue on advisor.aryxcloud.com).
 initBrand({ mpbLogo: '/assets/MPB-Health-No-background.png' });
 
+setupServiceWorker();
+
 const SW_RELOAD_GUARD_KEY = 'advisor-sw-reload-ts';
 
-if ('serviceWorker' in navigator) {
+if ('serviceWorker' in navigator && !window.__advisorSwReloadListener) {
+  window.__advisorSwReloadListener = true;
   navigator.serviceWorker.addEventListener('message', (event) => {
     if (event.data?.type !== 'RELOAD_PAGE') return;
 
@@ -99,12 +84,25 @@ class ErrorBoundary extends React.Component<
   }
 }
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
+const rootEl = document.getElementById('root');
+if (!rootEl) {
+  throw new Error('Advisor Portal: #root element not found');
+}
+
+type RootContainer = HTMLElement & { __advisorReactRoot?: Root };
+
+const container = rootEl as RootContainer;
+const root = container.__advisorReactRoot ?? ReactDOM.createRoot(container);
+container.__advisorReactRoot = root;
+
+root.render(
   <React.StrictMode>
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
+        <QueryStaleRecovery />
         <ThemeProvider>
-          <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          {/* Omit v7_startTransition: it desynced lazy route Outlet from the URL. */}
+          <BrowserRouter future={{ v7_relativeSplatPath: true }}>
             <App />
           <Toaster
             position="top-right"

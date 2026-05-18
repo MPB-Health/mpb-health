@@ -60,13 +60,17 @@ export default function Tickets() {
 
   const { data: ticketsData, isLoading: loading, isFetching: refreshing, error: ticketError, refetch: refetchTickets } = useQuery({
     queryKey: ['conciergeTickets', statusFilter, priorityFilter, searchDebounced, page],
-    queryFn: () => ticketService.getMyTickets({
-      status: statusFilter || undefined,
-      priority: priorityFilter || undefined,
-      search: searchDebounced || undefined,
-      page,
-      perPage: PER_PAGE,
-    }),
+    queryFn: ({ signal }) =>
+      ticketService.getMyTickets(
+        {
+          status: statusFilter || undefined,
+          priority: priorityFilter || undefined,
+          search: searchDebounced || undefined,
+          page,
+          perPage: PER_PAGE,
+        },
+        { signal },
+      ),
     staleTime: 30 * 1000,
   });
 

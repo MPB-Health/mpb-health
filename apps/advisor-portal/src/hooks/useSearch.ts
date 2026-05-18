@@ -127,14 +127,21 @@ export function useGlobalSearch(options: {
 // ============================================================================
 
 export function useRecentSearches(limit: number = 10) {
-  const { profile } = useAdvisor();
+  const { profile, loading: authLoading, profileLoading } = useAdvisor();
+  const ctxLoading = authLoading || profileLoading;
   const userId = profile?.user_id;
 
   const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchRecentSearches = useCallback(async () => {
-    if (!userId) return;
+    if (ctxLoading) return;
+
+    if (!userId) {
+      setRecentSearches([]);
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
@@ -145,7 +152,7 @@ export function useRecentSearches(limit: number = 10) {
     } finally {
       setLoading(false);
     }
-  }, [userId, limit]);
+  }, [userId, ctxLoading, limit]);
 
   useEffect(() => {
     fetchRecentSearches();
@@ -176,7 +183,8 @@ export function useRecentSearches(limit: number = 10) {
 // ============================================================================
 
 export function useSavedSearches() {
-  const { profile } = useAdvisor();
+  const { profile, loading: authLoading, profileLoading } = useAdvisor();
+  const ctxLoading = authLoading || profileLoading;
   const userId = profile?.user_id;
   const orgId = profile?.org_id;
 
@@ -184,7 +192,13 @@ export function useSavedSearches() {
   const [loading, setLoading] = useState(true);
 
   const fetchSavedSearches = useCallback(async () => {
-    if (!userId) return;
+    if (ctxLoading) return;
+
+    if (!userId) {
+      setSavedSearches([]);
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
@@ -195,7 +209,7 @@ export function useSavedSearches() {
     } finally {
       setLoading(false);
     }
-  }, [userId]);
+  }, [userId, ctxLoading]);
 
   useEffect(() => {
     fetchSavedSearches();

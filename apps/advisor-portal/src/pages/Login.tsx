@@ -3,10 +3,30 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase, isSupabaseConfigured } from '@mpbhealth/database';
 import toast from 'react-hot-toast';
 import { LoginLayout, AryxAuthShell, detectBrand } from '@mpbhealth/ui';
+import { useAdvisor } from '../contexts/AdvisorContext';
+import { useAdvisorPageDebugLog } from '../hooks/useAdvisorPageDebugLog';
 
 export default function Login() {
+  useAdvisorPageDebugLog('Login');
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { loading: authLoading, hasSession, profile, profileLoading } = useAdvisor();
+
+  // Already signed in — leave login (MainLayout handles password-change gate)
+  useEffect(() => {
+    if (authLoading) return;
+    if (!hasSession) return;
+    if (profileLoading) return;
+    if (profile?.must_change_password) {
+      navigate('/change-password', { replace: true });
+      return;
+    }
+    if (profile) {
+      navigate('/', { replace: true });
+      return;
+    }
+    navigate('/', { replace: true });
+  }, [authLoading, hasSession, profile, profileLoading, navigate]);
 
   // Show success toast when redirected after a successful password reset
   useEffect(() => {
@@ -15,11 +35,10 @@ export default function Login() {
         duration: 5000,
         id: 'reset-success', // prevent duplicates
       });
-      // Clean the URL without triggering a re-render loop
       searchParams.delete('reset');
       setSearchParams(searchParams, { replace: true });
     }
-  }, []);
+  }, [searchParams, setSearchParams]);
 
   const withTimeout = async <T,>(promise: Promise<T>, ms: number): Promise<T> => {
     let timeoutId: ReturnType<typeof setTimeout> | null = null;

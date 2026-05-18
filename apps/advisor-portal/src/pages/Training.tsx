@@ -34,6 +34,7 @@ import { generateCertificate, type CertificateOptions } from '../utils/generateC
 import DocumentPreviewModal from '../components/DocumentPreviewModal';
 import DocumentCard from '../components/DocumentCard';
 import { TrainingRequiredBanner } from '../components/TrainingRequiredBanner';
+import { useAdvisorPageDebugLog } from '../hooks/useAdvisorPageDebugLog';
 import type { SOPDocument } from '@mpbhealth/advisor-core';
 
 interface TrainingProps {
@@ -1653,6 +1654,7 @@ const courseConfigs = {
 /* ------------------------------------------------------------------ */
 
 export default function Training({ section }: TrainingProps) {
+  useAdvisorPageDebugLog('Training');
   const navigate = useNavigate();
   const { profile, sessionUserCreatedAt, refreshProfile } = useAdvisor();
 

@@ -17,6 +17,7 @@ import {
 import { Button } from '@mpbhealth/ui';
 import { useUserPreferences } from '../../hooks/useSettings';
 import type { UpdateUserPreferencesInput } from '@mpbhealth/champion-core';
+import { useAdvisorPageDebugLog } from '../../hooks/useAdvisorPageDebugLog';
 
 const THEME_OPTIONS = [
   { value: 'light', label: 'Light', icon: Sun, description: 'Classic light theme' },
@@ -42,6 +43,7 @@ const GROUP_OPTIONS = [
 ];
 
 export default function UserPreferences() {
+  useAdvisorPageDebugLog('UserPreferences');
   const { preferences, loading, error, saving, updatePreferences } = useUserPreferences();
   const [formData, setFormData] = useState<UpdateUserPreferencesInput>({});
   const [successMessage, setSuccessMessage] = useState<string | null>(null);

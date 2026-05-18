@@ -24,13 +24,15 @@ import {
   AVAILABLE_INTEGRATIONS,
 } from '@mpbhealth/champion-core';
 import { useAdvisor } from '../contexts/AdvisorContext';
+import { useAdvisorQueryReady } from './useAdvisorQueryReady';
 
 // =============================================================================
 // Organization Settings Hook
 // =============================================================================
 
 export function useOrgSettings() {
-  const { profile } = useAdvisor();
+  const { profile, loading: authLoading, profileLoading } = useAdvisor();
+  const ctxLoading = authLoading || profileLoading;
   const orgId = profile?.org_id;
 
   const [settings, setSettings] = useState<OrganizationSettings | null>(null);
@@ -39,7 +41,14 @@ export function useOrgSettings() {
   const [saving, setSaving] = useState(false);
 
   const fetchSettings = useCallback(async () => {
-    if (!orgId) return;
+    if (ctxLoading) return;
+
+    if (!orgId) {
+      setSettings(null);
+      setError(null);
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
@@ -52,7 +61,7 @@ export function useOrgSettings() {
     } finally {
       setLoading(false);
     }
-  }, [orgId]);
+  }, [orgId, ctxLoading]);
 
   useEffect(() => {
     fetchSettings();
@@ -92,7 +101,8 @@ export function useOrgSettings() {
 // =============================================================================
 
 export function useUserPreferences() {
-  const { profile } = useAdvisor();
+  const { profile, loading: authLoading, profileLoading } = useAdvisor();
+  const ctxLoading = authLoading || profileLoading;
   const userId = profile?.user_id;
   const orgId = profile?.org_id;
 
@@ -102,11 +112,20 @@ export function useUserPreferences() {
   const [saving, setSaving] = useState(false);
 
   const fetchPreferences = useCallback(async () => {
-    if (!userId || !orgId) return;
+    if (ctxLoading) return;
+
+    if (!userId) {
+      setPreferences(null);
+      setError(null);
+      setLoading(false);
+      return;
+    }
+
+    const effectiveOrgId = orgId || '';
 
     try {
       setLoading(true);
-      const data = await settingsService.getUserPreferences(userId, orgId);
+      const data = await settingsService.getUserPreferences(userId, effectiveOrgId);
       setPreferences(data);
       setError(null);
     } catch (err) {
@@ -115,7 +134,7 @@ export function useUserPreferences() {
     } finally {
       setLoading(false);
     }
-  }, [userId, orgId]);
+  }, [userId, orgId, ctxLoading]);
 
   useEffect(() => {
     fetchPreferences();
@@ -123,11 +142,13 @@ export function useUserPreferences() {
 
   const updatePreferences = useCallback(
     async (input: UpdateUserPreferencesInput) => {
-      if (!userId || !orgId) return;
+      if (!userId) return;
+
+      const effectiveOrgId = orgId || '';
 
       try {
         setSaving(true);
-        const updated = await settingsService.updateUserPreferences(userId, orgId, input);
+        const updated = await settingsService.updateUserPreferences(userId, effectiveOrgId, input);
         setPreferences(updated);
         return updated;
       } catch (err) {
@@ -155,7 +176,8 @@ export function useUserPreferences() {
 // =============================================================================
 
 export function useNotificationSettings() {
-  const { profile, profileLoading } = useAdvisor();
+  const { profile, loading: authLoading, profileLoading } = useAdvisor();
+  const ctxLoading = authLoading || profileLoading;
   const userId = profile?.user_id;
   const orgId = profile?.org_id;
 
@@ -165,9 +187,12 @@ export function useNotificationSettings() {
   const [saving, setSaving] = useState(false);
 
   const fetchSettings = useCallback(async () => {
+    if (ctxLoading) return;
+
     if (!userId) {
-      // Profile not loaded yet or no user — stop loading once profile settles
-      if (!profileLoading) setLoading(false);
+      setSettings(null);
+      setError(null);
+      setLoading(false);
       return;
     }
 
@@ -186,7 +211,7 @@ export function useNotificationSettings() {
     } finally {
       setLoading(false);
     }
-  }, [userId, orgId, profileLoading]);
+  }, [userId, orgId, ctxLoading]);
 
   useEffect(() => {
     fetchSettings();
@@ -228,6 +253,7 @@ export function useNotificationSettings() {
 
 export function useTeamManagement() {
   const { profile } = useAdvisor();
+  const { advisorReady } = useAdvisorQueryReady();
   const orgId = profile?.org_id;
   const userId = profile?.user_id;
 
@@ -242,7 +268,7 @@ export function useTeamManagement() {
       ]);
       return { members: membersData, invitations: invitationsData };
     },
-    enabled: !!orgId,
+    enabled: advisorReady && !!orgId,
     staleTime: 60 * 1000,
   });
 
@@ -319,7 +345,8 @@ export function useTeamManagement() {
 // =============================================================================
 
 export function useApiKeys() {
-  const { profile } = useAdvisor();
+  const { profile, loading: authLoading, profileLoading } = useAdvisor();
+  const ctxLoading = authLoading || profileLoading;
   const orgId = profile?.org_id;
   const userId = profile?.user_id;
 
@@ -328,7 +355,14 @@ export function useApiKeys() {
   const [error, setError] = useState<string | null>(null);
 
   const fetchApiKeys = useCallback(async () => {
-    if (!orgId) return;
+    if (ctxLoading) return;
+
+    if (!orgId) {
+      setApiKeys([]);
+      setError(null);
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
@@ -341,7 +375,7 @@ export function useApiKeys() {
     } finally {
       setLoading(false);
     }
-  }, [orgId]);
+  }, [orgId, ctxLoading]);
 
   useEffect(() => {
     fetchApiKeys();
@@ -389,7 +423,8 @@ export function useApiKeys() {
 // =============================================================================
 
 export function useIntegrations() {
-  const { profile } = useAdvisor();
+  const { profile, loading: authLoading, profileLoading } = useAdvisor();
+  const ctxLoading = authLoading || profileLoading;
   const orgId = profile?.org_id;
   const userId = profile?.user_id;
 
@@ -398,7 +433,14 @@ export function useIntegrations() {
   const [error, setError] = useState<string | null>(null);
 
   const fetchIntegrations = useCallback(async () => {
-    if (!orgId) return;
+    if (ctxLoading) return;
+
+    if (!orgId) {
+      setIntegrations([]);
+      setError(null);
+      setLoading(false);
+      return;
+    }
 
     try {
       setLoading(true);
@@ -411,7 +453,7 @@ export function useIntegrations() {
     } finally {
       setLoading(false);
     }
-  }, [orgId]);
+  }, [orgId, ctxLoading]);
 
   useEffect(() => {
     fetchIntegrations();

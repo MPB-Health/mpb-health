@@ -11,11 +11,15 @@ import type { ChatMember, ChatUserSearchResult } from '@mpbhealth/advisor-core';
 import ConversationList from '../components/chat/ConversationList';
 import MessageThread from '../components/chat/MessageThread';
 import MessageComposer from '../components/chat/MessageComposer';
+import { useAdvisorQueryReady } from '../hooks/useAdvisorQueryReady';
+import { useAdvisorPageDebugLog } from '../hooks/useAdvisorPageDebugLog';
 
 export default function Chat() {
+  useAdvisorPageDebugLog('Chat');
   const { conversationId } = useParams<{ conversationId?: string }>();
   const navigate = useNavigate();
   const { profile } = useAdvisor();
+  const { advisorReady } = useAdvisorQueryReady();
   const { conversations, channels, directMessages, loading: convLoading, error: convError, totalUnread, refresh: refreshConversations } = useChat();
   const { messages, loading: msgLoading, hasMore, sending, loadMore, sendMessage, deleteMessage } =
     useChatMessages(conversationId || null);
@@ -45,7 +49,7 @@ export default function Chat() {
   const { data: isAdmin = false } = useQuery({
     queryKey: ['isAdmin', profile?.user_id],
     queryFn: () => checkIsAdmin(profile!.user_id),
-    enabled: !!profile?.user_id,
+    enabled: advisorReady,
     staleTime: 5 * 60 * 1000,
   });
 

@@ -1,4 +1,5 @@
 import { supabase, getResolvedAuthHeader, refreshSessionOnce } from '@mpbhealth/database';
+import { escapeHtml } from '@mpbhealth/utils';
 
 /**
  * Generate a short random correlation ID for request tracing.
@@ -29,7 +30,7 @@ async function extractFunctionError(error: unknown): Promise<string> {
   return error instanceof Error ? error.message : 'Unknown error';
 }
 
-export type TicketStatus = 'new' | 'open' | 'pending' | 'resolved' | 'closed';
+export type TicketStatus = 'new' | 'open' | 'pending' | 'in_progress' | 'resolved' | 'closed';
 export type TicketPriority = 'low' | 'medium' | 'high' | 'urgent';
 export type TicketContentFormat = 'plain' | 'html';
 
@@ -43,6 +44,12 @@ export interface Ticket {
   category: string | null;
   created_at: string;
   updated_at: string;
+  /** Present on detail responses; identifies opening requester vs support replies in the thread. */
+  requester_id?: string;
+  /** ITSTS `tickets.assignee_id` (support agent); `assignee_name` is from ITSTS `profiles` when present. */
+  assignee_id?: string | null;
+  /** Resolved from ITSTS `profiles` for the user in `assignee_id`. */
+  assignee_name?: string | null;
 }
 
 export interface TicketComment {
@@ -77,11 +84,14 @@ export interface TicketListResult {
 }
 
 export interface ListTicketsOptions {
-  status?: TicketStatus;
+  status?: TicketStatus | 'active';
   priority?: TicketPriority;
   search?: string;
   page?: number;
   perPage?: number;
+  /** Matches ITSTS list: created_desc (default), created_asc, updated_desc, updated_asc */
+  sort?: 'created_desc' | 'created_asc' | 'updated_desc' | 'updated_asc';
+  category?: string;
 }
 
 export interface AdminTicket extends Ticket {
@@ -264,7 +274,12 @@ export class TicketService {
   private async call<T extends { success: boolean }>(
     action: string,
     body: Record<string, unknown> = {},
-    opts: { allowUnauthenticated?: boolean; timeoutMs?: number; maxRetries?: number } = {},
+    opts: {
+      allowUnauthenticated?: boolean;
+      timeoutMs?: number;
+      maxRetries?: number;
+      signal?: AbortSignal;
+    } = {},
   ): Promise<T> {
     const correlationId = newCorrelationId();
     const timeoutMs = opts.timeoutMs ?? TicketService.CALL_TIMEOUT_MS;
@@ -278,7 +293,23 @@ export class TicketService {
         await new Promise((r) => setTimeout(r, delay));
       }
 
+      if (opts.signal?.aborted) {
+        throw new DOMException('Aborted', 'AbortError');
+      }
+
       try {
+        const onAbort = new Promise<never>((_, reject) => {
+          const sig = opts.signal;
+          if (!sig) return;
+          if (sig.aborted) {
+            reject(new DOMException('Aborted', 'AbortError'));
+            return;
+          }
+          sig.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')), {
+            once: true,
+          });
+        });
+
         // Single timeout covers auth resolution + invoke so a hung
         // refreshSession() can't leave the UI spinning forever.
         const attemptResult = await Promise.race([
@@ -286,6 +317,7 @@ export class TicketService {
           new Promise<never>((_, reject) =>
             setTimeout(() => reject(new Error('TIMEOUT')), timeoutMs),
           ),
+          onAbort,
         ]);
 
         if (attemptResult === null) {
@@ -294,6 +326,9 @@ export class TicketService {
 
         return attemptResult;
       } catch (err) {
+        if (err instanceof DOMException && err.name === 'AbortError') {
+          throw err;
+        }
         if (err instanceof Error) {
           if (err.message === 'TIMEOUT' || err.message === '_RETRYABLE') {
             lastError = err;
@@ -371,20 +406,38 @@ export class TicketService {
 
   // ── Advisor read methods ───────────────────────────────────────────────
 
-  async getMyTickets(opts: ListTicketsOptions = {}): Promise<TicketListResult> {
-    const data = await this.call<TicketListResult & { success: boolean }>('list', {
-      status: opts.status,
-      priority: opts.priority,
-      search: opts.search,
-      page: opts.page ?? 1,
-      per_page: opts.perPage ?? 20,
-    });
+  /**
+   * @param runtime.signal — pass React Query's `signal` so navigations cancel in-flight lists
+   *   (avoids stuck spinners when TanStack Query aborts the fetch).
+   */
+  async getMyTickets(
+    opts: ListTicketsOptions = {},
+    runtime?: { signal?: AbortSignal },
+  ): Promise<TicketListResult> {
+    // Shorter than generic proxy calls: list must feel snappy; long multi-retry feels "infinite".
+    const data = await this.call<TicketListResult & { success: boolean }>(
+      'list',
+      {
+        status: opts.status,
+        priority: opts.priority,
+        search: opts.search,
+        page: opts.page ?? 1,
+        per_page: opts.perPage ?? 20,
+        sort: opts.sort,
+        category: opts.category,
+      },
+      { timeoutMs: 18_000, maxRetries: 1, signal: runtime?.signal },
+    );
 
     return { tickets: data.tickets, total: data.total, page: data.page, per_page: data.per_page };
   }
 
   async getTicketDetail(ticketId: string): Promise<TicketDetail> {
-    const data = await this.call<TicketDetail & { success: boolean }>('detail', { ticket_id: ticketId });
+    const data = await this.call<TicketDetail & { success: boolean }>(
+      'detail',
+      { ticket_id: ticketId },
+      { timeoutMs: 20_000, maxRetries: 1 },
+    );
     return { ticket: data.ticket, comments: data.comments };
   }
 
@@ -462,17 +515,24 @@ export class TicketService {
 
   // ── Admin read methods ─────────────────────────────────────────────────
 
-  async getAllTickets(opts: AdminListTicketsOptions = {}): Promise<AdminTicketListResult> {
-    const data = await this.call<AdminTicketListResult & { success: boolean }>('list_all', {
-      status: opts.status,
-      priority: opts.priority,
-      search: opts.search,
-      requester_id: opts.requesterId,
-      sort_by: opts.sortBy,
-      sort_order: opts.sortOrder,
-      page: opts.page ?? 1,
-      per_page: opts.perPage ?? 20,
-    });
+  async getAllTickets(
+    opts: AdminListTicketsOptions = {},
+    runtime?: { signal?: AbortSignal },
+  ): Promise<AdminTicketListResult> {
+    const data = await this.call<AdminTicketListResult & { success: boolean }>(
+      'list_all',
+      {
+        status: opts.status,
+        priority: opts.priority,
+        search: opts.search,
+        requester_id: opts.requesterId,
+        sort_by: opts.sortBy,
+        sort_order: opts.sortOrder,
+        page: opts.page ?? 1,
+        per_page: opts.perPage ?? 20,
+      },
+      { timeoutMs: 18_000, maxRetries: 1, signal: runtime?.signal },
+    );
     return { tickets: data.tickets, total: data.total, page: data.page, per_page: data.per_page };
   }
 
@@ -632,7 +692,9 @@ export function appendTicketAttachmentsHtml(html: string, uploads: TicketAttachm
   const links = uploads
     .map((u) => {
       const kb = Math.max(1, Math.round(u.size / 1024));
-      return `<li><a href="${u.accessUrl}" target="_blank" rel="noopener">${u.fileName}</a> (${kb} KB)</li>`;
+      const safeHref = escapeHtml(u.accessUrl);
+      const safeName = escapeHtml(u.fileName);
+      return `<li><a href="${safeHref}" target="_blank" rel="noopener noreferrer">${safeName}</a> (${kb} KB)</li>`;
     })
     .join('');
   return `${html}<br/><p><strong>Attachments:</strong></p><ul>${links}</ul>`;

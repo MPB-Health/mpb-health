@@ -1,32 +1,31 @@
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Mail, Phone } from 'lucide-react';
 import { portalSettingsService } from '@mpbhealth/advisor-core';
+import { useAdvisorPageDebugLog } from '../hooks/useAdvisorPageDebugLog';
+import { useAdvisorQueryReady } from '../hooks/useAdvisorQueryReady';
 
 const COGNITO_FORM_EMBED_URL = 'https://www.cognitoforms.com/MPoweringBenefits1/ContactForm2';
 
+const DEFAULT_PHONE = '(610) 331-6423';
+const DEFAULT_EMAIL = 'rebalarney@mympb.com';
+
 export default function Contact() {
-  const [contactPhone, setContactPhone] = useState('(610) 331-6423');
-  const [contactEmail, setContactEmail] = useState('rebalarney@mympb.com');
+  useAdvisorPageDebugLog('Contact');
+  const { advisorReady } = useAdvisorQueryReady();
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const settings = await portalSettingsService.getMultipleSettings([
-          'contact_phone',
-          'contact_email',
-        ]);
-        if (!cancelled) {
-          if (settings.contact_phone) setContactPhone(settings.contact_phone);
-          if (settings.contact_email) setContactEmail(settings.contact_email);
-        }
-      } catch (err) {
-        console.error('Failed to load contact settings:', err);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, []);
+  const { data: settings } = useQuery({
+    queryKey: ['contactPortalSettings'],
+    queryFn: () =>
+      portalSettingsService.getMultipleSettings(['contact_phone', 'contact_email']),
+    enabled: advisorReady,
+    staleTime: 5 * 60 * 1000,
+    retry: 1,
+  });
+
+  const contactPhone = settings?.contact_phone || DEFAULT_PHONE;
+  const contactEmail = settings?.contact_email || DEFAULT_EMAIL;
 
   useEffect(() => {
     const handleMessage = (e: MessageEvent) => {

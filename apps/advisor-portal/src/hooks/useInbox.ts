@@ -17,16 +17,22 @@ export function useConversations(options: {
   unreadOnly?: boolean;
   search?: string;
 } = {}) {
-  const { profile } = useAdvisor();
+  const { profile, loading: authLoading, profileLoading } = useAdvisor();
+  const orgContextLoading = authLoading || profileLoading;
   const [conversations, setConversations] = useState<ConversationWithLead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   const refresh = useCallback(async () => {
+    if (orgContextLoading) return;
+
     if (!profile?.org_id) {
+      setConversations([]);
+      setError(null);
       setLoading(false);
       return;
     }
+
     try {
       setLoading(true);
       const data = await conversationService.getConversations(profile!.org_id, options);
@@ -37,7 +43,7 @@ export function useConversations(options: {
     } finally {
       setLoading(false);
     }
-  }, [profile?.org_id, options.status, options.channel, options.unreadOnly, options.search]);
+  }, [profile?.org_id, orgContextLoading, options.status, options.channel, options.unreadOnly, options.search]);
 
   useEffect(() => {
     refresh();
@@ -69,7 +75,13 @@ export function useConversation(conversationId: string | null) {
   const [error, setError] = useState<Error | null>(null);
 
   const loadConversation = useCallback(async () => {
-    if (!conversationId) return;
+    if (!conversationId) {
+      setConversation(null);
+      setMessages([]);
+      setError(null);
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       const [convData, messagesData] = await Promise.all([
@@ -115,15 +127,20 @@ export function useConversation(conversationId: string | null) {
 }
 
 export function useInboxSummary() {
-  const { profile } = useAdvisor();
+  const { profile, loading: authLoading, profileLoading } = useAdvisor();
+  const orgContextLoading = authLoading || profileLoading;
   const [summary, setSummary] = useState<InboxSummary | null>(null);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
+    if (orgContextLoading) return;
+
     if (!profile?.org_id) {
+      setSummary(null);
       setLoading(false);
       return;
     }
+
     try {
       const data = await conversationService.getInboxSummary(profile!.org_id);
       setSummary(data);
@@ -132,7 +149,7 @@ export function useInboxSummary() {
     } finally {
       setLoading(false);
     }
-  }, [profile?.org_id]);
+  }, [profile?.org_id, orgContextLoading]);
 
   useEffect(() => {
     refresh();
@@ -142,15 +159,20 @@ export function useInboxSummary() {
 }
 
 export function useTemplates(channel?: 'sms' | 'email' | 'both') {
-  const { profile } = useAdvisor();
+  const { profile, loading: authLoading, profileLoading } = useAdvisor();
+  const orgContextLoading = authLoading || profileLoading;
   const [templates, setTemplates] = useState<MessageTemplate[]>([]);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
+    if (orgContextLoading) return;
+
     if (!profile?.org_id) {
+      setTemplates([]);
       setLoading(false);
       return;
     }
+
     try {
       setLoading(true);
       const data = await templateService.getTemplates(profile!.org_id, { channel });
@@ -160,7 +182,7 @@ export function useTemplates(channel?: 'sms' | 'email' | 'both') {
     } finally {
       setLoading(false);
     }
-  }, [profile?.org_id, channel]);
+  }, [profile?.org_id, orgContextLoading, channel]);
 
   useEffect(() => {
     refresh();
@@ -170,15 +192,20 @@ export function useTemplates(channel?: 'sms' | 'email' | 'both') {
 }
 
 export function useSequences(status?: 'draft' | 'active' | 'paused' | 'archived') {
-  const { profile } = useAdvisor();
+  const { profile, loading: authLoading, profileLoading } = useAdvisor();
+  const orgContextLoading = authLoading || profileLoading;
   const [sequences, setSequences] = useState<Sequence[]>([]);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
+    if (orgContextLoading) return;
+
     if (!profile?.org_id) {
+      setSequences([]);
       setLoading(false);
       return;
     }
+
     try {
       setLoading(true);
       const data = await sequenceService.getSequences(profile!.org_id, { status });
@@ -188,7 +215,7 @@ export function useSequences(status?: 'draft' | 'active' | 'paused' | 'archived'
     } finally {
       setLoading(false);
     }
-  }, [profile?.org_id, status]);
+  }, [profile?.org_id, orgContextLoading, status]);
 
   useEffect(() => {
     refresh();

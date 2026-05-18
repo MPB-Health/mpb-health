@@ -21,6 +21,7 @@ import { Button } from '@mpbhealth/ui';
 import { useNotificationSettings } from '../../hooks/useSettings';
 import type { UpdateNotificationSettingsInput } from '@mpbhealth/champion-core';
 import PushNotificationOptIn from '../../components/notifications/PushNotificationOptIn';
+import { useAdvisorPageDebugLog } from '../../hooks/useAdvisorPageDebugLog';
 
 interface ToggleSwitchProps {
   enabled: boolean;
@@ -80,6 +81,7 @@ function NotificationOption({
 }
 
 export default function NotificationPreferences() {
+  useAdvisorPageDebugLog('NotificationPreferences');
   const { settings, loading, error, saving, updateSettings, refresh } = useNotificationSettings();
   const [formData, setFormData] = useState<UpdateNotificationSettingsInput>({});
   const [successMessage, setSuccessMessage] = useState<string | null>(null);

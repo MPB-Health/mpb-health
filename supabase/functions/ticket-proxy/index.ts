@@ -49,6 +49,9 @@ interface ProxyRequest {
   search?: string;
   page?: number;
   per_page?: number;
+  /** created_desc | created_asc | updated_desc | updated_asc */
+  sort?: string;
+  category?: string;
   content?: string;
   /** When "html", content is sanitized server-side before insert. Default plain (legacy). */
   content_format?: "plain" | "html";
@@ -136,31 +139,95 @@ async function getOrCreateItstsUserId(
   return uid;
 }
 
+/** Prefer full name, then email, for ITSTS profile display. */
+function profileDisplayName(p: { full_name?: string | null; email?: string | null }): string | null {
+  const n = typeof p.full_name === "string" ? p.full_name.trim() : "";
+  if (n) return n;
+  const e = typeof p.email === "string" ? p.email.trim() : "";
+  if (e) return e;
+  return null;
+}
+
 async function listTickets(
   itstsAdmin: ReturnType<typeof createClient>,
   userId: string,
-  opts: { status?: string; priority?: string; search?: string; page: number; perPage: number },
+  opts: {
+    status?: string;
+    priority?: string;
+    search?: string;
+    page: number;
+    perPage: number;
+    sort?: string;
+    category?: string;
+  },
 ) {
+  const sortRaw = (opts.sort || "created_desc").trim();
+  let sortColumn: "created_at" | "updated_at" = "created_at";
+  let sortAscending = false;
+  if (sortRaw === "created_asc") sortAscending = true;
+  else if (sortRaw === "updated_desc") sortColumn = "updated_at";
+  else if (sortRaw === "updated_asc") {
+    sortColumn = "updated_at";
+    sortAscending = true;
+  }
+
   let query = itstsAdmin
     .from("tickets")
-    .select("id, ticket_number, subject, description, status, priority, category, created_at, updated_at", { count: "exact" })
+    .select("id, ticket_number, subject, description, status, priority, category, assignee_id, created_at, updated_at", { count: "exact" })
     .eq("requester_id", userId)
-    .order("created_at", { ascending: false })
+    .order(sortColumn, { ascending: sortAscending, nullsFirst: false })
     .range((opts.page - 1) * opts.perPage, opts.page * opts.perPage - 1);
 
-  if (opts.status) query = query.eq("status", opts.status);
+  const st = (opts.status || "").trim();
+  // "Active" = new + open (matches ITSTS triage list semantics)
+  if (st === "active") {
+    query = query.in("status", ["new", "open"]);
+  } else if (st) {
+    query = query.eq("status", st);
+  }
+
   if (opts.priority) query = query.eq("priority", opts.priority);
+
+  const cat = (opts.category || "").trim();
+  if (cat) query = query.eq("category", cat);
+
   if (opts.search) {
     const safe = sanitizeSearch(opts.search);
     if (safe) {
-      query = query.or(`subject.ilike.%${safe}%,ticket_number.eq.${parseInt(safe) || 0}`);
+      const numeric = /^\d+$/.test(safe) ? parseInt(safe, 10) : NaN;
+      const parts = [`subject.ilike.%${safe}%`, `description.ilike.%${safe}%`];
+      if (!Number.isNaN(numeric)) {
+        parts.push(`ticket_number.eq.${numeric}`);
+      }
+      query = query.or(parts.join(","));
     }
   }
 
   const { data, count, error } = await query;
   if (error) throw error;
 
-  return { tickets: data || [], total: count || 0, page: opts.page, per_page: opts.perPage };
+  const rows = (data || []) as Array<Record<string, unknown> & { assignee_id?: string | null }>;
+  const assigneeIds = [...new Set(rows.map((t) => t.assignee_id).filter(Boolean) as string[])];
+  let assigneeMap: Record<string, string | null> = {};
+  if (assigneeIds.length > 0) {
+    const { data: profiles } = await itstsAdmin
+      .from("profiles")
+      .select("id, full_name, email")
+      .in("id", assigneeIds);
+    assigneeMap = Object.fromEntries(
+      (profiles || []).map((p: { id: string; full_name?: string | null; email?: string | null }) => [
+        p.id,
+        profileDisplayName(p),
+      ]),
+    );
+  }
+
+  const tickets = rows.map((t) => ({
+    ...t,
+    assignee_name: t.assignee_id ? (assigneeMap[t.assignee_id as string] ?? null) : null,
+  }));
+
+  return { tickets, total: count || 0, page: opts.page, per_page: opts.perPage };
 }
 
 async function getTicketDetail(
@@ -202,15 +269,22 @@ async function getTicketDetail(
     throw new Error(`Failed to load conversation: ${commentsError.message}`);
   }
 
-  // Fetch author names for comments
-  const authorIds = [...new Set((comments || []).map((c) => c.author_id).filter(Boolean))];
-  let authorMap: Record<string, string> = {};
+  const assigneeId = (ticket as { assignee_id?: string | null }).assignee_id;
+  const authorIds = [...new Set(
+    [...(comments || []).map((c) => c.author_id).filter(Boolean), assigneeId].filter(Boolean) as string[],
+  )];
+  let authorMap: Record<string, null | string> = {};
   if (authorIds.length > 0) {
     const { data: profiles } = await itstsAdmin
       .from("profiles")
-      .select("id, full_name")
+      .select("id, full_name, email")
       .in("id", authorIds);
-    authorMap = Object.fromEntries((profiles || []).map((p) => [p.id, p.full_name]));
+    authorMap = Object.fromEntries(
+      (profiles || []).map((p: { id: string; full_name?: string | null; email?: string | null }) => [
+        p.id,
+        profileDisplayName(p),
+      ]),
+    );
   }
 
   const enrichedComments = (comments || []).map((c: Record<string, unknown>) => ({
@@ -219,14 +293,19 @@ async function getTicketDetail(
     content_format: (c.content_format as string) || "plain",
   }));
 
-  return { ticket, comments: enrichedComments };
+  const assigneeName = assigneeId ? (authorMap[assigneeId] ?? null) : null;
+
+  return {
+    ticket: { ...ticket, assignee_name: assigneeName },
+    comments: enrichedComments,
+  };
 }
 
 async function getTicketStats(
   itstsAdmin: ReturnType<typeof createClient>,
   userId: string,
 ) {
-  const statuses = ["new", "open", "pending", "closed"] as const;
+  const statuses = ["new", "open", "pending", "resolved", "closed"] as const;
 
   const results = await Promise.all(
     statuses.map((status) =>
@@ -247,7 +326,14 @@ async function getTicketStats(
     total += c;
   }
 
-  return { total, ...counts };
+  return {
+    total,
+    new: counts.new ?? 0,
+    open: counts.open ?? 0,
+    pending: counts.pending ?? 0,
+    resolved: counts.resolved ?? 0,
+    closed: counts.closed ?? 0,
+  };
 }
 
 // ── Admin helpers ──────────────────────────────────────────────────────────
@@ -270,7 +356,7 @@ async function listAllTickets(
 ) {
   let query = itstsAdmin
     .from("tickets")
-    .select("id, ticket_number, subject, description, status, priority, category, created_at, updated_at, requester_id", { count: "exact" })
+    .select("id, ticket_number, subject, description, status, priority, category, created_at, updated_at, requester_id, assignee_id", { count: "exact" })
     .order("created_at", { ascending: false })
     .range((opts.page - 1) * opts.perPage, opts.page * opts.perPage - 1);
 
@@ -286,15 +372,17 @@ async function listAllTickets(
   const { data: tickets, count, error } = await query;
   if (error) throw error;
 
-  // Enrich with requester info
+  // Enrich with requester + assignee display names
   const requesterIds = [...new Set((tickets || []).map((t: { requester_id: string }) => t.requester_id).filter(Boolean))];
-  let requesterMap: Record<string, { full_name: string; email: string }> = {};
-  if (requesterIds.length > 0) {
+  const assigneeIds = [...new Set((tickets || []).map((t: { assignee_id?: string | null }) => t.assignee_id).filter(Boolean) as string[])];
+  const profileIds = [...new Set([...requesterIds, ...assigneeIds])];
+  let profileById: Record<string, { full_name?: string | null; email?: string | null; agent_id?: string | null; company_name?: string | null }> = {};
+  if (profileIds.length > 0) {
     const { data: profiles } = await itstsAdmin
       .from("profiles")
       .select("id, full_name, email, agent_id, company_name")
-      .in("id", requesterIds);
-    requesterMap = Object.fromEntries(
+      .in("id", profileIds);
+    profileById = Object.fromEntries(
       (profiles || []).map((p: { id: string; full_name: string; email: string; agent_id?: string; company_name?: string }) => [
         p.id,
         { full_name: p.full_name, email: p.email, agent_id: p.agent_id || null, company_name: p.company_name || null },
@@ -304,10 +392,13 @@ async function listAllTickets(
 
   const enriched = (tickets || []).map((t: Record<string, unknown>) => ({
     ...t,
-    requester_name: (requesterMap[t.requester_id as string]?.full_name) || "Unknown",
-    requester_email: (requesterMap[t.requester_id as string]?.email) || "",
-    requester_agent_id: (requesterMap[t.requester_id as string]?.agent_id) ?? null,
-    requester_company: (requesterMap[t.requester_id as string]?.company_name) ?? null,
+    requester_name: (profileById[t.requester_id as string]?.full_name) || "Unknown",
+    requester_email: (profileById[t.requester_id as string]?.email) || "",
+    requester_agent_id: (profileById[t.requester_id as string]?.agent_id) ?? null,
+    requester_company: (profileById[t.requester_id as string]?.company_name) ?? null,
+    assignee_name: t.assignee_id
+      ? (profileDisplayName(profileById[t.assignee_id as string] || { full_name: null, email: null }) ?? null)
+      : null,
   }));
 
   return { tickets: enriched, total: count || 0, page: opts.page, per_page: opts.perPage };
@@ -367,13 +458,19 @@ async function getTicketDetailAdmin(
   }
 
   const authorIds = [...new Set((comments || []).map((c: { author_id: string }) => c.author_id).filter(Boolean))];
-  let authorMap: Record<string, string> = {};
-  if (authorIds.length > 0) {
+  const idsForProfiles = [...new Set([...authorIds, ticket.assignee_id].filter(Boolean) as string[])];
+  let authorMap: Record<string, null | string> = {};
+  if (idsForProfiles.length > 0) {
     const { data: profiles } = await itstsAdmin
       .from("profiles")
-      .select("id, full_name")
-      .in("id", authorIds);
-    authorMap = Object.fromEntries((profiles || []).map((p: { id: string; full_name: string }) => [p.id, p.full_name]));
+      .select("id, full_name, email")
+      .in("id", idsForProfiles);
+    authorMap = Object.fromEntries(
+      (profiles || []).map((p: { id: string; full_name?: string | null; email?: string | null }) => [
+        p.id,
+        profileDisplayName(p),
+      ]),
+    );
   }
 
   const enrichedComments = (comments || []).map((c: Record<string, unknown>) => ({
@@ -382,8 +479,17 @@ async function getTicketDetailAdmin(
     content_format: (c.content_format as string) || "plain",
   }));
 
+  const assigneeName = ticket.assignee_id ? (authorMap[ticket.assignee_id] ?? null) : null;
+
   return {
-    ticket: { ...ticket, requester_name: requesterName, requester_email: requesterEmail, requester_agent_id: requesterAgentId, requester_company: requesterCompany },
+    ticket: {
+      ...ticket,
+      requester_name: requesterName,
+      requester_email: requesterEmail,
+      requester_agent_id: requesterAgentId,
+      requester_company: requesterCompany,
+      assignee_name: assigneeName,
+    },
     comments: enrichedComments,
   };
 }
@@ -761,10 +867,10 @@ Deno.serve(async (req: Request) => {
       if (READ_STUB_ACTIONS.includes(action as string)) {
         const stubs: Record<string, unknown> = {
           list:          { tickets: [], total: 0, page: body.page || 1, per_page: body.per_page || 20 },
-          stats:         { total: 0, new: 0, open: 0, pending: 0, closed: 0 },
+          stats:         { total: 0, new: 0, open: 0, pending: 0, resolved: 0, closed: 0 },
           get_categories:{ categories: [] },
           list_all:      { tickets: [], total: 0, page: body.page || 1, per_page: body.per_page || 20 },
-          stats_all:     { total: 0, new: 0, open: 0, pending: 0, closed: 0 },
+          stats_all:     { total: 0, new: 0, open: 0, pending: 0, resolved: 0, closed: 0 },
         };
         return new Response(
           JSON.stringify({ success: true, ...(stubs[action as string] ?? {}), correlationId }),
@@ -826,7 +932,7 @@ Deno.serve(async (req: Request) => {
         }
         if (action === "stats") {
           return new Response(
-            JSON.stringify({ success: true, total: 0, new: 0, open: 0, pending: 0, closed: 0 }),
+            JSON.stringify({ success: true, total: 0, new: 0, open: 0, pending: 0, resolved: 0, closed: 0 }),
             { status: 200, headers },
           );
         }
@@ -848,6 +954,8 @@ Deno.serve(async (req: Request) => {
             search: body.search,
             page: body.page || 1,
             perPage: body.per_page || 20,
+            sort: body.sort,
+            category: body.category,
           });
         } catch (listErr) {
           log.error("listTickets failed", { correlationId, error: String(listErr) });

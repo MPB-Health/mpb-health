@@ -20,6 +20,8 @@ import {
 } from 'lucide-react';
 import { Button } from '@mpbhealth/ui';
 import { useAuditLogs } from '../hooks/useCompliance';
+import { useAdvisorPageDebugLog } from '../hooks/useAdvisorPageDebugLog';
+import { AdvisorPageLoader } from '../components/loading';
 
 const ACTION_ICONS: Record<string, typeof User> = {
   lead: User,
@@ -39,6 +41,7 @@ const ACTION_COLORS: Record<string, string> = {
 };
 
 export default function AuditLog() {
+  useAdvisorPageDebugLog('AuditLog');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedResourceType, setSelectedResourceType] = useState<string>('');
   const [selectedAction, setSelectedAction] = useState<string>('');
@@ -207,10 +210,12 @@ export default function AuditLog() {
       {/* Log List */}
       <div className="bg-surface-primary rounded-xl border border-th-border overflow-hidden">
         {loading && logs.length === 0 ? (
-          <div className="p-8 text-center text-th-text-secondary">
-            <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-2" />
-            <p>Loading audit logs...</p>
-          </div>
+          <AdvisorPageLoader
+            compact
+            showSkeleton={false}
+            message="Loading audit logs…"
+            subtitle="Fetching recent activity for your organization."
+          />
         ) : filteredLogs.length === 0 ? (
           <div className="p-8 text-center text-th-text-secondary">
             <Clock className="h-8 w-8 mx-auto mb-2 text-th-text-tertiary" />

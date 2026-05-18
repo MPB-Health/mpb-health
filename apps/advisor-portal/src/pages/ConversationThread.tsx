@@ -23,8 +23,11 @@ import { useAuth } from '../hooks/useAuth';
 import { useAdvisor } from '../contexts/AdvisorContext';
 import { templateService, type Message, type MessageTemplate } from '@mpbhealth/champion-core';
 import { AIMessageAssistant } from '../components/ai';
+import { useAdvisorPageDebugLog } from '../hooks/useAdvisorPageDebugLog';
+import { AdvisorPageLoader } from '../components/loading';
 
 export default function ConversationThread() {
+  useAdvisorPageDebugLog('ConversationThread');
   const { conversationId } = useParams<{ conversationId: string }>();
   const navigate = useNavigate();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -114,9 +117,11 @@ export default function ConversationThread() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full py-16">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
-      </div>
+      <AdvisorPageLoader
+        compact
+        message="Loading conversation…"
+        subtitle="Fetching messages and participant details."
+      />
     );
   }
 

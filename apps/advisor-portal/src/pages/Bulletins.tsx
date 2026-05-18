@@ -17,21 +17,49 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { contentService, type Bulletin } from '@mpbhealth/advisor-core';
 import { Button, GradientHeader } from '@mpbhealth/ui';
 import { useAdvisor } from '../contexts/AdvisorContext';
+import { useAdvisorQueryReady } from '../hooks/useAdvisorQueryReady';
 import { supabase } from '@mpbhealth/database';
 import SafeImage from '../components/SafeImage';
+import { useAdvisorPageDebugLog } from '../hooks/useAdvisorPageDebugLog';
 
 export default function Bulletins() {
+  useAdvisorPageDebugLog('Bulletins');
   const { profile, unreadBulletinCount } = useAdvisor();
+  const { advisorReady } = useAdvisorQueryReady();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
   const deferredSearchQuery = useDeferredValue(searchQuery);
 
-  const { data: bulletins = [], isLoading: loading } = useQuery({
-    queryKey: ['bulletins', profile?.id],
-    queryFn: () => contentService.getBulletins({}, profile?.id, { includeContent: false }),
-    enabled: true,
+  const advisorScopeKey = profile?.id ?? profile?.user_id ?? '';
+
+  const {
+    data: bulletins = [],
+    isPending: bulletinsPending,
+    isFetching: bulletinsFetching,
+  } = useQuery({
+    queryKey: ['bulletins', advisorScopeKey],
+    queryFn: () => contentService.getBulletins({}, advisorScopeKey, { includeContent: false }),
+    enabled: advisorReady && Boolean(advisorScopeKey),
+    staleTime: 60 * 1000,
+    refetchOnMount: 'always',
+    retry: 2,
   });
+
+  const loading =
+    !advisorReady ||
+    !advisorScopeKey ||
+    bulletinsPending ||
+    (bulletinsFetching && bulletins.length === 0);
+
+  // Second fetch after mount: first request can race Supabase session/RLS and cache an empty list.
+  useEffect(() => {
+    if (!advisorReady || !advisorScopeKey) return;
+    const t = window.setTimeout(() => {
+      void queryClient.invalidateQueries({ queryKey: ['bulletins', advisorScopeKey] });
+    }, 450);
+    return () => window.clearTimeout(t);
+  }, [advisorReady, advisorScopeKey, queryClient]);
 
   // Realtime: refresh when admin publishes, edits, or removes bulletins
   useEffect(() => {

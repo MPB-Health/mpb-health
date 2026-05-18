@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Save, Loader2, Upload, X, ImageIcon, Video } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { eventsService } from '@mpbhealth/advisor-core';
@@ -8,6 +9,8 @@ import { supabase } from '@mpbhealth/database';
 import { RichTextEditor } from '../components/cms/RichTextEditor';
 import { ImageUploader } from '../components/cms/ImageUploader';
 import { uploadEventImage, validateImageFile } from '../components/cms/imageUploadService';
+import { useAdvisorPageDebugLog } from '../hooks/useAdvisorPageDebugLog';
+import { useAdvisorQueryReady } from '../hooks/useAdvisorQueryReady';
 
 interface EventFormData {
   title: string;
@@ -56,59 +59,66 @@ function slugify(text: string): string {
 }
 
 export default function EventForm() {
+  useAdvisorPageDebugLog('EventForm');
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { advisorReady } = useAdvisorQueryReady();
   const isEditing = Boolean(id);
 
   const [form, setForm] = useState<EventFormData>(EMPTY_FORM);
-  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
 
-  // Load event for editing
+  const {
+    data: loadedEvent,
+    isPending: loadingEvent,
+    isError: loadEventError,
+  } = useQuery({
+    queryKey: ['advisorEvent', id],
+    queryFn: () => eventsService.getEvent(id!),
+    enabled: advisorReady && isEditing && Boolean(id),
+    staleTime: 60 * 1000,
+    retry: 1,
+  });
+
   useEffect(() => {
-    if (!id) return;
-    let cancelled = false;
-    setLoading(true);
+    if (!isEditing || loadingEvent || loadEventError) return;
+    if (!loadedEvent) {
+      toast.error('Event not found');
+      navigate('/events/manage');
+      return;
+    }
+    const event = loadedEvent;
+    setForm({
+      title: event.title,
+      slug: event.slug,
+      excerpt: event.excerpt || '',
+      content: event.content || '',
+      featured_image_url: event.featured_image_url || '',
+      event_date: event.event_date ? toLocalDatetime(event.event_date) : '',
+      event_end_date: event.event_end_date ? toLocalDatetime(event.event_end_date) : '',
+      location: event.location || '',
+      location_type: event.location_type,
+      registration_url: event.registration_url || '',
+      event_type: event.event_type,
+      organizer: event.organizer || 'MPB Health',
+      max_attendees: event.max_attendees ? String(event.max_attendees) : '',
+      is_published: event.is_published,
+      is_featured: event.is_featured,
+      tags: (event.tags || []).join(', '),
+      video_url: event.video_url || '',
+      gallery_images: event.gallery_images || [],
+    });
+    setSlugManuallyEdited(true);
+  }, [isEditing, loadingEvent, loadEventError, loadedEvent, navigate]);
 
-    const timeout = setTimeout(() => { if (!cancelled) setLoading(false); }, 15_000);
+  useEffect(() => {
+    if (!isEditing || !loadEventError) return;
+    toast.error('Failed to load event');
+    navigate('/events/manage');
+  }, [isEditing, loadEventError, navigate]);
 
-    eventsService.getEvent(id).then((event) => {
-      if (cancelled) return;
-      if (!event) {
-        toast.error('Event not found');
-        navigate('/events/manage');
-        return;
-      }
-      setForm({
-        title: event.title,
-        slug: event.slug,
-        excerpt: event.excerpt || '',
-        content: event.content || '',
-        featured_image_url: event.featured_image_url || '',
-        event_date: event.event_date ? toLocalDatetime(event.event_date) : '',
-        event_end_date: event.event_end_date ? toLocalDatetime(event.event_end_date) : '',
-        location: event.location || '',
-        location_type: event.location_type,
-        registration_url: event.registration_url || '',
-        event_type: event.event_type,
-        organizer: event.organizer || 'MPB Health',
-        max_attendees: event.max_attendees ? String(event.max_attendees) : '',
-        is_published: event.is_published,
-        is_featured: event.is_featured,
-        tags: (event.tags || []).join(', '),
-        video_url: event.video_url || '',
-        gallery_images: event.gallery_images || [],
-      });
-      setSlugManuallyEdited(true);
-    }).catch((err) => {
-      if (cancelled) return;
-      console.error(err);
-      toast.error('Failed to load event');
-    }).finally(() => { if (!cancelled) setLoading(false); });
-
-    return () => { cancelled = true; clearTimeout(timeout); };
-  }, [id, navigate]);
+  const loading = isEditing ? loadingEvent : false;
 
   const updateField = <K extends keyof EventFormData>(field: K, value: EventFormData[K]) => {
     setForm(prev => {

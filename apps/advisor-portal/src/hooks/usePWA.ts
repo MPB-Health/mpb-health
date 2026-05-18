@@ -3,6 +3,7 @@
 // ============================================================================
 
 import { useState, useEffect, useCallback } from 'react';
+import { advisorServiceWorkerEnabled } from '../registerServiceWorker';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -100,18 +101,10 @@ export function usePWA() {
     };
   }, []);
 
-  // Check for service worker updates and listen for reload signals
+  // Check for service worker updates (no RELOAD_PAGE listener — main.tsx debounces that)
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return;
-
-    const handleMessage = (event: MessageEvent) => {
-      if (event.data?.type === 'RELOAD_PAGE') {
-        console.log('[PWA] Stale assets detected, reloading...');
-        window.location.reload();
-      }
-    };
-
-    navigator.serviceWorker.addEventListener('message', handleMessage);
+    if (!advisorServiceWorkerEnabled()) return;
 
     navigator.serviceWorker.ready.then((registration) => {
       registration.addEventListener('updatefound', () => {
@@ -125,10 +118,6 @@ export function usePWA() {
         }
       });
     });
-
-    return () => {
-      navigator.serviceWorker.removeEventListener('message', handleMessage);
-    };
   }, []);
 
   // Install the PWA
@@ -181,7 +170,7 @@ export function usePWA() {
 
   // Update the app (reload with new service worker)
   const updateApp = useCallback(() => {
-    if ('serviceWorker' in navigator) {
+    if ('serviceWorker' in navigator && advisorServiceWorkerEnabled()) {
       navigator.serviceWorker.ready.then((registration) => {
         if (registration.waiting) {
           registration.waiting.postMessage({ type: 'SKIP_WAITING' });
@@ -195,7 +184,7 @@ export function usePWA() {
 
   // Clear all caches
   const clearCache = useCallback(async () => {
-    if ('serviceWorker' in navigator) {
+    if ('serviceWorker' in navigator && advisorServiceWorkerEnabled()) {
       const registration = await navigator.serviceWorker.ready;
       registration.active?.postMessage({ type: 'CLEAR_CACHE' });
     }

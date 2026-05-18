@@ -348,6 +348,8 @@ export default function Dashboard() {
 
   // Realtime subscriptions — invalidate query cache so stale-while-revalidate kicks in
   useEffect(() => {
+    if (!advisorReady) return;
+
     const annChannel = announcementService.subscribeToAnnouncements(() => {
       queryClient.invalidateQueries({ queryKey: ['dashboardAnnouncements'] });
     });
@@ -370,7 +372,7 @@ export default function Dashboard() {
       supabase.removeChannel(settingsChannel);
       supabase.removeChannel(quickLinksChannel);
     };
-  }, [queryClient]);
+  }, [advisorReady, queryClient]);
 
   const handleDismissAnnouncement = (id: string) => {
     announcementService.dismissAnnouncement(id);

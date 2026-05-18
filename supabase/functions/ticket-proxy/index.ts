@@ -17,6 +17,7 @@ type ProxyAction =
   | "add_comment"
   | "create"
   | "reply"
+  | "save_ticket_files"
   | "update_ticket"
   | "get_categories"
   | "create_for_advisor"
@@ -60,6 +61,14 @@ interface ProxyRequest {
   storage_paths?: string[];
   /** Ticket IDs for bulk delete_tickets action */
   ticket_ids?: string[];
+  /** For save_ticket_files — metadata for rows inserted into ITSTS `ticket_files` */
+  files?: Array<{
+    filename: string;
+    storage_path: string;
+    file_size: number;
+    mime_type?: string | null;
+    comment_id?: string | null;
+  }>;
 }
 
 function normalizeContentFormat(raw: unknown): "plain" | "html" {
@@ -230,6 +239,85 @@ async function listTickets(
   return { tickets, total: count || 0, page: opts.page, per_page: opts.perPage };
 }
 
+/** Files attached at ticket creation (`comment_id` IS NULL); matches ITSTS `ticket_files` pattern. */
+async function fetchTicketOpeningFiles(
+  itstsAdmin: ReturnType<typeof createClient>,
+  ticketId: string,
+): Promise<
+  Array<{
+    id: string;
+    filename: string;
+    storage_path: string;
+    file_size: number | null;
+    mime_type: string | null;
+    created_at: string;
+    comment_id: string | null;
+  }>
+> {
+  const { data, error } = await itstsAdmin
+    .from("ticket_files")
+    .select("id, filename, storage_path, file_size, mime_type, created_at, comment_id")
+    .eq("ticket_id", ticketId)
+    .is("comment_id", null)
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    log.error("ticket_files fetch failed (advisor opening)", {
+      ticketId,
+      message: error.message,
+    });
+    return [];
+  }
+  return (data || []) as Array<{
+    id: string;
+    filename: string;
+    storage_path: string;
+    file_size: number | null;
+    mime_type: string | null;
+    created_at: string;
+    comment_id: string | null;
+  }>;
+}
+
+/** All `ticket_files` rows for admin ticket view. */
+async function fetchTicketAllFiles(
+  itstsAdmin: ReturnType<typeof createClient>,
+  ticketId: string,
+): Promise<
+  Array<{
+    id: string;
+    filename: string;
+    storage_path: string;
+    file_size: number | null;
+    mime_type: string | null;
+    created_at: string;
+    comment_id: string | null;
+  }>
+> {
+  const { data, error } = await itstsAdmin
+    .from("ticket_files")
+    .select("id, filename, storage_path, file_size, mime_type, created_at, comment_id")
+    .eq("ticket_id", ticketId)
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    log.error("ticket_files fetch failed (admin)", {
+      ticketId,
+      message: error.message,
+    });
+    return [];
+  }
+  return (data || []) as Array<{
+    id: string;
+    filename: string;
+    storage_path: string;
+    file_size: number | null;
+    mime_type: string | null;
+    created_at: string;
+    comment_id: string | null;
+  }>;
+}
+
 async function getTicketDetail(
   itstsAdmin: ReturnType<typeof createClient>,
   userId: string,
@@ -295,9 +383,12 @@ async function getTicketDetail(
 
   const assigneeName = assigneeId ? (authorMap[assigneeId] ?? null) : null;
 
+  const ticket_files = await fetchTicketOpeningFiles(itstsAdmin, ticketId);
+
   return {
     ticket: { ...ticket, assignee_name: assigneeName },
     comments: enrichedComments,
+    ticket_files,
   };
 }
 
@@ -481,6 +572,8 @@ async function getTicketDetailAdmin(
 
   const assigneeName = ticket.assignee_id ? (authorMap[ticket.assignee_id] ?? null) : null;
 
+  const ticket_files = await fetchTicketAllFiles(itstsAdmin, ticketId);
+
   return {
     ticket: {
       ...ticket,
@@ -491,6 +584,7 @@ async function getTicketDetailAdmin(
       assignee_name: assigneeName,
     },
     comments: enrichedComments,
+    ticket_files,
   };
 }
 
@@ -705,6 +799,59 @@ async function replyToTicket(
     .from("tickets")
     .update({ updated_at: new Date().toISOString() })
     .eq("id", ticketId);
+
+  return { ok: true };
+}
+
+const MAX_SAVE_TICKET_FILES = 20;
+const MAX_REGISTER_FILENAME_LEN = 512;
+const MAX_REGISTER_STORAGE_PATH_LEN = 1024;
+
+/** Register advisor-uploaded storage paths into ITSTS `ticket_files` (table does not exist on primary MPB DB). */
+async function saveTicketFilesForRequester(
+  itstsAdmin: ReturnType<typeof createClient>,
+  advisorItstsId: string,
+  ticketId: string,
+  files: Array<{ filename: string; storage_path: string; file_size: number; mime_type?: string | null; comment_id?: string | null }>,
+) {
+  const { data: ticket, error: ticketErr } = await itstsAdmin
+    .from("tickets")
+    .select("id")
+    .eq("id", ticketId)
+    .eq("requester_id", advisorItstsId)
+    .maybeSingle();
+
+  if (ticketErr || !ticket) throw new Error("Ticket not found or access denied");
+
+  if (!files?.length) throw new Error("No files to register");
+  if (files.length > MAX_SAVE_TICKET_FILES) {
+    throw new Error(`Too many files (max ${MAX_SAVE_TICKET_FILES})`);
+  }
+
+  const rows = files.map((f) => {
+    const filename = (f.filename || "").trim().slice(0, MAX_REGISTER_FILENAME_LEN);
+    const storage_path = (f.storage_path || "").trim().slice(0, MAX_REGISTER_STORAGE_PATH_LEN);
+    if (!filename || !storage_path) throw new Error("Invalid file metadata");
+    const file_size = typeof f.file_size === "number" && Number.isFinite(f.file_size) && f.file_size >= 0
+      ? Math.min(Math.floor(f.file_size), 200 * 1024 * 1024)
+      : 0;
+    const mime_type = f.mime_type != null ? String(f.mime_type).slice(0, 200) : null;
+    const row: Record<string, unknown> = {
+      ticket_id: ticketId,
+      filename,
+      storage_path,
+      file_size,
+      mime_type,
+      uploaded_by: advisorItstsId,
+    };
+    if (f.comment_id && UUID_RE.test(f.comment_id)) {
+      row.comment_id = f.comment_id;
+    }
+    return row;
+  });
+
+  const { error } = await itstsAdmin.from("ticket_files").insert(rows);
+  if (error) throw new Error(error.message);
 
   return { ok: true };
 }
@@ -1123,6 +1270,31 @@ Deno.serve(async (req: Request) => {
         result = await replyToTicket(itstsAdmin, itstsUserId!, body.ticket_id, raw, fmt);
         // Staff notifications for advisor replies are handled by ITSTS
         // database triggers on ticket_comments — not by this project.
+        break;
+      }
+      case "save_ticket_files": {
+        if (!body.ticket_id || !UUID_RE.test(body.ticket_id)) {
+          return new Response(
+            JSON.stringify({ success: false, error: "Valid ticket_id required", correlationId }),
+            { status: 400, headers },
+          );
+        }
+        const fileRows = body.files;
+        if (!Array.isArray(fileRows) || fileRows.length === 0) {
+          return new Response(
+            JSON.stringify({ success: false, error: "files array required", correlationId }),
+            { status: 400, headers },
+          );
+        }
+        try {
+          result = await saveTicketFilesForRequester(itstsAdmin, itstsUserId!, body.ticket_id, fileRows);
+        } catch (saveErr) {
+          const msg = saveErr instanceof Error ? saveErr.message : String(saveErr);
+          return new Response(
+            JSON.stringify({ success: false, error: msg, correlationId }),
+            { status: 400, headers },
+          );
+        }
         break;
       }
       case "get_categories":

@@ -20,9 +20,10 @@ export function nudgeAdvisorQueries(queryClient: QueryClient, reason?: string) {
   } catch {
     /* ignore */
   }
+  // Refetch active observers only — avoids marking entire cache stale on route/tab wake.
   try {
-    void queryClient.invalidateQueries({ refetchType: 'active' });
+    void queryClient.refetchQueries({ type: 'active' });
   } catch (e) {
-    console.warn('[advisor-portal] invalidateQueries(active) failed', reason ?? '', e);
+    console.warn('[advisor-portal] refetchQueries(active) failed', reason ?? '', e);
   }
 }

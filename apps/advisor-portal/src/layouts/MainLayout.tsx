@@ -273,7 +273,8 @@ export default function MainLayout() {
       const items = await navigationService.getNavMenuItems();
       return items && items.length > 0 ? mapMenuItemsToNavItems(items) : [];
     },
-    staleTime: 5 * 60 * 1000,       // 5 min — nav rarely changes
+    enabled: advisorReady,
+    staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
 

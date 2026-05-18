@@ -31,6 +31,8 @@ const routeModules = {
   NewTicket: () => import('./pages/NewTicket'),
   ChatPage: () => import('./pages/Chat'),
   AdminTickets: () => import('./pages/AdminTickets'),
+  EventsManager: () => import('./pages/EventsManager'),
+  EventForm: () => import('./pages/EventForm'),
   AddAdvisor: () => import('./pages/AddAdvisor'),
   Login: () => import('./pages/Login'),
   ForgotPassword: () => import('./pages/ForgotPassword'),
@@ -75,6 +77,7 @@ const pathToModule: Record<string, keyof typeof routeModules> = {
   '/profile': 'Profile',
   '/settings': 'SettingsHub',
   '/audit-log': 'AuditLog',
+  '/events/manage': 'EventsManager',
 };
 
 /** Prefetch a route chunk by path (for use in nav link onMouseEnter/onFocus). */
@@ -106,6 +109,8 @@ const TicketDetailPage = React.lazy(routeModules.TicketDetailPage);
 const NewTicket = React.lazy(routeModules.NewTicket);
 const ChatPage = React.lazy(routeModules.ChatPage);
 const AdminTickets = React.lazy(routeModules.AdminTickets);
+const EventsManager = React.lazy(routeModules.EventsManager);
+const EventForm = React.lazy(routeModules.EventForm);
 const AddAdvisor = React.lazy(routeModules.AddAdvisor);
 const Login = React.lazy(routeModules.Login);
 const ForgotPassword = React.lazy(routeModules.ForgotPassword);
@@ -331,6 +336,12 @@ export default function App() {
               <Route path="inbox" element={<Suspense fallback={routeFallback('Loading page…')}><Inbox /></Suspense>} />
               <Route path="inbox/:conversationId" element={<Suspense fallback={routeFallback('Loading page…')}><ConversationThread /></Suspense>} />
               <Route path="audit-log" element={<Suspense fallback={routeFallback('Loading page…')}><AuditLog /></Suspense>} />
+              <Route path="events/manage/new" element={<Suspense fallback={routeFallback('Loading page…')}><EventForm /></Suspense>} />
+              <Route
+                path="events/manage/:eventId/edit"
+                element={<Suspense fallback={routeFallback('Loading page…')}><EventForm /></Suspense>}
+              />
+              <Route path="events/manage" element={<Suspense fallback={routeFallback('Loading page…')}><EventsManager /></Suspense>} />
               <Route path="profile" element={<Suspense fallback={routeFallback('Loading page…')}><Profile /></Suspense>} />
               {/* Settings Routes */}
               <Route path="settings" element={<Suspense fallback={routeFallback('Loading page…')}><SettingsHub /></Suspense>} />

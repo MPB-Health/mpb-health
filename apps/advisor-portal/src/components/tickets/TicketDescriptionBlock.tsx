@@ -8,15 +8,13 @@ export function TicketDescriptionBlock({ description }: { description: string })
 
   if (isHtml) {
     return (
-      <div className="text-th-text-primary [&_.prose]:max-w-none [&_.prose]:leading-7 [overflow-wrap:anywhere]">
-        <TicketCommentContent content={description} contentFormat="html" variant="advisor" />
+      <div className="[overflow-wrap:anywhere]">
+        <TicketCommentContent content={description} contentFormat="html" variant="description" />
       </div>
     );
   }
 
   return (
-    <p className="whitespace-pre-wrap text-base sm:text-lg font-medium leading-7 text-th-text-primary [overflow-wrap:anywhere]">
-      {description}
-    </p>
+    <TicketCommentContent content={description} contentFormat="plain" variant="description" />
   );
 }

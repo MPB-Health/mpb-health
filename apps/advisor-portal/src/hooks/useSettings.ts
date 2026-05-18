@@ -2,25 +2,23 @@
 // Settings Hooks — React hooks for settings management
 // ============================================================================
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   settingsService,
   integrationService,
-  OrganizationSettings,
-  UserPreferences,
-  NotificationSettings,
-  IntegrationConfig,
-  ApiKey,
-  OrgMember,
-  OrganizationInvitation,
-  UpdateOrgSettingsInput,
-  UpdateUserPreferencesInput,
-  UpdateNotificationSettingsInput,
-  CreateApiKeyInput,
-  CreateInvitationInput,
-  CreateIntegrationInput,
-  UpdateIntegrationInput,
+  type OrganizationSettings,
+  type UserPreferences,
+  type NotificationSettings,
+  type IntegrationConfig,
+  type ApiKey,
+  type UpdateOrgSettingsInput,
+  type UpdateUserPreferencesInput,
+  type UpdateNotificationSettingsInput,
+  type CreateApiKeyInput,
+  type CreateInvitationInput,
+  type CreateIntegrationInput,
+  type UpdateIntegrationInput,
   AVAILABLE_INTEGRATIONS,
 } from '@mpbhealth/champion-core';
 import { useAdvisor } from '../contexts/AdvisorContext';
@@ -31,41 +29,23 @@ import { useAdvisorQueryReady } from './useAdvisorQueryReady';
 // =============================================================================
 
 export function useOrgSettings() {
-  const { profile, loading: authLoading, profileLoading } = useAdvisor();
-  const ctxLoading = authLoading || profileLoading;
+  const { profile } = useAdvisor();
+  const { advisorReady } = useAdvisorQueryReady();
   const orgId = profile?.org_id;
-
-  const [settings, setSettings] = useState<OrganizationSettings | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
   const [saving, setSaving] = useState(false);
 
-  const fetchSettings = useCallback(async () => {
-    if (ctxLoading) return;
+  const query = useQuery({
+    queryKey: ['advisorOrgSettings', orgId] as const,
+    queryFn: () => settingsService.getOrgSettings(orgId!),
+    enabled: Boolean(advisorReady && orgId),
+    placeholderData: (prev) => prev,
+  });
 
-    if (!orgId) {
-      setSettings(null);
-      setError(null);
-      setLoading(false);
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const data = await settingsService.getOrgSettings(orgId);
-      setSettings(data);
-      setError(null);
-    } catch (err) {
-      console.error('[useOrgSettings] Failed to fetch:', err);
-      setError('Failed to load organization settings');
-    } finally {
-      setLoading(false);
-    }
-  }, [orgId, ctxLoading]);
-
-  useEffect(() => {
-    fetchSettings();
-  }, [fetchSettings]);
+  const refresh = useCallback(() => {
+    if (!orgId) return Promise.resolve();
+    return queryClient.invalidateQueries({ queryKey: ['advisorOrgSettings', orgId] });
+  }, [queryClient, orgId]);
 
   const updateSettings = useCallback(
     async (input: UpdateOrgSettingsInput) => {
@@ -74,7 +54,7 @@ export function useOrgSettings() {
       try {
         setSaving(true);
         const updated = await settingsService.updateOrgSettings(orgId, input);
-        setSettings(updated);
+        queryClient.setQueryData<OrganizationSettings>(['advisorOrgSettings', orgId], updated);
         return updated;
       } catch (err) {
         console.error('[useOrgSettings] Failed to update:', err);
@@ -83,16 +63,18 @@ export function useOrgSettings() {
         setSaving(false);
       }
     },
-    [orgId]
+    [orgId, queryClient],
   );
 
+  const errorMsg = query.isError ? 'Failed to load organization settings' : null;
+
   return {
-    settings,
-    loading,
-    error,
+    settings: query.data ?? null,
+    loading: query.isPending,
+    error: errorMsg,
     saving,
     updateSettings,
-    refresh: fetchSettings,
+    refresh,
   };
 }
 
@@ -101,55 +83,39 @@ export function useOrgSettings() {
 // =============================================================================
 
 export function useUserPreferences() {
-  const { profile, loading: authLoading, profileLoading } = useAdvisor();
-  const ctxLoading = authLoading || profileLoading;
+  const { profile } = useAdvisor();
+  const { advisorReady } = useAdvisorQueryReady();
   const userId = profile?.user_id;
   const orgId = profile?.org_id;
-
-  const [preferences, setPreferences] = useState<UserPreferences | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const effectiveOrgId = orgId ?? '';
+  const queryClient = useQueryClient();
   const [saving, setSaving] = useState(false);
 
-  const fetchPreferences = useCallback(async () => {
-    if (ctxLoading) return;
+  const query = useQuery({
+    queryKey: ['advisorUserPreferences', userId, effectiveOrgId] as const,
+    queryFn: () => settingsService.getUserPreferences(userId!, effectiveOrgId),
+    enabled: Boolean(advisorReady && userId),
+    placeholderData: (prev) => prev,
+  });
 
-    if (!userId) {
-      setPreferences(null);
-      setError(null);
-      setLoading(false);
-      return;
-    }
-
-    const effectiveOrgId = orgId || '';
-
-    try {
-      setLoading(true);
-      const data = await settingsService.getUserPreferences(userId, effectiveOrgId);
-      setPreferences(data);
-      setError(null);
-    } catch (err) {
-      console.error('[useUserPreferences] Failed to fetch:', err);
-      setError('Failed to load user preferences');
-    } finally {
-      setLoading(false);
-    }
-  }, [userId, orgId, ctxLoading]);
-
-  useEffect(() => {
-    fetchPreferences();
-  }, [fetchPreferences]);
+  const refresh = useCallback(() => {
+    if (!userId) return Promise.resolve();
+    return queryClient.invalidateQueries({
+      queryKey: ['advisorUserPreferences', userId],
+    });
+  }, [queryClient, userId]);
 
   const updatePreferences = useCallback(
     async (input: UpdateUserPreferencesInput) => {
       if (!userId) return;
 
-      const effectiveOrgId = orgId || '';
-
       try {
         setSaving(true);
         const updated = await settingsService.updateUserPreferences(userId, effectiveOrgId, input);
-        setPreferences(updated);
+        queryClient.setQueryData<UserPreferences>(
+          ['advisorUserPreferences', userId, effectiveOrgId],
+          updated,
+        );
         return updated;
       } catch (err) {
         console.error('[useUserPreferences] Failed to update:', err);
@@ -158,16 +124,18 @@ export function useUserPreferences() {
         setSaving(false);
       }
     },
-    [userId, orgId]
+    [userId, effectiveOrgId, queryClient],
   );
 
+  const errorMsg = query.isError ? 'Failed to load user preferences' : null;
+
   return {
-    preferences,
-    loading,
-    error,
+    preferences: query.data ?? null,
+    loading: query.isPending,
+    error: errorMsg,
     saving,
     updatePreferences,
-    refresh: fetchPreferences,
+    refresh,
   };
 }
 
@@ -176,56 +144,43 @@ export function useUserPreferences() {
 // =============================================================================
 
 export function useNotificationSettings() {
-  const { profile, loading: authLoading, profileLoading } = useAdvisor();
-  const ctxLoading = authLoading || profileLoading;
+  const { profile } = useAdvisor();
+  const { advisorReady } = useAdvisorQueryReady();
   const userId = profile?.user_id;
   const orgId = profile?.org_id;
-
-  const [settings, setSettings] = useState<NotificationSettings | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const effectiveOrgId = orgId ?? '';
+  const queryClient = useQueryClient();
   const [saving, setSaving] = useState(false);
 
-  const fetchSettings = useCallback(async () => {
-    if (ctxLoading) return;
+  const query = useQuery({
+    queryKey: ['advisorNotificationSettings', userId, effectiveOrgId] as const,
+    queryFn: () => settingsService.getNotificationSettings(userId!, effectiveOrgId),
+    enabled: Boolean(advisorReady && userId),
+    placeholderData: (prev) => prev,
+  });
 
-    if (!userId) {
-      setSettings(null);
-      setError(null);
-      setLoading(false);
-      return;
-    }
-
-    // If org_id is missing, still fetch with a fallback empty string.
-    // The RPC will auto-create a row for the user regardless.
-    const effectiveOrgId = orgId || '';
-
-    try {
-      setLoading(true);
-      const data = await settingsService.getNotificationSettings(userId, effectiveOrgId);
-      setSettings(data);
-      setError(null);
-    } catch (err) {
-      console.error('[useNotificationSettings] Failed to fetch:', err);
-      setError('Failed to load notification settings');
-    } finally {
-      setLoading(false);
-    }
-  }, [userId, orgId, ctxLoading]);
-
-  useEffect(() => {
-    fetchSettings();
-  }, [fetchSettings]);
+  const refresh = useCallback(() => {
+    if (!userId) return Promise.resolve();
+    return queryClient.invalidateQueries({
+      queryKey: ['advisorNotificationSettings', userId],
+    });
+  }, [queryClient, userId]);
 
   const updateSettings = useCallback(
     async (input: UpdateNotificationSettingsInput) => {
       if (!userId) throw new Error('User not loaded');
-      const effectiveOrgId = orgId || '';
 
       try {
         setSaving(true);
-        const updated = await settingsService.updateNotificationSettings(userId, effectiveOrgId, input);
-        setSettings(updated);
+        const updated = await settingsService.updateNotificationSettings(
+          userId,
+          effectiveOrgId,
+          input,
+        );
+        queryClient.setQueryData<NotificationSettings>(
+          ['advisorNotificationSettings', userId, effectiveOrgId],
+          updated,
+        );
         return updated;
       } catch (err) {
         console.error('[useNotificationSettings] Failed to update:', err);
@@ -234,16 +189,18 @@ export function useNotificationSettings() {
         setSaving(false);
       }
     },
-    [userId, orgId]
+    [userId, effectiveOrgId, queryClient],
   );
 
+  const errorMsg = query.isError ? 'Failed to load notification settings' : null;
+
   return {
-    settings,
-    loading,
-    error,
+    settings: query.data ?? null,
+    loading: query.isPending,
+    error: errorMsg,
     saving,
     updateSettings,
-    refresh: fetchSettings,
+    refresh,
   };
 }
 
@@ -259,8 +216,8 @@ export function useTeamManagement() {
 
   const queryClient = useQueryClient();
 
-  const { data: teamData, isLoading: loading, error: queryError } = useQuery({
-    queryKey: ['advisorTeam', orgId],
+  const { data: teamData, isPending: loading, error: queryError } = useQuery({
+    queryKey: ['advisorTeam', orgId] as const,
     queryFn: async () => {
       const [membersData, invitationsData] = await Promise.all([
         settingsService.getOrgMembers(orgId!),
@@ -268,18 +225,18 @@ export function useTeamManagement() {
       ]);
       return { members: membersData, invitations: invitationsData };
     },
-    enabled: advisorReady && !!orgId,
+    enabled: Boolean(advisorReady && orgId),
     staleTime: 60 * 1000,
+    placeholderData: (prev) => prev,
   });
 
   const members = teamData?.members ?? [];
   const invitations = teamData?.invitations ?? [];
   const error = queryError ? 'Failed to load team data' : null;
 
-  const invalidateTeam = useCallback(
-    () => queryClient.invalidateQueries({ queryKey: ['advisorTeam', orgId] }),
-    [queryClient, orgId]
-  );
+  const invalidateTeam = useCallback(() => {
+    return queryClient.invalidateQueries({ queryKey: ['advisorTeam', orgId] });
+  }, [queryClient, orgId]);
 
   const updateMemberRole = useCallback(
     async (memberId: string, role: string) => {
@@ -287,7 +244,7 @@ export function useTeamManagement() {
       await settingsService.updateMemberRole(orgId, memberId, role);
       await invalidateTeam();
     },
-    [orgId, invalidateTeam]
+    [orgId, invalidateTeam],
   );
 
   const removeMember = useCallback(
@@ -296,7 +253,7 @@ export function useTeamManagement() {
       await settingsService.removeMember(orgId, memberId);
       await invalidateTeam();
     },
-    [orgId, invalidateTeam]
+    [orgId, invalidateTeam],
   );
 
   const inviteMember = useCallback(
@@ -306,7 +263,7 @@ export function useTeamManagement() {
       await invalidateTeam();
       return invitation;
     },
-    [orgId, userId, invalidateTeam]
+    [orgId, userId, invalidateTeam],
   );
 
   const revokeInvitation = useCallback(
@@ -314,7 +271,7 @@ export function useTeamManagement() {
       await settingsService.revokeInvitation(invitationId);
       await invalidateTeam();
     },
-    [invalidateTeam]
+    [invalidateTeam],
   );
 
   const resendInvitation = useCallback(
@@ -323,7 +280,7 @@ export function useTeamManagement() {
       await settingsService.resendInvitation(invitationId, userId);
       await invalidateTeam();
     },
-    [userId, invalidateTeam]
+    [userId, invalidateTeam],
   );
 
   return {
@@ -345,76 +302,63 @@ export function useTeamManagement() {
 // =============================================================================
 
 export function useApiKeys() {
-  const { profile, loading: authLoading, profileLoading } = useAdvisor();
-  const ctxLoading = authLoading || profileLoading;
+  const { profile } = useAdvisor();
+  const { advisorReady } = useAdvisorQueryReady();
   const orgId = profile?.org_id;
   const userId = profile?.user_id;
 
-  const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  const fetchApiKeys = useCallback(async () => {
-    if (ctxLoading) return;
+  const query = useQuery({
+    queryKey: ['advisorApiKeys', orgId] as const,
+    queryFn: () => settingsService.getApiKeys(orgId!),
+    enabled: Boolean(advisorReady && orgId),
+    placeholderData: (prev) => prev,
+  });
 
-    if (!orgId) {
-      setApiKeys([]);
-      setError(null);
-      setLoading(false);
-      return;
-    }
+  const invalidate = useCallback(() => {
+    if (!orgId) return Promise.resolve();
+    return queryClient.invalidateQueries({ queryKey: ['advisorApiKeys', orgId] });
+  }, [queryClient, orgId]);
 
-    try {
-      setLoading(true);
-      const data = await settingsService.getApiKeys(orgId);
-      setApiKeys(data);
-      setError(null);
-    } catch (err) {
-      console.error('[useApiKeys] Failed to fetch:', err);
-      setError('Failed to load API keys');
-    } finally {
-      setLoading(false);
-    }
-  }, [orgId, ctxLoading]);
-
-  useEffect(() => {
-    fetchApiKeys();
-  }, [fetchApiKeys]);
+  const refresh = invalidate;
 
   const createApiKey = useCallback(
     async (input: CreateApiKeyInput) => {
       if (!orgId || !userId) return null;
       const result = await settingsService.createApiKey(orgId, userId, input);
-      await fetchApiKeys();
-      return result; // Contains { key, secret }
+      await invalidate();
+      return result;
     },
-    [orgId, userId, fetchApiKeys]
+    [orgId, userId, invalidate],
   );
 
   const revokeApiKey = useCallback(
     async (keyId: string) => {
       await settingsService.revokeApiKey(keyId);
-      await fetchApiKeys();
+      await invalidate();
     },
-    [fetchApiKeys]
+    [invalidate],
   );
 
   const deleteApiKey = useCallback(
     async (keyId: string) => {
       await settingsService.deleteApiKey(keyId);
-      await fetchApiKeys();
+      await invalidate();
     },
-    [fetchApiKeys]
+    [invalidate],
   );
 
+  const errorMsg = query.isError ? 'Failed to load API keys' : null;
+
   return {
-    apiKeys,
-    loading,
-    error,
+    apiKeys: query.data ?? [],
+    loading: query.isPending,
+    error: errorMsg,
     createApiKey,
     revokeApiKey,
     deleteApiKey,
-    refresh: fetchApiKeys,
+    refresh,
   };
 }
 
@@ -423,93 +367,82 @@ export function useApiKeys() {
 // =============================================================================
 
 export function useIntegrations() {
-  const { profile, loading: authLoading, profileLoading } = useAdvisor();
-  const ctxLoading = authLoading || profileLoading;
+  const { profile } = useAdvisor();
+  const { advisorReady } = useAdvisorQueryReady();
   const orgId = profile?.org_id;
   const userId = profile?.user_id;
 
-  const [integrations, setIntegrations] = useState<IntegrationConfig[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
-  const fetchIntegrations = useCallback(async () => {
-    if (ctxLoading) return;
+  const query = useQuery({
+    queryKey: ['advisorIntegrations', orgId] as const,
+    queryFn: () => integrationService.getIntegrations(orgId!),
+    enabled: Boolean(advisorReady && orgId),
+    placeholderData: (prev) => prev,
+  });
 
-    if (!orgId) {
-      setIntegrations([]);
-      setError(null);
-      setLoading(false);
-      return;
-    }
+  const invalidate = useCallback(() => {
+    if (!orgId) return Promise.resolve();
+    return queryClient.invalidateQueries({ queryKey: ['advisorIntegrations', orgId] });
+  }, [queryClient, orgId]);
 
-    try {
-      setLoading(true);
-      const data = await integrationService.getIntegrations(orgId);
-      setIntegrations(data);
-      setError(null);
-    } catch (err) {
-      console.error('[useIntegrations] Failed to fetch:', err);
-      setError('Failed to load integrations');
-    } finally {
-      setLoading(false);
-    }
-  }, [orgId, ctxLoading]);
-
-  useEffect(() => {
-    fetchIntegrations();
-  }, [fetchIntegrations]);
+  const refresh = invalidate;
 
   const createIntegration = useCallback(
     async (input: CreateIntegrationInput) => {
       if (!orgId || !userId) return null;
       const integration = await integrationService.createIntegration(orgId, userId, input);
-      await fetchIntegrations();
+      await invalidate();
       return integration;
     },
-    [orgId, userId, fetchIntegrations]
+    [orgId, userId, invalidate],
   );
 
   const updateIntegration = useCallback(
     async (integrationId: string, input: UpdateIntegrationInput) => {
       const updated = await integrationService.updateIntegration(integrationId, input);
-      await fetchIntegrations();
+      await invalidate();
       return updated;
     },
-    [fetchIntegrations]
+    [invalidate],
   );
 
   const deleteIntegration = useCallback(
     async (integrationId: string) => {
       await integrationService.deleteIntegration(integrationId);
-      await fetchIntegrations();
+      await invalidate();
     },
-    [fetchIntegrations]
+    [invalidate],
   );
 
   const toggleIntegration = useCallback(
     async (integrationId: string, enabled: boolean) => {
       await integrationService.toggleIntegration(integrationId, enabled);
-      await fetchIntegrations();
+      await invalidate();
     },
-    [fetchIntegrations]
+    [invalidate],
   );
 
-  // Get catalog of available integrations
   const availableIntegrations = AVAILABLE_INTEGRATIONS;
 
-  // Check which integrations are configured
-  const configuredProviders = new Set(integrations.map((i) => i.provider));
+  const integrations = query.data ?? [];
+  const configuredProviders = useMemo(
+    () => new Set(integrations.map((i) => i.provider)),
+    [integrations],
+  );
+
+  const errorMsg = query.isError ? 'Failed to load integrations' : null;
 
   return {
     integrations,
     availableIntegrations,
     configuredProviders,
-    loading,
-    error,
+    loading: query.isPending,
+    error: errorMsg,
     createIntegration,
     updateIntegration,
     deleteIntegration,
     toggleIntegration,
-    refresh: fetchIntegrations,
+    refresh,
   };
 }

@@ -1,8 +1,11 @@
 import { useCallback } from 'react';
 import { useAdvisor } from '../contexts/AdvisorContext';
 
-/** Prevent an auth-recovery path from stalling the UI if refresh/profile never settles. */
-const AUTH_RECOVERY_MS = 15_000;
+/**
+ * Must exceed worst-case `handleAuthError`: refreshSessionOnce (20s) + loadProfile body (25s)
+ * plus a little slack. Shorter values abort recovery mid-flight and surface confusing ticket errors.
+ */
+const AUTH_RECOVERY_MS = 55_000;
 
 /**
  * Hook that provides authentication-aware ticket service operations

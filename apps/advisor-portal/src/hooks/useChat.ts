@@ -1,7 +1,9 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { chatService } from '@mpbhealth/advisor-core';
 import type { ChatConversation, ChatMessage } from '@mpbhealth/advisor-core';
 import { useAdvisor } from '../contexts/AdvisorContext';
+import { useAdvisorQueryReady } from './useAdvisorQueryReady';
 
 // ============================================================================
 // Helpers
@@ -46,89 +48,52 @@ function normalizeConversationOrder(list: ChatConversation[]) {
 
 export function useChat() {
   const { profile } = useAdvisor();
-  const [conversations, setConversations] = useState<ChatConversation[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { advisorReady } = useAdvisorQueryReady();
+  const queryClient = useQueryClient();
+  const advisorId = profile?.id ?? null;
 
-  // Track the active AbortController so we can cancel on re-fetch or unmount
-  const abortRef = useRef<AbortController | null>(null);
-  // Guard against state updates after unmount
-  const mountedRef = useRef(true);
+  const query = useQuery({
+    queryKey: ['chatConversations', advisorId] as const,
+    queryFn: async ({ signal }) => {
+      const data = await chatService.listConversations(signal);
+      return normalizeConversationOrder(data);
+    },
+    enabled: Boolean(advisorReady && advisorId),
+  });
 
-  const fetchConversations = useCallback(async () => {
-    if (!profile?.id) {
-      setLoading(false);
-      return;
-    }
-
-    // Cancel any in-flight request before starting a new one (deduplication)
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
-
-    try {
-      setLoading(true);
-      const data = await chatService.listConversations(controller.signal);
-      if (!mountedRef.current || controller.signal.aborted) return;
-      setConversations(normalizeConversationOrder(data));
-      setError(null);
-    } catch (err) {
-      if (isAbortError(err) || !mountedRef.current) return;
-      console.error('[useChat] Failed to load conversations:', err);
-      setError('Failed to load conversations');
-    } finally {
-      if (mountedRef.current && !controller.signal.aborted) {
-        setLoading(false);
-      }
-    }
-  }, [profile?.id]);
-
-  // Initial fetch + cleanup
-  useEffect(() => {
-    mountedRef.current = true;
-    fetchConversations();
-
-    return () => {
-      // Cancel in-flight request when deps change or component unmounts
-      abortRef.current?.abort();
-    };
-  }, [fetchConversations]);
-
-  // Timed recovery — never leave sidebar spinning indefinitely (hung auth, SW, or edge cold-start)
-  useEffect(() => {
-    if (!loading) return;
-    const t = window.setTimeout(() => {
-      if (!mountedRef.current) return;
-      setLoading(false);
-      setError('Still loading — check your connection, then use refresh or reload the page.');
-    }, 45_000);
-    return () => clearTimeout(t);
-  }, [loading]);
+  const refresh = useCallback(() => {
+    if (!advisorId) return;
+    void queryClient.invalidateQueries({ queryKey: ['chatConversations', advisorId] });
+  }, [advisorId, queryClient]);
 
   useEffect(() => {
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
+    if (!advisorReady || !advisorId) return;
 
-  // Realtime: conversation updates (last_message_at, preview)
-  useEffect(() => {
-    if (!profile?.id) return;
-
-    const channel = chatService.subscribeToConversationUpdates((updated) => {
-      if (!mountedRef.current) return;
-      setConversations((prev) =>
-        normalizeConversationOrder(
+    chatService.subscribeToConversationUpdates((updated) => {
+      queryClient.setQueryData<ChatConversation[]>(['chatConversations', advisorId], (prev) => {
+        if (!prev?.length) {
+          void queryClient.invalidateQueries({ queryKey: ['chatConversations', advisorId] });
+          return prev;
+        }
+        return normalizeConversationOrder(
           prev.map((c) => (c.id === updated.id ? { ...c, ...updated } : c)),
-        ),
-      );
+        );
+      });
     });
 
     return () => {
       chatService.unsubscribeFromConversationUpdates();
     };
-  }, [profile?.id]);
+  }, [advisorReady, advisorId, queryClient]);
 
+  /** Never leave sidebar spinning indefinitely (hung edge / SW): stop pending state visually */
+  useEffect(() => {
+    if (!query.isPending) return;
+    const t = window.setTimeout(refresh, 45_000);
+    return () => clearTimeout(t);
+  }, [query.isPending, refresh]);
+
+  const conversations = query.data ?? [];
   const totalUnread = conversations.reduce((sum, c) => sum + (c.unread_count || 0), 0);
 
   const channels = useMemo(
@@ -144,10 +109,14 @@ export function useChat() {
     conversations,
     channels,
     directMessages,
-    loading,
-    error,
+    loading: query.isPending,
+    error:
+      query.isError &&
+      !(query.error instanceof Error && isAbortError(query.error))
+        ? 'Failed to load conversations'
+        : null,
     totalUnread,
-    refresh: fetchConversations,
+    refresh,
   };
 }
 
@@ -157,113 +126,79 @@ export function useChat() {
 
 export function useChatMessages(conversationId: string | null) {
   const { profile } = useAdvisor();
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [hasMore, setHasMore] = useState(false);
+  const { advisorReady } = useAdvisorQueryReady();
+  const queryClient = useQueryClient();
+  const advisorId = profile?.id ?? null;
+
   const [sending, setSending] = useState(false);
-  const oldestMessageRef = useRef<string | null>(null);
 
-  // Cancellation & unmount safety
-  const abortRef = useRef<AbortController | null>(null);
-  const mountedRef = useRef(true);
-
-  const fetchMessages = useCallback(async () => {
-    if (!conversationId || !profile?.id) {
-      setLoading(false);
-      return;
-    }
-
-    // Cancel previous in-flight fetch
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
-
-    try {
-      setLoading(true);
-      const result = await chatService.listMessages(conversationId, {
-        signal: controller.signal,
+  const query = useQuery({
+    queryKey: ['chatMessages', conversationId] as const,
+    queryFn: async ({ signal }) => {
+      const result = await chatService.listMessages(conversationId!, {
+        signal,
       });
-      if (!mountedRef.current || controller.signal.aborted) return;
-      setMessages(result.messages);
-      setHasMore(result.has_more);
-      if (result.messages.length > 0) {
-        oldestMessageRef.current = result.messages[0].created_at;
-      }
-    } catch (err) {
-      if (isAbortError(err) || !mountedRef.current) return;
-      console.error('[useChatMessages] Failed to load messages:', err);
-    } finally {
-      if (mountedRef.current && !controller.signal.aborted) {
-        setLoading(false);
-      }
-    }
-  }, [conversationId, profile?.id]);
-
-  // Initial fetch — reset state and cancel prior request
-  useEffect(() => {
-    setMessages([]);
-    oldestMessageRef.current = null;
-    fetchMessages();
-
-    return () => {
-      abortRef.current?.abort();
-    };
-  }, [fetchMessages]);
+      return result;
+    },
+    enabled: Boolean(advisorReady && conversationId && advisorId),
+  });
 
   useEffect(() => {
-    if (!loading) return;
-    const t = window.setTimeout(() => {
-      if (!mountedRef.current) return;
-      setLoading(false);
-    }, 45_000);
-    return () => clearTimeout(t);
-  }, [loading]);
+    if (!advisorReady || !conversationId || !advisorId) return;
 
-  // Unmount guard
-  useEffect(() => {
-    mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
-
-  // Realtime: new messages in this conversation
-  useEffect(() => {
-    if (!conversationId || !profile?.id) return;
-
-    const channel = chatService.subscribeToMessages(conversationId, (newMsg) => {
-      if (!mountedRef.current) return;
-      setMessages((prev) => {
-        // Avoid duplicates
-        if (prev.some((m) => m.id === newMsg.id)) return prev;
-        return [...prev, newMsg];
-      });
-      // Auto-mark as read since we're viewing the conversation (fire-and-forget)
+    chatService.subscribeToMessages(conversationId, (newMsg) => {
+      queryClient.setQueryData<{ messages: ChatMessage[]; has_more: boolean } | undefined>(
+        ['chatMessages', conversationId],
+        (prev) => {
+          const messages = prev?.messages ?? [];
+          if (messages.some((m) => m.id === newMsg.id)) return prev;
+          const nextMsgs = [...messages, newMsg];
+          return prev
+            ? { ...prev, messages: nextMsgs }
+            : { messages: nextMsgs, has_more: false };
+        },
+      );
       chatService.markRead(conversationId).catch(() => {});
     });
 
     return () => {
       chatService.unsubscribeFromMessages(conversationId);
     };
-  }, [conversationId, profile?.id]);
+  }, [conversationId, advisorId, advisorReady, queryClient]);
+
+  useEffect(() => {
+    if (!query.isPending) return;
+    const t = window.setTimeout(() => {
+      if (conversationId) {
+        void queryClient.invalidateQueries({ queryKey: ['chatMessages', conversationId] });
+      }
+    }, 45_000);
+    return () => clearTimeout(t);
+  }, [query.isPending, conversationId, queryClient]);
+
+  const oldestMessageTs = query.data?.messages?.[0]?.created_at ?? null;
 
   const loadMore = useCallback(async () => {
-    if (!conversationId || !oldestMessageRef.current || !hasMore) return;
+    if (!conversationId || !oldestMessageTs || !query.data?.has_more) return;
     try {
       const result = await chatService.listMessages(conversationId, {
-        before: oldestMessageRef.current,
+        before: oldestMessageTs,
       });
-      if (!mountedRef.current) return;
-      setMessages((prev) => [...result.messages, ...prev]);
-      setHasMore(result.has_more);
-      if (result.messages.length > 0) {
-        oldestMessageRef.current = result.messages[0].created_at;
-      }
+      queryClient.setQueryData<{ messages: ChatMessage[]; has_more: boolean }>(
+        ['chatMessages', conversationId],
+        (prev) =>
+          prev
+            ? {
+                ...prev,
+                messages: [...result.messages, ...prev.messages],
+                has_more: result.has_more,
+              }
+            : prev,
+      );
     } catch (err) {
-      if (isAbortError(err) || !mountedRef.current) return;
-      console.error('[useChatMessages] Failed to load more:', err);
+      if (!isAbortError(err)) console.error('[useChatMessages] Failed to load more:', err);
     }
-  }, [conversationId, hasMore]);
+  }, [conversationId, oldestMessageTs, query.data?.has_more, queryClient]);
 
   const sendMessage = useCallback(
     async (content: string, replyToId?: string) => {
@@ -271,41 +206,54 @@ export function useChatMessages(conversationId: string | null) {
       setSending(true);
       try {
         const msg = await chatService.sendMessage(conversationId, content, replyToId);
-        if (!mountedRef.current) return;
-        // The realtime subscription will add it, but add optimistically for instant feel
-        setMessages((prev) => {
-          if (prev.some((m) => m.id === msg.id)) return prev;
-          return [...prev, msg];
-        });
+        queryClient.setQueryData<{ messages: ChatMessage[]; has_more: boolean }>(
+          ['chatMessages', conversationId],
+          (prev) => {
+            if (!prev) return prev;
+            if (prev.messages.some((m) => m.id === msg.id)) return prev;
+            return { ...prev, messages: [...prev.messages, msg] };
+          },
+        );
       } finally {
-        if (mountedRef.current) setSending(false);
+        setSending(false);
       }
     },
-    [conversationId],
+    [conversationId, queryClient],
   );
 
   const deleteMessage = useCallback(
     async (messageId: string) => {
       if (!conversationId) return;
       await chatService.deleteMessage(messageId);
-      if (!mountedRef.current) return;
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === messageId ? { ...m, is_deleted: true, content: null } : m,
-        ),
+      queryClient.setQueryData<{ messages: ChatMessage[]; has_more: boolean }>(
+        ['chatMessages', conversationId],
+        (prev) =>
+          prev
+            ? {
+                ...prev,
+                messages: prev.messages.map((m) =>
+                  m.id === messageId ? { ...m, is_deleted: true, content: null } : m,
+                ),
+              }
+            : prev,
       );
     },
-    [conversationId],
+    [conversationId, queryClient],
   );
 
+  const refresh = useCallback(() => {
+    if (!conversationId) return;
+    void queryClient.invalidateQueries({ queryKey: ['chatMessages', conversationId] });
+  }, [conversationId, queryClient]);
+
   return {
-    messages,
-    loading,
-    hasMore,
+    messages: query.data?.messages ?? [],
+    loading: query.isPending,
+    hasMore: query.data?.has_more ?? false,
     sending,
     loadMore,
     sendMessage,
     deleteMessage,
-    refresh: fetchMessages,
+    refresh,
   };
 }

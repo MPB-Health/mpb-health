@@ -15,6 +15,8 @@ import {
 } from '@mpbhealth/advisor-core';
 import { sanitizeHtml } from '@mpbhealth/utils';
 import { useAdvisorPageDebugLog } from '../hooks/useAdvisorPageDebugLog';
+import { useAdvisorQueryReady } from '../hooks/useAdvisorQueryReady';
+import { ADVISOR_GC_TIME_MS, ADVISOR_STALE_TIME_MS } from '../query/advisorQueryPolicy';
 
 const WEBSITE_BASE_URL = 'https://mpb.health';
 
@@ -86,6 +88,7 @@ const fallbackGroups: AdvisorForm[] = [
 
 export default function SubmitGroup() {
   useAdvisorPageDebugLog('SubmitGroup');
+  const { advisorReady } = useAdvisorQueryReady();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedForm, setSelectedForm] = useState<AdvisorForm | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -101,8 +104,9 @@ export default function SubmitGroup() {
         return fallbackGroups;
       }
     },
-    staleTime: 60 * 1000,
-    gcTime: 10 * 60 * 1000,
+    enabled: advisorReady,
+    staleTime: ADVISOR_STALE_TIME_MS,
+    gcTime: ADVISOR_GC_TIME_MS,
     retry: 2,
   });
 

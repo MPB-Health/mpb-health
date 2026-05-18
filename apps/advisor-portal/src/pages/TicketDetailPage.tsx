@@ -22,10 +22,13 @@ import {
   Paperclip,
   UserCheck,
   UserRound,
+  Eye,
+  Download,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Button, cn } from '@mpbhealth/ui';
 import { sanitizeHtml } from '@mpbhealth/utils';
+import { supabase } from '@mpbhealth/database';
 import {
   ticketService,
   appendTicketAttachmentsHtml,
@@ -42,6 +45,8 @@ import {
 } from '../components/tickets/TicketRichReplyEditor';
 import { useAdvisor } from '../contexts/AdvisorContext';
 import { useAdvisorPageDebugLog } from '../hooks/useAdvisorPageDebugLog';
+import { useAdvisorQueryReady } from '../hooks/useAdvisorQueryReady';
+import { advisorLiveDetailQueryOptions } from '../query/advisorQueryPolicy';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -80,6 +85,24 @@ function formatEnumLabel(value: string) {
 
 function looksLikeEmail(value: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
+function formatAttachmentSize(bytes: number | null): string {
+  if (bytes == null || bytes < 0) return '';
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+/** File types that usually open in the browser tab instead of only triggering a save dialog. */
+function attachmentUsuallyPreviewableInBrowser(mime: string | null | undefined, filename: string): boolean {
+  const m = (mime || '').toLowerCase();
+  if (m.startsWith('image/')) return true;
+  if (m === 'application/pdf') return true;
+  if (m.startsWith('text/') && m !== 'text/javascript') return true;
+  if (m.startsWith('video/') || m.startsWith('audio/')) return true;
+  const ext = filename.includes('.') ? (filename.split('.').pop() || '').toLowerCase() : '';
+  return /^(pdf|png|jpe?g|gif|webp|svg|txt|html?|mp4|webm|ogg|mp3|wav)$/i.test(ext);
 }
 
 /** Readable assignee when ticket-proxy returns full_name or email fallback. */
@@ -131,6 +154,7 @@ export default function TicketDetailPage() {
   const { executeWithAuth } = useTicketAuth();
   const queryClient = useQueryClient();
   const { profile } = useAdvisor();
+  const { advisorReady } = useAdvisorQueryReady();
 
   const validTicketId = Boolean(ticketId && UUID_RE.test(ticketId));
   const ticketLoadErrorToastRef = useRef(false);
@@ -155,9 +179,8 @@ export default function TicketDetailPage() {
         throw e;
       }
     },
-    enabled: validTicketId,
-    refetchInterval: 30_000,
-    staleTime: 15_000,
+    enabled: advisorReady && validTicketId,
+    ...advisorLiveDetailQueryOptions(),
     refetchOnMount: 'always',
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1500 * 2 ** attemptIndex, 12_000),
@@ -194,9 +217,34 @@ export default function TicketDetailPage() {
   /** Local id of the outbound bubble while the network send is in flight. */
   const [outboundPendingId, setOutboundPendingId] = useState<string | null>(null);
   const replyDraftBackupRef = useRef<{ html: string; plain: string; files: File[] } | null>(null);
+  /** Signed download URLs for opening-message `ticket_files` rows (same pattern as ITSTS). */
+  const [openingAttachmentUrls, setOpeningAttachmentUrls] = useState<Record<string, string>>({});
 
   const mountedRef = useRef(true);
   useEffect(() => () => { mountedRef.current = false; }, []);
+
+  useEffect(() => {
+    const files = detail?.ticket_files;
+    if (!files?.length) {
+      setOpeningAttachmentUrls({});
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const next: Record<string, string> = {};
+      await Promise.all(
+        files.map(async (f) => {
+          const path = f.storage_path.replace(/^\//, '');
+          const { data, error } = await supabase.storage.from('ticket-attachments').createSignedUrl(path, 3600);
+          if (!error && data?.signedUrl) next[f.id] = data.signedUrl;
+        }),
+      );
+      if (!cancelled) setOpeningAttachmentUrls(next);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [detail?.ticket_files]);
 
   useEffect(() => {
     setReplySending(false);
@@ -485,7 +533,7 @@ export default function TicketDetailPage() {
     );
   }
 
-  const { ticket, comments } = detail;
+  const { ticket, comments, ticket_files: openingAttachments = [] } = detail;
 
   const requesterId = ticket.requester_id ?? null;
   const profileAuthorIds = [profile?.user_id, profile?.id].filter((x): x is string => Boolean(x));
@@ -696,40 +744,91 @@ export default function TicketDetailPage() {
           <div className={panelClass}>
             {ticket.description ? (
               <section className="mb-6">
-                <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-                  <h2 className="flex items-center gap-2 text-base font-semibold text-slate-900 dark:text-white">
-                    <MessageSquare size={18} className="shrink-0 text-slate-500" aria-hidden />
+                <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
+                  <h2 className="flex items-center gap-2 text-lg font-semibold tracking-tight text-slate-900 sm:text-xl dark:text-white">
+                    <MessageSquare size={22} className="shrink-0 text-slate-500" aria-hidden />
                     Ticket description
                   </h2>
                   {ticket.created_at ? (
                     <span
-                      className="text-[11px] tabular-nums text-slate-500 dark:text-slate-400"
+                      className="text-xs tabular-nums text-slate-500 dark:text-slate-400"
                       title={format(new Date(ticket.created_at), 'PPpp')}
                     >
                       Submitted {formatDistanceToNow(new Date(ticket.created_at), { addSuffix: true })}
                     </span>
                   ) : null}
                 </div>
-                <div className="rounded-lg border border-slate-200/80 bg-slate-50/70 px-4 py-4 dark:border-slate-700/70 dark:bg-slate-800/30 sm:px-6 sm:py-5">
-                  <TicketDescriptionBlock description={ticket.description} />
+                <div className="rounded-xl border border-slate-200/90 bg-white/90 px-5 py-5 shadow-sm dark:border-slate-700/80 dark:bg-slate-950/35 sm:px-8 sm:py-7">
+                  <div className="max-w-4xl [overflow-wrap:anywhere]">
+                    <TicketDescriptionBlock description={ticket.description} />
+                  </div>
                 </div>
               </section>
             ) : null}
 
             <section className="mb-6">
-              <div className="mb-3">
-                <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-white">
-                  <Paperclip size={16} className="shrink-0 text-slate-500" aria-hidden />
-                  Submitted attachments
-                </h2>
-                <p className="mt-1 max-w-none text-xs leading-relaxed text-slate-500 dark:text-slate-400 lg:text-sm">
-                  Files from when the ticket was opened. Attachments shared in replies appear on those messages in the
-                  thread.
+              <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-white">
+                <Paperclip size={16} className="shrink-0 text-slate-500" aria-hidden />
+                Submitted attachments
+              </h2>
+              {openingAttachments.length > 0 ? (
+                <ul className="divide-y divide-slate-200 rounded-lg border border-slate-200 bg-white dark:divide-slate-700 dark:border-slate-700 dark:bg-slate-900/40">
+                  {openingAttachments.map((f) => {
+                    const href = openingAttachmentUrls[f.id];
+                    const sizeLabel = formatAttachmentSize(f.file_size);
+                    const viewHint = attachmentUsuallyPreviewableInBrowser(f.mime_type, f.filename)
+                      ? 'Opens in a new tab — your browser may show it inline (e.g. PDF or image).'
+                      : 'Opens in a new tab — your browser may still preview some types.';
+                    return (
+                      <li
+                        key={f.id}
+                        className="flex min-w-0 flex-col gap-2 px-4 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between"
+                      >
+                        <span className="min-w-0 truncate text-sm font-medium text-slate-900 dark:text-slate-100">
+                          {f.filename}
+                        </span>
+                        <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 sm:justify-end">
+                          {sizeLabel ? (
+                            <span className="text-xs tabular-nums text-slate-500 dark:text-slate-400">{sizeLabel}</span>
+                          ) : null}
+                          {href ? (
+                            <>
+                              <a
+                                href={href}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                title={viewHint}
+                                className="inline-flex items-center gap-1 text-sm font-semibold text-sky-600 hover:text-sky-700 dark:text-sky-400 dark:hover:text-sky-300"
+                                aria-label={`View ${f.filename} in browser`}
+                              >
+                                <Eye size={14} className="shrink-0 opacity-90" aria-hidden />
+                                View
+                              </a>
+                              <a
+                                href={href}
+                                download={f.filename}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-sm font-semibold text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
+                                aria-label={`Download ${f.filename}`}
+                              >
+                                <Download size={14} className="shrink-0 opacity-90" aria-hidden />
+                                Download
+                              </a>
+                            </>
+                          ) : (
+                            <span className="text-xs text-slate-500 dark:text-slate-400">Preparing link…</span>
+                          )}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : (
+                <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50/50 px-4 py-6 text-center text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800/20 dark:text-slate-400">
+                  No files were attached when this ticket was opened.
                 </p>
-              </div>
-              <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50/50 px-4 py-6 text-center text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800/20 dark:text-slate-400">
-                Opening-message files, if any, appear in the description or thread below as links or inline images.
-              </p>
+              )}
             </section>
 
             <section className="scroll-mt-4 border-t border-slate-200 pt-6 dark:border-slate-700">

@@ -43,6 +43,7 @@ export {
   type UpdateTicketOptions,
   type TicketRequester,
   type TicketAttachmentUploadResult,
+  type TicketFileRow,
 } from './support/TicketService';
 export { ChatService, chatService } from './chat/ChatService';
 export type { ChatConversation, ChatConversationType, ChatMember, ChatMemberRole, ChatMessage, ChatSearchResult, ChatUserSearchResult, ListMessagesResult, CreateChannelOptions } from './chat/types';

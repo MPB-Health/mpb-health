@@ -60,10 +60,10 @@ function slugify(text: string): string {
 
 export default function EventForm() {
   useAdvisorPageDebugLog('EventForm');
-  const { id } = useParams<{ id: string }>();
+  const { eventId } = useParams<{ eventId: string }>();
   const navigate = useNavigate();
   const { advisorReady } = useAdvisorQueryReady();
-  const isEditing = Boolean(id);
+  const isEditing = Boolean(eventId);
 
   const [form, setForm] = useState<EventFormData>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
@@ -74,9 +74,9 @@ export default function EventForm() {
     isPending: loadingEvent,
     isError: loadEventError,
   } = useQuery({
-    queryKey: ['advisorEvent', id],
-    queryFn: () => eventsService.getEvent(id!),
-    enabled: advisorReady && isEditing && Boolean(id),
+    queryKey: ['advisorEvent', eventId],
+    queryFn: () => eventsService.getEvent(eventId!),
+    enabled: advisorReady && isEditing && Boolean(eventId),
     staleTime: 60 * 1000,
     retry: 1,
   });
@@ -165,8 +165,8 @@ export default function EventForm() {
         created_by: user?.id || null,
       };
 
-      if (isEditing && id) {
-        await eventsService.updateEvent(id, payload);
+      if (isEditing && eventId) {
+        await eventsService.updateEvent(eventId, payload);
         toast.success('Event updated');
       } else {
         await eventsService.createEvent(payload);

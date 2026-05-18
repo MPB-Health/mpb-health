@@ -5,8 +5,7 @@ import { Plus, Search, Calendar, MapPin, Pencil, Trash2, Eye, EyeOff } from 'luc
 import toast from 'react-hot-toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@mpbhealth/ui';
-import { eventsService } from '@mpbhealth/advisor-core';
-import type { CmsEvent } from '@mpbhealth/advisor-core/src/types';
+import { eventsService, type CmsEvent } from '@mpbhealth/advisor-core';
 import { useAdvisorPageDebugLog } from '../hooks/useAdvisorPageDebugLog';
 import { useAdvisorQueryReady } from '../hooks/useAdvisorQueryReady';
 

@@ -105,6 +105,9 @@ export default function AdminTickets() {
   const { executeWithAuth } = useTicketAuth();
   const [adminCheck, setAdminCheck] = useState<boolean | null>(null);
   const filterMetadataRequestedRef = useRef(false);
+  /** True once `isAdmin()` has completed for the current session user (see profileLoading gate below). */
+  const adminGateResolvedRef = useRef(false);
+  const lastAdminUserIdRef = useRef<string | null>(null);
 
   // Data
   const [tickets, setTickets] = useState<AdminTicket[]>([]);
@@ -225,17 +228,29 @@ export default function AdminTickets() {
   const ADMIN_IS_ROLE_CHECK_MS = 25_000;
   useEffect(() => {
     if (!advisorReady) {
+      adminGateResolvedRef.current = false;
+      lastAdminUserIdRef.current = null;
       setAdminCheck(null);
       return;
     }
 
-    if (!profile?.user_id) {
+    const userId = profile?.user_id ?? profile?.id;
+    if (!userId) {
+      adminGateResolvedRef.current = false;
+      lastAdminUserIdRef.current = null;
       setAdminCheck(false);
       return;
     }
 
-    // Keep prior adminCheck during background profile refresh (don't flash deny/spinner).
-    if (profileLoading) {
+    if (lastAdminUserIdRef.current !== userId) {
+      lastAdminUserIdRef.current = userId;
+      adminGateResolvedRef.current = false;
+    }
+
+    // Only skip isAdmin while profile is refreshing *after* we already resolved once for this user
+    // (avoids nav flicker). Do not skip on first paint — that left adminCheck === null forever when
+    // profileLoading stayed true or was slow to flip false.
+    if (profileLoading && adminGateResolvedRef.current) {
       return;
     }
 
@@ -244,16 +259,23 @@ export default function AdminTickets() {
       setAdminCheck((prev) => {
         if (cancelled || prev !== null) return prev;
         console.warn('[AdminTickets] isAdmin() still pending after long wait — denying access');
+        adminGateResolvedRef.current = true;
         return false;
       });
     }, ADMIN_IS_ROLE_CHECK_MS);
 
-    isAdmin(profile.user_id)
+    isAdmin(userId)
       .then((v) => {
-        if (!cancelled) setAdminCheck(v);
+        if (!cancelled) {
+          adminGateResolvedRef.current = true;
+          setAdminCheck(v);
+        }
       })
       .catch(() => {
-        if (!cancelled) setAdminCheck(false);
+        if (!cancelled) {
+          adminGateResolvedRef.current = true;
+          setAdminCheck(false);
+        }
       })
       .finally(() => {
         clearTimeout(timeout);
@@ -263,7 +285,7 @@ export default function AdminTickets() {
       cancelled = true;
       clearTimeout(timeout);
     };
-  }, [advisorReady, profileLoading, profile?.user_id]);
+  }, [advisorReady, profileLoading, profile?.user_id, profile?.id]);
 
   // Debounce search
   useEffect(() => {

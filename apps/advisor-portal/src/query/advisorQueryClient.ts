@@ -1,4 +1,8 @@
 import { QueryClient } from '@tanstack/react-query';
+import {
+  ADVISOR_GC_TIME_MS,
+  ADVISOR_STALE_TIME_MS,
+} from './advisorQueryPolicy';
 
 const CLIENT_SYM = Symbol.for('mpb.advisorPortal.queryClient');
 
@@ -23,8 +27,8 @@ export function getAdvisorQueryClient(): QueryClient {
     g[CLIENT_SYM] = new QueryClient({
       defaultOptions: {
         queries: {
-          staleTime: 2 * 60 * 1000,
-          gcTime: 5 * 60 * 1000,
+          staleTime: ADVISOR_STALE_TIME_MS,
+          gcTime: ADVISOR_GC_TIME_MS,
           retry: (failureCount, error) => {
             if (isAuthError(error)) return false;
             return failureCount < 3;

@@ -15,6 +15,7 @@ import {
   SEARCH_ENTITY_CONFIG,
 } from '@mpbhealth/champion-core';
 import { useAdvisor } from '../contexts/AdvisorContext';
+import { useAdvisorQueryReady } from './useAdvisorQueryReady';
 
 // ============================================================================
 // Global Search Hook
@@ -27,6 +28,7 @@ export function useGlobalSearch(options: {
   limit?: number;
 } = {}) {
   const { profile } = useAdvisor();
+  const { advisorReady } = useAdvisorQueryReady();
   const orgId = profile?.org_id;
   const userId = profile?.user_id;
 
@@ -45,6 +47,13 @@ export function useGlobalSearch(options: {
 
   // Debounced search
   useEffect(() => {
+    if (!advisorReady) {
+      setResults([]);
+      setDurationMs(null);
+      setLoading(false);
+      setError(null);
+      return;
+    }
     if (!orgId || query.length < minQueryLength) {
       setResults([]);
       setDurationMs(null);
@@ -85,7 +94,7 @@ export function useGlobalSearch(options: {
     }, debounceMs);
 
     return () => clearTimeout(timer);
-  }, [query, orgId, userId, entityTypes, limit, debounceMs, minQueryLength]);
+  }, [query, orgId, userId, entityTypes, limit, debounceMs, minQueryLength, advisorReady]);
 
   const clearSearch = useCallback(() => {
     setQuery('');
@@ -127,15 +136,19 @@ export function useGlobalSearch(options: {
 // ============================================================================
 
 export function useRecentSearches(limit: number = 10) {
-  const { profile, loading: authLoading, profileLoading } = useAdvisor();
-  const ctxLoading = authLoading || profileLoading;
+  const { profile } = useAdvisor();
+  const { advisorReady } = useAdvisorQueryReady();
   const userId = profile?.user_id;
 
   const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchRecentSearches = useCallback(async () => {
-    if (ctxLoading) return;
+    if (!advisorReady) {
+      setRecentSearches([]);
+      setLoading(false);
+      return;
+    }
 
     if (!userId) {
       setRecentSearches([]);
@@ -152,7 +165,7 @@ export function useRecentSearches(limit: number = 10) {
     } finally {
       setLoading(false);
     }
-  }, [userId, ctxLoading, limit]);
+  }, [userId, advisorReady, limit]);
 
   useEffect(() => {
     fetchRecentSearches();
@@ -183,8 +196,8 @@ export function useRecentSearches(limit: number = 10) {
 // ============================================================================
 
 export function useSavedSearches() {
-  const { profile, loading: authLoading, profileLoading } = useAdvisor();
-  const ctxLoading = authLoading || profileLoading;
+  const { profile } = useAdvisor();
+  const { advisorReady } = useAdvisorQueryReady();
   const userId = profile?.user_id;
   const orgId = profile?.org_id;
 
@@ -192,7 +205,11 @@ export function useSavedSearches() {
   const [loading, setLoading] = useState(true);
 
   const fetchSavedSearches = useCallback(async () => {
-    if (ctxLoading) return;
+    if (!advisorReady) {
+      setSavedSearches([]);
+      setLoading(false);
+      return;
+    }
 
     if (!userId) {
       setSavedSearches([]);
@@ -209,7 +226,7 @@ export function useSavedSearches() {
     } finally {
       setLoading(false);
     }
-  }, [userId, ctxLoading]);
+  }, [userId, advisorReady]);
 
   useEffect(() => {
     fetchSavedSearches();

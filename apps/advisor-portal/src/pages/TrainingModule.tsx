@@ -33,7 +33,7 @@ export default function TrainingModule() {
   const { moduleId } = useParams<{ moduleId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { profile, refreshTraining, loading: authLoading } = useAdvisor();
+  const { profile, refreshTraining } = useAdvisor();
   const { advisorReady } = useAdvisorQueryReady();
   const [completing, setCompleting] = useState(false);
 
@@ -62,14 +62,13 @@ export default function TrainingModule() {
   const trainingModule = data?.kind === 'normal' ? data.module : null;
   const progress = data?.kind === 'normal' ? data.progress : null;
 
-  const loading =
-    !moduleId ? false : !profile ? authLoading : !advisorReady || queryPending;
+  const loading = !moduleId ? false : !advisorReady || queryPending;
 
   useEffect(() => {
-    if (!isError || !moduleId || !profile) return;
+    if (!isError || !moduleId || !advisorReady) return;
     toast.error('Failed to load module');
     navigate('/training');
-  }, [isError, moduleId, profile, navigate]);
+  }, [isError, moduleId, advisorReady, navigate]);
 
   const handleStart = async () => {
     if (!profile || !moduleId || !trainingModule) return;

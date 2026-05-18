@@ -15,13 +15,17 @@ import {
   Check,
   Keyboard,
   Paperclip,
+  LayoutDashboard,
+  List,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { ticketService, type TicketPriority } from '@mpbhealth/advisor-core';
 import { sanitizeHtml } from '@mpbhealth/utils';
 import { useAdvisor } from '../contexts/AdvisorContext';
+import { useAdvisorQueryReady } from '../hooks/useAdvisorQueryReady';
 import { useAdvisorPageDebugLog } from '../hooks/useAdvisorPageDebugLog';
+import { useTicketAuth } from '../components/TicketAuthWrapper';
 import { TicketRichReplyEditor, type TicketRichReplyEditorRef } from '../components/tickets/TicketRichReplyEditor';
 import { TicketNewFileUpload } from '../components/tickets/TicketNewFileUpload';
 
@@ -74,6 +78,12 @@ const SUBJECT_MAX = 255;
 const MAX_ATTACHMENT_COUNT = 10;
 const MAX_ATTACHMENT_SIZE_MB = 15;
 
+/** Hard cap so the submit button never stays stuck if network, SW, or edge misbehaves. */
+const CREATE_TICKET_UI_DEADLINE_MS = 120_000;
+
+/** Prefix for browser console — copy logs to share when ticket create misbehaves. */
+const NEW_TICKET_SUBMIT_LOG = '[AdvisorPortal NewTicket submit]';
+
 function formatTicketRef(ticketId: string) {
   return ticketId ? `#${ticketId.replace(/-/g, '').slice(0, 8).toUpperCase()}` : '';
 }
@@ -112,7 +122,9 @@ export default function NewTicket() {
   useAdvisorPageDebugLog('NewTicket');
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { profile, loading: authLoading } = useAdvisor();
+  const { profile, loading: authInitializing, hasSession } = useAdvisor();
+  const { advisorReady } = useAdvisorQueryReady();
+  const { executeWithAuth } = useTicketAuth();
   const subjectInputRef = useRef<HTMLInputElement>(null);
   const descriptionEditorRef = useRef<TicketRichReplyEditorRef>(null);
 
@@ -140,13 +152,17 @@ export default function NewTicket() {
   const submitGuardRef = useRef(false);
 
   useEffect(() => {
-    if (!authLoading && !profile) {
+    if (authInitializing) return;
+    if (!hasSession) {
       navigate('/login', { replace: true });
     }
-  }, [authLoading, profile, navigate]);
+  }, [authInitializing, hasSession, navigate]);
 
   useEffect(() => {
-    if (authLoading || !profile) return;
+    if (!advisorReady) {
+      setCatLoading(true);
+      return;
+    }
     let cancelled = false;
     const catFallbackTimer = setTimeout(() => {
       if (!cancelled && categories.length === 0) {
@@ -171,7 +187,7 @@ export default function NewTicket() {
       cancelled = true;
       clearTimeout(catFallbackTimer);
     };
-  }, [authLoading, profile]);
+  }, [advisorReady]);
 
   const displayName = useMemo(() => {
     if (!profile) return '';
@@ -251,6 +267,7 @@ export default function NewTicket() {
   const submitTicket = useCallback(async () => {
     setError(null);
     if (submitGuardRef.current) return;
+    if (!advisorReady) return;
 
     if (formData.subject.trim().length < 3) {
       setError('Subject must be at least 3 characters.');
@@ -266,13 +283,42 @@ export default function NewTicket() {
     const description = buildDescriptionPayload();
     submitGuardRef.current = true;
     setSubmitting(true);
+    const submitCorrelationId =
+      typeof globalThis.crypto !== 'undefined' && typeof globalThis.crypto.randomUUID === 'function'
+        ? globalThis.crypto.randomUUID()
+        : `nt-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    const descByteLength = new TextEncoder().encode(description).length;
+    console.info(NEW_TICKET_SUBMIT_LOG, 'start', {
+      correlationId: submitCorrelationId,
+      subjectLength: formData.subject.trim().length,
+      descriptionChars: description.length,
+      descriptionUtf8Bytes: descByteLength,
+      category: formData.category || null,
+      priority: formData.priority,
+      attachmentCount: files.length,
+      attachmentTotalBytes: files.reduce((n, f) => n + f.size, 0),
+      isForMember,
+    });
     try {
-      const result = await ticketService.createTicket({
-        subject: formData.subject.trim(),
-        description,
-        category: formData.category || undefined,
-        priority: formData.priority,
-        attachments: files,
+      const result = await Promise.race([
+        executeWithAuth(() =>
+          ticketService.createTicket({
+            subject: formData.subject.trim(),
+            description,
+            category: formData.category || undefined,
+            priority: formData.priority,
+            attachments: files,
+          }),
+        ),
+        new Promise<never>((_, reject) => {
+          window.setTimeout(() => reject(new Error('CREATE_TICKET_TIMEOUT')), CREATE_TICKET_UI_DEADLINE_MS);
+        }),
+      ]);
+      console.info(NEW_TICKET_SUBMIT_LOG, 'success', {
+        correlationId: submitCorrelationId,
+        ticketId: result.ticket_id,
+        ticketNumber: result.ticket_number,
+        attachmentError: result.attachmentError ?? null,
       });
       if (result.attachmentError) {
         toast.error(
@@ -291,14 +337,39 @@ export default function NewTicket() {
       setSubmitted(true);
     } catch (err) {
       const msg = err instanceof Error ? err.message : '';
-      if (msg.includes('SESSION_EXPIRED') || msg.includes('refresh_token') || msg.includes('Invalid login')) {
+      if (msg === 'CREATE_TICKET_TIMEOUT') {
+        console.warn(NEW_TICKET_SUBMIT_LOG, 'timeout', {
+          correlationId: submitCorrelationId,
+          deadlineMs: CREATE_TICKET_UI_DEADLINE_MS,
+          hint: 'Ticket may still have been created server-side; check ticket list.',
+        });
+        setError(
+          'Creating your ticket is taking too long. Check your connection, then check My tickets—your ticket may still have been created.',
+        );
+        void queryClient.invalidateQueries({ queryKey: ['advisorTickets'] });
+        void queryClient.invalidateQueries({ queryKey: ['advisorTicketStats'] });
+      } else if (msg.includes('SESSION_EXPIRED') || msg.includes('refresh_token') || msg.includes('Invalid login')) {
+        console.warn(NEW_TICKET_SUBMIT_LOG, 'session_redirect_login', {
+          correlationId: submitCorrelationId,
+          message: msg,
+        });
         toast.error('Your session has expired. Redirecting to sign in…');
         navigate('/login', { replace: true });
         return;
       }
       if (/temporarily unavailable|not yet configured/i.test(msg)) {
+        console.error(NEW_TICKET_SUBMIT_LOG, 'support_unavailable', {
+          correlationId: submitCorrelationId,
+          message: msg,
+        });
         setError('The support system is temporarily unavailable. Please try again in a few minutes.');
       } else {
+        console.error(NEW_TICKET_SUBMIT_LOG, 'error', {
+          correlationId: submitCorrelationId,
+          message: msg || String(err),
+          name: err instanceof Error ? err.name : typeof err,
+          stack: err instanceof Error ? err.stack : undefined,
+        });
         setError(msg || 'Failed to submit ticket. Please try again.');
       }
     } finally {
@@ -313,6 +384,8 @@ export default function NewTicket() {
     files,
     navigate,
     queryClient,
+    executeWithAuth,
+    advisorReady,
   ]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -322,7 +395,7 @@ export default function NewTicket() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (submitted || submitting || authLoading) return;
+      if (submitted || submitting || !advisorReady) return;
       if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
         const form = document.getElementById('ticket-new-form');
         if (form && form.contains(document.activeElement)) {
@@ -333,7 +406,7 @@ export default function NewTicket() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [submitted, submitting, authLoading, submitTicket]);
+  }, [submitted, submitting, advisorReady, submitTicket]);
 
   const copyRef = async (id: string) => {
     const url = `${window.location.origin}/tickets/${id}`;
@@ -360,7 +433,7 @@ export default function NewTicket() {
     requestAnimationFrame(() => subjectInputRef.current?.focus());
   };
 
-  if (authLoading) {
+  if (authInitializing || (hasSession && !advisorReady)) {
     return (
       <div className="flex items-center justify-center py-16">
         <div className="w-6 h-6 border-2 border-th-accent-600 border-t-transparent rounded-full animate-spin" />
@@ -372,37 +445,69 @@ export default function NewTicket() {
     const refLabel = formatTicketRef(submittedTicketId);
     return (
       <div className="max-w-lg mx-auto px-4 py-12 sm:py-16">
-        <div className="relative overflow-hidden rounded-2xl border border-emerald-200/80 dark:border-emerald-900/50 bg-gradient-to-b from-surface-primary to-emerald-50/30 dark:from-neutral-900 dark:to-emerald-950/20 shadow-xl shadow-emerald-900/5 dark:shadow-black/40">
+        <div
+          className="relative overflow-hidden rounded-2xl border border-emerald-200/80 dark:border-emerald-900/50 bg-gradient-to-b from-surface-primary to-emerald-50/30 dark:from-neutral-900 dark:to-emerald-950/20 shadow-xl shadow-emerald-900/5 dark:shadow-black/40"
+          role="status"
+          aria-live="polite"
+          aria-label={`Ticket created successfully. Reference ${refLabel}.`}
+        >
           <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-500 via-teal-500 to-sky-500" />
           <div className="p-8 sm:p-10 text-center">
             <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-100 dark:bg-emerald-900/40 ring-4 ring-emerald-500/10">
               <CheckCircle2 className="text-emerald-600 dark:text-emerald-400" size={36} strokeWidth={2} />
             </div>
             <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700/90 dark:text-emerald-400/90 mb-2">
-              Request logged
+              Ticket created
             </p>
-            <h1 className="text-2xl sm:text-3xl font-bold text-th-text-primary mb-2 tracking-tight">{refLabel}</h1>
-            <p className="text-th-text-secondary text-sm sm:text-base leading-relaxed mb-6 max-w-sm mx-auto">
-              Your ticket is in the queue. You&apos;ll get email updates as it moves forward.
+            <h1 className="text-2xl sm:text-3xl font-bold text-th-text-primary mb-1 tracking-tight">
+              {refLabel}
+            </h1>
+            <p className="text-sm text-th-text-secondary mb-6 max-w-sm mx-auto">
+              Your request is saved. Open it below to add replies or attachments anytime.
             </p>
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 mb-4">
+            <p id="ticket-success-desc" className="sr-only">
+              Ticket reference {refLabel}. Use Open ticket to view the conversation, or go to all tickets or home.
+            </p>
+            <div className="flex flex-col gap-3 mb-4" aria-describedby="ticket-success-desc">
               <button
                 type="button"
                 onClick={() => navigate(`/tickets/${submittedTicketId}`)}
-                className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-th-accent-600 hover:bg-th-accent-700 text-white font-semibold shadow-lg transition-colors"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-th-accent-600 hover:bg-th-accent-700 text-white font-semibold shadow-lg transition-colors w-full sm:w-auto sm:mx-auto min-w-[14rem]"
               >
-                Open ticket
-                <ChevronRight size={18} />
+                <Ticket size={18} aria-hidden />
+                Open your ticket
+                <ChevronRight size={18} aria-hidden />
               </button>
+              <div className="flex flex-col sm:flex-row items-stretch sm:justify-center gap-2 sm:gap-3">
+                <button
+                  type="button"
+                  onClick={() => navigate('/tickets')}
+                  className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl border border-th-border bg-surface-primary/80 text-th-text-primary font-medium hover:bg-surface-secondary transition-colors"
+                >
+                  <List size={18} aria-hidden />
+                  All my tickets
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate('/')}
+                  className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl border border-th-border bg-surface-primary/80 text-th-text-primary font-medium hover:bg-surface-secondary transition-colors"
+                >
+                  <LayoutDashboard size={18} aria-hidden />
+                  Home
+                </button>
+              </div>
               <button
                 type="button"
                 onClick={() => void copyRef(submittedTicketId)}
-                className="inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl border border-th-border bg-surface-primary/80 text-th-text-primary font-medium hover:bg-surface-secondary transition-colors"
+                className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-th-text-secondary font-medium hover:text-th-text-primary hover:bg-surface-tertiary/80 transition-colors mx-auto text-sm"
               >
-                {copied ? <Check size={18} className="text-emerald-600" /> : <Copy size={18} />}
-                {copied ? 'Copied link' : 'Copy link'}
+                {copied ? <Check size={18} className="text-emerald-600" aria-hidden /> : <Copy size={18} aria-hidden />}
+                {copied ? 'Link copied' : 'Copy link to ticket'}
               </button>
             </div>
+            <p className="text-th-text-tertiary text-xs leading-relaxed mb-4 max-w-sm mx-auto">
+              You&apos;ll get email updates when the team replies. Need something else?
+            </p>
             <button
               type="button"
               onClick={resetForm}
@@ -700,7 +805,7 @@ export default function NewTicket() {
               </button>
               <button
                 type="submit"
-                disabled={submitting}
+                disabled={submitting || !advisorReady}
                 className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-th-accent-600 hover:bg-th-accent-700 disabled:opacity-55 disabled:cursor-not-allowed text-white font-semibold shadow-lg transition-colors"
               >
                 {submitting ? (

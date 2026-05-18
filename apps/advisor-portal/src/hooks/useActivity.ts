@@ -2,18 +2,18 @@
 // Activity & Notification Hooks — React hooks for activity feed and notifications
 // ============================================================================
 
-import { useState, useEffect, useCallback } from 'react';
+import { useMemo, useCallback, useState, useEffect } from 'react';
+import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   activityService,
   notificationService,
-  ActivityFeedItem,
   ActivityType,
   Notification,
-  NotificationSummary,
   LogActivityInput,
   ACTIVITY_CONFIG,
 } from '@mpbhealth/champion-core';
 import { useAdvisor } from '../contexts/AdvisorContext';
+import { useAdvisorQueryReady } from './useAdvisorQueryReady';
 
 // ============================================================================
 // Activity Feed Hook
@@ -25,75 +25,62 @@ export function useActivityFeed(options: {
   types?: ActivityType[];
   limit?: number;
 } = {}) {
-  const { profile, loading: authLoading, profileLoading } = useAdvisor();
-  const orgContextLoading = authLoading || profileLoading;
+  const { profile } = useAdvisor();
+  const { advisorReady } = useAdvisorQueryReady();
   const orgId = profile?.org_id;
+  const limit = options.limit || 50;
+  const typesKey = options.types?.length ? [...options.types].sort().join('|') : '';
 
-  const [activities, setActivities] = useState<ActivityFeedItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [hasMore, setHasMore] = useState(true);
-
-  const fetchActivities = useCallback(async (offset: number = 0) => {
-    if (orgContextLoading) return;
-
-    if (!orgId) {
-      setActivities([]);
-      setHasMore(false);
-      setError(null);
-      setLoading(false);
-      return;
-    }
-
-    try {
-      if (offset === 0) setLoading(true);
-      const data = await activityService.getActivityFeed(orgId, {
+  const infinite = useInfiniteQuery({
+    queryKey: [
+      'activityFeed',
+      orgId,
+      options.leadId,
+      options.userId,
+      typesKey,
+      limit,
+    ] as const,
+    queryFn: async ({ pageParam }) => {
+      const offset = pageParam as number;
+      return activityService.getActivityFeed(orgId!, {
         lead_id: options.leadId,
         user_id: options.userId,
         activity_types: options.types,
-        limit: options.limit || 50,
+        limit,
         offset,
       });
+    },
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, allPages) =>
+      lastPage.length === limit ? allPages.flat().length : undefined,
+    enabled: Boolean(advisorReady && orgId),
+  });
 
-      if (offset === 0) {
-        setActivities(data);
-      } else {
-        setActivities((prev) => [...prev, ...data]);
-      }
-
-      setHasMore(data.length === (options.limit || 50));
-      setError(null);
-    } catch (err) {
-      console.error('[useActivityFeed] Failed to fetch:', err);
-      setError('Failed to load activity feed');
-    } finally {
-      setLoading(false);
-    }
-  }, [orgId, orgContextLoading, options.leadId, options.userId, options.types, options.limit]);
-
-  useEffect(() => {
-    fetchActivities(0);
-  }, [fetchActivities]);
+  const activities = useMemo(() => infinite.data?.pages.flat() ?? [], [infinite.data?.pages]);
 
   const loadMore = useCallback(() => {
-    if (!loading && hasMore) {
-      fetchActivities(activities.length);
-    }
-  }, [loading, hasMore, activities.length, fetchActivities]);
+    if (infinite.isFetchingNextPage || !infinite.hasNextPage) return;
+    void infinite.fetchNextPage();
+  }, [infinite.fetchNextPage, infinite.hasNextPage, infinite.isFetchingNextPage]);
 
   const refresh = useCallback(() => {
-    fetchActivities(0);
-  }, [fetchActivities]);
+    void infinite.refetch();
+  }, [infinite.refetch]);
 
-  // Group activities by date
-  const groupedActivities = activityService.groupActivitiesByDate(activities);
+  const groupedActivities = useMemo(
+    () => activityService.groupActivitiesByDate(activities),
+    [activities],
+  );
+
+  const loading =
+    !advisorReady ? true : !orgId ? false : infinite.isPending;
 
   return {
     activities,
     groupedActivities,
     loading,
-    error,
-    hasMore,
+    error: infinite.isError ? 'Failed to load activity feed' : null,
+    hasMore: Boolean(infinite.hasNextPage),
     loadMore,
     refresh,
   };
@@ -105,6 +92,7 @@ export function useActivityFeed(options: {
 
 export function useLogActivity() {
   const { profile } = useAdvisor();
+  const { advisorReady } = useAdvisorQueryReady();
   const orgId = profile?.org_id;
   const userId = profile?.user_id;
   const [error, setError] = useState<string | null>(null);
@@ -128,7 +116,7 @@ export function useLogActivity() {
     [orgId, userId]
   );
 
-  const isReady = Boolean(orgId && userId);
+  const isReady = Boolean(advisorReady && orgId && userId);
 
   return { logActivity, error, isReady };
 }
@@ -141,91 +129,84 @@ export function useNotifications(options: {
   unreadOnly?: boolean;
   limit?: number;
 } = {}) {
-  const { profile, loading: authLoading, profileLoading } = useAdvisor();
-  const ctxLoading = authLoading || profileLoading;
+  const { profile } = useAdvisor();
+  const { advisorReady } = useAdvisorQueryReady();
   const userId = profile?.user_id;
+  const queryClient = useQueryClient();
 
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryKey = useMemo(
+    () => ['notifications', userId, options.unreadOnly, options.limit ?? 50] as const,
+    [userId, options.unreadOnly, options.limit],
+  );
 
-  const fetchNotifications = useCallback(async () => {
-    if (ctxLoading) return;
-
-    if (!userId) {
-      setNotifications([]);
-      setError(null);
-      setLoading(false);
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const data = await notificationService.getNotifications(userId, {
+  const query = useQuery({
+    queryKey,
+    queryFn: () =>
+      notificationService.getNotifications(userId!, {
         unreadOnly: options.unreadOnly,
         limit: options.limit || 50,
-      });
-      setNotifications(data);
-      setError(null);
-    } catch (err) {
-      console.error('[useNotifications] Failed to fetch:', err);
-      setError('Failed to load notifications');
-    } finally {
-      setLoading(false);
-    }
-  }, [userId, ctxLoading, options.unreadOnly, options.limit]);
+      }),
+    enabled: Boolean(advisorReady && userId),
+    placeholderData: (prev) => prev,
+  });
 
   useEffect(() => {
-    fetchNotifications();
-  }, [fetchNotifications]);
-
-  // Real-time subscription
-  useEffect(() => {
-    if (!userId) return;
-
-    const channel = notificationService.subscribeToNotifications(userId, (notification) => {
-      setNotifications((prev) => [notification, ...prev]);
+    if (!advisorReady || !userId) return;
+    notificationService.subscribeToNotifications(userId, (notification) => {
+      queryClient.setQueryData<Notification[]>(queryKey, (prev) => [notification, ...(prev ?? [])]);
     });
 
     return () => {
       notificationService.unsubscribeFromNotifications(userId);
     };
-  }, [userId]);
+  }, [advisorReady, userId, queryClient, queryKey]);
 
   const markAsRead = useCallback(
     async (notificationIds?: string[]) => {
       if (!userId) return;
       await notificationService.markAsRead(userId, notificationIds);
-      setNotifications((prev) =>
-        prev.map((n) =>
+      queryClient.setQueryData<Notification[]>(queryKey, (prev) =>
+        (prev ?? []).map((n) =>
           !notificationIds || notificationIds.includes(n.id)
             ? { ...n, is_read: true, read_at: new Date().toISOString() }
-            : n
-        )
+            : n,
+        ),
       );
     },
-    [userId]
+    [userId, queryClient, queryKey],
   );
 
-  const dismiss = useCallback(async (notificationId: string) => {
-    await notificationService.dismissNotification(notificationId);
-    setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
-  }, []);
+  const dismiss = useCallback(
+    async (notificationId: string) => {
+      await notificationService.dismissNotification(notificationId);
+      queryClient.setQueryData<Notification[]>(queryKey, (prev) =>
+        (prev ?? []).filter((n) => n.id !== notificationId),
+      );
+    },
+    [queryClient, queryKey],
+  );
 
   const dismissAll = useCallback(async () => {
     if (!userId) return;
     await notificationService.dismissAll(userId);
-    setNotifications([]);
-  }, [userId]);
+    queryClient.setQueryData<Notification[]>(queryKey, []);
+  }, [userId, queryClient, queryKey]);
+
+  const refresh = useCallback(() => {
+    if (!userId) return;
+    void queryClient.invalidateQueries({
+      predicate: ({ queryKey: k }) => Array.isArray(k) && k[0] === 'notifications' && k[1] === userId,
+    });
+  }, [queryClient, userId]);
 
   return {
-    notifications,
-    loading,
-    error,
+    notifications: query.data ?? [],
+    loading: !advisorReady ? true : !userId ? false : query.isPending,
+    error: query.isError ? 'Failed to load notifications' : null,
     markAsRead,
     dismiss,
     dismissAll,
-    refresh: fetchNotifications,
+    refresh,
   };
 }
 
@@ -235,46 +216,52 @@ export function useNotifications(options: {
 
 export function useUnreadNotificationCount() {
   const { profile } = useAdvisor();
+  const { advisorReady } = useAdvisorQueryReady();
   const userId = profile?.user_id;
+  const queryClient = useQueryClient();
 
-  const [count, setCount] = useState(0);
+  const queryKey = useMemo(() => ['unreadNotificationCount', userId] as const, [userId]);
 
-  const fetchCount = useCallback(async () => {
-    if (!userId) return;
-    const unreadCount = await notificationService.getUnreadCount(userId);
-    setCount(unreadCount);
-  }, [userId]);
+  const query = useQuery({
+    queryKey,
+    queryFn: () => notificationService.getUnreadCount(userId!),
+    enabled: Boolean(advisorReady && userId),
+    retry: false,
+  });
 
   useEffect(() => {
-    fetchCount();
-  }, [fetchCount]);
-
-  // Real-time updates
-  useEffect(() => {
-    if (!userId) return;
-
-    const channel = notificationService.subscribeToNotifications(userId, () => {
-      setCount((prev) => prev + 1);
+    if (!advisorReady || !userId) return;
+    notificationService.subscribeToNotifications(userId, () => {
+      queryClient.setQueryData<number>(queryKey, (n) => (n ?? 0) + 1);
     });
-
     return () => {
       notificationService.unsubscribeFromNotifications(userId);
     };
-  }, [userId]);
+  }, [advisorReady, userId, queryClient, queryKey]);
 
-  const decrement = useCallback((amount: number = 1) => {
-    setCount((prev) => Math.max(0, prev - amount));
-  }, []);
+  const decrement = useCallback(
+    (amount: number = 1) => {
+      queryClient.setQueryData<number>(queryKey, (prev) =>
+        prev == null ? 0 : Math.max(0, prev - amount),
+      );
+    },
+    [queryClient, queryKey],
+  );
 
   const reset = useCallback(() => {
-    setCount(0);
-  }, []);
+    queryClient.setQueryData<number>(queryKey, 0);
+  }, [queryClient, queryKey]);
+
+  const refresh = useCallback(() => {
+    if (!userId) return;
+    void queryClient.invalidateQueries({ queryKey });
+  }, [queryClient, queryKey, userId]);
 
   return {
-    count,
+    count: query.data ?? 0,
     decrement,
     reset,
-    refresh: fetchCount,
+    refresh,
   };
 }
 
@@ -283,46 +270,29 @@ export function useUnreadNotificationCount() {
 // ============================================================================
 
 export function useNotificationSummary() {
-  const { profile, loading: authLoading, profileLoading } = useAdvisor();
-  const ctxLoading = authLoading || profileLoading;
+  const { profile } = useAdvisor();
+  const { advisorReady } = useAdvisorQueryReady();
   const userId = profile?.user_id;
+  const queryClient = useQueryClient();
 
-  const [summary, setSummary] = useState<NotificationSummary | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryKey = useMemo(() => ['notificationSummary', userId] as const, [userId]);
 
-  const fetchSummary = useCallback(async () => {
-    if (ctxLoading) return;
+  const query = useQuery({
+    queryKey,
+    queryFn: () => notificationService.getNotificationSummary(userId!),
+    enabled: Boolean(advisorReady && userId),
+  });
 
-    if (!userId) {
-      setSummary(null);
-      setError(null);
-      setLoading(false);
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await notificationService.getNotificationSummary(userId);
-      setSummary(data);
-    } catch (err) {
-      console.error('[useNotificationSummary] Failed to fetch:', err);
-      setError('Failed to load notification summary');
-    } finally {
-      setLoading(false);
-    }
-  }, [userId, ctxLoading]);
-
-  useEffect(() => {
-    fetchSummary();
-  }, [fetchSummary]);
+  const refresh = useCallback(() => {
+    if (!userId) return;
+    void queryClient.invalidateQueries({ queryKey });
+  }, [queryClient, queryKey, userId]);
 
   return {
-    summary,
-    loading,
-    error,
-    refresh: fetchSummary,
+    summary: query.data ?? null,
+    loading: !advisorReady ? true : !userId ? false : query.isPending,
+    error: query.isError ? 'Failed to load notification summary' : null,
+    refresh,
   };
 }
 

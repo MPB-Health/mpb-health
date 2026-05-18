@@ -543,7 +543,7 @@ export function UnifiedTimeline({
 
       const query = supabase
         .from('crm_email_log')
-        .select('id, direction, sent_at, created_at, subject, preview_text, from_address, to_address, body_text, body_html, open_count, click_count, has_attachments')
+        .select('id, direction, sent_at, created_at, subject, body_preview, from_address, to_email, body_html, open_count, click_count, has_attachments')
         .eq('lead_id', leadId)
         .order('created_at', { ascending: false })
         .range(offset, offset + pageSize - 1);
@@ -556,12 +556,11 @@ export function UnifiedTimeline({
         type: email.direction === 'inbound' ? ('email_inbound' as const) : ('email_outbound' as const),
         timestamp: String(email.sent_at || email.created_at),
         title: String(email.subject || '(No subject)'),
-        description: email.preview_text ? String(email.preview_text) : undefined,
+        description: email.body_preview ? String(email.body_preview) : undefined,
         metadata: {
           from_address: email.from_address,
-          to_address: email.to_address,
+          to_address: email.to_email,
           subject: email.subject,
-          body: email.body_text,
           html_body: email.body_html,
           open_count: email.open_count ?? 0,
           click_count: email.click_count ?? 0,
@@ -580,7 +579,7 @@ export function UnifiedTimeline({
 
       const query = supabase
         .from('lead_activities')
-        .select('id, type, created_at, title, description, metadata')
+        .select('id, activity_type, created_at, title, description, metadata')
         .eq('lead_id', leadId)
         .order('created_at', { ascending: false })
         .range(offset, offset + pageSize - 1);
@@ -589,7 +588,7 @@ export function UnifiedTimeline({
       if (error || !data) return [];
 
       return data.map((activity: Record<string, unknown>) => {
-        const actType = mapActivityType(String(activity.type || 'note'));
+        const actType = mapActivityType(String(activity.activity_type || 'note'));
         const actMeta = (activity.metadata as Record<string, unknown>) || {};
         return {
           id: `activity-${activity.id}`,
@@ -619,7 +618,7 @@ export function UnifiedTimeline({
 
       const query = supabase
         .from('calendar_events')
-        .select('id, start_time, end_time, created_at, title, description, location, meeting_link, video_link, attendees, event_type')
+        .select('id, start_time, end_time, created_at, title, description, location, meeting_link, attendees, event_type')
         .eq('lead_id', leadId)
         .order('start_time', { ascending: false })
         .range(offset, offset + pageSize - 1);
@@ -635,7 +634,7 @@ export function UnifiedTimeline({
         description: event.description ? String(event.description) : undefined,
         metadata: {
           location: event.location,
-          meeting_link: event.meeting_link || event.video_link,
+          meeting_link: event.meeting_link,
           attendees: event.attendees,
           end_time: event.end_time,
           event_type: event.event_type,
@@ -692,7 +691,7 @@ export function UnifiedTimeline({
 
       const query = supabase
         .from('lead_activities')
-        .select('id, type, created_at, title, description, metadata')
+        .select('id, activity_type, created_at, title, description, metadata')
         .eq('deal_id', dealId)
         .order('created_at', { ascending: false })
         .range(offset, offset + pageSize - 1);
@@ -704,7 +703,7 @@ export function UnifiedTimeline({
         const actMeta = (activity.metadata as Record<string, unknown>) || {};
         return {
           id: `deal-${activity.id}`,
-          type: (activity.type === 'stage_change' ? 'stage_change' : 'deal') as TimelineEntryType,
+          type: (activity.activity_type === 'stage_change' ? 'stage_change' : 'deal') as TimelineEntryType,
           timestamp: String(activity.created_at),
           title: String(activity.title || activity.description || 'Deal Activity'),
           description: activity.description ? String(activity.description) : undefined,
@@ -727,7 +726,7 @@ export function UnifiedTimeline({
 
       let query = supabase
         .from('crm_activities')
-        .select('id, subject, activity_type, notes, created_at, completed_at, scheduled_at, deal_id, contact_id, account_id, lead_id')
+        .select('id, subject, activity_type, description, created_at, completed_at, scheduled_at, deal_id, contact_id, account_id, lead_id')
         .order('created_at', { ascending: false })
         .range(offset, offset + pageSize - 1);
 
@@ -746,7 +745,7 @@ export function UnifiedTimeline({
           type: aType,
           timestamp: String(a.completed_at || a.scheduled_at || a.created_at),
           title: String(a.subject || 'Activity'),
-          description: a.notes ? String(a.notes) : undefined,
+          description: a.description ? String(a.description) : undefined,
           metadata: { source: 'crm_activities' },
           raw: a,
         };

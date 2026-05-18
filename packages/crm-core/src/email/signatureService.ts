@@ -23,7 +23,7 @@ export class SignatureService {
 
     const { data, error } = await this.supabase
       .from('crm_email_signatures')
-      .select('id, org_id, user_id, name, html_content, is_default, created_at, updated_at')
+      .select('id, org_id, user_id, name, content, is_default, created_at, updated_at')
       .eq('user_id', user.id)
       .eq('org_id', orgId)
       .order('is_default', { ascending: false })
@@ -47,7 +47,7 @@ export class SignatureService {
 
     const { data, error } = await this.supabase
       .from('crm_email_signatures')
-      .select('id, org_id, user_id, name, html_content, is_default, created_at, updated_at')
+      .select('id, org_id, user_id, name, content, is_default, created_at, updated_at')
       .eq('user_id', user.id)
       .eq('org_id', orgId)
       .eq('is_default', true)
@@ -69,7 +69,7 @@ export class SignatureService {
   async getSignature(id: string): Promise<EmailSignature | null> {
     const { data, error } = await this.supabase
       .from('crm_email_signatures')
-      .select('id, org_id, user_id, name, html_content, is_default, created_at, updated_at')
+      .select('id, org_id, user_id, name, content, is_default, created_at, updated_at')
       .eq('id', id)
       .single();
 

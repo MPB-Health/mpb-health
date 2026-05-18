@@ -44,7 +44,8 @@ import { RouteErrorBoundary } from '../components/ErrorBoundary';
 import { AddLeadModal } from '../components/AddLeadModal';
 import { AddTaskModal } from '../components/AddTaskModal';
 import { AddDealModal } from '../components/AddDealModal';
-import { AddNoteModal, LogCallModal, LogMeetingModal } from '../components/QuickActionModals';
+import { LogCallModal, LogMeetingModal } from '../components/QuickActionModals';
+import { StickyNote } from '../components/StickyNote';
 import { AICommandPaletteModal } from '../components/AICommandPaletteModal';
 import { ComplianceChecklistModal } from '../components/ComplianceChecklistModal';
 import { CommissionSimulatorModal } from '../components/CommissionSimulatorModal';
@@ -349,8 +350,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           setShowAddDeal(true);
           break;
         case 'add-note':
-          if (currentLeadId) { setShowAddNote(true); }
-          else { toast('Navigate to a lead first to add a note', { icon: '📝' }); }
+          setShowAddNote((v) => !v);
           break;
         case 'log-call':
           if (currentLeadId) { setShowLogCall(true); }
@@ -728,17 +728,13 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           navigate(`/deals/${dealId}`);
         }}
       />
+      <StickyNote
+        open={showAddNote}
+        onClose={() => setShowAddNote(false)}
+        leadId={currentLeadId}
+      />
       {currentLeadId && (
         <>
-          <AddNoteModal
-            open={showAddNote}
-            onClose={() => setShowAddNote(false)}
-            leadId={currentLeadId}
-            onSuccess={() => {
-              setShowAddNote(false);
-              handleModalSuccess();
-            }}
-          />
           <LogCallModal
             open={showLogCall}
             onClose={() => setShowLogCall(false)}

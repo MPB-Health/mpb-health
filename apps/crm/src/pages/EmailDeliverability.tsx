@@ -63,7 +63,7 @@ interface TrackingRow {
   tracking_type: string; // open, click
   device_type: string | null;
   location_country: string | null;
-  created_at: string;
+  tracked_at: string;
 }
 
 interface SuppressionEntry {
@@ -200,7 +200,7 @@ export default function EmailDeliverability() {
       // Current period email logs
       const emailQuery = supabase
         .from('crm_email_log')
-        .select('id, lead_id, to_email, status, sent_at, bounce_type')
+        .select('id, lead_id, to_email, status, sent_at, metadata')
         .gte('sent_at', fromISO)
         .lte('sent_at', toISO)
         .order('sent_at', { ascending: false });
@@ -208,16 +208,16 @@ export default function EmailDeliverability() {
       // Previous period email logs (for trend)
       const prevEmailQuery = supabase
         .from('crm_email_log')
-        .select('id, lead_id, to_email, status, sent_at, bounce_type')
+        .select('id, lead_id, to_email, status, sent_at, metadata')
         .gte('sent_at', prevFromISO)
         .lte('sent_at', prevToISO);
 
       // Tracking data
       const trackingQuery = supabase
         .from('crm_email_tracking')
-        .select('id, email_log_id, tracking_type, device_type, location_country, created_at')
-        .gte('created_at', fromISO)
-        .lte('created_at', toISO);
+        .select('id, email_log_id, tracking_type, device_type, location_country, tracked_at')
+        .gte('tracked_at', fromISO)
+        .lte('tracked_at', toISO);
 
       const [emailRes, prevEmailRes, trackingRes] = await Promise.all([
         emailQuery,
@@ -225,8 +225,13 @@ export default function EmailDeliverability() {
         trackingQuery,
       ]);
 
-      setEmailLogs((emailRes.data as unknown as EmailLogRow[]) ?? []);
-      setPrevPeriodLogs((prevEmailRes.data as unknown as EmailLogRow[]) ?? []);
+      const mapRows = (rows: Record<string, unknown>[]): EmailLogRow[] =>
+        rows.map((r) => ({
+          ...r,
+          bounce_type: (r.metadata as Record<string, unknown>)?.bounce_type as string | null ?? null,
+        })) as unknown as EmailLogRow[];
+      setEmailLogs(mapRows((emailRes.data as Record<string, unknown>[]) ?? []));
+      setPrevPeriodLogs(mapRows((prevEmailRes.data as Record<string, unknown>[]) ?? []));
       setTrackingData((trackingRes.data as unknown as TrackingRow[]) ?? []);
     } catch (err) {
       console.error('Failed to load deliverability data:', err);

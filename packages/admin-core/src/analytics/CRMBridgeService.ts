@@ -252,7 +252,7 @@ export class CRMBridgeService {
     const [activities, tasks] = await Promise.all([
       supabase
         .from('lead_activities')
-        .select('id, type, title, description, created_at')
+        .select('id, activity_type, title, description, created_at')
         .eq('lead_id', leadId)
         .order('created_at', { ascending: false })
         .limit(30),
@@ -383,7 +383,7 @@ export class CRMBridgeService {
     // 7. Log the conversion activity
     await supabase.from('lead_activities').insert({
       lead_id: leadId,
-      type: 'status_change',
+      activity_type: 'status_change',
       description: `Lead converted to contact (${contact.id})`,
       created_by: authUser.id,
     });

@@ -6,9 +6,9 @@ export interface AILeadInsight {
   score_factors: ScoreFactor[];
   recommended_action: string;
   recommended_channel: string;
-  urgency: 'low' | 'medium' | 'high' | 'critical';
+  follow_up_urgency: 'low' | 'medium' | 'high' | 'critical';
   conversation_summary?: string;
-  next_best_actions: string[];
+  next_actions: string[];
   created_at: string;
   updated_at?: string;
 }

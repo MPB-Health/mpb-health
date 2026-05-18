@@ -53,7 +53,13 @@ reads `quote_cadence_started_at` (matches Round 2 spec).
 
 ### 2b Leads Module
 
-- Sorting: Owner, Last Touched (default), Status — `LeadsList.tsx`.
+- Sorting: Owner, Last Touched, Status — `LeadsList.tsx`. **Default sort
+  (hotfix 2026-05-18)** is now `last_activity_at` desc nulls last (server-side
+  generated column = `COALESCE(last_touched_at, created_at)`), so brand-new
+  leads with no rep touch yet still appear at the top. Clicking the
+  "Last touched" column header falls back to strict rep-initiated touch
+  sort. Migration
+  `supabase/migrations/20260620590000_crm_lead_last_activity_default_sort.sql`.
 - Subsections: Working / Nurture / LinkedIn / Do Not Contact, plus the
   All button — visible button bar (Round 3 spec) with localStorage
   persistence.
@@ -366,6 +372,31 @@ Settings UI: `Settings → Performance Lag` tab
   `auto_response_pending=true` (i.e., the admin has not yet pasted Email
   #1 content from the OneDrive doc). Once the master template is filled
   in, the fallback never triggers and the customer sees exactly Email #1.
+- **Hotfix 2026-05-18.** `submit_public_lead` originally accepted no
+  `org_id` from the caller and never supplied a default, so every
+  website submission between `2026-04-29` (RPC deploy) and the hotfix
+  landed with `org_id IS NULL`. Two compounding effects: (1) every
+  non-admin rep was blind to the row via `org_leads_select`
+  (`org_id IS NOT NULL AND is_org_member(org_id)`), and (2)
+  `crm-website-lead-intake` short-circuited at line 120
+  (`if (orgId)`) and therefore never enrolled the lead in the Quote
+  Response cadence nor sent Email #1. **230** website prospects were
+  ghosted. Migration
+  `supabase/migrations/20260620600000_crm_lead_intake_default_org.sql`
+  recreates the RPC to source `org_id` from
+  `system_settings.crm.intake_default_org_id` (non-sensitive, anon-
+  readable), backfills the 230 NULL-org rows to MPB Health (per
+  operator decision Option `backfill_all`), and deliberately does NOT
+  send retro emails (Option `none`). Companion migration
+  `20260620610000_crm_lead_backfill_2026_05_18_tag.sql` adds tag
+  `backfill_2026_05_18_org` to the recovered cohort for rep triage.
+  Both backfills are recorded in `audit_logs` (`crm.intake.*`).
+  Forward-path emails reactivate automatically — no edge function
+  redeploy required, because `crm-website-lead-intake` already reads
+  `lead.org_id` from the RPC return value.
+- Anonymous callers still cannot set `org_id` directly; the value is
+  sourced exclusively from the `system_settings` row, preserving the
+  original Section 13 security guarantee.
 
 **Channel distinction (Section 13 bullet 7).** Only the website
 Get-a-Quote form path traverses `crm-website-lead-intake`. Manual rep

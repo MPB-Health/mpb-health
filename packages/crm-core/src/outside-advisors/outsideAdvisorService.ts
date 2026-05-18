@@ -14,7 +14,7 @@ export class OutsideAdvisorService {
   async getAdvisors(activeOnly = false): Promise<OutsideAdvisor[]> {
     let query = this.supabase
       .from('crm_outside_advisors')
-      .select('id, org_id, name, email, phone, company, license_number, states_licensed, specialties, notes, is_active, created_by, created_at, updated_at')
+      .select('id, org_id, name, email, phone, company, notes, is_active, created_by, created_at, updated_at')
       .eq('org_id', this.orgId)
       .order('name');
 
@@ -31,7 +31,7 @@ export class OutsideAdvisorService {
   async getAdvisor(id: string): Promise<OutsideAdvisor | null> {
     const { data, error } = await this.supabase
       .from('crm_outside_advisors')
-      .select('id, org_id, name, email, phone, company, license_number, states_licensed, specialties, notes, is_active, created_by, created_at, updated_at')
+      .select('id, org_id, name, email, phone, company, notes, is_active, created_by, created_at, updated_at')
       .eq('id', id)
       .single();
 

@@ -959,7 +959,7 @@ export function DealRoom({ dealId, dealName }: DealRoomProps) {
 
       const { data, error } = await supabase
         .from('crm_activities')
-        .select('id, type, description, created_at')
+        .select('id, activity_type, description, created_at')
         .eq('deal_id', dealId)
         .order('created_at', { ascending: false })
         .limit(10);
@@ -969,7 +969,7 @@ export function DealRoom({ dealId, dealName }: DealRoomProps) {
       setActivities(
         (data || []).map((a: Record<string, unknown>) => ({
           id: a.id as string,
-          type: a.type as string,
+          type: a.activity_type as string,
           description: a.description as string,
           timestamp: a.created_at as string,
         })),

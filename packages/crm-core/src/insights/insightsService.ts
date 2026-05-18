@@ -11,7 +11,7 @@ export class InsightsService {
     try {
       const { data, error } = await this.supabase
         .from('ai_lead_insights')
-        .select('id, lead_id, ai_score, conversion_probability, score_factors, recommended_action, recommended_channel, urgency, conversation_summary, next_best_actions, created_at, updated_at')
+        .select('id, lead_id, ai_score, conversion_probability, score_factors, recommended_action, recommended_channel, follow_up_urgency, conversation_summary, next_actions, created_at, updated_at')
         .eq('lead_id', leadId)
         .order('created_at', { ascending: false })
         .limit(1)
@@ -69,7 +69,7 @@ export class InsightsService {
   async suggestNextActions(leadId: string): Promise<string[]> {
     try {
       const insights = await this.getInsights(leadId);
-      return insights?.next_best_actions || [];
+      return insights?.next_actions || [];
     } catch (error) {
       console.error('Error getting next actions:', error);
       return [];

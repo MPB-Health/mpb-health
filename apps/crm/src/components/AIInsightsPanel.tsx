@@ -147,8 +147,8 @@ export function AIInsightsPanel({ leadId, leadEmail }: AIInsightsPanelProps) {
           <p className="text-xs text-th-text-tertiary">
             {Math.round(insights.conversion_probability * 100)}% conversion probability
           </p>
-          <span className={`inline-flex items-center px-2 py-0.5 mt-1 rounded-full text-xs font-medium ${urgencyColors[insights.urgency]}`}>
-            {insights.urgency} urgency
+          <span className={`inline-flex items-center px-2 py-0.5 mt-1 rounded-full text-xs font-medium ${urgencyColors[insights.follow_up_urgency]}`}>
+            {insights.follow_up_urgency} urgency
           </span>
         </div>
       </div>

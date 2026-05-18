@@ -180,9 +180,9 @@ function InsightsPanel({ leadId, compact }: { leadId: string; compact: boolean }
     try {
       const { data: existing, error: existingErr } = await supabase
         .from('ai_lead_insights')
-        .select('id, recommended_action, recommended_channel, score_factors, summary, generated_at')
+        .select('id, recommended_action, recommended_channel, score_factors, conversation_summary, last_analyzed_at')
         .eq('lead_id', leadId)
-        .order('generated_at', { ascending: false })
+        .order('last_analyzed_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
@@ -192,8 +192,8 @@ function InsightsPanel({ leadId, compact }: { leadId: string; compact: boolean }
           recommended_action: existing.recommended_action ?? 'Follow up with lead',
           recommended_channel: existing.recommended_channel ?? 'email',
           score_factors: (existing.score_factors as ScoreFactor[]) ?? [],
-          summary: existing.summary ?? '',
-          generated_at: existing.generated_at ?? new Date().toISOString(),
+          summary: existing.conversation_summary ?? '',
+          generated_at: existing.last_analyzed_at ?? new Date().toISOString(),
         });
       } else {
         const { data: aiData, error: aiErr } = await supabase.functions.invoke(

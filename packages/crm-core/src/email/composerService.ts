@@ -488,35 +488,35 @@ export class ComposerService {
       };
     }
 
-    // Get counts in parallel
+    // Get counts in parallel - HEAD queries only need valid columns for validation
     const [inbox, sent, drafts, starred, archived, unread] = await Promise.all([
       this.supabase
         .from('crm_email_log')
-        .select('id, org_id, lead_id, template_id, thread_id, direction, from_address, from_name, to_email, to_addresses, cc_addresses, bcc_addresses, subject, body_preview, body_html, status, resend_email_id, signature_id, reply_to_id, has_attachments, attachment_count, is_read, is_starred, is_archived, labels, metadata, sent_by, sent_at, created_at, tracking_id, open_count, click_count, first_opened_at, last_opened_at', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .eq('direction', 'inbound')
         .eq('is_archived', false),
       this.supabase
         .from('crm_email_log')
-        .select('id, org_id, lead_id, template_id, thread_id, direction, from_address, from_name, to_email, to_addresses, cc_addresses, bcc_addresses, subject, body_preview, body_html, status, resend_email_id, signature_id, reply_to_id, has_attachments, attachment_count, is_read, is_starred, is_archived, labels, metadata, sent_by, sent_at, created_at, tracking_id, open_count, click_count, first_opened_at, last_opened_at', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .eq('direction', 'outbound')
         .eq('sent_by', user.id),
       this.supabase
         .from('crm_email_drafts')
-        .select('id, org_id, lead_id, template_id, thread_id, direction, from_address, from_name, to_email, to_addresses, cc_addresses, bcc_addresses, subject, body_preview, body_html, status, resend_email_id, signature_id, reply_to_id, has_attachments, attachment_count, is_read, is_starred, is_archived, labels, metadata, sent_by, sent_at, created_at, tracking_id, open_count, click_count, first_opened_at, last_opened_at', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .eq('user_id', user.id)
         .eq('org_id', orgId),
       this.supabase
         .from('crm_email_log')
-        .select('id, org_id, lead_id, template_id, thread_id, direction, from_address, from_name, to_email, to_addresses, cc_addresses, bcc_addresses, subject, body_preview, body_html, status, resend_email_id, signature_id, reply_to_id, has_attachments, attachment_count, is_read, is_starred, is_archived, labels, metadata, sent_by, sent_at, created_at, tracking_id, open_count, click_count, first_opened_at, last_opened_at', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .eq('is_starred', true)
         .eq('is_archived', false),
       this.supabase
         .from('crm_email_log')
-        .select('id, org_id, user_id, account_id, to_addresses, cc_addresses, bcc_addresses, subject, body_html, body_text, reply_to_message_id, attachments, scheduled_at, created_at, updated_at', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .eq('is_archived', true),
       this.supabase
         .from('crm_email_threads')
-        .select('id, org_id, lead_id, template_id, thread_id, direction, from_address, from_name, to_email, to_addresses, cc_addresses, bcc_addresses, subject, body_preview, body_html, status, resend_email_id, signature_id, reply_to_id, has_attachments, attachment_count, is_read, is_starred, is_archived, labels, metadata, sent_by, sent_at, created_at, tracking_id, open_count, click_count, first_opened_at, last_opened_at', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .eq('has_unread', true),
     ]);
 

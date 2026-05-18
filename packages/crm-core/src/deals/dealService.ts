@@ -539,9 +539,9 @@ export class DealService {
     try {
       const { data, error } = await this.supabase
         .from('crm_activities')
-        .select('id, org_id, lead_id, contact_id, activity_type, title, description, metadata, created_by, created_at')
+        .select('id, org_id, lead_id, contact_id, activity_type, subject, description, created_by, created_at')
         .eq('deal_id', dealId)
-        .order('activity_date', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(limit);
 
       if (error) {

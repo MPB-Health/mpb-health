@@ -44,6 +44,7 @@ import { useWidgetVisibility } from '../hooks/useWidgetVisibility';
 import { useAdvisorQueryReady } from '../hooks/useAdvisorQueryReady';
 import { useAdvisorPageDebugLog } from '../hooks/useAdvisorPageDebugLog';
 import SafeImage from '../components/SafeImage';
+import AdvisorAtAGlance from '../components/dashboard/AdvisorAtAGlance';
 
 const JOIN_MPB_BASE = 'https://join.mpb.health';
 
@@ -228,7 +229,7 @@ export default function Dashboard() {
     trainingProgress,
     unreadBulletinCount,
   } = useAdvisor();
-  const { advisorReady } = useAdvisorQueryReady();
+  const { advisorReady, profileId } = useAdvisorQueryReady();
 
   const { isVisible } = useWidgetVisibility();
   const queryClient = useQueryClient();
@@ -375,8 +376,6 @@ export default function Dashboard() {
     setDismissedIds((prev) => new Set([...prev, id]));
   };
 
-  const visibleAnnouncements = announcements.filter((a) => !dismissedIds.has(a.id));
-
   // Derive URLs from settings with hardcoded fallbacks
   const affiliateFormUrl = portalSettings.affiliate_form_url || 'https://www.cognitoforms.com/f/K4Fk3PtQHE-6M-fMiX2fVA/448';
   const scheduleCallUrl = portalSettings.schedule_call_url || 'https://calendly.com/rebalarney-mympb/time-with-reba';
@@ -433,91 +432,6 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Announcements */}
-      {visibleAnnouncements.length > 0 && (
-        <div className="space-y-3">
-          {visibleAnnouncements.map((announcement) => {
-            const typeConfig: Record<Announcement['type'], { bg: string; border: string; icon: string; iconBg: string; textColor: string; IconComponent: typeof Info }> = {
-              info: {
-                bg: 'bg-blue-50 dark:bg-blue-950/30',
-                border: 'border-blue-200 dark:border-blue-800',
-                icon: 'text-blue-600 dark:text-blue-400',
-                iconBg: 'bg-blue-100 dark:bg-blue-900/40',
-                textColor: 'text-blue-800 dark:text-blue-200',
-                IconComponent: Info,
-              },
-              warning: {
-                bg: 'bg-amber-50 dark:bg-amber-950/30',
-                border: 'border-amber-200 dark:border-amber-800',
-                icon: 'text-amber-600 dark:text-amber-400',
-                iconBg: 'bg-amber-100 dark:bg-amber-900/40',
-                textColor: 'text-amber-800 dark:text-amber-200',
-                IconComponent: AlertTriangle,
-              },
-              success: {
-                bg: 'bg-green-50 dark:bg-green-950/30',
-                border: 'border-green-200 dark:border-green-800',
-                icon: 'text-green-600 dark:text-green-400',
-                iconBg: 'bg-green-100 dark:bg-green-900/40',
-                textColor: 'text-green-800 dark:text-green-200',
-                IconComponent: CheckCircle2,
-              },
-              error: {
-                bg: 'bg-red-50 dark:bg-red-950/30',
-                border: 'border-red-200 dark:border-red-800',
-                icon: 'text-red-600 dark:text-red-400',
-                iconBg: 'bg-red-100 dark:bg-red-900/40',
-                textColor: 'text-red-800 dark:text-red-200',
-                IconComponent: AlertCircle,
-              },
-            };
-
-            const config = typeConfig[announcement.type] || typeConfig.info;
-            const IconComp = config.IconComponent;
-
-            return (
-              <div
-                key={announcement.id}
-                className={`relative flex items-start gap-3 rounded-xl border px-4 py-3.5 ${config.bg} ${config.border} transition-all duration-200`}
-              >
-                <div className={`flex-shrink-0 p-1.5 rounded-lg ${config.iconBg}`}>
-                  <IconComp className={`w-4.5 h-4.5 ${config.icon}`} />
-                </div>
-                <div className="flex-1 min-w-0 pt-0.5">
-                  <p className={`text-sm font-semibold ${config.textColor}`}>{announcement.title}</p>
-                  {announcement.content && (
-                    <p className={`mt-0.5 text-sm ${config.textColor} opacity-80`}>{announcement.content}</p>
-                  )}
-                  {announcement.link_url && (
-                    <a
-                      href={announcement.link_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`inline-flex items-center gap-1 mt-1.5 text-sm font-medium ${config.icon} hover:underline`}
-                    >
-                      {announcement.link_text || 'Learn more'}
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </a>
-                  )}
-                </div>
-                {announcement.is_dismissible && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDismissAnnouncement(announcement.id)}
-                    className={`flex-shrink-0 min-h-[44px] min-w-[44px] ${config.textColor} opacity-60 hover:opacity-100 hover:bg-black/5 dark:hover:bg-white/10`}
-                    aria-label="Dismiss announcement"
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
-
       {/* Welcome hero */}
       <div className="relative rounded-2xl bg-surface-primary border border-th-border overflow-hidden">
         {/* Subtle top accent */}
@@ -614,6 +528,18 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {isVisible('member_overview') && (
+        <AdvisorAtAGlance
+          profileId={profileId}
+          agentId={profile?.agent_id ?? null}
+          orgId={profile?.org_id ?? null}
+          advisorReady={advisorReady}
+          announcements={announcements}
+          dismissedAnnouncementIds={dismissedIds}
+          onDismissAnnouncement={handleDismissAnnouncement}
+        />
+      )}
 
       {/* Action cards */}
       {isVisible('stats_cards') && <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

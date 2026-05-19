@@ -15,6 +15,19 @@ export { ContentService, contentService } from './content/ContentService';
 export { FormsService, formsService } from './forms/FormsService';
 export { ProfileService, profileService } from './profile/ProfileService';
 export { AdvisorLeadService, advisorLeadService } from './leads/advisorLeadService';
+export {
+  AdvisorOverviewService,
+  advisorOverviewService,
+  ADVISOR_DASHBOARD_COMMISSIONS_LIVE,
+  ADVISOR_DASHBOARD_TREE_LIVE,
+  type AdvisorMemberBookStats,
+  type AdvisorCommissionStats,
+  type AdvisorSubagent,
+  type AdvisorTreeStats,
+  type AdvisorOverviewContext,
+  type AdvisorOverviewSnapshot,
+  type OverviewDataStatus,
+} from './overview/AdvisorOverviewService';
 export { NavigationService, navigationService, type NavMenuItem, type QuickLink } from './navigation/NavigationService';
 export { VideoService, videoService, type AdvisorVideo } from './videos/VideoService';
 export { EnrollmentService, enrollmentService, type EnrollmentLink } from './enrollment/EnrollmentService';

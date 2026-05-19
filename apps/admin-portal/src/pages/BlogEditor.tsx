@@ -235,7 +235,7 @@ export default function BlogEditor() {
           <div className="bg-surface-primary rounded-xl border border-th-border p-6">
             <label className="block text-sm font-medium text-th-text-secondary mb-3">Content</label>
             <RichTextEditor
-              value={formData.content}
+              content={formData.content}
               onChange={(html) => setFormData((prev) => ({ ...prev, content: html }))}
               placeholder="Write your blog post content..."
             />

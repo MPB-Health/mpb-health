@@ -47,7 +47,7 @@ import {
   type CmsForm,
   type FormField,
   type FormSubmission,
-  type FormCreateInput,
+  type CmsFormCreateInput,
   type FormFieldType,
 } from '@mpbhealth/admin-core';
 import { useAdmin } from '../contexts/AdminContext';
@@ -648,7 +648,7 @@ function FormEditor({
         const created = await formBuilderService.createForm({
           ...payload,
           created_by: user?.id || null,
-        } as FormCreateInput);
+        } as CmsFormCreateInput);
         setForm(created);
         toast.success('Form created');
         window.history.replaceState(null, '', `/cms/forms/${created.id}`);

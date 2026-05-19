@@ -326,8 +326,8 @@ export {
   type FormField,
   type FormFieldType,
   type FormSubmission,
-  type FormCreateInput,
-  type FormUpdateInput,
+  type FormCreateInput as CmsFormCreateInput,
+  type FormUpdateInput as CmsFormUpdateInput,
 } from './content/FormBuilderService';
 
 // CMS Popup Builder

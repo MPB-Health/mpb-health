@@ -100,7 +100,7 @@ export class RevisionService {
     }
   }
 
-  async compareRevisions(
+  compareRevisions(
     revisionA: CmsRevision,
     revisionB: CmsRevision
   ): { added: string[]; removed: string[]; changed: string[] } {

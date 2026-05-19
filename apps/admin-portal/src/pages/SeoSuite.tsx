@@ -7,8 +7,6 @@ import {
   AlertCircle,
   CheckCircle,
   Loader2,
-  ExternalLink,
-  RefreshCcw,
   Download,
   Code2,
 } from 'lucide-react';
@@ -39,8 +37,8 @@ export default function SeoSuite() {
   useEffect(() => { loadData(); }, [loadData]);
 
   const generateSitemap = () => {
-    const publishedPages = pages.filter((p) => !p.noindex);
-    const urls = publishedPages.map((p) => `  <url>\n    <loc>https://mpb.health${p.path}</loc>\n    <lastmod>${new Date(p.updated_at || p.created_at).toISOString().split('T')[0]}</lastmod>\n  </url>`);
+    const publishedPages = pages.filter((p) => p.robots !== 'noindex');
+    const urls = publishedPages.map((p) => `  <url>\n    <loc>https://mpb.health${p.page_path}</loc>\n    <lastmod>${new Date(p.updated_at || p.created_at).toISOString().split('T')[0]}</lastmod>\n  </url>`);
     const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>`;
 
     const blob = new Blob([xml], { type: 'application/xml' });
@@ -71,10 +69,10 @@ export default function SeoSuite() {
       {/* Stats */}
       {stats && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <StatCard label="Total Pages" value={stats.total_pages} icon={FileText} />
-          <StatCard label="With SEO" value={stats.with_meta} icon={CheckCircle} color="emerald" />
-          <StatCard label="Missing Meta" value={stats.missing_meta} icon={AlertCircle} color="amber" />
-          <StatCard label="Noindex" value={stats.noindex_count} icon={Globe} color="rose" />
+          <StatCard label="Total Pages" value={stats.total} icon={FileText} />
+          <StatCard label="With Title" value={stats.withTitle} icon={CheckCircle} color="emerald" />
+          <StatCard label="Missing Title" value={stats.missingTitle} icon={AlertCircle} color="amber" />
+          <StatCard label="Missing Desc" value={stats.missingDescription} icon={Globe} color="rose" />
         </div>
       )}
 
@@ -125,9 +123,9 @@ export default function SeoSuite() {
                 const score = getSeoScore(page);
                 return (
                   <tr key={page.id} className="hover:bg-surface-secondary/40">
-                    <td className="px-4 py-3 font-mono text-xs text-th-text-primary">{page.path}</td>
-                    <td className="px-4 py-3 text-th-text-primary truncate max-w-[200px]">{page.title || '—'}</td>
-                    <td className="px-4 py-3 text-th-text-secondary truncate max-w-[250px] hidden md:table-cell">{page.description || '—'}</td>
+                    <td className="px-4 py-3 font-mono text-xs text-th-text-primary">{page.page_path}</td>
+                    <td className="px-4 py-3 text-th-text-primary truncate max-w-[200px]">{page.meta_title || '—'}</td>
+                    <td className="px-4 py-3 text-th-text-secondary truncate max-w-[250px] hidden md:table-cell">{page.meta_description || '—'}</td>
                     <td className="px-4 py-3 text-center">
                       <span className={`inline-block w-8 h-8 rounded-full text-xs font-bold flex items-center justify-center ${
                         score >= 80 ? 'bg-emerald-100 text-emerald-700' : score >= 50 ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700'
@@ -162,8 +160,8 @@ export default function SeoSuite() {
             </button>
           </div>
           <div className="bg-surface-secondary rounded-lg p-4 text-xs font-mono text-th-text-secondary">
-            <p>Will include {pages.filter((p) => !p.noindex).length} pages</p>
-            <p className="mt-1 text-th-text-tertiary">Pages with noindex are excluded from the sitemap.</p>
+            <p>Will include {pages.filter((p) => p.robots !== 'noindex').length} pages</p>
+            <p className="mt-1 text-th-text-tertiary">Pages with noindex robots directive are excluded from the sitemap.</p>
           </div>
         </div>
       )}
@@ -207,10 +205,10 @@ function StatCard({ label, value, icon: Icon, color }: { label: string; value: n
 function SeoPageRow({ page }: { page: SeoMetadataRow }) {
   const score = getSeoScore(page);
   const issues: string[] = [];
-  if (!page.title) issues.push('Missing title');
-  if (!page.description) issues.push('Missing description');
-  if (page.title && page.title.length > 60) issues.push('Title too long');
-  if (page.description && page.description.length > 160) issues.push('Description too long');
+  if (!page.meta_title) issues.push('Missing title');
+  if (!page.meta_description) issues.push('Missing description');
+  if (page.meta_title && page.meta_title.length > 60) issues.push('Title too long');
+  if (page.meta_description && page.meta_description.length > 160) issues.push('Description too long');
   if (!page.og_image) issues.push('No OG image');
 
   return (
@@ -221,7 +219,7 @@ function SeoPageRow({ page }: { page: SeoMetadataRow }) {
         {score}
       </span>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-th-text-primary truncate">{page.path}</p>
+        <p className="text-sm font-medium text-th-text-primary truncate">{page.page_path}</p>
         {issues.length > 0 && (
           <p className="text-xs text-amber-600 mt-0.5">{issues.join(' · ')}</p>
         )}
@@ -232,10 +230,10 @@ function SeoPageRow({ page }: { page: SeoMetadataRow }) {
 
 function getSeoScore(page: SeoMetadataRow): number {
   let score = 0;
-  if (page.title) score += 25;
-  if (page.description) score += 25;
-  if (page.title && page.title.length <= 60) score += 15;
-  if (page.description && page.description.length <= 160) score += 15;
+  if (page.meta_title) score += 25;
+  if (page.meta_description) score += 25;
+  if (page.meta_title && page.meta_title.length <= 60) score += 15;
+  if (page.meta_description && page.meta_description.length <= 160) score += 15;
   if (page.og_image) score += 10;
   if (page.canonical_url) score += 10;
   return Math.min(100, score);

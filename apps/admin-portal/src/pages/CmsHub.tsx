@@ -34,7 +34,7 @@ interface ContentType {
   label: string;
   description: string;
   icon: LucideIcon;
-  table: string;
+  table?: string;
   publishedColumn?: string;
   draftColumn?: string;
   adminListPath: string;
@@ -308,6 +308,10 @@ export default function CmsHub() {
       const next: Record<string, TypeStats> = {};
       await Promise.all(
         CONTENT_TYPES.map(async (ct) => {
+          if (!ct.table) {
+            next[ct.key] = { total: 0, published: null, drafts: null, lastUpdated: null, error: null };
+            return;
+          }
           try {
             // Total count
             const totalRes = await supabase
@@ -383,12 +387,12 @@ export default function CmsHub() {
 
     // Realtime: refresh stats whenever any CMS table changes so the hub
     // stays accurate without manual refresh.
-    const channels = CONTENT_TYPES.map((ct) =>
+    const channels = CONTENT_TYPES.filter((ct) => ct.table).map((ct) =>
       supabase
         .channel(`cms-hub:${ct.table}`)
         .on(
           'postgres_changes',
-          { event: '*', schema: 'public', table: ct.table },
+          { event: '*', schema: 'public', table: ct.table! },
           () => {
             // Debounce slightly — Realtime can fire bursts on bulk updates.
             window.clearTimeout((window as unknown as { __cmsHubTimer?: number }).__cmsHubTimer);

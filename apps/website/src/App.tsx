@@ -19,6 +19,8 @@ import { StateEligibilityBanner } from './components/blocks/StateEligibilityBann
 import { ZohoSalesIQMonitor } from './components/ZohoSalesIQMonitor';
 import { SilentErrorBoundary } from './components/ErrorBoundary';
 import LazyLoadErrorBoundary from './components/LazyLoadErrorBoundary';
+import { Toaster } from 'sonner';
+import { MANAGED_SITE_PATHS, ManagedSitePage } from './lib/sitePageFallbacks';
 
 // Critical routes - loaded immediately
 import { Landing } from './pages/Landing';
@@ -177,6 +179,22 @@ const AdvisorCMSFlyers = lazyAuto(() => import('./pages/admin/advisor-cms/Flyers
 const AdvisorCMSSharingGuidelines = lazyAuto(() => import('./pages/admin/advisor-cms/SharingGuidelinesManager'));
 const AdvisorCMSARM = lazyAuto(() => import('./pages/admin/advisor-cms/ARMManager'));
 
+// Website CMS Suite
+const CmsAdminLayout = lazyAuto(() => import('./pages/admin/cms/CmsAdminLayout'));
+const CmsHub = lazyAuto(() => import('./pages/admin/cms/CmsHub'));
+const CmsPagesList = lazyAuto(() => import('./pages/admin/cms/PagesList'));
+const CmsPageEditor = lazyAuto(() => import('./pages/admin/cms/PageEditor'));
+const CmsMediaLibrary = lazyAuto(() => import('./pages/admin/cms/MediaLibrary'));
+const CmsBlogEditor = lazyAuto(() => import('./pages/admin/cms/CmsBlogEditor'));
+const CmsTemplateLibrary = lazyAuto(() => import('./pages/admin/cms/TemplateLibrary'));
+const CmsThemeEditor = lazyAuto(() => import('./pages/admin/cms/ThemeEditor'));
+const CmsFormBuilder = lazyAuto(() => import('./pages/admin/cms/CmsFormBuilder'));
+const CmsPopupBuilder = lazyAuto(() => import('./pages/admin/cms/PopupBuilder'));
+const CmsRedirectManager = lazyAuto(() => import('./pages/admin/cms/RedirectManager'));
+const CmsContentCalendar = lazyAuto(() => import('./pages/admin/cms/ContentCalendar'));
+const CmsSeoSuite = lazyAuto(() => import('./pages/admin/cms/SeoSuite'));
+const CmsContentPermissions = lazyAuto(() => import('./pages/admin/cms/ContentPermissions'));
+
 // Forms Manager
 const FormsManager = lazyAuto(() => import('./pages/admin/FormsManager'));
 
@@ -307,6 +325,7 @@ const App = () => {
 
   return (
     <HelmetProvider>
+      <Toaster position="top-right" richColors closeButton />
       <AuthProvider>
         <NavigationProvider>
           <TerminalProvider>
@@ -321,13 +340,6 @@ const App = () => {
               <LazyLoadErrorBoundary>
                 <Suspense fallback={<PageSpinner />}>
                   <Routes>
-                  <Route path="/" element={<Landing />} />
-                  <Route path="/mvp" element={<LandingMVP />} />
-                  <Route path="/plans" element={<Plans />} />
-                  <Route path="/compare-plans" element={<PlanComparison />} />
-                  <Route path="/enrollment" element={<Enrollment />} />
-                  <Route path="/get-started" element={<GetStarted />} />
-                  <Route path="/get-a-quote" element={<GetAQuote />} />
                   <Route path="/quote" element={<Navigate to="/get-a-quote" replace />} />
                   <Route path="/calculator" element={<Navigate to="/get-started" replace />} />
                   <Route path="/freequote" element={<Navigate to="/get-started" replace />} />
@@ -335,15 +347,14 @@ const App = () => {
                   <Route path="/individuals-families" element={<Navigate to="/individuals-and-families" replace />} />
                   <Route path="/businesses-organizations" element={<Navigate to="/businesses-and-organizations" replace />} />
                   <Route path="/resource-library" element={<Navigate to="/resources" replace />} />
-                  <Route path="/individuals-and-families" element={<IndividualsAndFamilies />} />
-                  <Route path="/businesses-and-organizations" element={<BusinessesOrganizations />} />
-                  <Route path="/advisors-and-brokers" element={<AdvisorsAndBrokers />} />
-                  <Route path="/how-it-works" element={<HowItWorksPage />} />
-                  <Route path="/faq" element={<FAQ />} />
-                  <Route path="/support" element={<Support />} />
-                  <Route path="/join-our-team" element={<JoinOurTeam />} />
-                  <Route path="/download-app" element={<DownloadApp />} />
-                  <Route path="/welcome" element={<Welcome />} />
+                  {/* Marketing pages: CMS block editor overrides when published */}
+                  {MANAGED_SITE_PATHS.map((sitePath) => (
+                    <Route
+                      key={sitePath}
+                      path={sitePath}
+                      element={<ManagedSitePage path={sitePath} />}
+                    />
+                  ))}
 
                   {/* Protected Member Routes */}
                   <Route path="/member" element={<ProtectedRoute requiredRole="member"><MemberDashboard /></ProtectedRoute>} />
@@ -471,8 +482,6 @@ const App = () => {
                       apps/website/src/components/cms-blocks/. Resolves live via
                       Supabase Realtime — published changes appear within ~1s. */}
                   <Route path="/p/:slug" element={<CmsPage />} />
-                  <Route path="/member-stories" element={<MemberStories />} />
-                  <Route path="/podcast" element={<HealthyCarePodcast />} />
                   <Route path="/logout" element={<Logout />} />
                   <Route path="/forbidden" element={<Forbidden />} />
                   <Route
@@ -499,20 +508,8 @@ const App = () => {
                       </ProtectedRoute>
                     }
                   />
-                  <Route path="/about-us" element={<AboutUs />} />
-                  <Route path="/contact" element={<Contact />} />
-                  <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-                  <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
-                  <Route path="/state-notices" element={<StateNotices />} />
-                  <Route path="/washington-statement" element={<WashingtonStatement />} />
-                  <Route path="/education-enrollment" element={<EducationEnrollment />} />
-                  <Route path="/care-support-hub" element={<CareSupportHub />} />
-                  <Route path="/insights-analytics" element={<InsightsAnalytics />} />
-                  <Route path="/resources" element={<ResourceLibrary />} />
                   <Route path="/resources/:slug" element={<ResourceDetail />} />
-                  <Route path="/benefits" element={<Benefits />} />
                   <Route path="/benefits/:benefitId" element={<BenefitDetail />} />
-                  <Route path="/features" element={<Features />} />
                   <Route path="/features/:featureId" element={<FeatureDetail />} />
                   <Route path="/plan-categories/:slug" element={<PlanCategoryDetail />} />
                   <Route path="/newsletter/unsubscribe" element={<NewsletterUnsubscribe />} />
@@ -795,6 +792,35 @@ const App = () => {
                       </ProtectedRoute>
                     }
                   />
+
+                  {/* Website CMS Suite — uses admin sidebar via CmsAdminLayout */}
+                  <Route
+                    path="/admin/cms"
+                    element={
+                      <ProtectedRoute requiredRole="admin">
+                        <CmsAdminLayout />
+                      </ProtectedRoute>
+                    }
+                  >
+                    <Route index element={<CmsHub />} />
+                    <Route path="pages" element={<CmsPagesList />} />
+                    <Route path="pages/new" element={<CmsPageEditor />} />
+                    <Route path="pages/:id" element={<CmsPageEditor />} />
+                    <Route path="media" element={<CmsMediaLibrary />} />
+                    <Route path="blog/new" element={<CmsBlogEditor />} />
+                    <Route path="blog/:id" element={<CmsBlogEditor />} />
+                    <Route path="templates" element={<CmsTemplateLibrary />} />
+                    <Route path="theme" element={<CmsThemeEditor />} />
+                    <Route path="forms" element={<CmsFormBuilder />} />
+                    <Route path="forms/new" element={<CmsFormBuilder />} />
+                    <Route path="forms/:id" element={<CmsFormBuilder />} />
+                    <Route path="popups" element={<CmsPopupBuilder />} />
+                    <Route path="popups/:id" element={<CmsPopupBuilder />} />
+                    <Route path="redirects" element={<CmsRedirectManager />} />
+                    <Route path="calendar" element={<CmsContentCalendar />} />
+                    <Route path="seo" element={<CmsSeoSuite />} />
+                    <Route path="permissions" element={<CmsContentPermissions />} />
+                  </Route>
 
                   {/* Forms Manager */}
                   <Route

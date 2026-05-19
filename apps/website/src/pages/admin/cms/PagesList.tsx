@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import { Plus, Search, FileText, Loader2 } from 'lucide-react';
 import {
   buildPageListRows,
   pagesAdminService,
   type SitePageCatalogEntry,
 } from '@mpbhealth/admin-core';
-import { PageListRowItem } from '../components/cms/PageListRowItem';
+import { PageListRowItem } from './PageListRowItem';
 import { supabase, safeRemoveChannel } from '@mpbhealth/database';
 import type { CmsPage } from '@mpbhealth/database';
 
@@ -41,7 +41,6 @@ export default function PagesList() {
         setPages(data);
       } catch (e) {
         const msg = e instanceof Error ? e.message : 'Unknown error';
-        // Migration not run yet? Show empty state instead of a scary error.
         if (msg.includes('schema cache') || msg.includes('does not exist')) {
           setPages([]);
         } else {
@@ -64,8 +63,6 @@ export default function PagesList() {
     fetchPages();
   }, [fetchPages]);
 
-  // Realtime: keep the list fresh as other admins (or this admin from another
-  // tab) make changes.
   useEffect(() => {
     const channel = supabase
       .channel('cms-pages-admin-list')
@@ -83,9 +80,7 @@ export default function PagesList() {
 
   const handleTogglePublish = async (page: CmsPage) => {
     setPendingAction(page.id);
-    const toastId = toast.loading(
-      page.is_published ? 'Unpublishing…' : 'Publishing…'
-    );
+    const toastId = toast.loading(page.is_published ? 'Unpublishing…' : 'Publishing…');
     try {
       if (page.is_published) await pagesAdminService.unpublishPage(page.id);
       else await pagesAdminService.publishPage(page.id);
@@ -105,7 +100,7 @@ export default function PagesList() {
     try {
       const copy = await pagesAdminService.duplicatePage(page.id);
       toast.success('Page duplicated', { id: toastId });
-      navigate(`/cms/pages/${copy.id}`);
+      navigate(`/admin/cms/pages/${copy.id}`);
     } catch (e) {
       toast.error(`Failed: ${e instanceof Error ? e.message : 'Unknown error'}`, {
         id: toastId,
@@ -121,7 +116,7 @@ export default function PagesList() {
     try {
       const page = await pagesAdminService.ensureSitePage(entry);
       toast.success('Ready to edit', { id: toastId });
-      navigate(`/cms/pages/${page.id}`);
+      navigate(`/admin/cms/pages/${page.id}`);
     } catch (e) {
       toast.error(`Failed: ${e instanceof Error ? e.message : 'Unknown error'}`, {
         id: toastId,
@@ -148,20 +143,18 @@ export default function PagesList() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="space-y-6">
       <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-th-text-primary">Pages</h1>
           <p className="text-sm text-th-text-secondary mt-1">
-            Edit every page on the public site. Published CMS content replaces the legacy
-            React page at the same URL (e.g.{' '}
-            <code className="px-1.5 py-0.5 bg-surface-tertiary rounded text-xs">/about-us</code>
-            ). Extra pages can also live at{' '}
-            <code className="px-1.5 py-0.5 bg-surface-tertiary rounded text-xs">/p/&lt;slug&gt;</code>.
+            Edit every page on the public site. Published CMS content replaces the legacy React
+            page at the same URL (e.g. <code className="px-1.5 py-0.5 bg-surface-tertiary rounded text-xs">/about-us</code>
+            ). Extra pages can also live at <code className="px-1.5 py-0.5 bg-surface-tertiary rounded text-xs">/p/&lt;slug&gt;</code>.
           </p>
         </div>
         <Link
-          to="/cms/pages/new"
+          to="/admin/cms/pages/new"
           className="inline-flex items-center gap-2 bg-th-accent-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-th-accent-700 transition-colors"
         >
           <Plus className="w-4 h-4" />
@@ -207,13 +200,11 @@ export default function PagesList() {
           <div className="p-12 text-center">
             <FileText className="w-10 h-10 text-th-text-tertiary mx-auto mb-3" />
             <p className="text-th-text-secondary">
-              {search.trim()
-                ? 'No pages match your search.'
-                : 'No pages yet. Create your first one.'}
+              {search.trim() ? 'No pages match your search.' : 'No pages yet. Create your first one.'}
             </p>
             {!search.trim() && (
               <Link
-                to="/cms/pages/new"
+                to="/admin/cms/pages/new"
                 className="inline-flex items-center gap-2 mt-4 bg-th-accent-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-th-accent-700 transition-colors"
               >
                 <Plus className="w-4 h-4" />
@@ -233,7 +224,7 @@ export default function PagesList() {
                 onDuplicate={handleDuplicate}
                 onDelete={handleDelete}
                 onEnableInCms={handleEnableInCms}
-                editorBasePath="/cms/pages"
+                editorBasePath="/admin/cms/pages"
               />
             ))}
           </div>

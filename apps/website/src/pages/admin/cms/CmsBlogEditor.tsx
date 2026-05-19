@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import toast from 'react-hot-toast';
+import { toast } from 'sonner';
 import {
   ArrowLeft,
   Save,
@@ -13,15 +13,15 @@ import {
   BookOpen,
 } from 'lucide-react';
 import { contentService, revisionService, type BlogPost } from '@mpbhealth/admin-core';
-import { useAdmin } from '../contexts/AdminContext';
-import RichTextEditor from '../components/RichTextEditor';
-import { ImageUploader } from '../components/cms/ImageUploader';
-import { RevisionHistory } from '../components/cms/RevisionHistory';
+import { useAuth } from '../../../contexts/AuthContext';
+import RichTextEditor from '../../../components/admin/RichTextEditor';
+import { ImageUploader } from '../../../components/admin/cms/ImageUploader';
+import { RevisionHistory } from '../../../components/admin/cms/RevisionHistory';
 
-export default function BlogEditor() {
+export default function CmsBlogEditor() {
   const { postId } = useParams<{ postId: string }>();
   const navigate = useNavigate();
-  const { user } = useAdmin();
+  const { user } = useAuth();
   const isNew = !postId;
 
   const [loading, setLoading] = useState(!isNew);
@@ -117,7 +117,7 @@ export default function BlogEditor() {
         ...formData,
         slug: formData.slug || generateSlug(formData.title),
         author_id: user?.id || null,
-        author: user ? `${user.first_name} ${user.last_name}` : null,
+        author: user?.user_metadata?.full_name || user?.email || null,
         is_published: publish ? true : formData.is_published,
         published_date: publish ? new Date().toISOString() : null,
       };
@@ -236,7 +236,7 @@ export default function BlogEditor() {
             <label className="block text-sm font-medium text-th-text-secondary mb-3">Content</label>
             <RichTextEditor
               content={formData.content}
-              onChange={(html) => setFormData((prev) => ({ ...prev, content: html }))}
+              onChange={(html: string) => setFormData((prev) => ({ ...prev, content: html }))}
               placeholder="Write your blog post content..."
             />
           </div>

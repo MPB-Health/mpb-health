@@ -17,7 +17,8 @@ import {
   Sparkles,
   Send,
   HelpCircle,
-  Book
+  Book,
+  LayoutTemplate,
 } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { AdminLayout, useAdminStats } from '../../components/admin/AdminLayout';
@@ -44,6 +45,20 @@ const AdminDashboardContent: React.FC<{ activeView: string }> = ({ activeView })
   const { stats } = useAdminStats();
 
   const adminSections: Array<{ title: string; icon: React.FC<{ className?: string }>; description: string; href: string; color: string; badge?: number; urgent?: boolean }> = [
+    {
+      title: 'Website CMS',
+      icon: Sparkles,
+      description: 'Pages, media, forms, popups, SEO, and the visual page builder',
+      href: '/admin/cms',
+      color: 'purple',
+    },
+    {
+      title: 'Page Builder',
+      icon: LayoutTemplate,
+      description: 'Create and edit public site pages with drag-and-drop blocks',
+      href: '/admin/cms/pages/new',
+      color: 'indigo',
+    },
     {
       title: 'Reports & Analytics',
       icon: BarChart3,
@@ -169,6 +184,22 @@ const AdminDashboardContent: React.FC<{ activeView: string }> = ({ activeView })
         <h1 className="text-3xl font-bold text-neutral-900 mb-2">Welcome to Admin Control Center</h1>
         <p className="text-neutral-600">Manage your site, view analytics, and optimize your team's performance.</p>
       </div>
+
+      <Link
+        to="/admin/cms"
+        className="mb-8 flex flex-col sm:flex-row sm:items-center gap-4 rounded-2xl border-2 border-purple-200 bg-gradient-to-r from-purple-50 to-indigo-50 p-6 shadow-sm hover:border-purple-300 hover:shadow-md transition-all"
+      >
+        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-purple-600 text-white">
+          <LayoutTemplate className="h-7 w-7" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h2 className="text-lg font-bold text-neutral-900">Website CMS & Page Builder</h2>
+          <p className="text-sm text-neutral-600 mt-1">
+            Edit pages, upload media, manage forms and popups, and publish to the live site — no developer needed.
+          </p>
+        </div>
+        <span className="text-sm font-semibold text-purple-700 sm:shrink-0">Open CMS →</span>
+      </Link>
 
       {/* Urgent Actions Alert */}
       {stats.pending_support_tickets > 0 && (

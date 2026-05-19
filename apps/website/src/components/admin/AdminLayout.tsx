@@ -48,12 +48,15 @@ interface AdminLayoutProps {
   children: React.ReactNode;
   activeView: string;
   onViewChange: (view: string) => void;
+  /** Skip max-width padding for full-screen builders (page editor, etc.) */
+  fullBleed?: boolean;
 }
 
 export const AdminLayout: React.FC<AdminLayoutProps> = ({
   children,
   activeView,
-  onViewChange
+  onViewChange,
+  fullBleed = false,
 }) => {
   const [stats, setStats] = useState<AdminStats>({
     // Web Analytics Stats
@@ -234,13 +237,19 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
           />
 
           {/* Main Content */}
-          <main className="flex-1 overflow-y-auto">
-            <div className={cn(
-              "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6",
-              "transition-all duration-300"
-            )}>
-              {children}
-            </div>
+          <main className={cn('flex-1 overflow-y-auto', fullBleed && 'overflow-hidden')}>
+            {fullBleed ? (
+              children
+            ) : (
+              <div
+                className={cn(
+                  'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6',
+                  'transition-all duration-300'
+                )}
+              >
+                {children}
+              </div>
+            )}
           </main>
         </div>
       </div>

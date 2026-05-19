@@ -18,7 +18,12 @@ const SELECT_COLUMNS =
  * Live updates: subscribes to `cms_pages` Realtime + refetches on visibility
  * so the public site re-renders within ~1s of an admin publish.
  */
-export default function CmsPage() {
+interface CmsPageProps {
+  /** When set (e.g. via ManagedPage), load by path instead of the current URL. */
+  resolvedPath?: string;
+}
+
+export default function CmsPage({ resolvedPath }: CmsPageProps = {} as CmsPageProps) {
   const location = useLocation();
   const params = useParams<{ slug?: string }>();
   const [page, setPage] = useState<CmsPageRow | null>(null);
@@ -28,7 +33,7 @@ export default function CmsPage() {
   // If the route is `/p/:slug`, look up by slug. Otherwise resolve by full path.
   const lookup = params.slug
     ? { column: 'slug' as const, value: params.slug }
-    : { column: 'path' as const, value: location.pathname };
+    : { column: 'path' as const, value: resolvedPath ?? location.pathname };
 
   const fetchPage = useCallback(async () => {
     if (!isSupabaseConfigured) {

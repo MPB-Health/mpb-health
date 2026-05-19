@@ -88,7 +88,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ className, onResultC
       // Safely query resources - may not exist yet
       let resourceData: { id: string; title: string; slug: string; description: string }[] = [];
       const resourceResult = await supabase
-        .from('resources')
+        .from('resource_library')
         .select('id, title, slug, description')
         .ilike('title', `%${searchQuery}%`)
         .limit(5);

@@ -55,7 +55,7 @@ export default function BlogPosts() {
       setPosts((prev) =>
         prev.map((p) =>
           p.id === postId
-            ? { ...p, status: 'published', published_at: new Date().toISOString() }
+            ? { ...p, is_published: true, published_date: new Date().toISOString() }
             : p
         )
       );
@@ -71,7 +71,7 @@ export default function BlogPosts() {
       await contentService.unpublishPost(postId);
       setPosts((prev) =>
         prev.map((p) =>
-          p.id === postId ? { ...p, status: 'draft', published_at: null } : p
+          p.id === postId ? { ...p, is_published: false, published_date: null } : p
         )
       );
       toast.success('Post unpublished');
@@ -202,9 +202,9 @@ export default function BlogPosts() {
                 <tr key={post.id} className="hover:bg-surface-tertiary">
                   <td className="py-3 px-4">
                     <div className="flex items-center space-x-3">
-                      {post.featured_image ? (
+                      {post.featured_image_url ? (
                         <img
-                          src={post.featured_image}
+                          src={post.featured_image_url}
                           alt={`Featured image for ${post.title}`}
                           className="w-12 h-12 rounded-lg object-cover"
                         />
@@ -217,9 +217,9 @@ export default function BlogPosts() {
                         <p className="font-medium text-th-text-primary line-clamp-1">
                           {post.title}
                         </p>
-                        {post.author_name && (
+                        {post.author && (
                           <p className="text-sm text-th-text-tertiary">
-                            by {post.author_name}
+                            by {post.author}
                           </p>
                         )}
                       </div>
@@ -231,10 +231,10 @@ export default function BlogPosts() {
                   <td className="py-3 px-4">
                     <span
                       className={`px-2 py-1 text-xs rounded-full capitalize ${getStatusColor(
-                        post.status
+                        post.is_published ? 'published' : 'draft'
                       )}`}
                     >
-                      {post.status}
+                      {post.is_published ? 'published' : 'draft'}
                     </span>
                   </td>
                   <td className="py-3 px-4">
@@ -244,8 +244,8 @@ export default function BlogPosts() {
                     </div>
                   </td>
                   <td className="py-3 px-4 text-sm text-th-text-tertiary">
-                    {post.published_at
-                      ? format(new Date(post.published_at), 'MMM d, yyyy')
+                    {post.published_date
+                      ? format(new Date(post.published_date), 'MMM d, yyyy')
                       : format(new Date(post.created_at), 'MMM d, yyyy')}
                   </td>
                   <td className="py-3 px-4 text-right">
@@ -268,7 +268,7 @@ export default function BlogPosts() {
                             <Edit className="w-4 h-4" />
                             <span>Edit</span>
                           </button>
-                          {post.status === 'draft' ? (
+                          {!post.is_published ? (
                             <button
                               onClick={() => handlePublish(post.id)}
                               className="w-full flex items-center space-x-2 px-4 py-2 text-sm text-th-text-secondary hover:bg-surface-tertiary"
@@ -276,7 +276,7 @@ export default function BlogPosts() {
                               <Globe className="w-4 h-4" />
                               <span>Publish</span>
                             </button>
-                          ) : post.status === 'published' ? (
+                          ) : (
                             <button
                               onClick={() => handleUnpublish(post.id)}
                               className="w-full flex items-center space-x-2 px-4 py-2 text-sm text-th-text-secondary hover:bg-surface-tertiary"
@@ -284,7 +284,7 @@ export default function BlogPosts() {
                               <EyeOff className="w-4 h-4" />
                               <span>Unpublish</span>
                             </button>
-                          ) : null}
+                          )}
                           <button
                             onClick={() => handleDelete(post.id)}
                             className="w-full flex items-center space-x-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"

@@ -92,6 +92,9 @@ const noOpFetch = async (_url: RequestInfo | URL, _options?: RequestInit): Promi
   });
 };
 
+/** Same value as `VITE_SUPABASE_ANON_KEY` — safe for Edge Function gateway `apikey` header from browser clients. */
+export const supabasePublicAnonKey = supabaseAnonKey ?? '';
+
 export const supabase: SupabaseClient = createClient(
   supabaseUrl || 'https://placeholder.supabase.co',
   supabaseAnonKey || 'placeholder-key',

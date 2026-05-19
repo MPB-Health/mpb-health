@@ -28,7 +28,6 @@ import {
 import toast from 'react-hot-toast';
 import { Button, cn } from '@mpbhealth/ui';
 import { sanitizeHtml } from '@mpbhealth/utils';
-import { supabase } from '@mpbhealth/database';
 import {
   ticketService,
   appendTicketAttachmentsHtml,
@@ -231,20 +230,25 @@ export default function TicketDetailPage() {
     }
     let cancelled = false;
     void (async () => {
-      const next: Record<string, string> = {};
-      await Promise.all(
-        files.map(async (f) => {
-          const path = f.storage_path.replace(/^\//, '');
-          const { data, error } = await supabase.storage.from('ticket-attachments').createSignedUrl(path, 3600);
-          if (!error && data?.signedUrl) next[f.id] = data.signedUrl;
-        }),
-      );
-      if (!cancelled) setOpeningAttachmentUrls(next);
+      try {
+        const paths = files.map((f) => f.storage_path.replace(/^\//, '').trim()).filter(Boolean);
+        const signed = await executeWithAuth(() => ticketService.signTicketAttachmentUrls(paths));
+        if (cancelled) return;
+        const next: Record<string, string> = {};
+        for (const f of files) {
+          const path = f.storage_path.replace(/^\//, '').trim();
+          const url = signed[path];
+          if (url) next[f.id] = url;
+        }
+        setOpeningAttachmentUrls(next);
+      } catch {
+        if (!cancelled) setOpeningAttachmentUrls({});
+      }
     })();
     return () => {
       cancelled = true;
     };
-  }, [detail?.ticket_files]);
+  }, [detail?.ticket_files, executeWithAuth]);
 
   useEffect(() => {
     setReplySending(false);

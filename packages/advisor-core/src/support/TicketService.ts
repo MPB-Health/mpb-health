@@ -1,4 +1,4 @@
-import { supabase, getResolvedAuthHeader, refreshSessionOnce } from '@mpbhealth/database';
+import { supabase, supabaseUrl, supabasePublicAnonKey, getResolvedAuthHeader, refreshSessionOnce } from '@mpbhealth/database';
 import { escapeHtml } from '@mpbhealth/utils';
 
 /**
@@ -11,23 +11,64 @@ function newCorrelationId(): string {
 
 /**
  * Extract the real error message from a Supabase Functions error.
- * The SDK wraps non-2xx responses in a generic "Edge Function returned a non-2xx status code"
- * but the actual response body (with the real error) is accessible via context.json().
+ * The SDK often surfaces only "Edge Function returned a non-2xx status code"; the JSON body
+ * `{ error: "..." }` from ticket-proxy is on `context` as a fetch Response — use clone()+text()
+ * because the stream may already have been consumed once by the SDK.
  */
 async function extractFunctionError(error: unknown): Promise<string> {
-  // Check if error has a context property (FunctionsHttpError stores the raw Response in .context)
-  if (error && typeof error === 'object' && 'context' in error) {
+  const fallback = error instanceof Error ? error.message : 'Unknown error';
+
+  if (!error || typeof error !== 'object') return fallback;
+
+  const ctx = (error as Record<string, unknown>).context;
+
+  const parsePayload = (raw: string): string | null => {
+    const t = raw.trim();
+    if (!t) return null;
     try {
-      const ctx = (error as Record<string, unknown>).context;
-      if (ctx && typeof ctx === 'object' && 'json' in ctx && typeof (ctx as any).json === 'function') {
-        const body = await (ctx as any).json();
-        if (body?.error) return body.error;
-      }
+      const body = JSON.parse(t) as { error?: unknown; message?: unknown };
+      if (typeof body.error === 'string' && body.error.trim()) return body.error.trim();
+      if (typeof body.message === 'string' && body.message.trim()) return body.message.trim();
     } catch {
-      // context already consumed or not JSON
+      return t.slice(0, 500);
+    }
+    return null;
+  };
+
+  if (ctx instanceof Response) {
+    try {
+      const parsed = parsePayload(await ctx.clone().text());
+      if (parsed) return parsed;
+    } catch {
+      /* ignore */
     }
   }
-  return error instanceof Error ? error.message : 'Unknown error';
+
+  if (ctx && typeof ctx === 'object' && ctx !== null && 'json' in ctx && typeof (ctx as Response).json === 'function') {
+    try {
+      const body = await (ctx as Response).clone().json();
+      if (body && typeof body === 'object') {
+        const b = body as { error?: unknown; message?: unknown };
+        if (typeof b.error === 'string' && b.error.trim()) return b.error.trim();
+        if (typeof b.message === 'string' && b.message.trim()) return b.message.trim();
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
+  return fallback;
+}
+
+/** SDK fallback message when JSON body wasn't parsed — retry won't fix these. */
+function isGenericFunctionsInvokeMessage(msg: string): boolean {
+  const m = msg.trim();
+  return (
+    /^Edge Function returned a non-2xx status code$/i.test(m) ||
+    /^non-2xx status code$/i.test(m) ||
+    m === '' ||
+    m === 'Unknown error'
+  );
 }
 
 export type TicketStatus = 'new' | 'open' | 'pending' | 'in_progress' | 'resolved' | 'closed';
@@ -158,7 +199,7 @@ export interface TicketAttachmentUploadResult {
   fileName: string;
   accessUrl: string;
   size: number;
-  /** Path within `ticket-attachments` — stored on `ticket_files.storage_path`. */
+  /** Path within ITSTS Storage bucket `ticket-attachments` — stored on `ticket_files.storage_path`. */
   storagePath: string;
   mimeType: string;
 }
@@ -169,34 +210,52 @@ export interface UpdateTicketOptions {
 }
 
 export class TicketService {
-  private static ATTACHMENTS_BUCKET = 'ticket-attachments';
   private static ATTACHMENT_MAX_SIZE = 15 * 1024 * 1024; // 15 MB per file
   private static ATTACHMENT_MAX_COUNT = 10;
 
-  private sanitizeFileName(fileName: string): string {
-    const dotIdx = fileName.lastIndexOf('.');
-    const base = (dotIdx > 0 ? fileName.slice(0, dotIdx) : fileName)
-      .replace(/[^a-zA-Z0-9-_]+/g, '-')
-      .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '')
-      .slice(0, 80) || 'file';
-    const ext = dotIdx > 0 ? fileName.slice(dotIdx + 1).toLowerCase().replace(/[^a-z0-9]+/g, '') : '';
-    return ext ? `${base}.${ext.slice(0, 10)}` : base;
+  private async deleteTicketAttachmentPaths(paths: string[]): Promise<void> {
+    if (!paths.length) return;
+    await this.call<{ success: boolean }>(
+      'delete_ticket_attachment_paths',
+      { attachment_paths: paths },
+      { timeoutMs: 25_000, maxRetries: 0 },
+    );
+  }
+
+  /**
+   * Signed read URLs for objects in the ITSTS `ticket-attachments` bucket (same project as ticket DB).
+   */
+  async signTicketAttachmentUrls(storagePaths: string[]): Promise<Record<string, string>> {
+    if (!storagePaths.length) return {};
+    const normalized = [...new Set(storagePaths.map((p) => p.replace(/^\//, '').trim()).filter(Boolean))];
+    if (!normalized.length) return {};
+
+    const out: Record<string, string> = {};
+    const chunkSize = 20;
+    for (let i = 0; i < normalized.length; i += chunkSize) {
+      const chunk = normalized.slice(i, i + chunkSize);
+      const data = await this.call<{ success: boolean; signed_urls: { path: string; url: string | null }[] }>(
+        'resign_attachments',
+        { storage_paths: chunk },
+        { timeoutMs: 25_000, maxRetries: 1 },
+      );
+      for (const row of data.signed_urls || []) {
+        if (row.url) out[row.path] = row.url;
+      }
+    }
+    return out;
   }
 
   private async uploadAttachments(ticketId: string, attachments: File[]): Promise<TicketAttachmentUploadResult[]> {
     if (!attachments.length) return [];
 
-    // Proactively refresh the session so storage RLS sees a valid JWT.
-    // The preceding edge-function call may have consumed the refresh token;
-    // refreshSessionOnce() deduplicates concurrent callers.
     const { data: { session } } = await supabase.auth.getSession();
     const nowSec = Math.floor(Date.now() / 1000);
     if (!session || !session.expires_at || session.expires_at < nowSec + 60) {
       try {
         await refreshSessionOnce();
       } catch {
-        // Refresh can time out (network / hung client); storage upload may still work with current JWT.
+        /* invoke may still work with current JWT */
       }
     }
 
@@ -207,7 +266,6 @@ export class TicketService {
       throw new Error(`You can upload up to ${TicketService.ATTACHMENT_MAX_COUNT} attachments per ticket.`);
     }
 
-    const uploaded: TicketAttachmentUploadResult[] = [];
     const uploadedPaths: string[] = [];
 
     try {
@@ -215,55 +273,78 @@ export class TicketService {
         if (file.size > TicketService.ATTACHMENT_MAX_SIZE) {
           throw new Error(`File \"${file.name}\" exceeds the 15 MB limit.`);
         }
+      }
 
-        const safeName = this.sanitizeFileName(file.name);
-        const uniqueSuffix = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-        const path = `${user.id}/${ticketId}/${uniqueSuffix}-${safeName}`;
+      const prepared = await this.call<{
+        success: boolean;
+        uploads: Array<{ path: string; signed_url: string; token: string }>;
+      }>(
+        'prepare_ticket_attachment_uploads',
+        {
+          ticket_id: ticketId,
+          attachment_uploads: attachments.map((f) => ({
+            filename: f.name,
+            content_type: f.type || null,
+            file_size: f.size,
+          })),
+        },
+        { timeoutMs: 45_000, maxRetries: 1 },
+      );
 
-        const { error: uploadError } = await supabase.storage
-          .from(TicketService.ATTACHMENTS_BUCKET)
-          .upload(path, file, {
-            contentType: file.type || 'application/octet-stream',
-            upsert: false,
-          });
+      const slots = prepared.uploads || [];
+      if (slots.length !== attachments.length) {
+        throw new Error('Upload preparation failed.');
+      }
 
-        if (uploadError) {
-          if (uploadError.message?.includes('Bucket not found')) {
-            throw new Error('Ticket attachment storage is not configured. Please contact support.');
-          }
-          throw uploadError;
+      for (let i = 0; i < attachments.length; i++) {
+        const file = attachments[i];
+        const slot = slots[i];
+        uploadedPaths.push(slot.path);
+
+        // Match @supabase/storage-js uploadToSignedUrl: PUT multipart body; token lives on signed_url query string.
+        const formData = new FormData();
+        formData.append('cacheControl', '3600');
+        formData.append('', file);
+
+        const putRes = await fetch(slot.signed_url, {
+          method: 'PUT',
+          headers: {
+            'x-upsert': 'false',
+          },
+          body: formData,
+        });
+
+        if (!putRes.ok) {
+          const errText = await putRes.text().catch(() => '');
+          throw new Error(`Upload failed (${putRes.status}). ${errText.slice(0, 160)}`);
         }
+      }
 
-        uploadedPaths.push(path);
+      const resigned = await this.call<{
+        success: boolean;
+        signed_urls: Array<{ path: string; url: string | null; error?: string }>;
+      }>('resign_attachments', { storage_paths: uploadedPaths }, { timeoutMs: 25_000, maxRetries: 1 });
 
-        const { data: signedData, error: signedError } = await supabase.storage
-          .from(TicketService.ATTACHMENTS_BUCKET)
-          .createSignedUrl(path, 60 * 60 * 24);
+      const urlByPath = new Map((resigned.signed_urls || []).map((r) => [r.path, r.url]));
 
-        if (signedError || !signedData?.signedUrl) {
-          throw signedError || new Error('Failed to create secure attachment URL.');
+      return attachments.map((file, i) => {
+        const path = uploadedPaths[i];
+        const url = urlByPath.get(path);
+        if (!url) {
+          const hint = resigned.signed_urls?.[i]?.error || 'Failed to create secure attachment URL.';
+          throw new Error(hint);
         }
-
-        uploaded.push({
+        return {
           fileName: file.name,
-          accessUrl: signedData.signedUrl,
+          accessUrl: url,
           size: file.size,
           storagePath: path,
           mimeType: file.type || 'application/octet-stream',
-        });
-      }
-
-      return uploaded;
+        };
+      });
     } catch (error) {
       if (uploadedPaths.length > 0) {
-        await Promise.all(
-          uploadedPaths.map((path) =>
-            supabase.storage
-              .from(TicketService.ATTACHMENTS_BUCKET)
-              .remove([path])
-              .catch(() => undefined),
-          ),
-        );
+        await this.deleteTicketAttachmentPaths(uploadedPaths).catch(() => undefined);
       }
       throw error;
     }
@@ -416,12 +497,80 @@ export class TicketService {
       throw new Error('SESSION_EXPIRED');
     }
 
-    const { data, error } = await supabase.functions.invoke<T>('ticket-proxy', {
-      body: { action, ...body },
+    const invokePayload: Record<string, unknown> = { action, ...body };
+
+    const parseProxyJson = (text: string): Record<string, unknown> => {
+      if (!text.trim()) return {};
+      try {
+        return JSON.parse(text) as Record<string, unknown>;
+      } catch {
+        return { success: false, error: text.slice(0, 240) };
+      }
+    };
+
+    const handleProxyPayload = <R extends { success: boolean }>(
+      httpOk: boolean,
+      payload: Record<string, unknown>,
+      fallbackStatusText: string,
+    ): R => {
+      if (!httpOk) {
+        const msg =
+          typeof payload.error === "string" && payload.error.trim()
+            ? payload.error.trim()
+            : fallbackStatusText;
+        if (/authorization|unauthorized|invalid or expired authorization/i.test(msg)) {
+          throw new Error("_AUTH_RETRYABLE");
+        }
+        if (/not yet configured|not configured|account not found|not been synced/i.test(msg)) {
+          throw new Error(msg);
+        }
+        if (/temporarily unavailable/i.test(msg)) {
+          throw new Error(msg);
+        }
+        if (!isGenericFunctionsInvokeMessage(msg)) {
+          throw new Error(msg);
+        }
+        throw new Error("_RETRYABLE");
+      }
+
+      if (!payload.success) {
+        const errMsg = typeof payload.error === "string" ? payload.error : "Request failed";
+        const err = new Error(errMsg);
+        if (errMsg && !/timeout|network|internal|server|503|502|504/i.test(errMsg)) {
+          throw err;
+        }
+        throw new Error("_RETRYABLE");
+      }
+
+      return payload as R;
+    };
+
+    // Prefer explicit fetch + apikey header — hosted Functions gateway expects this contract.
+    // Avoids rare supabase-js invoke body/header edge cases against ticket-proxy.
+    if (supabaseUrl && supabasePublicAnonKey) {
+      const url = `${supabaseUrl.replace(/\/$/, "")}/functions/v1/ticket-proxy`;
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          Authorization: authHeader.Authorization,
+          apikey: supabasePublicAnonKey,
+          "Content-Type": "application/json",
+          "x-request-id": correlationId,
+          ...(idempotencyKey ? { "x-idempotency-key": idempotencyKey } : {}),
+        },
+        body: JSON.stringify(invokePayload),
+      });
+      const text = await response.text();
+      const payload = parseProxyJson(text);
+      return handleProxyPayload<T>(response.ok, payload, response.statusText || `HTTP ${response.status}`);
+    }
+
+    const { data, error } = await supabase.functions.invoke<T>("ticket-proxy", {
+      body: invokePayload,
       headers: {
         ...authHeader,
-        'x-request-id': correlationId,
-        ...(idempotencyKey ? { 'x-idempotency-key': idempotencyKey } : {}),
+        "x-request-id": correlationId,
+        ...(idempotencyKey ? { "x-idempotency-key": idempotencyKey } : {}),
       },
     });
 
@@ -435,6 +584,10 @@ export class TicketService {
         throw new Error(msg);
       }
       if (/temporarily unavailable/i.test(msg)) {
+        throw new Error(msg);
+      }
+      // 4xx validation / unknown-action bodies — surface message; retries won't help.
+      if (!isGenericFunctionsInvokeMessage(msg)) {
         throw new Error(msg);
       }
       throw new Error('_RETRYABLE');
@@ -546,21 +699,38 @@ export class TicketService {
 
     // Attachment upload is best-effort — ticket is already created in ITSTS
     if (opts.attachments?.length) {
+      console.info('[TicketService] createTicket attachment pipeline start', {
+        ticket_id: data.ticket_id,
+        ticket_number: data.ticket_number,
+        attachmentCount: opts.attachments.length,
+        attachmentSummary: opts.attachments.map((f) => ({
+          name: f.name,
+          size: f.size,
+          type: f.type || null,
+        })),
+      });
       try {
         const uploadPromise = (async () => {
           const uploads = await this.uploadAttachments(data.ticket_id, opts.attachments!);
-          if (!uploads.length) return;
+          if (!uploads.length) {
+            console.warn('[TicketService] createTicket: attachments requested but upload returned none', {
+              ticket_id: data.ticket_id,
+              ticket_number: data.ticket_number,
+              requestedCount: opts.attachments!.length,
+            });
+            return;
+          }
           try {
             await this.saveTicketFileReferences(data.ticket_id, uploads);
+            console.info('[TicketService] createTicket attachments OK', {
+              ticket_id: data.ticket_id,
+              ticket_number: data.ticket_number,
+              fileCount: uploads.length,
+              filenames: uploads.map((u) => u.fileName),
+              storagePaths: uploads.map((u) => u.storagePath),
+            });
           } catch (saveErr) {
-            await Promise.all(
-              uploads.map((u) =>
-                supabase.storage
-                  .from(TicketService.ATTACHMENTS_BUCKET)
-                  .remove([u.storagePath])
-                  .catch(() => undefined),
-              ),
-            );
+            await this.deleteTicketAttachmentPaths(uploads.map((u) => u.storagePath)).catch(() => undefined);
             throw saveErr;
           }
         })();

@@ -134,6 +134,8 @@ export default function NewTicket() {
   const [error, setError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [submittedTicketId, setSubmittedTicketId] = useState<string | null>(null);
+  /** Shown on success screen when ticket saved but attachment pipeline failed (toast alone is easy to miss). */
+  const [submittedAttachmentWarning, setSubmittedAttachmentWarning] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const [fileUploadKey, setFileUploadKey] = useState(0);
@@ -288,6 +290,12 @@ export default function NewTicket() {
         ? globalThis.crypto.randomUUID()
         : `nt-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
     const descByteLength = new TextEncoder().encode(description).length;
+    const attachmentDetails = files.map((f) => ({
+      name: f.name,
+      size: f.size,
+      type: f.type || null,
+      lastModified: f.lastModified,
+    }));
     console.info(NEW_TICKET_SUBMIT_LOG, 'start', {
       correlationId: submitCorrelationId,
       subjectLength: formData.subject.trim().length,
@@ -297,6 +305,7 @@ export default function NewTicket() {
       priority: formData.priority,
       attachmentCount: files.length,
       attachmentTotalBytes: files.reduce((n, f) => n + f.size, 0),
+      attachmentDetails,
       isForMember,
     });
     try {
@@ -318,14 +327,22 @@ export default function NewTicket() {
         correlationId: submitCorrelationId,
         ticketId: result.ticket_id,
         ticketNumber: result.ticket_number,
+        attachmentsAttempted: files.length,
+        attachmentsSavedSuccessfully: files.length > 0 ? !result.attachmentError : null,
         attachmentError: result.attachmentError ?? null,
+        attachmentDetails:
+          files.length > 0
+            ? files.map((f) => ({ name: f.name, size: f.size, type: f.type || null }))
+            : [],
       });
       if (result.attachmentError) {
+        setSubmittedAttachmentWarning(result.attachmentError);
         toast.error(
           `Ticket #${result.ticket_number} submitted, but attachments failed: ${result.attachmentError}. You can add files by replying to the ticket.`,
           { duration: 8000 },
         );
       } else {
+        setSubmittedAttachmentWarning(null);
         toast.success(`Ticket #${result.ticket_number} submitted!`);
       }
       // Clear any stale detail cache (e.g. failed prefetch) and refresh lists so
@@ -342,6 +359,11 @@ export default function NewTicket() {
           correlationId: submitCorrelationId,
           deadlineMs: CREATE_TICKET_UI_DEADLINE_MS,
           hint: 'Ticket may still have been created server-side; check ticket list.',
+          attachmentCountAtSubmit: files.length,
+          attachmentDetails:
+            files.length > 0
+              ? files.map((f) => ({ name: f.name, size: f.size }))
+              : [],
         });
         setError(
           'Creating your ticket is taking too long. Check your connection, then check My tickets—your ticket may still have been created.',
@@ -369,6 +391,7 @@ export default function NewTicket() {
           message: msg || String(err),
           name: err instanceof Error ? err.name : typeof err,
           stack: err instanceof Error ? err.stack : undefined,
+          attachmentCountAtSubmit: files.length,
         });
         setError(msg || 'Failed to submit ticket. Please try again.');
       }
@@ -422,6 +445,7 @@ export default function NewTicket() {
   const resetForm = () => {
     setSubmitted(false);
     setSubmittedTicketId(null);
+    setSubmittedAttachmentWarning(null);
     setFormData({ subject: '', priority: 'medium', category: '' });
     setIsForMember(false);
     setMemberInfo({ member_id: '', member_name: '', member_email: '' });
@@ -465,6 +489,18 @@ export default function NewTicket() {
             <p className="text-sm text-th-text-secondary mb-6 max-w-sm mx-auto">
               Your request is saved. Open it below to add replies or attachments anytime.
             </p>
+            {submittedAttachmentWarning ? (
+              <div
+                role="alert"
+                className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-left text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100 max-w-md mx-auto"
+              >
+                <p className="font-semibold mb-1">Attachments were not saved</p>
+                <p className="text-amber-900/90 dark:text-amber-100/90">{submittedAttachmentWarning}</p>
+                <p className="mt-2 text-xs text-amber-800/90 dark:text-amber-200/80">
+                  Open the ticket and attach files in a reply, or submit another ticket after deploying the fix.
+                </p>
+              </div>
+            ) : null}
             <p id="ticket-success-desc" className="sr-only">
               Ticket reference {refLabel}. Use Open ticket to view the conversation, or go to all tickets or home.
             </p>

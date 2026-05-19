@@ -18,7 +18,10 @@ import { getAdvisorQueryClient } from '../query/advisorQueryClient';
 import { nudgeAdvisorQueries } from '../query/nudgeAdvisorQueries';
 
 /** Every `getSession` must be bounded — a hung client leaves `profileLoading` true forever (no `finally`). */
-const GET_SESSION_QUICK_MS = 12_000;
+const GET_SESSION_QUICK_MS = 22_000;
+
+/** Tab wake runs while auth may be busy (e.g. long ticket-proxy chain); slightly looser than cold-load paths. */
+const GET_SESSION_VISIBILITY_MS = 32_000;
 
 async function getSessionWithDeadline(
   ms: number,
@@ -494,7 +497,7 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
       void (async () => {
         try {
           nudgeAdvisorQueries(getAdvisorQueryClient(), 'tab-wake');
-          const { data: { session } } = await getSessionWithDeadline(GET_SESSION_QUICK_MS);
+          const { data: { session } } = await getSessionWithDeadline(GET_SESSION_VISIBILITY_MS);
           if (!session?.user) return;
           setHasSession(true);
           // Re-load when signed in but profile never hydrated (stalled auth / tab discard).
@@ -502,6 +505,12 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
             await loadProfile();
           }
         } catch (err) {
+          const msg = err instanceof Error ? err.message : '';
+          // Busy auth stack during writes (e.g. ticket submit + refresh) — don't alarm if shell already hydrated.
+          if (msg === 'GET_SESSION_TIMEOUT' && profileRef.current) {
+            console.debug('[AdvisorContext] Tab visibility recovery: getSession slow (profile already loaded)');
+            return;
+          }
           console.warn('[AdvisorContext] Tab visibility recovery failed:', err);
         }
       })();

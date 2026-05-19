@@ -18,6 +18,8 @@ type ProxyAction =
   | "create"
   | "reply"
   | "save_ticket_files"
+  | "prepare_ticket_attachment_uploads"
+  | "delete_ticket_attachment_paths"
   | "update_ticket"
   | "get_categories"
   | "create_for_advisor"
@@ -25,7 +27,15 @@ type ProxyAction =
   | "delete_tickets";
 
 const ADMIN_ACTIONS: ProxyAction[] = ["list_all", "detail_admin", "stats_all", "add_comment", "update_ticket", "create_for_advisor", "delete_tickets"];
-const NO_USER_LOOKUP_ACTIONS: ProxyAction[] = ["get_categories", "resign_attachments"];
+/** Actions that only need MPB JWT + ITSTS connectivity (no ITSTS profile row lookup). */
+const NO_USER_LOOKUP_ACTIONS: ProxyAction[] = [
+  "get_categories",
+  "resign_attachments",
+  "delete_ticket_attachment_paths",
+];
+
+/** Same Supabase project as ITSTS tickets DB / Storage (e.g. dashboard ref hhikjgrttgnvojtunmla). Uses ITSTS_SUPABASE_URL. */
+const TICKET_ATTACHMENTS_BUCKET = "ticket-attachments";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MAX_COMMENT_LENGTH = 10_000;
@@ -69,6 +79,10 @@ interface ProxyRequest {
     mime_type?: string | null;
     comment_id?: string | null;
   }>;
+  /** For prepare_ticket_attachment_uploads — filename + size only (bytes uploaded via signed URL). */
+  attachment_uploads?: Array<{ filename: string; content_type?: string | null; file_size: number }>;
+  /** For delete_ticket_attachment_paths — storage object paths under ticket-attachments */
+  attachment_paths?: string[];
 }
 
 function normalizeContentFormat(raw: unknown): "plain" | "html" {
@@ -806,12 +820,100 @@ async function replyToTicket(
 const MAX_SAVE_TICKET_FILES = 20;
 const MAX_REGISTER_FILENAME_LEN = 512;
 const MAX_REGISTER_STORAGE_PATH_LEN = 1024;
+const MAX_ATTACHMENT_PREP_COUNT = 10;
+const MAX_ATTACHMENT_UPLOAD_BYTES = 15 * 1024 * 1024;
+
+function sanitizeTicketAttachmentFileName(fileName: string): string {
+  const dotIdx = fileName.lastIndexOf(".");
+  const rawBase = dotIdx > 0 ? fileName.slice(0, dotIdx) : fileName;
+  const base = rawBase
+    .replace(/[^a-zA-Z0-9-_]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 80) || "file";
+  const ext = dotIdx > 0 ? fileName.slice(dotIdx + 1).toLowerCase().replace(/[^a-z0-9]+/g, "") : "";
+  return ext ? `${base}.${ext.slice(0, 10)}` : base;
+}
+
+function assertSafeTicketAttachmentPath(path: string): void {
+  const p = path.trim().replace(/^\//, "");
+  if (!p || p.length > MAX_REGISTER_STORAGE_PATH_LEN) throw new Error("Invalid path");
+  if (p.includes("..")) throw new Error("Invalid path");
+}
+
+async function prepareTicketAttachmentUploads(
+  itstsAdmin: ReturnType<typeof createClient>,
+  primaryAuthUserId: string,
+  advisorItstsId: string,
+  ticketId: string,
+  metas: Array<{ filename: string; content_type?: string | null; file_size: number }>,
+): Promise<{ uploads: Array<{ path: string; signed_url: string; token: string }> }> {
+  const { data: ticket, error: ticketErr } = await itstsAdmin
+    .from("tickets")
+    .select("id")
+    .eq("id", ticketId)
+    .eq("requester_id", advisorItstsId)
+    .maybeSingle();
+
+  if (ticketErr || !ticket) throw new Error("Ticket not found or access denied");
+
+  if (!metas?.length) throw new Error("attachment_uploads required");
+  if (metas.length > MAX_ATTACHMENT_PREP_COUNT) {
+    throw new Error(`Too many files (max ${MAX_ATTACHMENT_PREP_COUNT})`);
+  }
+
+  const uploads: Array<{ path: string; signed_url: string; token: string }> = [];
+
+  for (const meta of metas) {
+    const file_size = typeof meta.file_size === "number" && Number.isFinite(meta.file_size)
+      ? meta.file_size
+      : -1;
+    if (file_size <= 0 || file_size > MAX_ATTACHMENT_UPLOAD_BYTES) {
+      throw new Error(`Each file must be between 1 byte and ${MAX_ATTACHMENT_UPLOAD_BYTES} bytes`);
+    }
+    const safeName = sanitizeTicketAttachmentFileName((meta.filename || "").trim() || "file");
+    const uniqueSuffix = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    const objectPath = `${primaryAuthUserId}/${ticketId}/${uniqueSuffix}-${safeName}`;
+    assertSafeTicketAttachmentPath(objectPath);
+
+    const bucket = itstsAdmin.storage.from(TICKET_ATTACHMENTS_BUCKET);
+    const signedRes = await bucket.createSignedUploadUrl(objectPath);
+
+    let signedUrl: string | undefined;
+    let token: string | undefined;
+    let returnedPath = objectPath;
+
+    if (!signedRes.error && signedRes.data) {
+      const d = signedRes.data as Record<string, unknown>;
+      signedUrl = (d.signedUrl ?? d.signed_url) as string | undefined;
+      token = (d.token ?? d.upload_token) as string | undefined;
+      const rp = d.path as string | undefined;
+      if (rp) returnedPath = rp;
+    }
+
+    if (!signedUrl || !token) {
+      const msg = signedRes.error?.message ||
+        "Ticket attachment storage is not configured. Please contact support.";
+      log.warn("createSignedUploadUrl failed", { message: signedRes.error?.message, path: objectPath });
+      throw new Error(msg);
+    }
+
+    uploads.push({
+      path: returnedPath,
+      signed_url: signedUrl,
+      token,
+    });
+  }
+
+  return { uploads };
+}
 
 /** Register advisor-uploaded storage paths into ITSTS `ticket_files` (table does not exist on primary MPB DB). */
 async function saveTicketFilesForRequester(
   itstsAdmin: ReturnType<typeof createClient>,
   advisorItstsId: string,
   ticketId: string,
+  primaryAuthUserId: string,
   files: Array<{ filename: string; storage_path: string; file_size: number; mime_type?: string | null; comment_id?: string | null }>,
 ) {
   const { data: ticket, error: ticketErr } = await itstsAdmin
@@ -828,9 +930,15 @@ async function saveTicketFilesForRequester(
     throw new Error(`Too many files (max ${MAX_SAVE_TICKET_FILES})`);
   }
 
+  const expectedPrefix = `${primaryAuthUserId}/${ticketId}/`;
+
   const rows = files.map((f) => {
     const filename = (f.filename || "").trim().slice(0, MAX_REGISTER_FILENAME_LEN);
-    const storage_path = (f.storage_path || "").trim().slice(0, MAX_REGISTER_STORAGE_PATH_LEN);
+    const storage_path = (f.storage_path || "").trim().replace(/^\//, "").slice(0, MAX_REGISTER_STORAGE_PATH_LEN);
+    assertSafeTicketAttachmentPath(storage_path);
+    if (!storage_path.startsWith(expectedPrefix)) {
+      throw new Error("Invalid storage path");
+    }
     if (!filename || !storage_path) throw new Error("Invalid file metadata");
     const file_size = typeof f.file_size === "number" && Number.isFinite(f.file_size) && f.file_size >= 0
       ? Math.min(Math.floor(f.file_size), 200 * 1024 * 1024)
@@ -993,8 +1101,20 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const body: ProxyRequest = await req.json();
-    const { action } = body;
+    let proxyBody: ProxyRequest;
+    try {
+      proxyBody = await req.json();
+    } catch {
+      return new Response(
+        JSON.stringify({ success: false, error: "Invalid JSON body", correlationId }),
+        { status: 400, headers },
+      );
+    }
+
+    const actionRaw = proxyBody.action;
+    const action =
+      typeof actionRaw === "string" ? actionRaw.trim() : String(actionRaw ?? "").trim();
+    const body = proxyBody;
 
     // ── Health-check ping (no DB access required) ────────────────────────
     if ((action as string) === "ping") {
@@ -1272,6 +1392,37 @@ Deno.serve(async (req: Request) => {
         // database triggers on ticket_comments — not by this project.
         break;
       }
+      case "prepare_ticket_attachment_uploads": {
+        if (!body.ticket_id || !UUID_RE.test(body.ticket_id)) {
+          return new Response(
+            JSON.stringify({ success: false, error: "Valid ticket_id required", correlationId }),
+            { status: 400, headers },
+          );
+        }
+        const metas = body.attachment_uploads;
+        if (!Array.isArray(metas) || metas.length === 0) {
+          return new Response(
+            JSON.stringify({ success: false, error: "attachment_uploads array required", correlationId }),
+            { status: 400, headers },
+          );
+        }
+        try {
+          result = await prepareTicketAttachmentUploads(
+            itstsAdmin,
+            user.id,
+            itstsUserId!,
+            body.ticket_id,
+            metas,
+          );
+        } catch (prepErr) {
+          const msg = prepErr instanceof Error ? prepErr.message : String(prepErr);
+          return new Response(
+            JSON.stringify({ success: false, error: msg, correlationId }),
+            { status: 400, headers },
+          );
+        }
+        break;
+      }
       case "save_ticket_files": {
         if (!body.ticket_id || !UUID_RE.test(body.ticket_id)) {
           return new Response(
@@ -1287,7 +1438,13 @@ Deno.serve(async (req: Request) => {
           );
         }
         try {
-          result = await saveTicketFilesForRequester(itstsAdmin, itstsUserId!, body.ticket_id, fileRows);
+          result = await saveTicketFilesForRequester(
+            itstsAdmin,
+            itstsUserId!,
+            body.ticket_id,
+            user.id,
+            fileRows,
+          );
         } catch (saveErr) {
           const msg = saveErr instanceof Error ? saveErr.message : String(saveErr);
           return new Response(
@@ -1406,20 +1563,16 @@ Deno.serve(async (req: Request) => {
 
         if (delErr) throw delErr;
 
-        // 4. Clean up storage attachments on the primary project (fire-and-forget)
+        // 4. Clean up attachment objects on ITSTS Storage — paths are `{primaryAuthUserId}/{ticketId}/…`.
         try {
           const primaryUrl = Deno.env.get("SUPABASE_URL")!;
           const primaryKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
           const primaryAdmin = createClient(primaryUrl, primaryKey, {
             auth: { autoRefreshToken: false, persistSession: false },
           });
-          // Attachment paths are stored as: {userId}/{ticketId}/...
-          // We need to look up the advisor's user ID in the primary project
           for (const ticketId of ids) {
             const requesterId = requesterMap.get(ticketId);
             if (!requesterId) continue;
-            // The requester_id in ITSTS is the ITSTS user id, but storage paths use
-            // the primary project's user id. Look up email to find primary user.
             const { data: itstsProfile } = await itstsAdmin
               .from("profiles")
               .select("email")
@@ -1433,12 +1586,12 @@ Deno.serve(async (req: Request) => {
               .maybeSingle();
             if (!primaryUser?.id) continue;
             const folder = `${primaryUser.id}/${ticketId}`;
-            const { data: files } = await primaryAdmin.storage
-              .from("ticket-attachments")
+            const { data: files } = await itstsAdmin.storage
+              .from(TICKET_ATTACHMENTS_BUCKET)
               .list(folder);
             if (files?.length) {
               const paths = files.map((f: { name: string }) => `${folder}/${f.name}`);
-              await primaryAdmin.storage.from("ticket-attachments").remove(paths);
+              await itstsAdmin.storage.from(TICKET_ATTACHMENTS_BUCKET).remove(paths);
             }
           }
         } catch (storageErr) {
@@ -1447,6 +1600,52 @@ Deno.serve(async (req: Request) => {
 
         result = { deleted: delCount || 0 };
         log.info(`Deleted ${delCount} ticket(s)`, { ticket_ids: ids, actor: user.email });
+        break;
+      }
+      case "delete_ticket_attachment_paths": {
+        const pathsRaw = body.attachment_paths;
+        if (!Array.isArray(pathsRaw) || pathsRaw.length === 0) {
+          return new Response(
+            JSON.stringify({ success: false, error: "attachment_paths array is required", correlationId }),
+            { status: 400, headers },
+          );
+        }
+        if (pathsRaw.length > 20) {
+          return new Response(
+            JSON.stringify({ success: false, error: "Maximum 20 paths per request", correlationId }),
+            { status: 400, headers },
+          );
+        }
+        const isAdmin = await checkAdminRole(supabaseAdmin, user.id);
+        const normalized: string[] = [];
+        for (const p of pathsRaw) {
+          if (typeof p !== "string") continue;
+          const pt = p.trim().replace(/^\//, "");
+          try {
+            assertSafeTicketAttachmentPath(pt);
+          } catch {
+            return new Response(
+              JSON.stringify({ success: false, error: "Invalid attachment path", correlationId }),
+              { status: 400, headers },
+            );
+          }
+          if (!isAdmin && !pt.startsWith(`${user.id}/`)) {
+            return new Response(
+              JSON.stringify({ success: false, error: "Access denied", correlationId }),
+              { status: 403, headers },
+            );
+          }
+          normalized.push(pt);
+        }
+        if (!normalized.length) {
+          return new Response(
+            JSON.stringify({ success: false, error: "attachment_paths array is required", correlationId }),
+            { status: 400, headers },
+          );
+        }
+        const { error: rmErr } = await itstsAdmin.storage.from(TICKET_ATTACHMENTS_BUCKET).remove(normalized);
+        if (rmErr) throw rmErr;
+        result = { removed: normalized.length };
         break;
       }
       case "resign_attachments": {
@@ -1463,21 +1662,26 @@ Deno.serve(async (req: Request) => {
             { status: 400, headers },
           );
         }
-        // Validate paths belong to user (or user is admin/super_admin)
-        const primaryUrl = Deno.env.get("SUPABASE_URL")!;
-        const primaryServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-        const primaryAdmin = createClient(primaryUrl, primaryServiceKey, {
-          auth: { autoRefreshToken: false, persistSession: false },
-        });
         const isAdmin = await checkAdminRole(supabaseAdmin, user.id);
         const signed: { path: string; url: string | null; error?: string }[] = [];
-        for (const p of paths) {
-          if (typeof p !== "string" || (!isAdmin && !p.startsWith(`${user.id}/`))) {
+        for (const raw of paths) {
+          const p = typeof raw === "string" ? raw.trim().replace(/^\//, "") : "";
+          if (!p) {
+            signed.push({ path: typeof raw === "string" ? raw : "", url: null, error: "Invalid path" });
+            continue;
+          }
+          try {
+            assertSafeTicketAttachmentPath(p);
+          } catch {
+            signed.push({ path: p, url: null, error: "Invalid path" });
+            continue;
+          }
+          if (!isAdmin && !p.startsWith(`${user.id}/`)) {
             signed.push({ path: p, url: null, error: "Access denied" });
             continue;
           }
-          const { data, error: signErr } = await primaryAdmin.storage
-            .from("ticket-attachments")
+          const { data, error: signErr } = await itstsAdmin.storage
+            .from(TICKET_ATTACHMENTS_BUCKET)
             .createSignedUrl(p, 60 * 60 * 24 * 365);
           if (signErr || !data?.signedUrl) {
             signed.push({ path: p, url: null, error: signErr?.message || "Failed to sign" });

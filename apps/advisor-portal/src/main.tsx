@@ -102,7 +102,7 @@ root.render(
         <QueryStaleRecovery />
         <ThemeProvider>
           {/* Omit v7_startTransition: it desynced lazy route Outlet from the URL. */}
-          <BrowserRouter future={{ v7_relativeSplatPath: true }}>
+          <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
             <App />
           <Toaster
             position="top-right"

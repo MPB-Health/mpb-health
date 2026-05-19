@@ -58,36 +58,45 @@ export interface EnrollmentDocument {
   verified_by: string | null;
 }
 
-// Content Types
+// Content Types — aligned with the blog_articles table
 export interface BlogPost {
   id: string;
   title: string;
   slug: string;
   content: string;
   excerpt: string | null;
-  featured_image: string | null;
-  author_id: string;
-  author_name: string | null;
-  status: 'draft' | 'published' | 'archived';
+  featured_image_url: string | null;
+  author_id: string | null;
+  author: string | null;
+  is_published: boolean;
   category: string;
   tags: string[];
-  published_at: string | null;
+  published_date: string | null;
   view_count: number;
+  read_time: number | null;
+  scheduled_publish_at: string | null;
   created_at: string;
   updated_at: string;
 }
 
+// Aligned with the resource_library table
 export interface Resource {
   id: string;
   title: string;
+  slug: string | null;
   description: string | null;
-  category: string;
-  file_url: string;
-  file_type: string;
-  file_size: number;
-  is_public: boolean;
+  content: string | null;
+  resource_type: string;
+  target_audience: string | null;
+  topics: string[];
+  featured_image_url: string | null;
+  file_url: string | null;
+  is_featured: boolean;
+  is_published: boolean;
+  published_date: string | null;
+  view_count: number;
   download_count: number;
-  uploaded_by: string | null;
+  metadata: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
 }

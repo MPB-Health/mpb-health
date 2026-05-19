@@ -81,9 +81,8 @@ export default function Resources() {
       const resource = await contentService.uploadResource(selectedFile, {
         title: uploadData.title,
         description: uploadData.description,
-        category: uploadData.category,
+        resource_type: uploadData.category,
         isPublic: uploadData.isPublic,
-        uploadedBy: user.id,
       });
       setResources((prev) => [resource, ...prev]);
       setShowUploadModal(false);
@@ -111,20 +110,14 @@ export default function Resources() {
 
   const handleDownload = async (resource: Resource) => {
     await contentService.trackDownload(resource.id);
-    window.open(resource.file_url, '_blank');
+    if (resource.file_url) window.open(resource.file_url, '_blank');
   };
 
-  const getFileIcon = (fileType: string) => {
-    if (fileType.startsWith('image/')) return Image;
-    if (fileType.startsWith('video/')) return Video;
-    if (fileType.includes('pdf')) return FileText;
+  const getFileIcon = (resourceType: string) => {
+    if (resourceType === 'video') return Video;
+    if (resourceType === 'document') return FileText;
+    if (resourceType === 'image') return Image;
     return File;
-  };
-
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
   return (
@@ -191,7 +184,7 @@ export default function Resources() {
       ) : resources.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {resources.map((resource) => {
-            const FileIcon = getFileIcon(resource.file_type);
+            const FileIcon = getFileIcon(resource.resource_type);
             return (
               <div
                 key={resource.id}
@@ -206,12 +199,12 @@ export default function Resources() {
                       <p className="font-medium text-th-text-primary truncate">
                         {resource.title}
                       </p>
-                      <p className="text-sm text-th-text-tertiary">
-                        {formatFileSize(resource.file_size)}
+                      <p className="text-sm text-th-text-tertiary capitalize">
+                        {resource.resource_type}
                       </p>
                     </div>
                   </div>
-                  {resource.is_public ? (
+                  {resource.is_published ? (
                     <Globe className="w-4 h-4 text-green-500" />
                   ) : (
                     <Lock className="w-4 h-4 text-th-text-tertiary" />

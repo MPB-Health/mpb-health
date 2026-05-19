@@ -90,10 +90,10 @@ export default function ContentCalendar() {
 
       // Load blog posts
       const { data: posts } = await supabase
-        .from('blog_posts')
-        .select('id, title, status, published_at, created_at')
-        .or(`published_at.gte.${startDate},created_at.gte.${startDate}`)
-        .or(`published_at.lte.${endDate}T23:59:59,created_at.lte.${endDate}T23:59:59`);
+        .from('blog_articles')
+        .select('id, title, is_published, published_date, created_at')
+        .or(`published_date.gte.${startDate},created_at.gte.${startDate}`)
+        .or(`published_date.lte.${endDate}T23:59:59,created_at.lte.${endDate}T23:59:59`);
 
       // Load events
       const { data: events } = await supabase
@@ -119,8 +119,8 @@ export default function ContentCalendar() {
           id: p.id,
           title: p.title,
           type: 'blog_post',
-          status: p.status,
-          date: p.published_at || p.created_at,
+          status: p.is_published ? 'published' : 'draft',
+          date: p.published_date || p.created_at,
         });
       });
 

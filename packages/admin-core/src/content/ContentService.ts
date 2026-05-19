@@ -1,22 +1,26 @@
 import { supabase } from '@mpbhealth/database';
 import type { BlogPost, Resource } from '../types';
 
-export class ContentService {
-  // ========== Blog Posts ==========
+const BLOG_SELECT = 'id, title, slug, content, excerpt, featured_image_url, author_id, author, is_published, category, tags, published_date, view_count, read_time, scheduled_publish_at, created_at, updated_at';
+const RESOURCE_SELECT = 'id, title, slug, description, content, resource_type, target_audience, topics, featured_image_url, file_url, is_featured, is_published, published_date, view_count, download_count, metadata, created_at, updated_at';
 
-  // Get all blog posts
+export class ContentService {
+  // ========== Blog Posts (table: blog_articles) ==========
+
   async getBlogPosts(filters?: {
     status?: string;
     category?: string;
     search?: string;
   }): Promise<BlogPost[]> {
     let query = supabase
-      .from('blog_posts')
-      .select('id, title, slug, content, excerpt, featured_image, author_id, author_name, status, category, tags, published_at, view_count, created_at, updated_at')
+      .from('blog_articles')
+      .select(BLOG_SELECT)
       .order('created_at', { ascending: false });
 
-    if (filters?.status) {
-      query = query.eq('status', filters.status);
+    if (filters?.status === 'published') {
+      query = query.eq('is_published', true);
+    } else if (filters?.status === 'draft') {
+      query = query.eq('is_published', false);
     }
     if (filters?.category) {
       query = query.eq('category', filters.category);
@@ -32,16 +36,14 @@ export class ContentService {
     return (data || []) as any;
   }
 
-  // Get published posts
   async getPublishedPosts(): Promise<BlogPost[]> {
     return this.getBlogPosts({ status: 'published' });
   }
 
-  // Get a single post
   async getBlogPost(postId: string): Promise<BlogPost | null> {
     const { data, error } = await supabase
-      .from('blog_posts')
-      .select('id, title, slug, content, excerpt, featured_image, author_id, author_name, status, category, tags, published_at, view_count, created_at, updated_at')
+      .from('blog_articles')
+      .select(BLOG_SELECT)
       .eq('id', postId)
       .single();
 
@@ -49,11 +51,10 @@ export class ContentService {
     return data as any;
   }
 
-  // Get post by slug
   async getBlogPostBySlug(slug: string): Promise<BlogPost | null> {
     const { data, error } = await supabase
-      .from('blog_posts')
-      .select('id, title, slug, content, excerpt, featured_image, author_id, author_name, status, category, tags, published_at, view_count, created_at, updated_at')
+      .from('blog_articles')
+      .select(BLOG_SELECT)
       .eq('slug', slug)
       .single();
 
@@ -61,74 +62,66 @@ export class ContentService {
     return data as any;
   }
 
-  // Create a blog post
   async createBlogPost(
     post: Omit<BlogPost, 'id' | 'created_at' | 'updated_at' | 'view_count'>
   ): Promise<BlogPost> {
-    // Generate slug from title if not provided
     const slug = post.slug || this.generateSlug(post.title);
 
     const { data, error } = await supabase
-      .from('blog_posts')
+      .from('blog_articles')
       .insert({ ...post, slug, view_count: 0 })
-      .select('id, title, slug, content, excerpt, featured_image, author_id, author_name, status, category, tags, published_at, view_count, created_at, updated_at')
+      .select(BLOG_SELECT)
       .single();
 
     if (error) throw error;
     return data as any;
   }
 
-  // Update a blog post
   async updateBlogPost(
     postId: string,
     updates: Partial<Omit<BlogPost, 'id' | 'created_at' | 'updated_at'>>
   ): Promise<BlogPost> {
     const { data, error } = await supabase
-      .from('blog_posts')
+      .from('blog_articles')
       .update(updates)
       .eq('id', postId)
-      .select('id, title, slug, content, excerpt, featured_image, author_id, author_name, status, category, tags, published_at, view_count, created_at, updated_at')
+      .select(BLOG_SELECT)
       .single();
 
     if (error) throw error;
     return data as any;
   }
 
-  // Publish a post
   async publishPost(postId: string): Promise<BlogPost> {
     return this.updateBlogPost(postId, {
-      status: 'published',
-      published_at: new Date().toISOString(),
+      is_published: true,
+      published_date: new Date().toISOString(),
     });
   }
 
-  // Unpublish a post
   async unpublishPost(postId: string): Promise<BlogPost> {
     return this.updateBlogPost(postId, {
-      status: 'draft',
-      published_at: null,
+      is_published: false,
+      published_date: null,
     });
   }
 
-  // Archive a post
   async archivePost(postId: string): Promise<BlogPost> {
-    return this.updateBlogPost(postId, { status: 'archived' });
+    return this.updateBlogPost(postId, { is_published: false });
   }
 
-  // Delete a post
   async deleteBlogPost(postId: string): Promise<void> {
     const { error } = await supabase
-      .from('blog_posts')
+      .from('blog_articles')
       .delete()
       .eq('id', postId);
 
     if (error) throw error;
   }
 
-  // Get blog categories
   async getBlogCategories(): Promise<string[]> {
     const { data, error } = await supabase
-      .from('blog_posts')
+      .from('blog_articles')
       .select('category');
 
     if (error) throw error;
@@ -137,24 +130,23 @@ export class ContentService {
     return categories.filter(Boolean).sort();
   }
 
-  // ========== Resources ==========
+  // ========== Resources (table: resource_library) ==========
 
-  // Get all resources
   async getResources(filters?: {
     category?: string;
     isPublic?: boolean;
     search?: string;
   }): Promise<Resource[]> {
     let query = supabase
-      .from('resources')
-      .select('id, title, description, category, file_url, file_type, file_size, is_public, download_count, uploaded_by, created_at, updated_at')
+      .from('resource_library')
+      .select(RESOURCE_SELECT)
       .order('created_at', { ascending: false });
 
     if (filters?.category) {
-      query = query.eq('category', filters.category);
+      query = query.eq('resource_type', filters.category);
     }
     if (filters?.isPublic !== undefined) {
-      query = query.eq('is_public', filters.isPublic);
+      query = query.eq('is_published', filters.isPublic);
     }
     if (filters?.search) {
       query = query.or(
@@ -167,11 +159,10 @@ export class ContentService {
     return (data || []) as any;
   }
 
-  // Get a single resource
   async getResource(resourceId: string): Promise<Resource | null> {
     const { data, error } = await supabase
-      .from('resources')
-      .select('id, title, description, category, file_url, file_type, file_size, is_public, download_count, uploaded_by, created_at, updated_at')
+      .from('resource_library')
+      .select(RESOURCE_SELECT)
       .eq('id', resourceId)
       .single();
 
@@ -179,104 +170,93 @@ export class ContentService {
     return data as any;
   }
 
-  // Upload a resource
   async uploadResource(
     file: File,
     metadata: {
       title: string;
       description?: string;
-      category: string;
+      resource_type: string;
       isPublic: boolean;
-      uploadedBy: string;
     }
   ): Promise<Resource> {
     const fileExt = file.name.split('.').pop();
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
     const filePath = `resources/${fileName}`;
 
-    // Upload file to storage
     const { error: uploadError } = await supabase.storage
       .from('resources')
       .upload(filePath, file);
 
     if (uploadError) throw uploadError;
 
-    // Get public URL
     const { data: urlData } = supabase.storage
       .from('resources')
       .getPublicUrl(filePath);
 
-    // Create resource record
     const { data, error } = await supabase
-      .from('resources')
+      .from('resource_library')
       .insert({
         title: metadata.title,
         description: metadata.description || null,
-        category: metadata.category,
+        resource_type: metadata.resource_type,
         file_url: urlData.publicUrl,
-        file_type: file.type,
-        file_size: file.size,
-        is_public: metadata.isPublic,
+        is_published: metadata.isPublic,
         download_count: 0,
-        uploaded_by: metadata.uploadedBy,
+        view_count: 0,
       })
-      .select('id, title, description, category, file_url, file_type, file_size, is_public, download_count, uploaded_by, created_at, updated_at')
+      .select(RESOURCE_SELECT)
       .single();
 
     if (error) throw error;
     return data as any;
   }
 
-  // Update a resource
   async updateResource(
     resourceId: string,
     updates: Partial<Omit<Resource, 'id' | 'created_at' | 'updated_at'>>
   ): Promise<Resource> {
     const { data, error } = await supabase
-      .from('resources')
+      .from('resource_library')
       .update(updates)
       .eq('id', resourceId)
-      .select('id, title, description, category, file_url, file_type, file_size, is_public, download_count, uploaded_by, created_at, updated_at')
+      .select(RESOURCE_SELECT)
       .single();
 
     if (error) throw error;
     return data as any;
   }
 
-  // Delete a resource
   async deleteResource(resourceId: string): Promise<void> {
     const resource = await this.getResource(resourceId);
     if (!resource) throw new Error('Resource not found');
 
-    // Delete from storage
-    const filePath = resource.file_url.split('/').slice(-2).join('/');
-    await supabase.storage.from('resources').remove([filePath]);
+    if (resource.file_url) {
+      const filePath = resource.file_url.split('/').slice(-2).join('/');
+      await supabase.storage.from('resources').remove([filePath]);
+    }
 
-    // Delete record
     const { error } = await supabase
-      .from('resources')
+      .from('resource_library')
       .delete()
       .eq('id', resourceId);
 
     if (error) throw error;
   }
 
-  // Track download
   async trackDownload(resourceId: string): Promise<void> {
     await supabase.rpc('increment_resource_download_count', {
       resource_id: resourceId,
     });
   }
 
-  // Get resource categories
   async getResourceCategories(): Promise<string[]> {
     const { data, error } = await supabase
-      .from('resources')
-      .select('category');
+      .from('resource_library')
+      .select('resource_type');
 
     if (error) throw error;
 
-    const categories = [...new Set(data?.map((r) => r.category) || [])];
+    const categories = [...new Set(data?.map((r) => r.resource_type) || [])];
     return categories.filter(Boolean).sort();
   }
 

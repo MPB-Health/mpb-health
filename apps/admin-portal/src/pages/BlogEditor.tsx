@@ -34,8 +34,8 @@ export default function BlogEditor() {
     excerpt: '',
     category: '',
     tags: [] as string[],
-    featured_image: '',
-    status: 'draft' as BlogPost['status'],
+    featured_image_url: '',
+    is_published: false,
     scheduled_publish_at: '',
     seo_title: '',
     seo_description: '',
@@ -56,8 +56,8 @@ export default function BlogEditor() {
             excerpt: post.excerpt || '',
             category: post.category,
             tags: post.tags || [],
-            featured_image: post.featured_image || '',
-            status: post.status,
+            featured_image_url: post.featured_image_url || '',
+            is_published: post.is_published,
             scheduled_publish_at: (post as any).scheduled_publish_at || '',
             seo_title: (post as any).seo_title || '',
             seo_description: (post as any).seo_description || '',
@@ -117,9 +117,9 @@ export default function BlogEditor() {
         ...formData,
         slug: formData.slug || generateSlug(formData.title),
         author_id: user?.id || null,
-        author_name: user ? `${user.first_name} ${user.last_name}` : null,
-        status: publish ? 'published' : formData.status,
-        published_at: publish ? new Date().toISOString() : null,
+        author: user ? `${user.first_name} ${user.last_name}` : null,
+        is_published: publish ? true : formData.is_published,
+        published_date: publish ? new Date().toISOString() : null,
       };
 
       let savedId = postId;
@@ -129,7 +129,7 @@ export default function BlogEditor() {
         toast.success(publish ? 'Post published!' : 'Post saved as draft');
       } else {
         await contentService.updateBlogPost(postId, postData as any);
-        if (publish && formData.status !== 'published') {
+        if (publish && !formData.is_published) {
           await contentService.publishPost(postId);
         }
         toast.success('Post updated!');
@@ -158,7 +158,7 @@ export default function BlogEditor() {
       excerpt: (snapshot.excerpt as string) || prev.excerpt,
       category: (snapshot.category as string) || prev.category,
       tags: (snapshot.tags as string[]) || prev.tags,
-      featured_image: (snapshot.featured_image as string) || prev.featured_image,
+      featured_image_url: (snapshot.featured_image_url as string) || prev.featured_image_url,
     }));
   };
 
@@ -268,8 +268,8 @@ export default function BlogEditor() {
               <div>
                 <label className="block text-sm font-medium text-th-text-secondary mb-2">Featured Image</label>
                 <ImageUploader
-                  value={formData.featured_image}
-                  onChange={(url) => setFormData((prev) => ({ ...prev, featured_image: url }))}
+                  value={formData.featured_image_url}
+                  onChange={(url) => setFormData((prev) => ({ ...prev, featured_image_url: url }))}
                   slug={formData.slug || 'blog'}
                 />
               </div>

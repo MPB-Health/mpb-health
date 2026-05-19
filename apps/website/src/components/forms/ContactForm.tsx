@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Check } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/Card';
 import { Button } from '../ui/button';
@@ -6,6 +6,8 @@ import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { typography } from '../../lib/typography';
 import { sendContactFormNotification } from '../../lib/emailService';
+
+const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY || '1x00000000000000000000AA';
 
 interface ContactFormData {
   firstName: string;
@@ -28,12 +30,60 @@ interface ContactFormProps {
   className?: string;
 }
 
+function TurnstileWidget({ onVerify, onExpire }: { onVerify: (token: string) => void; onExpire: () => void }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const widgetIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const renderWidget = () => {
+      if (!containerRef.current || widgetIdRef.current !== null) return;
+      const win = window as unknown as { turnstile?: { render: (el: HTMLElement, opts: Record<string, unknown>) => string; remove: (id: string) => void } };
+      if (!win.turnstile) return;
+      widgetIdRef.current = win.turnstile.render(containerRef.current, {
+        sitekey: TURNSTILE_SITE_KEY,
+        callback: onVerify,
+        'expired-callback': onExpire,
+        theme: 'light',
+      });
+    };
+
+    if ((window as unknown as { turnstile?: unknown }).turnstile) {
+      renderWidget();
+    } else {
+      const script = document.querySelector('script[src*="turnstile"]');
+      if (!script) {
+        const s = document.createElement('script');
+        s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+        s.async = true;
+        s.onload = renderWidget;
+        document.head.appendChild(s);
+      } else {
+        script.addEventListener('load', renderWidget);
+      }
+    }
+
+    return () => {
+      const win = window as unknown as { turnstile?: { remove: (id: string) => void } };
+      if (widgetIdRef.current !== null && win.turnstile) {
+        win.turnstile.remove(widgetIdRef.current);
+        widgetIdRef.current = null;
+      }
+    };
+  }, [onVerify, onExpire]);
+
+  return <div ref={containerRef} className="flex justify-center" />;
+}
+
 const ContactForm: React.FC<ContactFormProps> = ({ onSubmit, className }) => {
   const [formData, setFormData] = useState<ContactFormData>(initialFormData);
   const [errors, setErrors] = useState<Partial<ContactFormData>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+
+  const handleCaptchaVerify = useCallback((token: string) => setCaptchaToken(token), []);
+  const handleCaptchaExpire = useCallback(() => setCaptchaToken(null), []);
 
   const updateFormData = (field: keyof ContactFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -59,6 +109,11 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSubmit, className }) => {
     e.preventDefault();
     if (!validateForm()) return;
 
+    if (!captchaToken) {
+      setSubmitError('Please complete the verification check.');
+      return;
+    }
+
     setIsSubmitting(true);
     setSubmitError(null);
 
@@ -68,7 +123,8 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSubmit, className }) => {
         email: formData.email,
         message: formData.message,
         source: 'Contact Form',
-        referralSource: formData.referralSource || undefined
+        referralSource: formData.referralSource || undefined,
+        captchaToken,
       });
 
       if (!emailResult.success) {
@@ -188,8 +244,9 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSubmit, className }) => {
             </div>
           </div>
 
-          <div className="flex justify-end mt-8">
-            <Button type="submit" disabled={isSubmitting}>
+          <div className="flex flex-col items-center gap-4 mt-8">
+            <TurnstileWidget onVerify={handleCaptchaVerify} onExpire={handleCaptchaExpire} />
+            <Button type="submit" disabled={isSubmitting || !captchaToken}>
               {isSubmitting ? 'Sending...' : 'Send'}
             </Button>
           </div>

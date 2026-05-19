@@ -20,6 +20,8 @@ interface RequestBody {
   replyTo?: string;
   /** Caller-supplied tag so we can trace email type in Resend logs */
   emailType?: string;
+  /** Cloudflare Turnstile token for bot verification */
+  captchaToken?: string;
 }
 
 const DEFAULT_FROM = 'MPB Health <notifications@mpb.health>';
@@ -69,11 +71,38 @@ serve(async (req) => {
     if (rateLimitResponse) return rateLimitResponse;
 
     const body: RequestBody = await req.json();
-    const { to, subject, html, text, replyTo, emailType } = body;
+    const { to, subject, html, text, replyTo, emailType, captchaToken } = body;
 
     if (!to || !subject || !html) {
       return new Response(
         JSON.stringify({ success: false, error: 'Missing required fields: to, subject, html' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+
+    // --- Turnstile CAPTCHA verification for public form submissions ---
+    const TURNSTILE_SECRET_KEY = Deno.env.get('TURNSTILE_SECRET_KEY');
+    if (TURNSTILE_SECRET_KEY && captchaToken) {
+      const verifyRes = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          secret: TURNSTILE_SECRET_KEY,
+          response: captchaToken,
+          remoteip: clientIp,
+        }),
+      });
+      const verifyData = await verifyRes.json();
+      if (!verifyData.success) {
+        log.warn('Turnstile verification failed', { errors: verifyData['error-codes'] });
+        return new Response(
+          JSON.stringify({ success: false, error: 'CAPTCHA verification failed. Please try again.' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        );
+      }
+    } else if (TURNSTILE_SECRET_KEY && !captchaToken && !emailType) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'CAPTCHA token is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }

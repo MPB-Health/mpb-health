@@ -12,6 +12,8 @@ export interface EmailOptions {
   replyTo?: string;
   /** Optional label forwarded to the edge function for Resend log tagging */
   emailType?: string;
+  /** Cloudflare Turnstile token for bot verification */
+  captchaToken?: string;
 }
 
 export interface EmailResponse {
@@ -30,6 +32,7 @@ export async function sendEmail(options: EmailOptions): Promise<EmailResponse> {
         text: options.text,
         replyTo: options.replyTo,
         emailType: options.emailType,
+        captchaToken: options.captchaToken,
       },
     });
 
@@ -117,6 +120,7 @@ export async function sendContactFormNotification(data: {
   message: string;
   source: string;
   referralSource?: string;
+  captchaToken?: string;
 }): Promise<EmailResponse> {
   // Map referral source values to human-readable labels
   const referralSourceLabels: Record<string, string> = {
@@ -182,7 +186,8 @@ export async function sendContactFormNotification(data: {
     subject: `New Contact Form: ${data.name}`,
     html,
     replyTo: data.email,
-    text: `New Contact Form Submission\n\nName: ${data.name}\nEmail: ${data.email}\n${data.phone ? `Phone: ${data.phone}\n` : ''}Source: ${data.source}\n${referralLabel ? `How they heard about us: ${referralLabel}\n` : ''}\nMessage:\n${data.message}`
+    text: `New Contact Form Submission\n\nName: ${data.name}\nEmail: ${data.email}\n${data.phone ? `Phone: ${data.phone}\n` : ''}Source: ${data.source}\n${referralLabel ? `How they heard about us: ${referralLabel}\n` : ''}\nMessage:\n${data.message}`,
+    captchaToken: data.captchaToken,
   });
 }
 

@@ -8,6 +8,7 @@ import App from './App';
 import { QueryStaleRecovery } from './components/QueryStaleRecovery';
 import { getAdvisorQueryClient } from './query/advisorQueryClient';
 import { setupServiceWorker } from './registerServiceWorker';
+import { installAuthRefreshGuard } from './utils/installAuthRefreshGuard';
 import './index.css';
 import '@mpbhealth/ui/brand/aryx-brand.css';
 import '@mpbhealth/ui/login-animations.css';
@@ -24,14 +25,28 @@ const queryClient = getAdvisorQueryClient();
 // overlay CSS applies on first paint (no flash of mpb-blue on advisor.aryxcloud.com).
 initBrand({ mpbLogo: '/assets/MPB-Health-No-background.png' });
 
+installAuthRefreshGuard();
 setupServiceWorker();
 
 const SW_RELOAD_GUARD_KEY = 'advisor-sw-reload-ts';
+/**
+ * Refuse SW reloads in the first few seconds of boot — a reload that lands during
+ * `INITIAL_SESSION` / profile hydration leaves the next page in a partially-loaded
+ * state until the next manual refresh.
+ */
+const SW_RELOAD_BOOT_GUARD_MS = 6_000;
+const __advisorBootAt = performance.now();
 
 if ('serviceWorker' in navigator && !window.__advisorSwReloadListener) {
   window.__advisorSwReloadListener = true;
   navigator.serviceWorker.addEventListener('message', (event) => {
     if (event.data?.type !== 'RELOAD_PAGE') return;
+
+    // Ignore reload requests that arrive while the shell is still booting.
+    if (performance.now() - __advisorBootAt < SW_RELOAD_BOOT_GUARD_MS) {
+      console.log('[PWA] Ignoring service worker reload during boot');
+      return;
+    }
 
     try {
       const last = Number(sessionStorage.getItem(SW_RELOAD_GUARD_KEY) || '0');

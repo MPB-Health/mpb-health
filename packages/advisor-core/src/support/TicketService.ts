@@ -1,4 +1,12 @@
-import { supabase, supabaseUrl, supabasePublicAnonKey, getResolvedAuthHeader, refreshSessionOnce } from '@mpbhealth/database';
+import {
+  supabase,
+  supabaseUrl,
+  supabasePublicAnonKey,
+  getResolvedAuthHeader,
+  refreshSessionOnce,
+  getCachedSession,
+  isSessionDead,
+} from '@mpbhealth/database';
 import { escapeHtml } from '@mpbhealth/utils';
 
 /**
@@ -249,7 +257,7 @@ export class TicketService {
   private async uploadAttachments(ticketId: string, attachments: File[]): Promise<TicketAttachmentUploadResult[]> {
     if (!attachments.length) return [];
 
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session } } = await getCachedSession();
     const nowSec = Math.floor(Date.now() / 1000);
     if (!session || !session.expires_at || session.expires_at < nowSec + 60) {
       try {
@@ -259,8 +267,9 @@ export class TicketService {
       }
     }
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user?.id) throw new Error('Authentication required to upload attachments. Please sign in again.');
+    const { data: { session: freshSession } } = await getCachedSession();
+    const userId = freshSession?.user?.id;
+    if (!userId) throw new Error('Authentication required to upload attachments. Please sign in again.');
 
     if (attachments.length > TicketService.ATTACHMENT_MAX_COUNT) {
       throw new Error(`You can upload up to ${TicketService.ATTACHMENT_MAX_COUNT} attachments per ticket.`);
@@ -381,9 +390,10 @@ export class TicketService {
    *  4. On auth errors, refreshes the session and retries silently.
    *  5. Only throws after all retries are exhausted.
    */
-  private static CALL_TIMEOUT_MS = 25_000;
+  private static CALL_TIMEOUT_MS = 20_000;
   private static MAX_RETRIES = 2; // 3 total attempts
-  private static RETRY_BACKOFF = [1_000, 3_000]; // ms between retries
+  /** Tighter delays so list/detail reads surface failure in ~4s of retries instead of ~4-10s. */
+  private static RETRY_BACKOFF = [500, 1_500]; // ms between retries
 
   private async call<T extends { success: boolean }>(
     action: string,
@@ -404,6 +414,12 @@ export class TicketService {
     let lastError: Error | null = null;
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      // Bail entire chain if the session has been declared dead during retries.
+      if (isSessionDead()) {
+        if (opts.allowUnauthenticated) return null as unknown as T;
+        throw new Error('SESSION_EXPIRED');
+      }
+
       if (attempt > 0) {
         const delay = TicketService.RETRY_BACKOFF[attempt - 1] ?? 3_000;
         await new Promise((r) => setTimeout(r, delay));
@@ -615,7 +631,7 @@ export class TicketService {
     opts: ListTicketsOptions = {},
     runtime?: { signal?: AbortSignal },
   ): Promise<TicketListResult> {
-    // Shorter than generic proxy calls: list must feel snappy; long multi-retry feels "infinite".
+    // Snappy list: short timeout, single retry.
     const data = await this.call<TicketListResult & { success: boolean }>(
       'list',
       {
@@ -627,17 +643,20 @@ export class TicketService {
         sort: opts.sort,
         category: opts.category,
       },
-      { timeoutMs: 18_000, maxRetries: 1, signal: runtime?.signal },
+      { timeoutMs: 12_000, maxRetries: 1, signal: runtime?.signal },
     );
 
     return { tickets: data.tickets, total: data.total, page: data.page, per_page: data.per_page };
   }
 
-  async getTicketDetail(ticketId: string): Promise<TicketDetail> {
+  async getTicketDetail(
+    ticketId: string,
+    runtime?: { signal?: AbortSignal },
+  ): Promise<TicketDetail> {
     const data = await this.call<TicketDetail & { success: boolean }>(
       'detail',
       { ticket_id: ticketId },
-      { timeoutMs: 20_000, maxRetries: 1 },
+      { timeoutMs: 15_000, maxRetries: 1, signal: runtime?.signal },
     );
     return {
       ticket: data.ticket,
@@ -646,9 +665,13 @@ export class TicketService {
     };
   }
 
-  async getTicketStats(): Promise<TicketStats> {
+  async getTicketStats(runtime?: { signal?: AbortSignal }): Promise<TicketStats> {
     // Unauthenticated → return zeros silently.
-    const data = await this.call<TicketStats & { success: boolean }>('stats', {}, { allowUnauthenticated: true });
+    const data = await this.call<TicketStats & { success: boolean }>(
+      'stats',
+      {},
+      { allowUnauthenticated: true, signal: runtime?.signal },
+    );
     if (!data) return { total: 0, new: 0, open: 0, pending: 0, resolved: 0, closed: 0 };
     return { total: data.total, new: data.new, open: data.open, pending: data.pending, resolved: data.resolved, closed: data.closed };
   }
@@ -777,13 +800,20 @@ export class TicketService {
         page: opts.page ?? 1,
         per_page: opts.perPage ?? 20,
       },
-      { timeoutMs: 18_000, maxRetries: 1, signal: runtime?.signal },
+      { timeoutMs: 12_000, maxRetries: 1, signal: runtime?.signal },
     );
     return { tickets: data.tickets, total: data.total, page: data.page, per_page: data.per_page };
   }
 
-  async getTicketDetailAdmin(ticketId: string): Promise<AdminTicketDetail> {
-    const data = await this.call<AdminTicketDetail & { success: boolean }>('detail_admin', { ticket_id: ticketId });
+  async getTicketDetailAdmin(
+    ticketId: string,
+    runtime?: { signal?: AbortSignal },
+  ): Promise<AdminTicketDetail> {
+    const data = await this.call<AdminTicketDetail & { success: boolean }>(
+      'detail_admin',
+      { ticket_id: ticketId },
+      { timeoutMs: 15_000, maxRetries: 1, signal: runtime?.signal },
+    );
     return {
       ticket: data.ticket,
       comments: data.comments,
@@ -791,8 +821,12 @@ export class TicketService {
     };
   }
 
-  async getAllTicketStats(): Promise<TicketStats> {
-    const data = await this.call<TicketStats & { success: boolean }>('stats_all');
+  async getAllTicketStats(runtime?: { signal?: AbortSignal }): Promise<TicketStats> {
+    const data = await this.call<TicketStats & { success: boolean }>(
+      'stats_all',
+      {},
+      { signal: runtime?.signal },
+    );
     return { total: data.total, new: data.new, open: data.open, pending: data.pending, resolved: data.resolved, closed: data.closed };
   }
 

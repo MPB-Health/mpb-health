@@ -1,8 +1,6 @@
-import React, { Suspense, useEffect } from 'react';
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
+import React, { Suspense } from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { AdvisorProvider } from './contexts/AdvisorContext';
-import { nudgeAdvisorQueries } from './query/nudgeAdvisorQueries';
 import { TourProvider } from './contexts/TourContext';
 import MainLayout from './layouts/MainLayout';
 import { AdvisorPageLoader } from './components/loading';
@@ -250,36 +248,11 @@ if (typeof window !== 'undefined') {
   );
 }
 
-/**
- * In-tab navigations do not fire visibility/focus; after idle or a network blip, active queries
- * can stay pending until a full reload. Resume paused work and refetch mounted observers.
- */
-function RouteChangeQueryRecovery() {
-  const { pathname } = useLocation();
-  const queryClient = useQueryClient();
-
-  useEffect(() => {
-    const t0 = window.setTimeout(() => {
-      nudgeAdvisorQueries(queryClient, 'route');
-    }, 0);
-    const t1 = window.setTimeout(() => {
-      nudgeAdvisorQueries(queryClient, 'route-deferred');
-    }, 75);
-    return () => {
-      clearTimeout(t0);
-      clearTimeout(t1);
-    };
-  }, [pathname, queryClient]);
-
-  return null;
-}
-
 export default function App() {
   return (
     <AdvisorProvider>
       <TourProvider>
         <RouteErrorBoundary>
-          <RouteChangeQueryRecovery />
           <Routes>
             {/* Auth routes — own Suspense so they don't depend on MainLayout */}
             <Route path="/login" element={<Suspense fallback={routeFallback('Loading…', 'Preparing sign-in.')}><Login /></Suspense>} />

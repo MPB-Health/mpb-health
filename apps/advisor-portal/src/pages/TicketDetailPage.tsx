@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, type ChangeEvent } from 'react';
 import { flushSync } from 'react-dom';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Button, cn } from '@mpbhealth/ui';
-import { sanitizeHtml } from '@mpbhealth/utils';
+import { sanitizeHtml, escapeHtml } from '@mpbhealth/utils';
 import {
   ticketService,
   appendTicketAttachmentsHtml,
@@ -38,10 +38,6 @@ import { useTicketAuth } from '../components/TicketAuthWrapper';
 import { formatStatusLabel } from '../components/tickets/advisorTicketUi';
 import { TicketCommentContent } from '../components/tickets/TicketCommentContent';
 import { TicketDescriptionBlock } from '../components/tickets/TicketDescriptionBlock';
-import {
-  TicketRichReplyEditor,
-  type TicketRichReplyEditorRef,
-} from '../components/tickets/TicketRichReplyEditor';
 import { useAdvisor } from '../contexts/AdvisorContext';
 import { useAdvisorPageDebugLog } from '../hooks/useAdvisorPageDebugLog';
 import { useAdvisorQueryReady } from '../hooks/useAdvisorQueryReady';
@@ -49,7 +45,7 @@ import { advisorLiveDetailQueryOptions } from '../query/advisorQueryPolicy';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-const richTicketEditor = true;
+
 const MAX_REPLY_ATTACHMENTS = 10;
 const MAX_REPLY_FILE_BYTES = 15 * 1024 * 1024;
 /** Upload + edge reply can exceed a single `call()` timeout when many/large files are attached. */
@@ -168,9 +164,9 @@ export default function TicketDetailPage() {
     error,
   } = useQuery({
     queryKey: ['advisorTicketDetail', ticketId],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       try {
-        return await executeWithAuth(() => ticketService.getTicketDetail(ticketId!));
+        return await executeWithAuth(() => ticketService.getTicketDetail(ticketId!, { signal }));
       } catch (e) {
         if (e instanceof Error && e.message === 'SESSION_EXPIRED') {
           window.location.href = '/login';
@@ -181,8 +177,8 @@ export default function TicketDetailPage() {
     enabled: advisorReady && validTicketId,
     ...advisorLiveDetailQueryOptions(),
     refetchOnMount: 'always',
-    retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1500 * 2 ** attemptIndex, 12_000),
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(800 * 2 ** attemptIndex, 4_000),
   });
 
   const loadError = isError
@@ -206,16 +202,13 @@ export default function TicketDetailPage() {
   const [replyContent, setReplyContent] = useState('');
   const [replySending, setReplySending] = useState(false);
   const [replyError, setReplyError] = useState('');
-  const richReplyRef = useRef<TicketRichReplyEditorRef>(null);
-  const [richHasContent, setRichHasContent] = useState(false);
-  const [replyEditorKey, setReplyEditorKey] = useState(0);
+  const replyTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const replyAttachmentsInputRef = useRef<HTMLInputElement>(null);
   const [replyAttachments, setReplyAttachments] = useState<File[]>([]);
   const [copiedField, setCopiedField] = useState<null | 'num' | 'link'>(null);
-  /** Rich editor failed-send recovery (applied once inside TicketRichReplyEditor). */
-  const [richRecoverHtml, setRichRecoverHtml] = useState<string | null>(null);
   /** Local id of the outbound bubble while the network send is in flight. */
   const [outboundPendingId, setOutboundPendingId] = useState<string | null>(null);
-  const replyDraftBackupRef = useRef<{ html: string; plain: string; files: File[] } | null>(null);
+  const replyDraftBackupRef = useRef<{ plain: string; files: File[] } | null>(null);
   /** Signed download URLs for opening-message `ticket_files` rows (same pattern as ITSTS). */
   const [openingAttachmentUrls, setOpeningAttachmentUrls] = useState<Record<string, string>>({});
 
@@ -276,17 +269,13 @@ export default function TicketDetailPage() {
     });
   }, []);
 
-  const uploadTicketImage = useCallback(
-    async (file: File) => {
-      if (!detail) throw new Error('No ticket');
-      try {
-        return await ticketService.uploadImageForTicketReply(detail.ticket.id, file);
-      } catch (e) {
-        toast.error(e instanceof Error ? e.message : 'Image upload failed');
-        throw e;
-      }
+  const onReplyAttachmentsInputChange = useCallback(
+    (e: ChangeEvent<HTMLInputElement>) => {
+      const list = e.target.files;
+      if (list?.length) mergeReplyAttachments(Array.from(list));
+      e.target.value = '';
     },
-    [detail],
+    [mergeReplyAttachments],
   );
 
   const copyTicketNumber = useCallback(async () => {
@@ -317,23 +306,10 @@ export default function TicketDetailPage() {
   const handleSendReply = async () => {
     if (!detail) return;
 
-    const rawHtmlSnapshot = richReplyRef.current?.getHtml() ?? '';
-    const editorTextSnapshot = richReplyRef.current?.getText().trim() ?? '';
     const plainSnapshot = replyContent.trim();
     const filesSnapshot = [...replyAttachments];
 
-    if (richTicketEditor) {
-      const hasInlineImage = /<img[\s>]/i.test(rawHtmlSnapshot);
-      const hasFiles = filesSnapshot.length > 0;
-      if (!editorTextSnapshot && !hasInlineImage && !hasFiles) return;
-      if (editorTextSnapshot || hasInlineImage) {
-        const html = sanitizeHtml(rawHtmlSnapshot);
-        const stripped = html.replace(/<[^>]+>/g, '').trim();
-        if (!stripped && !hasInlineImage && !hasFiles) return;
-      } else if (!hasFiles) return;
-    } else if (!plainSnapshot) {
-      return;
-    }
+    if (!plainSnapshot && filesSnapshot.length === 0) return;
 
     const commentAuthorId = detail.ticket.requester_id || profile?.user_id || profile?.id || '';
     const authorName = profile
@@ -342,10 +318,9 @@ export default function TicketDetailPage() {
 
     const now = new Date().toISOString();
     const localId = `local-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-    replyDraftBackupRef.current = { html: rawHtmlSnapshot, plain: plainSnapshot, files: filesSnapshot };
+    replyDraftBackupRef.current = { plain: plainSnapshot, files: filesSnapshot };
 
     setReplyError('');
-    setRichRecoverHtml(null);
     setOutboundPendingId(null);
 
     const rollbackReplyFailure = () => {
@@ -361,13 +336,6 @@ export default function TicketDetailPage() {
       if (b) {
         setReplyAttachments(b.files);
         setReplyContent(b.plain);
-        if (richTicketEditor && b.html.trim()) {
-          setRichRecoverHtml(b.html);
-        }
-        setReplyEditorKey((k) => k + 1);
-        setRichHasContent(
-          Boolean(b.html.replace(/<[^>]+>/g, '').trim() || /<img[\s>]/i.test(b.html) || b.files.length || b.plain.trim()),
-        );
       }
     };
 
@@ -375,17 +343,15 @@ export default function TicketDetailPage() {
     let payloadFormat: 'html' | 'plain';
 
     try {
-      if (richTicketEditor) {
-        let html = rawHtmlSnapshot;
-        if (filesSnapshot.length > 0) {
-          setReplySending(true);
-          const uploads = await executeWithAuth(() =>
-            ticketService.uploadFilesForTicketReply(detail.ticket.id, filesSnapshot),
-          );
-          if (!mountedRef.current) return;
-          html = appendTicketAttachmentsHtml(html, uploads);
-        }
-        payloadContent = sanitizeHtml(html);
+      if (filesSnapshot.length > 0) {
+        setReplySending(true);
+        const uploads = await executeWithAuth(() =>
+          ticketService.uploadFilesForTicketReply(detail.ticket.id, filesSnapshot),
+        );
+        if (!mountedRef.current) return;
+        const textHtml =
+          plainSnapshot !== '' ? `<p>${escapeHtml(plainSnapshot).replace(/\n/g, '<br/>')}</p>` : '';
+        payloadContent = sanitizeHtml(appendTicketAttachmentsHtml(textHtml, uploads));
         payloadFormat = 'html';
       } else {
         payloadContent = plainSnapshot;
@@ -411,11 +377,8 @@ export default function TicketDetailPage() {
             comments: [...prev.comments.filter((c) => !c.id.startsWith('local-')), optimistic],
           };
         });
-        richReplyRef.current?.clear();
         setReplyContent('');
         setReplyAttachments([]);
-        setRichHasContent(false);
-        setReplyEditorKey((k) => k + 1);
         setOutboundPendingId(localId);
       });
 
@@ -495,7 +458,7 @@ export default function TicketDetailPage() {
         window.requestAnimationFrame(() => {
           window.requestAnimationFrame(() => {
             if (!mountedRef.current) return;
-            richReplyRef.current?.focusComposer();
+            replyTextareaRef.current?.focus();
           });
         });
       }
@@ -974,55 +937,62 @@ export default function TicketDetailPage() {
                   <MessageSquare size={16} aria-hidden />
                   Add reply
                 </h2>
-                {richTicketEditor ? (
-                  <>
-                    <TicketRichReplyEditor
-                      key={`${ticket.id}-reply-${replyEditorKey}`}
-                      ref={richReplyRef}
-                      variant="default"
-                      placeholder="Write your message… Rich text, images, and file attachments are supported."
-                      disabled={replySending}
-                      onDraftChange={setRichHasContent}
-                      uploadImage={uploadTicketImage}
-                      onAttachFiles={mergeReplyAttachments}
-                      recoverHtml={richRecoverHtml}
-                      onRecoverHtmlConsumed={() => setRichRecoverHtml(null)}
-                    />
-                    {replyAttachments.length > 0 ? (
-                      <ul className="mt-3 flex flex-wrap gap-2">
-                        {replyAttachments.map((file, idx) => (
-                          <li
-                            key={`${file.name}-${file.size}-${idx}`}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white py-1.5 pl-2.5 pr-1 text-xs text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300"
-                          >
-                            <span className="max-w-[min(100%,28rem)] truncate sm:max-w-md lg:max-w-lg">
-                              {file.name}
-                            </span>
-                            <button
-                              type="button"
-                              className="rounded-md p-1 hover:bg-slate-100 dark:hover:bg-slate-700"
-                              aria-label={`Remove ${file.name}`}
-                              onClick={() =>
-                                setReplyAttachments((prev) => prev.filter((_, i) => i !== idx))
-                              }
-                            >
-                              <X className="h-3.5 w-3.5" />
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : null}
-                  </>
-                ) : (
+                <div className="overflow-hidden rounded-lg border border-slate-300 bg-white shadow-sm dark:border-slate-600 dark:bg-slate-800">
                   <textarea
+                    ref={replyTextareaRef}
                     value={replyContent}
                     onChange={(e) => setReplyContent(e.target.value)}
                     placeholder="Type your message…"
-                    rows={4}
+                    rows={5}
                     maxLength={10000}
-                    className="w-full resize-none rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20 dark:border-slate-600 dark:bg-slate-800 dark:text-white dark:placeholder:text-slate-500"
+                    disabled={replySending}
+                    className="min-h-[120px] w-full resize-y border-0 bg-transparent px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-0 dark:text-white dark:placeholder:text-slate-500"
                   />
-                )}
+                  <div className="flex items-center border-t border-slate-200 px-1 py-0.5 dark:border-slate-600 dark:bg-slate-900/25">
+                    <input
+                      ref={replyAttachmentsInputRef}
+                      type="file"
+                      multiple
+                      className="sr-only"
+                      tabIndex={-1}
+                      onChange={onReplyAttachmentsInputChange}
+                    />
+                    <button
+                      type="button"
+                      disabled={replySending}
+                      className="inline-flex items-center rounded-md p-2 text-slate-600 hover:bg-slate-100 hover:text-slate-900 disabled:pointer-events-none disabled:opacity-40 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-100"
+                      aria-label="Attach files"
+                      title="Attach files"
+                      onClick={() => replyAttachmentsInputRef.current?.click()}
+                    >
+                      <Paperclip className="h-4 w-4" aria-hidden />
+                    </button>
+                  </div>
+                </div>
+                {replyAttachments.length > 0 ? (
+                  <ul className="mt-3 flex flex-wrap gap-2">
+                    {replyAttachments.map((file, idx) => (
+                      <li
+                        key={`${file.name}-${file.size}-${idx}`}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white py-1.5 pl-2.5 pr-1 text-xs text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                      >
+                        <span className="max-w-[min(100%,28rem)] truncate sm:max-w-md lg:max-w-lg">
+                          {file.name}
+                        </span>
+                        <button
+                          type="button"
+                          className="rounded-md p-1 hover:bg-slate-100 dark:hover:bg-slate-700"
+                          aria-label={`Remove ${file.name}`}
+                          onClick={() =>
+                            setReplyAttachments((prev) => prev.filter((_, i) => i !== idx))
+                          }
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
                 {replyError ? (
                   <div className="mt-3 flex items-center gap-2 rounded-xl border border-red-200/80 bg-red-50/80 p-3 text-sm text-red-800 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-200">
                     <AlertCircle className="h-4 w-4 shrink-0" />
@@ -1033,12 +1003,7 @@ export default function TicketDetailPage() {
                   <Button
                     type="button"
                     variant="primary"
-                    disabled={
-                      replySending ||
-                      (richTicketEditor
-                        ? !richHasContent && replyAttachments.length === 0
-                        : !replyContent.trim())
-                    }
+                    disabled={replySending || (!replyContent.trim() && replyAttachments.length === 0)}
                     aria-busy={replySending}
                     onClick={() => void handleSendReply()}
                   >
@@ -1056,8 +1021,8 @@ export default function TicketDetailPage() {
                   </Button>
                 </div>
                 <p className="mt-2 text-right text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
-                  After you send, your message appears in the thread above and the composer clears. With attachments,
-                  uploads finish first, then the message moves into the thread.
+                  After you send, your message appears in the thread above. Attachments upload first; you can combine
+                  text and files or send files alone.
                 </p>
               </section>
             </section>

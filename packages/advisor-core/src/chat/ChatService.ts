@@ -1,4 +1,4 @@
-import { supabase, getResolvedAuthHeader } from '@mpbhealth/database';
+import { supabase, getResolvedAuthHeader, isSessionDead } from '@mpbhealth/database';
 import type {
   ChatConversation,
   ChatMember,
@@ -64,6 +64,10 @@ export class ChatService {
     // Bail early if already aborted (e.g. rapid navigation)
     if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
 
+    // Don't fire when the session has been definitively declared dead — the
+    // boot guard is mid-redirect to /login and these calls would just 401.
+    if (isSessionDead()) throw new Error('Not authenticated');
+
     const authHeader = await getResolvedAuthHeader();
     if (!authHeader) throw new Error('Not authenticated');
 
@@ -111,8 +115,10 @@ export class ChatService {
 
     let { data, error } = await doInvoke(authHeader);
 
-    // On 401, retry once with a freshly refreshed token (handles stale-token races)
-    if (error && is401Error(error)) {
+    // On 401, retry once with a freshly refreshed token (handles stale-token races).
+    // Skip when the session has just been declared dead — the auth refresh guard
+    // is already redirecting and another invoke would just 401 again.
+    if (error && is401Error(error) && !isSessionDead()) {
       if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
       const refreshed = await getResolvedAuthHeader();
       if (refreshed) {

@@ -5,6 +5,7 @@ import {
   getResolvedAuthHeader,
   refreshSessionOnce,
   getCachedSession,
+  isSessionDead,
 } from '@mpbhealth/database';
 import { escapeHtml } from '@mpbhealth/utils';
 
@@ -413,6 +414,12 @@ export class TicketService {
     let lastError: Error | null = null;
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      // Bail entire chain if the session has been declared dead during retries.
+      if (isSessionDead()) {
+        if (opts.allowUnauthenticated) return null as unknown as T;
+        throw new Error('SESSION_EXPIRED');
+      }
+
       if (attempt > 0) {
         const delay = TicketService.RETRY_BACKOFF[attempt - 1] ?? 3_000;
         await new Promise((r) => setTimeout(r, delay));

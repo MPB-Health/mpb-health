@@ -6,6 +6,8 @@ import {
   refreshSessionOnce,
   getCachedSession,
   invalidateCachedSession,
+  isSessionDead,
+  markSessionDead,
 } from '@mpbhealth/database';
 import {
   profileService,
@@ -159,6 +161,46 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
         setProfile(null);
         setSessionUserCreatedAt(undefined);
         return;
+      }
+
+      // CRITICAL: pre-validate the access token before letting the rest of the
+      // app react to `profile`. Storage may hold a session whose access_token
+      // expired and whose refresh_token was rotated/revoked — in that case
+      // every downstream service call (chat list, ticket list, edge-fn warmup)
+      // 401s in parallel, the refresh attempt 400s, and the user sees a wall
+      // of console errors before the redirect lands. Pre-emptively refreshing
+      // here means by the time `profile` is set, the JWT is fresh OR we've
+      // marked the session dead and the onSessionDead listener has redirected
+      // — and `useChat`/warmup never even fire.
+      const ACCESS_TOKEN_EXPIRY_BUFFER_SECONDS = 30;
+      const nowSec = Math.floor(Date.now() / 1000);
+      const accessTokenAboutToExpire =
+        !session.expires_at || session.expires_at < nowSec + ACCESS_TOKEN_EXPIRY_BUFFER_SECONDS;
+
+      if (accessTokenAboutToExpire) {
+        try {
+          const { data: refreshed, error: refreshErr } = await refreshSessionOnce();
+          if (refreshErr || !refreshed?.session?.user) {
+            // refreshSessionOnce already called markSessionDead — listener
+            // will redirect. Bail out without setting profile so dependent
+            // queries (useChat, warmup) never enable.
+            return;
+          }
+          if (gen !== loadProfileGenRef.current) return;
+          session = refreshed.session;
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : '';
+          if (msg === 'SESSION_DEAD' || isSessionDead()) return;
+          if (msg === 'REFRESH_SESSION_TIMEOUT') {
+            // Network may be slow rather than session dead — surface a soft
+            // error but don't latch death, so the next auth event can recover.
+            console.warn('[AdvisorContext] Boot refresh timed out — surfacing soft error');
+            setError('Your session check is slow. Check your connection or refresh the page.');
+            return;
+          }
+          markSessionDead(`boot_refresh_threw:${msg || 'unknown'}`);
+          return;
+        }
       }
 
       setSessionUserCreatedAt(session.user.created_at);

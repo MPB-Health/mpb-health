@@ -138,6 +138,9 @@ export {
   invalidateCachedSession,
   getResolvedAuthHeader,
   invokeWithResolvedAuth,
+  isSessionDead,
+  markSessionDead,
+  onSessionDead,
 } from './authHelper';
 
 // Hooks

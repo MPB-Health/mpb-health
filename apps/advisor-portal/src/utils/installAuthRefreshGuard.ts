@@ -1,31 +1,80 @@
-import { supabase, SUPABASE_AUTH_STORAGE_KEY } from '@mpbhealth/database';
+import {
+  supabase,
+  SUPABASE_AUTH_STORAGE_KEY,
+  markSessionDead,
+  onSessionDead,
+} from '@mpbhealth/database';
 import { clearNavCache } from './navCache';
 
 /**
- * Supabase's auto-refresh doesn't fire SIGNED_OUT on a rejected refresh token —
- * it silently fails, leaving the app in a zombie state where every subsequent
- * request 401s but the UI thinks the user is signed in. This boot-time guard
- * patches `window.fetch` exactly once per page load and forces a clean redirect
- * to /login when the auth token endpoint returns 400 for `grant_type=refresh_token`.
+ * Boot-time guard that turns a dead Supabase session into a clean redirect.
  *
- * Why a module-scope install (not a React effect):
+ * Two layered triggers:
+ *  1) `window.fetch` patch — detects the canonical signal (`/auth/v1/token`
+ *     returns 400 for `grant_type=refresh_token`) even if no service code
+ *     awaited the refresh, and calls `markSessionDead` exactly once.
+ *  2) `onSessionDead` listener — single source of truth for the actual sign-out
+ *     + storage-clear + redirect. Fires for ANY caller that latches the death
+ *     (refreshSessionOnce, getResolvedAuthHeader, the fetch patch, the
+ *     AdvisorContext boot validator, …), so we don't duplicate redirect logic.
+ *
+ * Why module-scope install (not a React effect):
  *  - Under StrictMode / Vite HMR, effects can run twice. Patching `window.fetch`
  *    from an effect risks stacking wrappers or restoring a stale `origFetch`.
- *  - This guard must outlive any single React subtree; the AdvisorProvider may
+ *  - The listener must outlive any single React subtree; AdvisorProvider can
  *    unmount/remount during navigation.
  *
- * Safe re-imports: a global symbol ensures we only patch once even if HMR
- * re-executes the boot graph.
+ * A global symbol ensures we only patch + subscribe once across HMR.
  */
 const INSTALLED_SYM = Symbol.for('mpb.advisorPortal.authRefreshGuard');
 
 type Installed = typeof globalThis & { [INSTALLED_SYM]?: boolean };
+
+/** Redirects exactly once even if multiple paths latch the death simultaneously. */
+let _redirectingToLogin = false;
+
+async function performLogoutRedirect(): Promise<void> {
+  if (_redirectingToLogin) return;
+  _redirectingToLogin = true;
+  try {
+    try {
+      await supabase.auth.signOut({ scope: 'local' });
+    } catch {
+      /* Supabase signOut errors are non-fatal once we've decided to redirect */
+    }
+    try {
+      localStorage.removeItem(SUPABASE_AUTH_STORAGE_KEY);
+      localStorage.removeItem('mpb-auth-token');
+    } catch {
+      /* storage unavailable in some embedded contexts */
+    }
+    clearNavCache();
+    if (typeof window === 'undefined') return;
+    const path = window.location.pathname;
+    if (
+      !path.startsWith('/login') &&
+      !path.startsWith('/forgot-password') &&
+      !path.startsWith('/reset-password')
+    ) {
+      window.location.href = '/login';
+    }
+  } catch {
+    /* never throw out of the listener */
+  }
+}
 
 export function installAuthRefreshGuard(): void {
   if (typeof window === 'undefined') return;
   const g = globalThis as Installed;
   if (g[INSTALLED_SYM]) return;
   g[INSTALLED_SYM] = true;
+
+  // Single redirect-to-login path. Any caller that latches the death (refresh
+  // helper, getResolvedAuthHeader, AdvisorContext boot validator, the fetch
+  // patch below) just calls markSessionDead — this listener does the rest.
+  onSessionDead(() => {
+    void performLogoutRedirect();
+  });
 
   const origFetch = window.fetch;
 
@@ -38,31 +87,15 @@ export function installAuthRefreshGuard(): void {
           : input instanceof URL
             ? input.href
             : input.url;
-      if (
+      const isRefreshTokenReject =
         response.status === 400 &&
         url.includes('/auth/v1/token') &&
-        url.includes('grant_type=refresh_token')
-      ) {
-        console.warn('[Auth] Refresh token rejected (400) — redirecting to login');
-        try {
-          await supabase.auth.signOut({ scope: 'local' });
-        } catch {
-          /* ignore */
-        }
-        try {
-          localStorage.removeItem(SUPABASE_AUTH_STORAGE_KEY);
-          localStorage.removeItem('mpb-auth-token');
-        } catch {
-          /* storage unavailable */
-        }
-        clearNavCache();
-        if (
-          !window.location.pathname.startsWith('/login') &&
-          !window.location.pathname.startsWith('/forgot-password') &&
-          !window.location.pathname.startsWith('/reset-password')
-        ) {
-          window.location.href = '/login';
-        }
+        url.includes('grant_type=refresh_token');
+      if (isRefreshTokenReject) {
+        // The listener above handles the redirect; just latch the signal.
+        // markSessionDead is idempotent, so duplicate triggers from
+        // refreshSessionOnce are harmless.
+        markSessionDead('refresh_token_rejected');
       }
     } catch {
       // Never break the fetch pipeline because of the guard.

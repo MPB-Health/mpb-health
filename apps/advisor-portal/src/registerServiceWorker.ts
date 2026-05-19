@@ -37,7 +37,9 @@ export function registerAdvisorServiceWorker(): void {
   void navigator.serviceWorker
     .register('/sw.js')
     .then((reg) => {
-      console.log('[PWA] Service Worker registered:', reg.scope);
+      if (import.meta.env.DEV) {
+        console.log('[PWA] Service Worker registered:', reg.scope);
+      }
 
       reg.addEventListener('updatefound', () => {
         const newWorker = reg.installing;

@@ -2,7 +2,7 @@
 // Service Worker for MPB Health Advisor Portal PWA
 // ============================================================================
 
-const CACHE_VERSION = 13;
+const CACHE_VERSION = 15;
 const CACHE_NAME = `advisor-portal-v${CACHE_VERSION}`;
 const RUNTIME_CACHE = `advisor-runtime-v${CACHE_VERSION}`;
 const MAX_RUNTIME_ENTRIES = 200;
@@ -180,8 +180,8 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Navigation → network-first with SPA fallback
-  if (request.mode === 'navigate') {
+  // SPA document routes (navigate, prefetch, hard refresh on /submit-group, etc.)
+  if (isSpaDocumentRequest(request)) {
     event.respondWith(navigationStrategy(request));
     return;
   }
@@ -233,7 +233,11 @@ async function cacheFirstStrategy(request) {
 
     return networkResponse;
   } catch (_) {
-    return new Response('Offline', { status: 503 });
+    // Avoid synthetic 503 for static assets — stale SW caches break lazy-loaded routes.
+    if (HASHED_ASSET_RE.test(request.url)) {
+      handleMissingHashedAsset(new URL(request.url).pathname);
+    }
+    return fetch(request);
   }
 }
 
@@ -257,21 +261,64 @@ async function networkFirstStrategy(request) {
   }
 }
 
+/**
+ * True for full-page SPA loads — not only `mode: navigate` (prefetch/prerender
+ * can hit /submit-group etc. with other modes and previously got 503 Offline).
+ */
+function isSpaDocumentRequest(request) {
+  if (request.method !== 'GET') return false;
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin) return false;
+  if (request.mode === 'navigate') return true;
+  if (request.destination === 'document') return true;
+
+  const pathname = url.pathname;
+  if (STATIC_ASSET_RE.test(pathname)) return false;
+  if (API_CACHE_PATTERNS.some((p) => p.test(pathname))) return false;
+  if (pathname.startsWith('/api')) return false;
+  // Client routes like /submit-group, /sops/advisor-toolkit — no file extension
+  return !/\.[a-zA-Z0-9]+$/.test(pathname.replace(/\/$/, '') || '/');
+}
+
+async function fetchFreshIndexHtml() {
+  try {
+    const res = await fetchWithNetworkTimeout(
+      new Request('/index.html', { cache: 'reload' })
+    );
+    if (res.ok) {
+      await safeCachePut(CACHE_NAME, '/index.html', res.clone());
+      return res;
+    }
+  } catch (_) {
+    /* network unavailable */
+  }
+  return null;
+}
+
 async function navigationStrategy(request) {
   try {
     const networkResponse = await fetchWithNetworkTimeout(request);
 
     if (networkResponse.ok) {
-      safeCachePut(CACHE_NAME, request, networkResponse.clone());
-    } else if (networkResponse.status >= 500) {
-      const fallback = await spaFallback(request);
-      if (fallback) return fallback;
+      // Keep a single app shell in cache — per-route keys go stale after deploys.
+      safeCachePut(CACHE_NAME, '/index.html', networkResponse.clone());
+      return networkResponse;
     }
 
+    const fallback = await spaFallback(request);
+    if (fallback) return fallback;
     return networkResponse;
   } catch (_) {
     const fallback = await spaFallback(request);
-    return fallback || new Response('Offline', { status: 503 });
+    if (fallback) return fallback;
+
+    const offline = await caches.match('/offline.html');
+    if (offline && isValidCachedResponse(offline)) return offline;
+
+    return new Response('Offline', {
+      status: 503,
+      headers: { 'Content-Type': 'text/html; charset=utf-8' },
+    });
   }
 }
 
@@ -287,7 +334,10 @@ async function networkWithCacheFallback(request) {
       const cached = await caches.match(request);
       if (cached && isValidCachedResponse(cached)) return cached;
     } catch (_) { /* ignore */ }
-    return new Response('Offline', { status: 503 });
+    if (HASHED_ASSET_RE.test(request.url)) {
+      handleMissingHashedAsset(new URL(request.url).pathname);
+    }
+    return fetch(request);
   }
 }
 
@@ -297,11 +347,14 @@ async function networkWithCacheFallback(request) {
 
 async function spaFallback(request) {
   try {
-    const cached = await caches.match(request);
-    if (cached && isValidCachedResponse(cached)) return cached;
-
     const index = await caches.match('/index.html');
     if (index && isValidCachedResponse(index)) return index;
+
+    const fresh = await fetchFreshIndexHtml();
+    if (fresh) return fresh;
+
+    const cached = await caches.match(request);
+    if (cached && isValidCachedResponse(cached)) return cached;
 
     const offline = await caches.match('/offline.html');
     if (offline && isValidCachedResponse(offline)) return offline;

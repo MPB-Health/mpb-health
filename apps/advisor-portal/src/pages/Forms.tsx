@@ -27,7 +27,7 @@ import { supabase } from '@mpbhealth/database';
 import { useAdvisor } from '../contexts/AdvisorContext';
 import { useAdvisorQueryReady } from '../hooks/useAdvisorQueryReady';
 import { useAdvisorPageDebugLog } from '../hooks/useAdvisorPageDebugLog';
-import { sanitizeHtml } from '@mpbhealth/utils';
+import CognitoFormEmbed from '../components/CognitoFormEmbed';
 
 const WEBSITE_BASE_URL = 'https://mpb.health';
 
@@ -426,25 +426,8 @@ export default function Forms({ section }: FormsProps) {
                   </Button>
                 </div>
               </div>
-              <div className="flex-1 overflow-hidden flex flex-col">
-                {/* Display form embed - cognito_embed contains full iframe/script */}
-                {selectedForm.cognito_embed ? (
-                  <div 
-                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(selectedForm.cognito_embed, { ADD_TAGS: ['iframe', 'script'], ADD_ATTR: ['src', 'frameborder', 'allowfullscreen', 'allow', 'loading', 'scrolling'] }) }}
-                    className="w-full h-full [&>iframe]:w-full [&>iframe]:h-full [&>iframe]:border-0"
-                  />
-                ) : selectedForm.embed_url ? (
-                  <iframe
-                    src={selectedForm.embed_url}
-                    className="w-full h-full border-0"
-                    title={selectedForm.name || selectedForm.label}
-                  />
-                ) : (
-                  <div className="text-center py-12 text-th-text-tertiary">
-                    <FileText className="w-12 h-12 mx-auto mb-4" />
-                    <p>No form embed available</p>
-                  </div>
-                )}
+              <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+                <CognitoFormEmbed form={selectedForm} className="h-full" />
               </div>
             </div>
           </div>

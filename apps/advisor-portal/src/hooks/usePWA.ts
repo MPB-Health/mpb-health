@@ -60,9 +60,21 @@ export function usePWA() {
   }, []);
 
   // Defer the browser mini-infobar until the user taps our install control (install() → prompt()).
-  // Chrome may log "Banner not shown: beforeinstallpromptevent.preventDefault()..." — that is expected.
+  // Only call preventDefault when we will offer our banner — avoids Chrome's console noise
+  // when the user already dismissed install or is already in standalone mode.
   useEffect(() => {
     const handleBeforeInstall = (e: Event) => {
+      const dismissedUntilRaw = localStorage.getItem('pwa-dismissed-until');
+      const dismissedUntil = dismissedUntilRaw ? parseInt(dismissedUntilRaw, 10) : 0;
+      const wasInstalled = localStorage.getItem('pwa-installed') === 'true';
+      const standalone =
+        window.matchMedia('(display-mode: standalone)').matches ||
+        (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
+
+      if (wasInstalled || standalone || (dismissedUntil && Date.now() < dismissedUntil)) {
+        return;
+      }
+
       e.preventDefault();
       setInstallPrompt(e as BeforeInstallPromptEvent);
       setState((prev) => ({ ...prev, isInstallable: true }));

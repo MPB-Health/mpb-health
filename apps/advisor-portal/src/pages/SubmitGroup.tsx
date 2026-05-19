@@ -13,8 +13,8 @@ import {
   formsService,
   type AdvisorForm,
 } from '@mpbhealth/advisor-core';
-import { sanitizeHtml } from '@mpbhealth/utils';
 import { useAdvisorPageDebugLog } from '../hooks/useAdvisorPageDebugLog';
+import CognitoFormEmbed from '../components/CognitoFormEmbed';
 import { useAdvisorQueryReady } from '../hooks/useAdvisorQueryReady';
 import { ADVISOR_GC_TIME_MS, ADVISOR_STALE_TIME_MS } from '../query/advisorQueryPolicy';
 
@@ -351,19 +351,8 @@ export default function SubmitGroup() {
                   </Button>
                 </div>
               </div>
-              <div className="flex-1 overflow-hidden flex flex-col">
-                {selectedForm.cognito_embed && selectedForm.cognito_embed.includes('<') ? (
-                  <div
-                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(selectedForm.cognito_embed, { ADD_TAGS: ['iframe', 'script'], ADD_ATTR: ['src', 'frameborder', 'allowfullscreen', 'allow', 'loading', 'scrolling', 'data-key', 'data-form'] }) }}
-                    className="w-full h-full [&>iframe]:w-full [&>iframe]:h-full [&>iframe]:border-0"
-                  />
-                ) : (
-                  <iframe
-                    src={formsService.getEmbedUrl(selectedForm)}
-                    className="w-full h-full border-0"
-                    title={selectedForm.label}
-                  />
-                )}
+              <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+                <CognitoFormEmbed form={selectedForm} className="h-full" />
               </div>
             </div>
           </div>

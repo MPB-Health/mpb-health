@@ -44,7 +44,9 @@ if ('serviceWorker' in navigator && !window.__advisorSwReloadListener) {
 
     // Ignore reload requests that arrive while the shell is still booting.
     if (performance.now() - __advisorBootAt < SW_RELOAD_BOOT_GUARD_MS) {
-      console.log('[PWA] Ignoring service worker reload during boot');
+      if (import.meta.env.DEV) {
+        console.log('[PWA] Ignoring service worker reload during boot');
+      }
       return;
     }
 
@@ -56,7 +58,9 @@ if ('serviceWorker' in navigator && !window.__advisorSwReloadListener) {
       // Ignore sessionStorage errors and continue with reload.
     }
 
-    console.log('[PWA] Service worker requested reload:', event.data);
+    if (import.meta.env.DEV) {
+      console.log('[PWA] Service worker requested reload:', event.data);
+    }
     window.location.reload();
   });
 }

@@ -27,10 +27,8 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Button, cn } from '@mpbhealth/ui';
-import { sanitizeHtml, escapeHtml } from '@mpbhealth/utils';
 import {
   ticketService,
-  appendTicketAttachmentsHtml,
   type TicketDetail,
   type TicketComment,
 } from '@mpbhealth/advisor-core';
@@ -395,32 +393,13 @@ export default function TicketDetailPage() {
       }
     };
 
-    let payloadContent: string;
-    let payloadFormat: 'html' | 'plain';
+    const payloadContent = plainSnapshot || (filesSnapshot.length > 0 ? '(attachment)' : '');
 
     try {
-      if (filesSnapshot.length > 0) {
-        const uploads = await withDeadline(
-          executeWithAuth(() =>
-            ticketService.uploadFilesForTicketReply(detail.ticket.id, filesSnapshot),
-          ),
-          REPLY_UPLOAD_TIMEOUT_MS,
-          'UPLOAD_TIMEOUT',
-        );
-        if (sendGen !== replySendGenRef.current) return;
-        const textHtml =
-          plainSnapshot !== '' ? `<p>${escapeHtml(plainSnapshot).replace(/\n/g, '<br/>')}</p>` : '';
-        payloadContent = sanitizeHtml(appendTicketAttachmentsHtml(textHtml, uploads));
-        payloadFormat = 'html';
-      } else {
-        payloadContent = plainSnapshot;
-        payloadFormat = 'plain';
-      }
-
       const optimistic: TicketComment = {
         id: localId,
         content: payloadContent,
-        content_format: payloadFormat,
+        content_format: 'plain',
         is_internal: false,
         created_at: now,
         author_id: commentAuthorId,
@@ -448,13 +427,18 @@ export default function TicketDetailPage() {
         });
       });
 
-      setReplySendPhase('sending');
+      setReplySendPhase(filesSnapshot.length > 0 ? 'uploading' : 'sending');
       await withDeadline(
         executeWithAuth(async () => {
-          await ticketService.replyToTicket(detail.ticket.id, payloadContent, payloadFormat);
+          await ticketService.replyWithAttachments(
+            detail.ticket.id,
+            plainSnapshot,
+            filesSnapshot,
+            'plain',
+          );
         }),
-        REPLY_SEND_TIMEOUT_MS,
-        'SEND_REPLY_TIMEOUT',
+        filesSnapshot.length > 0 ? REPLY_UPLOAD_TIMEOUT_MS + REPLY_SEND_TIMEOUT_MS : REPLY_SEND_TIMEOUT_MS,
+        filesSnapshot.length > 0 ? 'UPLOAD_TIMEOUT' : 'SEND_REPLY_TIMEOUT',
       );
 
       if (sendGen !== replySendGenRef.current) return;
@@ -462,37 +446,14 @@ export default function TicketDetailPage() {
       replyDraftBackupRef.current = null;
       void queryClient.invalidateQueries({ queryKey: ['advisorTickets'] });
 
-      void (async () => {
-        try {
-          await new Promise<void>((r) => {
-            window.setTimeout(r, 400);
-          });
-          if (!mountedRef.current) return;
-          const next = await executeWithAuth(() => ticketService.getTicketDetail(detail.ticket.id));
-          if (!mountedRef.current) return;
-          queryClient.setQueryData<TicketDetail>(['advisorTicketDetail', ticketId], (prev) => {
-            if (!prev) return next;
-            const server = next.comments;
-            const locals = prev.comments.filter((c) => {
-              if (!c.id.startsWith('local-')) return false;
-              return !server.some(
-                (sc) =>
-                  sc.author_id === c.author_id &&
-                  sc.content === c.content &&
-                  Math.abs(new Date(sc.created_at).getTime() - new Date(c.created_at).getTime()) < 180_000,
-              );
-            });
-            if (locals.length === 0) return next;
-            const merged = [...server, ...locals].sort(
-              (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-            );
-            return { ...next, comments: merged };
-          });
-        } catch (e) {
-          console.warn('[TicketDetailPage] thread refresh after reply failed', e);
-          void queryClient.invalidateQueries({ queryKey: ['advisorTicketDetail', ticketId] });
-        }
-      })();
+      try {
+        const next = await executeWithAuth(() => ticketService.getTicketDetail(detail.ticket.id));
+        if (sendGen !== replySendGenRef.current || !mountedRef.current) return;
+        queryClient.setQueryData<TicketDetail>(['advisorTicketDetail', ticketId], next);
+      } catch (e) {
+        console.warn('[TicketDetailPage] thread refresh after reply failed', e);
+        void queryClient.invalidateQueries({ queryKey: ['advisorTicketDetail', ticketId] });
+      }
     } catch (err) {
       if (sendGen !== replySendGenRef.current) return;
       if (err instanceof Error && err.message === 'SESSION_EXPIRED') {
@@ -1015,6 +976,7 @@ export default function TicketDetailPage() {
                                 <TicketCommentContent
                                   content={comment.content}
                                   contentFormat={comment.content_format}
+                                  ticketFiles={comment.ticket_files}
                                   bubbleTone={isRequesterMessage ? 'requester' : 'support'}
                                 />
                               </div>

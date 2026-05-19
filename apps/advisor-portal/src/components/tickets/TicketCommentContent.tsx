@@ -1,12 +1,15 @@
 import { useMemo } from 'react';
 import { sanitizeHtml } from '@mpbhealth/utils';
-import type { TicketContentFormat } from '@mpbhealth/advisor-core';
+import type { TicketContentFormat, TicketFileRow } from '@mpbhealth/advisor-core';
 import { splitTicketMessageHtml } from './parseTicketMessageAttachments';
 import { TicketMessageAttachments } from './TicketMessageAttachments';
+import { TicketCommentDbAttachments } from './TicketCommentDbAttachments';
 
 interface TicketCommentContentProps {
   content: string;
   contentFormat?: TicketContentFormat;
+  /** Files from ITSTS `ticket_files` linked to this comment. */
+  ticketFiles?: TicketFileRow[];
   /** Admin ticket management uses theme tokens; default advisor view uses neutral. */
   variant?: 'advisor' | 'admin' | 'description';
   /** Thread bubble styling for attachment cards. */
@@ -27,6 +30,7 @@ function htmlHasVisibleBody(bodyHtml: string): boolean {
 export function TicketCommentContent({
   content,
   contentFormat,
+  ticketFiles,
   variant = 'advisor',
   bubbleTone = 'support',
 }: TicketCommentContentProps) {
@@ -66,6 +70,7 @@ export function TicketCommentContent({
           />
         ) : null}
         <TicketMessageAttachments items={attachments} tone={bubbleTone} />
+        <TicketCommentDbAttachments files={ticketFiles ?? []} tone={bubbleTone} />
       </div>
     );
   }
@@ -77,5 +82,19 @@ export function TicketCommentContent({
   let plain = plainAdvisor;
   if (variant === 'admin') plain = plainAdmin;
   if (variant === 'description') plain = plainDescription;
-  return <p className={plain}>{content}</p>;
+
+  const trimmed = content.trim();
+  const showPlainBody = trimmed.length > 0 && trimmed !== '(attachment)';
+  const dbFiles = ticketFiles ?? [];
+
+  if (!showPlainBody && dbFiles.length === 0) {
+    return null;
+  }
+
+  return (
+    <div>
+      {showPlainBody ? <p className={plain}>{content}</p> : null}
+      <TicketCommentDbAttachments files={dbFiles} tone={bubbleTone} />
+    </div>
+  );
 }

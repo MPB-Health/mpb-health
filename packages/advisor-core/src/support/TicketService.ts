@@ -131,6 +131,8 @@ export interface TicketComment {
   created_at: string;
   author_id: string;
   author_name: string;
+  /** Files linked to this comment in ITSTS `ticket_files` (reply attachments). */
+  ticket_files?: TicketFileRow[];
 }
 
 /** Row from ITSTS `ticket_files` (opening attachments use `comment_id` = null). */
@@ -297,7 +299,11 @@ export class TicketService {
     return out;
   }
 
-  private async uploadAttachments(ticketId: string, attachments: File[]): Promise<TicketAttachmentUploadResult[]> {
+  private async uploadAttachments(
+    ticketId: string,
+    attachments: File[],
+    opts: { storageLayout?: 'user_ticket' | 'ticket_root' } = {},
+  ): Promise<TicketAttachmentUploadResult[]> {
     if (!attachments.length) return [];
 
     const { data: { session } } = await getCachedSession();
@@ -327,6 +333,7 @@ export class TicketService {
         }
       }
 
+      const storageLayout = opts.storageLayout ?? 'user_ticket';
       const prepared = await this.call<{
         success: boolean;
         uploads: Array<{ path: string; signed_url: string; token: string }>;
@@ -334,6 +341,7 @@ export class TicketService {
         'prepare_ticket_attachment_uploads',
         {
           ticket_id: ticketId,
+          attachment_storage_layout: storageLayout,
           attachment_uploads: attachments.map((f) => ({
             filename: f.name,
             content_type: f.type || null,
@@ -407,7 +415,11 @@ export class TicketService {
   }
 
   /** Persist storage paths to ITSTS `ticket_files` via ticket-proxy (table exists on ITSTS only, not on MPB). */
-  private async saveTicketFileReferences(ticketId: string, uploads: TicketAttachmentUploadResult[]): Promise<void> {
+  private async saveTicketFileReferences(
+    ticketId: string,
+    uploads: TicketAttachmentUploadResult[],
+    commentId?: string,
+  ): Promise<void> {
     if (!uploads.length) return;
     await this.call<{ success: boolean }>(
       'save_ticket_files',
@@ -418,6 +430,7 @@ export class TicketService {
           storage_path: u.storagePath,
           file_size: u.size,
           mime_type: u.mimeType,
+          ...(commentId ? { comment_id: commentId } : {}),
         })),
       },
       { timeoutMs: 25_000, maxRetries: 1 },
@@ -821,8 +834,8 @@ export class TicketService {
     return result;
   }
 
-  async replyToTicket(ticketId: string, content: string, contentFormat?: TicketContentFormat): Promise<void> {
-    await this.call<{ success: boolean }>(
+  async replyToTicket(ticketId: string, content: string, contentFormat?: TicketContentFormat): Promise<string> {
+    const data = await this.call<{ success: boolean; comment_id?: string }>(
       'reply',
       {
         ticket_id: ticketId,
@@ -836,6 +849,32 @@ export class TicketService {
         maxRetries: 1,
       },
     );
+    if (!data.comment_id) throw new Error('Failed to create reply comment');
+    return data.comment_id;
+  }
+
+  /**
+   * Reply with attachments the same way ITSTS does: create the comment first,
+   * upload files under `{ticketId}/…`, then insert `ticket_files` rows with `comment_id`.
+   */
+  async replyWithAttachments(
+    ticketId: string,
+    content: string,
+    files: File[],
+    contentFormat: TicketContentFormat = 'plain',
+  ): Promise<{ comment_id: string }> {
+    const trimmed = content.trim();
+    const body = trimmed || (files.length > 0 ? '(attachment)' : '');
+    if (!body) throw new Error('Content required');
+
+    const commentId = await this.replyToTicket(ticketId, body, contentFormat);
+
+    if (files.length > 0) {
+      const uploads = await this.uploadAttachments(ticketId, files, { storageLayout: 'ticket_root' });
+      await this.saveTicketFileReferences(ticketId, uploads, commentId);
+    }
+
+    return { comment_id: commentId };
   }
 
   // ── Admin read methods ─────────────────────────────────────────────────
@@ -1014,9 +1053,9 @@ export class TicketService {
     return result.accessUrl;
   }
 
-  /** Upload multiple files for a reply. Returns metadata for each uploaded file. */
+  /** Upload multiple files for a reply (ITSTS storage layout + `ticket_files` registration is separate). */
   async uploadFilesForTicketReply(ticketId: string, files: File[]): Promise<TicketAttachmentUploadResult[]> {
-    return this.uploadAttachments(ticketId, files);
+    return this.uploadAttachments(ticketId, files, { storageLayout: 'ticket_root' });
   }
 
   /** Fire-and-forget warm-up ping to keep the ticket-proxy edge function warm.

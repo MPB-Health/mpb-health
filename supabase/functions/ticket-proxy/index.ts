@@ -81,6 +81,12 @@ interface ProxyRequest {
   }>;
   /** For prepare_ticket_attachment_uploads — filename + size only (bytes uploaded via signed URL). */
   attachment_uploads?: Array<{ filename: string; content_type?: string | null; file_size: number }>;
+  /**
+   * Storage path layout for prepare_ticket_attachment_uploads.
+   * - user_ticket (default): `{mpbAuthUserId}/{ticketId}/…` — ticket creation on advisor portal
+   * - ticket_root: `{ticketId}/…` — matches ITSTS reply uploads so support staff see attachments
+   */
+  attachment_storage_layout?: "user_ticket" | "ticket_root";
   /** For delete_ticket_attachment_paths — storage object paths under ticket-attachments */
   attachment_paths?: string[];
 }
@@ -389,20 +395,36 @@ async function getTicketDetail(
     );
   }
 
-  const enrichedComments = (comments || []).map((c: Record<string, unknown>) => ({
-    ...c,
-    author_name: authorMap[c.author_id as string] || "Support Agent",
-    content_format: (c.content_format as string) || "plain",
-  }));
+  const allFiles = await fetchTicketAllFiles(itstsAdmin, ticketId);
+  const filesByCommentId = new Map<string, typeof allFiles>();
+  const openingFiles: typeof allFiles = [];
+  for (const f of allFiles) {
+    const cid = f.comment_id;
+    if (!cid) {
+      openingFiles.push(f);
+      continue;
+    }
+    const list = filesByCommentId.get(cid) ?? [];
+    list.push(f);
+    filesByCommentId.set(cid, list);
+  }
+
+  const enrichedComments = (comments || []).map((c: Record<string, unknown>) => {
+    const cid = c.id as string;
+    return {
+      ...c,
+      author_name: authorMap[c.author_id as string] || "Support Agent",
+      content_format: (c.content_format as string) || "plain",
+      ticket_files: cid ? (filesByCommentId.get(cid) ?? []) : [],
+    };
+  });
 
   const assigneeName = assigneeId ? (authorMap[assigneeId] ?? null) : null;
-
-  const ticket_files = await fetchTicketOpeningFiles(itstsAdmin, ticketId);
 
   return {
     ticket: { ...ticket, assignee_name: assigneeName },
     comments: enrichedComments,
-    ticket_files,
+    ticket_files: openingFiles,
   };
 }
 
@@ -797,7 +819,7 @@ async function replyToTicket(
     : content.trim();
   if (!body) throw new Error("Content required");
 
-  const { error } = await itstsAdmin
+  const { data: inserted, error } = await itstsAdmin
     .from("ticket_comments")
     .insert({
       ticket_id: ticketId,
@@ -805,16 +827,19 @@ async function replyToTicket(
       author_id: advisorId,
       is_internal: false,
       content_format: contentFormat,
-    });
+    })
+    .select("id")
+    .single();
 
   if (error) throw error;
+  if (!inserted?.id) throw new Error("Failed to create reply comment");
 
   await itstsAdmin
     .from("tickets")
     .update({ updated_at: new Date().toISOString() })
     .eq("id", ticketId);
 
-  return { ok: true };
+  return { ok: true, comment_id: inserted.id as string };
 }
 
 const MAX_SAVE_TICKET_FILES = 20;
@@ -847,6 +872,7 @@ async function prepareTicketAttachmentUploads(
   advisorItstsId: string,
   ticketId: string,
   metas: Array<{ filename: string; content_type?: string | null; file_size: number }>,
+  storageLayout: "user_ticket" | "ticket_root" = "user_ticket",
 ): Promise<{ uploads: Array<{ path: string; signed_url: string; token: string }> }> {
   // Look up the ticket WITHOUT the requester filter first so we can return a
   // precise error when the ticket exists but belongs to someone else. The
@@ -894,7 +920,18 @@ async function prepareTicketAttachmentUploads(
     }
     const safeName = sanitizeTicketAttachmentFileName((meta.filename || "").trim() || "file");
     const uniqueSuffix = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-    const objectPath = `${primaryAuthUserId}/${ticketId}/${uniqueSuffix}-${safeName}`;
+    const objectPath = (() => {
+      if (storageLayout === "ticket_root") {
+        const dotIdx = (meta.filename || "").lastIndexOf(".");
+        const ext =
+          dotIdx > 0
+            ? (meta.filename || "").slice(dotIdx + 1).toLowerCase().replace(/[^a-z0-9]+/g, "")
+            : "";
+        const suffix = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+        return ext ? `${ticketId}/${suffix}.${ext}` : `${ticketId}/${suffix}-${safeName}`;
+      }
+      return `${primaryAuthUserId}/${ticketId}/${uniqueSuffix}-${safeName}`;
+    })();
     assertSafeTicketAttachmentPath(objectPath);
 
     const bucket = itstsAdmin.storage.from(TICKET_ATTACHMENTS_BUCKET);
@@ -968,13 +1005,16 @@ async function saveTicketFilesForRequester(
     throw new Error(`Too many files (max ${MAX_SAVE_TICKET_FILES})`);
   }
 
-  const expectedPrefix = `${primaryAuthUserId}/${ticketId}/`;
+  const userTicketPrefix = `${primaryAuthUserId}/${ticketId}/`;
+  const ticketRootPrefix = `${ticketId}/`;
 
   const rows = files.map((f) => {
     const filename = (f.filename || "").trim().slice(0, MAX_REGISTER_FILENAME_LEN);
     const storage_path = (f.storage_path || "").trim().replace(/^\//, "").slice(0, MAX_REGISTER_STORAGE_PATH_LEN);
     assertSafeTicketAttachmentPath(storage_path);
-    if (!storage_path.startsWith(expectedPrefix)) {
+    const pathOk =
+      storage_path.startsWith(userTicketPrefix) || storage_path.startsWith(ticketRootPrefix);
+    if (!pathOk) {
       throw new Error("Invalid storage path");
     }
     if (!filename || !storage_path) throw new Error("Invalid file metadata");
@@ -1444,6 +1484,8 @@ Deno.serve(async (req: Request) => {
             { status: 400, headers },
           );
         }
+        const layout =
+          body.attachment_storage_layout === "ticket_root" ? "ticket_root" : "user_ticket";
         try {
           result = await prepareTicketAttachmentUploads(
             itstsAdmin,
@@ -1451,6 +1493,7 @@ Deno.serve(async (req: Request) => {
             itstsUserId!,
             body.ticket_id,
             metas,
+            layout,
           );
         } catch (prepErr) {
           const msg = prepErr instanceof Error ? prepErr.message : String(prepErr);
@@ -1745,8 +1788,14 @@ Deno.serve(async (req: Request) => {
           let allowed = isAdmin || p.startsWith(`${user.id}/`);
           if (!allowed) {
             const parts = p.split("/");
-            // Expected layout: `{uploaderAuthUid}/{ticketId}/{file}`
-            const ticketIdFromPath = parts.length >= 2 ? parts[1] : "";
+            // `user_ticket` layout: `{authUid}/{ticketId}/…` — ticket id is segment 2
+            // `ticket_root` layout (ITSTS replies): `{ticketId}/…` — ticket id is segment 1
+            const ticketIdFromPath =
+              parts.length >= 2 && UUID_RE.test(parts[1])
+                ? parts[1]
+                : parts.length >= 1 && UUID_RE.test(parts[0])
+                  ? parts[0]
+                  : "";
             if (ticketIdFromPath) {
               allowed = await checkTicketOwnership(ticketIdFromPath);
             }

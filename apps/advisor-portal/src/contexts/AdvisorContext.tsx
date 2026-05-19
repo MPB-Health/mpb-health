@@ -1,5 +1,12 @@
 import { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo, ReactNode } from 'react';
-import { supabase, isSupabaseConfigured, SUPABASE_AUTH_STORAGE_KEY, refreshSessionOnce } from '@mpbhealth/database';
+import {
+  supabase,
+  isSupabaseConfigured,
+  SUPABASE_AUTH_STORAGE_KEY,
+  refreshSessionOnce,
+  getCachedSession,
+  invalidateCachedSession,
+} from '@mpbhealth/database';
 import {
   profileService,
   trainingService,
@@ -14,24 +21,13 @@ import { ADVISOR_TRAINING_GATE_CUTOFF_MS } from '../config/advisorTrainingGate';
 import { secureAuthService } from '@mpbhealth/auth';
 import { clearNavCache } from '../utils/navCache';
 import { startEdgeFunctionWarmup, stopEdgeFunctionWarmup } from '../utils/edgeFunctionWarmup';
-import { getAdvisorQueryClient } from '../query/advisorQueryClient';
-import { nudgeAdvisorQueries } from '../query/nudgeAdvisorQueries';
-
-/** Every `getSession` must be bounded — a hung client leaves `profileLoading` true forever (no `finally`). */
-const GET_SESSION_QUICK_MS = 22_000;
-
-/** Tab wake runs while auth may be busy (e.g. long ticket-proxy chain); slightly looser than cold-load paths. */
-const GET_SESSION_VISIBILITY_MS = 32_000;
-
-async function getSessionWithDeadline(
-  ms: number,
-): Promise<Awaited<ReturnType<typeof supabase.auth.getSession>>> {
-  return Promise.race([
-    supabase.auth.getSession(),
-    new Promise<never>((_, reject) => {
-      window.setTimeout(() => reject(new Error('GET_SESSION_TIMEOUT')), ms);
-    }),
-  ]);
+/**
+ * Centralized session reads use `getCachedSession` from @mpbhealth/database, which has its own
+ * 8s hard deadline + 1.5s in‑memory cache + concurrent-coalescing. The local helper just wraps
+ * a `forceRefresh` toggle for sites that explicitly need to bypass the cache (tab wake, post-refresh).
+ */
+async function readSession(opts: { forceRefresh?: boolean } = {}) {
+  return getCachedSession(opts);
 }
 
 interface AdvisorContextType {
@@ -127,20 +123,14 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
 
   const loadProfile = useCallback(async () => {
     const gen = ++loadProfileGenRef.current;
-    const PROFILE_DEADLINE_MS = 25_000;
-    /** `getSession` can exceed 10s on cold start, storage contention, or dev throttling — recovery still runs after this. */
-    const GET_SESSION_DEADLINE_MS = 22_000;
+    /** Profile body deadline. Session reads are bounded separately by `getCachedSession`. */
+    const PROFILE_DEADLINE_MS = 12_000;
     setProfileLoading(true);
     setError(null);
     try {
       let session: Awaited<ReturnType<typeof supabase.auth.getSession>>['data']['session'] = null;
       try {
-        const sessionRes = await Promise.race([
-          supabase.auth.getSession(),
-          new Promise<never>((_, reject) => {
-            window.setTimeout(() => reject(new Error('GET_SESSION_TIMEOUT')), GET_SESSION_DEADLINE_MS);
-          }),
-        ]);
+        const sessionRes = await readSession();
         session = sessionRes.data.session;
       } catch (e) {
         if (e instanceof Error && e.message === 'GET_SESSION_TIMEOUT') {
@@ -153,7 +143,7 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
             return;
           }
           try {
-            const sessionRes = await getSessionWithDeadline(GET_SESSION_QUICK_MS);
+            const sessionRes = await readSession({ forceRefresh: true });
             session = sessionRes.data.session;
           } catch {
             setError('Could not verify your session. Check your connection or refresh the page.');
@@ -223,7 +213,7 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
         if (gen === loadProfileGenRef.current) {
           console.warn('[AdvisorContext] Profile load timed out — using session fallback');
           try {
-            const sessionRes = await getSessionWithDeadline(GET_SESSION_QUICK_MS);
+            const sessionRes = await readSession();
             const s2 = sessionRes.data.session;
             if (s2?.user) {
               setProfile((prev) => prev ?? buildSessionFallbackProfile(s2.user));
@@ -367,15 +357,15 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Safety timeout: if onAuthStateChange never fires (edge case with
-    // corrupted local storage or stale service-worker token), force the app
-    // out of the loading state so the user isn't stuck on an infinite spinner.
+    // Safety timeout: if onAuthStateChange never fires (corrupted local storage,
+    // stale service-worker token), force the app out of the loading state.
+    // 5s is enough — getCachedSession itself is hard-capped at 8s.
     const timeout = setTimeout(() => {
       void (async () => {
         if (initialHandled.current) return;
-        console.warn('[AdvisorContext] Auth listener slow (>8s) — recovering via getSession()');
+        console.warn('[AdvisorContext] Auth listener slow (>5s) — recovering via getCachedSession()');
         try {
-          const { data: { session } } = await getSessionWithDeadline(GET_SESSION_QUICK_MS);
+          const { data: { session } } = await readSession({ forceRefresh: true });
           setHasSession(!!session);
           initialHandled.current = true;
           if (session?.user) {
@@ -393,7 +383,7 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
           setLoading(false);
         }
       })();
-    }, 8_000);
+    }, 5_000);
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -420,47 +410,9 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    // Supabase's auto-refresh doesn't fire SIGNED_OUT on 400 — it silently
-    // fails, leaving the app in a zombie state. Listen for failed fetches to
-    // the token endpoint and force a clean logout when the refresh token is
-    // invalid/expired.
-    const origFetch = window.fetch;
-    const patchedFetch: typeof fetch = async (input, init) => {
-      const response = await origFetch(input, init);
-      try {
-        const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
-        if (
-          response.status === 400 &&
-          url.includes('/auth/v1/token') &&
-          url.includes('grant_type=refresh_token')
-        ) {
-          console.warn('[Auth] Refresh token rejected (400) — redirecting to login');
-          setProfile(null);
-          setSessionUserCreatedAt(undefined);
-          setHasSession(false);
-          try { await supabase.auth.signOut({ scope: 'local' }); } catch (_) { /* ignore */ }
-          try {
-            localStorage.removeItem(SUPABASE_AUTH_STORAGE_KEY);
-            localStorage.removeItem('mpb-auth-token');
-          } catch (_) { /* ignore */ }
-          clearNavCache();
-          if (!window.location.pathname.startsWith('/login') &&
-              !window.location.pathname.startsWith('/forgot-password') &&
-              !window.location.pathname.startsWith('/reset-password')) {
-            window.location.href = '/login';
-          }
-        }
-      } catch (_) {
-        // Never break the fetch pipeline
-      }
-      return response;
-    };
-    window.fetch = patchedFetch;
-
     return () => {
       clearTimeout(timeout);
       subscription.unsubscribe();
-      window.fetch = origFetch;
     };
   }, [loadProfile]);
 
@@ -482,12 +434,12 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
           prev ??
           'Your account took too long to load. Use Refresh, or sign out and back in if this continues.',
       );
-    }, 45_000);
+    }, 18_000);
     return () => globalThis.clearTimeout(t);
   }, [profileLoading]);
 
   // After tab sleep / bfcache / background, Supabase + in-flight profile loads can stall.
-  // Nudge auth + profile so the shell and TanStack queries are not stuck until a full reload.
+  // Re-hydrate the auth shell only (queries are handled by QueryStaleRecovery / focusManager).
   useEffect(() => {
     if (!isSupabaseConfigured) return;
 
@@ -496,17 +448,17 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
     const recover = () => {
       void (async () => {
         try {
-          nudgeAdvisorQueries(getAdvisorQueryClient(), 'tab-wake');
-          const { data: { session } } = await getSessionWithDeadline(GET_SESSION_VISIBILITY_MS);
+          // Bust the 1.5s session cache so we re-read what auth storage holds *now*.
+          invalidateCachedSession();
+          const { data: { session } } = await readSession({ forceRefresh: true });
           if (!session?.user) return;
           setHasSession(true);
-          // Re-load when signed in but profile never hydrated (stalled auth / tab discard).
+          // Re-load only when signed in but profile never hydrated (stalled auth / tab discard).
           if (!profileRef.current) {
             await loadProfile();
           }
         } catch (err) {
           const msg = err instanceof Error ? err.message : '';
-          // Busy auth stack during writes (e.g. ticket submit + refresh) — don't alarm if shell already hydrated.
           if (msg === 'GET_SESSION_TIMEOUT' && profileRef.current) {
             console.debug('[AdvisorContext] Tab visibility recovery: getSession slow (profile already loaded)');
             return;

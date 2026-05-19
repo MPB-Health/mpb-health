@@ -20,6 +20,14 @@ function isAuthError(error: unknown): boolean {
  * Single TanStack Query client for the advisor portal, stored on `globalThis`
  * so Vite HMR can re-run `main.tsx` without dropping in-flight requests,
  * invalidating cache, or attaching duplicate providers.
+ *
+ * Defaults are tuned to avoid the “refetch storm” we observed:
+ *  - `refetchOnMount: false` — navigating back to a page uses cache unless stale.
+ *    Pages that *must* be fresh on mount opt-in with `refetchOnMount: 'always'`.
+ *  - `refetchOnWindowFocus: true` is left on, but the global `staleTime` of 2 minutes
+ *    means most focus events are no-ops, not full refetches.
+ *  - Retry cap reduced to 2 (3 total attempts) with shorter backoff so a failing call
+ *    surfaces an error in ~5s instead of ~30s. Auth errors still skip retry.
  */
 export function getAdvisorQueryClient(): QueryClient {
   const g = globalThis as typeof globalThis & { [CLIENT_SYM]?: QueryClient };
@@ -31,13 +39,13 @@ export function getAdvisorQueryClient(): QueryClient {
           gcTime: ADVISOR_GC_TIME_MS,
           retry: (failureCount, error) => {
             if (isAuthError(error)) return false;
-            return failureCount < 3;
+            return failureCount < 2;
           },
-          retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30_000),
+          retryDelay: (attemptIndex) => Math.min(500 * 2 ** attemptIndex, 4_000),
           refetchOnWindowFocus: true,
           refetchOnReconnect: true,
-          /** Avoid blank UI on remount after navigation (common enterprise expectation). */
-          refetchOnMount: true,
+          /** Cache-first by default; opt-in with `refetchOnMount: 'always'` per query when needed. */
+          refetchOnMount: false,
           /** Avoid queries staying paused after wake when `navigator.onLine` is flaky. */
           networkMode: 'always',
         },

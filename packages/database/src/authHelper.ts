@@ -19,16 +19,32 @@ type InvokeFunctionOptions = NonNullable<Parameters<typeof supabase.functions.in
 /** Seconds before JWT expiry that we proactively force a synchronous refresh. */
 const TOKEN_EXPIRY_BUFFER_SECONDS = 30;
 
+type SessionResult = Awaited<ReturnType<typeof supabase.auth.getSession>>;
 type RefreshResult = Awaited<ReturnType<typeof supabase.auth.refreshSession>>;
 
 /** Single app-wide pending refresh — shared by all services. */
 let _pendingRefresh: Promise<RefreshResult> | null = null;
 
+/** Single app-wide pending getSession — coalesces concurrent reads (login bursts, multi-query mount). */
+let _pendingSession: Promise<SessionResult> | null = null;
+
+/** Last successful session read; reused within `SESSION_CACHE_TTL_MS` to avoid hammering storage / Web Locks. */
+let _cachedSession: { value: SessionResult; at: number } | null = null;
+
 /**
- * Hard cap — if the Supabase client never settles (network hang, service worker, proxy stall),
+ * Hard caps — if the Supabase client never settles (network hang, service worker, proxy stall),
  * callers would await forever. That left advisor-portal stuck in `profileLoading` with no `finally`.
  */
-const REFRESH_SESSION_DEADLINE_MS = 20_000;
+const REFRESH_SESSION_DEADLINE_MS = 8_000;
+const GET_SESSION_DEADLINE_MS = 8_000;
+
+/** Reuse cached session within this window so repeat callers don't all hit auth storage. */
+const SESSION_CACHE_TTL_MS = 1_500;
+
+/** Bypass the in-memory cache when callers explicitly need the freshest value (post-login, post-refresh). */
+export function invalidateCachedSession(): void {
+  _cachedSession = null;
+}
 
 /**
  * Refresh the Supabase session exactly once at a time. Concurrent callers all
@@ -43,6 +59,8 @@ export function refreshSessionOnce(): Promise<RefreshResult> {
       void supabase.auth.refreshSession().then(
         (v) => {
           globalThis.clearTimeout(t);
+          // Bust cache so the next getCachedSession reflects the rotated token.
+          _cachedSession = null;
           resolve(v);
         },
         (e) => {
@@ -58,12 +76,49 @@ export function refreshSessionOnce(): Promise<RefreshResult> {
 }
 
 /**
+ * Single-source `supabase.auth.getSession()` with:
+ *   - short‑lived in‑memory cache so a burst of mount-time queries doesn't all hit auth storage
+ *   - shared in-flight promise so concurrent callers coalesce
+ *   - hard deadline so a hung auth call can't leave React stuck in `loading: true` forever
+ *
+ * Use this everywhere instead of `supabase.auth.getSession()` directly.
+ */
+export function getCachedSession(opts: { forceRefresh?: boolean } = {}): Promise<SessionResult> {
+  const now = Date.now();
+  if (!opts.forceRefresh && _cachedSession && now - _cachedSession.at < SESSION_CACHE_TTL_MS) {
+    return Promise.resolve(_cachedSession.value);
+  }
+  if (_pendingSession) return _pendingSession;
+
+  _pendingSession = new Promise<SessionResult>((resolve, reject) => {
+    const t = globalThis.setTimeout(() => {
+      reject(new Error('GET_SESSION_TIMEOUT'));
+    }, GET_SESSION_DEADLINE_MS);
+    void supabase.auth.getSession().then(
+      (v) => {
+        globalThis.clearTimeout(t);
+        _cachedSession = { value: v, at: Date.now() };
+        resolve(v);
+      },
+      (e) => {
+        globalThis.clearTimeout(t);
+        reject(e);
+      },
+    );
+  }).finally(() => {
+    _pendingSession = null;
+  });
+
+  return _pendingSession;
+}
+
+/**
  * Returns a valid `{ Authorization: "Bearer <token>" }` header, proactively
  * refreshing the session when the access token is within TOKEN_EXPIRY_BUFFER_SECONDS
  * of expiry. Returns `null` when there is no session (not authenticated).
  */
 export async function getResolvedAuthHeader(): Promise<{ Authorization: string } | null> {
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { session } } = await getCachedSession();
   if (!session?.access_token) return null;
 
   const nowSec = Math.floor(Date.now() / 1000);

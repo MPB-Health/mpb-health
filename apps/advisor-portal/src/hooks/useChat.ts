@@ -86,13 +86,6 @@ export function useChat() {
     };
   }, [advisorReady, advisorId, queryClient]);
 
-  /** Never leave sidebar spinning indefinitely (hung edge / SW): stop pending state visually */
-  useEffect(() => {
-    if (!query.isPending) return;
-    const t = window.setTimeout(refresh, 45_000);
-    return () => clearTimeout(t);
-  }, [query.isPending, refresh]);
-
   const conversations = query.data ?? [];
   const totalUnread = conversations.reduce((sum, c) => sum + (c.unread_count || 0), 0);
 
@@ -165,16 +158,6 @@ export function useChatMessages(conversationId: string | null) {
       chatService.unsubscribeFromMessages(conversationId);
     };
   }, [conversationId, advisorId, advisorReady, queryClient]);
-
-  useEffect(() => {
-    if (!query.isPending) return;
-    const t = window.setTimeout(() => {
-      if (conversationId) {
-        void queryClient.invalidateQueries({ queryKey: ['chatMessages', conversationId] });
-      }
-    }, 45_000);
-    return () => clearTimeout(t);
-  }, [query.isPending, conversationId, queryClient]);
 
   const oldestMessageTs = query.data?.messages?.[0]?.created_at ?? null;
 

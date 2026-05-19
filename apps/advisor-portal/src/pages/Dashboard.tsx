@@ -306,15 +306,11 @@ export default function Dashboard() {
   const memberFormsLoading =
     memberFormsPending || (memberFormsFetching && memberForms.length === 0);
 
-  // Second fetch shortly after mount/profile scope: first `getForms` can race Supabase session wiring
-  // and cache an empty list under RLS; a delayed invalidate matches "refresh fixes it" without full reload.
-  useEffect(() => {
-    if (!advisorReady) return;
-    const t = window.setTimeout(() => {
-      void queryClient.invalidateQueries({ queryKey: ['dashboardMemberForms'] });
-    }, 450);
-    return () => window.clearTimeout(t);
-  }, [advisorReady, advisorFormScopeKey, queryClient]);
+  // Note: the prior 450ms re-invalidate was a workaround for a race between the first
+  // `getForms` fetch and Supabase session wiring under RLS. With the centralized
+  // `getCachedSession` + `enabled: advisorReady` gate, that race is closed —
+  // the query won't run until session/profile are hydrated, so a delayed invalidate
+  // is no longer needed. `refetchOnMount: 'always'` (above) still covers true cache misses.
 
   const { data: cmsQuickLinks = [] } = useQuery({
     queryKey: ['dashboardQuickLinks'],

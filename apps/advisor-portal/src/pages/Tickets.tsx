@@ -88,7 +88,6 @@ export default function Tickets() {
   const { executeWithAuth } = useTicketAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [listError, setListError] = useState('');
-  const [slowListLoad, setSlowListLoad] = useState(false);
 
   const [statusFilter, setStatusFilter] = useState(() => searchParams.get('status') ?? '');
   const [priorityFilter, setPriorityFilter] = useState(() => searchParams.get('priority') ?? '');
@@ -184,18 +183,6 @@ export default function Tickets() {
       'We\u2019re having trouble loading your tickets right now. Please check your connection and try again.',
     );
   }, [ticketsIsError, ticketsQueryError]);
-
-  useEffect(() => {
-    if (!loading || listError) {
-      setSlowListLoad(false);
-      return;
-    }
-    const t = window.setTimeout(() => setSlowListLoad(true), 12_000);
-    return () => {
-      window.clearTimeout(t);
-      setSlowListLoad(false);
-    };
-  }, [loading, listError]);
 
   useEffect(() => {
     const t = setTimeout(() => setSearchDebounced(searchInput), 320);
@@ -494,23 +481,6 @@ export default function Tickets() {
           <p className="text-sm font-medium text-th-text-secondary">
             {sessionGateLoading ? 'Preparing your workspace…' : 'Loading tickets…'}
           </p>
-          {slowListLoad && !sessionGateLoading ? (
-            <div className="mt-4 space-y-2">
-              <p className="mx-auto max-w-sm text-xs text-th-text-tertiary">
-                This is taking longer than usual. Check your connection, or try again — the request will time out rather than hang indefinitely.
-              </p>
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={() => {
-                  void refetchTickets();
-                }}
-              >
-                Try again
-              </Button>
-            </div>
-          ) : null}
         </div>
       ) : !listError && !listLoading && tickets.length === 0 ? (
         <div className="rounded-xl border border-th-border bg-surface-primary p-16 text-center dark:border-neutral-700/60">

@@ -131,8 +131,14 @@ export type {
   AdvisorStats,
 } from './types/advisor';
 
-// Shared auth helper (single refresh singleton across all services)
-export { refreshSessionOnce, getResolvedAuthHeader, invokeWithResolvedAuth } from './authHelper';
+// Shared auth helper (single refresh + session singleton across all services)
+export {
+  refreshSessionOnce,
+  getCachedSession,
+  invalidateCachedSession,
+  getResolvedAuthHeader,
+  invokeWithResolvedAuth,
+} from './authHelper';
 
 // Hooks
 export {

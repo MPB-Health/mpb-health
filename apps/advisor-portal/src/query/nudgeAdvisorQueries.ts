@@ -2,8 +2,15 @@ import { focusManager } from '@tanstack/react-query';
 import type { QueryClient } from '@tanstack/react-query';
 
 /**
- * Wake TanStack Query after idle, tab background, or route changes.
- * Fixes observers stuck in pending/fetching until a full reload when focus/online events don't fire.
+ * Wake TanStack Query after idle, tab background, bfcache, or online.
+ *
+ * Strategy: nudge `focusManager` and resume paused mutations. Do NOT call
+ * `refetchQueries({ type: 'active' })` — that creates a refetch storm on every
+ * focus event. With `refetchOnWindowFocus: true` + `staleTime`, TanStack
+ * already refetches only the queries that are actually stale, which is what we want.
+ *
+ * Callers that genuinely need an immediate forced refetch (e.g. user-pressed “Refresh”)
+ * should call `queryClient.invalidateQueries(...)` themselves, not this helper.
  */
 export function nudgeAdvisorQueries(queryClient: QueryClient, reason?: string) {
   try {
@@ -12,18 +19,12 @@ export function nudgeAdvisorQueries(queryClient: QueryClient, reason?: string) {
     } else {
       focusManager.setFocused(true);
     }
-  } catch {
-    /* ignore */
-  }
-  try {
-    queryClient.resumePausedMutations();
-  } catch {
-    /* ignore */
-  }
-  // Refetch active observers only — avoids marking entire cache stale on route/tab wake.
-  try {
-    void queryClient.refetchQueries({ type: 'active' });
   } catch (e) {
-    console.warn('[advisor-portal] refetchQueries(active) failed', reason ?? '', e);
+    console.warn('[advisor-portal] focusManager.setFocused failed', reason ?? '', e);
+  }
+  try {
+    void queryClient.resumePausedMutations();
+  } catch (e) {
+    console.warn('[advisor-portal] resumePausedMutations failed', reason ?? '', e);
   }
 }

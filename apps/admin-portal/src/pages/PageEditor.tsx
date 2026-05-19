@@ -14,7 +14,18 @@ import {
   ExternalLink,
   Settings as SettingsIcon,
   ChevronRight,
+  PanelRightOpen,
+  PanelLeftOpen,
 } from 'lucide-react';
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import { arrayMove } from '@dnd-kit/sortable';
 import { pagesAdminService } from '@mpbhealth/admin-core';
 import { isTimeoutError, withTimeout } from '@mpbhealth/utils';
 import type {
@@ -32,10 +43,33 @@ import type {
   CmsFaqProps,
   CmsEmbedProps,
   CmsSpacerProps,
+  CmsBannerProps,
+  CmsTestimonialProps,
+  CmsTestimonialCarouselProps,
+  CmsPricingTableProps,
+  CmsTabsProps,
+  CmsAccordionProps,
+  CmsTeamGridProps,
+  CmsLogoWallProps,
+  CmsCountdownProps,
+  CmsNewsletterSignupProps,
+  CmsDividerProps,
+  CmsVideoHeroProps,
+  CmsIconGridProps,
+  CmsAlertBoxProps,
+  CmsButtonGroupProps,
+  CmsMapProps,
+  CmsTableProps,
+  CmsSectionProps,
+  CmsColumnsProps,
+  CmsContainerProps,
 } from '@mpbhealth/database';
 import { useAdmin } from '../contexts/AdminContext';
 import RichTextEditor from '../components/RichTextEditor';
 import { ImageUploader } from '../components/cms/ImageUploader';
+import { PageBuilderCanvas } from '../components/cms/PageBuilderCanvas';
+import { BlockPalette } from '../components/cms/BlockPalette';
+import { BlockInspector } from '../components/cms/BlockInspector';
 
 const PAGE_SAVE_TIMEOUT_MS = 30_000;
 
@@ -132,6 +166,126 @@ const BLOCKS: BlockMeta[] = [
     label: 'Spacer',
     description: 'Vertical empty space',
     defaultProps: { size: 'md' } as CmsSpacerProps,
+  },
+  {
+    kind: 'banner',
+    label: 'Banner',
+    description: 'Announcement bar',
+    defaultProps: { text: 'Announcement text here', variant: 'info', dismissible: true } as CmsBannerProps,
+  },
+  {
+    kind: 'testimonial',
+    label: 'Testimonial',
+    description: 'Quote with author',
+    defaultProps: { quote: 'Great experience!', author_name: 'John Doe', author_title: 'CEO' } as CmsTestimonialProps,
+  },
+  {
+    kind: 'testimonial_carousel',
+    label: 'Testimonial Carousel',
+    description: 'Rotating quotes',
+    defaultProps: { items: [{ quote: 'Amazing service!', author_name: 'Jane Doe' }], auto_rotate: true } as CmsTestimonialCarouselProps,
+  },
+  {
+    kind: 'pricing_table',
+    label: 'Pricing Table',
+    description: 'Plan comparison columns',
+    defaultProps: { plans: [{ name: 'Basic', price: '$29', features: ['Feature 1'], cta: { label: 'Get started', href: '/signup' } }] } as CmsPricingTableProps,
+  },
+  {
+    kind: 'tabs',
+    label: 'Tabs',
+    description: 'Tabbed content sections',
+    defaultProps: { tabs: [{ label: 'Tab 1', content_html: '<p>Content</p>' }] } as CmsTabsProps,
+  },
+  {
+    kind: 'accordion',
+    label: 'Accordion',
+    description: 'Expandable sections',
+    defaultProps: { items: [{ heading: 'Section 1', content_html: '<p>Content</p>' }] } as CmsAccordionProps,
+  },
+  {
+    kind: 'team_grid',
+    label: 'Team Grid',
+    description: 'People cards',
+    defaultProps: { columns: 3, members: [{ name: 'Team Member', role: 'Role' }] } as CmsTeamGridProps,
+  },
+  {
+    kind: 'logo_wall',
+    label: 'Logo Wall',
+    description: 'Partner/client logos',
+    defaultProps: { logos: [], columns: 4, grayscale: true } as CmsLogoWallProps,
+  },
+  {
+    kind: 'countdown',
+    label: 'Countdown',
+    description: 'Timer to a date',
+    defaultProps: { title: 'Coming soon', target_date: new Date(Date.now() + 7 * 86400000).toISOString(), show_days: true, show_hours: true, show_minutes: true, show_seconds: true } as CmsCountdownProps,
+  },
+  {
+    kind: 'newsletter_signup',
+    label: 'Newsletter Signup',
+    description: 'Email capture form',
+    defaultProps: { title: 'Stay updated', subtitle: 'Subscribe to our newsletter', button_label: 'Subscribe', placeholder: 'your@email.com' } as CmsNewsletterSignupProps,
+  },
+  {
+    kind: 'divider',
+    label: 'Divider',
+    description: 'Styled separator',
+    defaultProps: { style: 'line', spacing: 'md' } as CmsDividerProps,
+  },
+  {
+    kind: 'video_hero',
+    label: 'Video Hero',
+    description: 'Hero with background video',
+    defaultProps: { title: 'Video Title', video_url: '', overlay_opacity: 0.5 } as CmsVideoHeroProps,
+  },
+  {
+    kind: 'icon_grid',
+    label: 'Icon Grid',
+    description: 'Feature cards with icons',
+    defaultProps: { columns: 3, items: [{ icon: '⭐', title: 'Feature', description: 'Description' }] } as CmsIconGridProps,
+  },
+  {
+    kind: 'alert_box',
+    label: 'Alert Box',
+    description: 'Info/warning callout',
+    defaultProps: { variant: 'info', title: 'Note', content_html: '<p>Important information here.</p>' } as CmsAlertBoxProps,
+  },
+  {
+    kind: 'button_group',
+    label: 'Button Group',
+    description: 'Multiple CTA buttons',
+    defaultProps: { alignment: 'center', buttons: [{ label: 'Primary', href: '#', variant: 'primary' }] } as CmsButtonGroupProps,
+  },
+  {
+    kind: 'map',
+    label: 'Map',
+    description: 'Embedded Google Map',
+    defaultProps: { address: '', zoom: 14, height: '400px' } as CmsMapProps,
+  },
+  {
+    kind: 'table',
+    label: 'Table',
+    description: 'Data table',
+    defaultProps: { headers: ['Column 1', 'Column 2'], rows: [['Cell 1', 'Cell 2']], striped: true } as CmsTableProps,
+  },
+  {
+    kind: 'section',
+    label: 'Section',
+    description: 'Full-width section with background',
+    defaultProps: { padding_top: 'lg', padding_bottom: 'lg', children: [] } as CmsSectionProps,
+  },
+  {
+    kind: 'columns',
+    label: 'Columns',
+    description: 'Multi-column grid',
+    defaultProps: { layout: '1/2-1/2', gap: 'md', columns: [{ blocks: [] }, { blocks: [] }] } as CmsColumnsProps,
+  },
+  {
+    kind: 'container',
+    label: 'Container',
+    description: 'Centered max-width wrapper',
+    defaultProps: { max_width: 'lg', alignment: 'center', padding: 'md', children: [] } as CmsContainerProps,
   },
 ];
 
@@ -355,6 +509,27 @@ export default function PageEditor() {
 
   const previewHref = isPublished ? `${PUBLIC_SITE_URL}${form.path}` : null;
 
+  // DnD sensors for the visual builder
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    setForm((prev) => {
+      const oldIdx = prev.sections.findIndex((s) => s.id === active.id);
+      const newIdx = prev.sections.findIndex((s) => s.id === over.id);
+      if (oldIdx < 0 || newIdx < 0) return prev;
+      return { ...prev, sections: arrayMove(prev.sections, oldIdx, newIdx) };
+    });
+  };
+
+  const [showLeftPanel, setShowLeftPanel] = useState(true);
+  const [showRightPanel, setShowRightPanel] = useState(true);
+
+  const selectedBlock = form.sections.find((s) => s.id === openSectionId) || null;
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -364,19 +539,47 @@ export default function PageEditor() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
-      {/* Header — sticky so the action buttons are always reachable. */}
-      <div className="sticky top-11 z-20 -mx-2 px-2 py-2 bg-surface-secondary/90 backdrop-blur border-b border-th-border/40 flex items-center justify-between gap-3">
-        <button
-          type="button"
-          onClick={() => navigate('/cms/pages')}
-          disabled={saving}
-          className="flex items-center gap-2 text-th-text-secondary hover:text-th-text-primary disabled:opacity-50"
-        >
-          <ArrowLeft className="w-5 h-5" />
-          <span>Back to Pages</span>
-        </button>
+    <div className="flex flex-col h-[calc(100vh-4rem)]">
+      {/* Top bar */}
+      <div className="flex-shrink-0 z-20 px-4 py-2 bg-surface-secondary/90 backdrop-blur border-b border-th-border/40 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => navigate('/cms/pages')}
+            disabled={saving}
+            className="flex items-center gap-2 text-th-text-secondary hover:text-th-text-primary disabled:opacity-50"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            <span className="hidden sm:inline">Pages</span>
+          </button>
+          <div className="h-5 w-px bg-th-border" />
+          <input
+            type="text"
+            value={form.title}
+            onChange={(e) => handleTitleChange(e.target.value)}
+            placeholder="Page title…"
+            className={`text-lg font-semibold text-th-text-primary bg-transparent border-0 focus:outline-none focus:ring-0 placeholder-th-text-tertiary w-48 sm:w-64 ${
+              missing.has('title') ? 'text-red-600' : ''
+            }`}
+          />
+        </div>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowLeftPanel((v) => !v)}
+            className="p-2 rounded-md text-th-text-tertiary hover:bg-surface-tertiary"
+            title="Toggle page settings"
+          >
+            <PanelLeftOpen className="w-4 h-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowRightPanel((v) => !v)}
+            className="p-2 rounded-md text-th-text-tertiary hover:bg-surface-tertiary"
+            title="Toggle block palette"
+          >
+            <PanelRightOpen className="w-4 h-4" />
+          </button>
           {previewHref && (
             <a
               href={previewHref}
@@ -394,19 +597,19 @@ export default function PageEditor() {
                 type="button"
                 onClick={() => handleSave(false)}
                 disabled={saving}
-                className="inline-flex items-center gap-2 px-4 py-2 border border-th-border rounded-lg text-th-text-secondary hover:bg-surface-tertiary disabled:opacity-60 transition-colors"
+                className="inline-flex items-center gap-2 px-3 py-1.5 text-sm border border-th-border rounded-lg text-th-text-secondary hover:bg-surface-tertiary disabled:opacity-60 transition-colors"
               >
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <EyeOff className="w-4 h-4" />}
-                <span>{saving ? 'Saving…' : 'Unpublish'}</span>
+                <span className="hidden sm:inline">{saving ? 'Saving…' : 'Unpublish'}</span>
               </button>
               <button
                 type="button"
                 onClick={() => handleSave(true)}
                 disabled={saving}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-th-accent-600 text-white rounded-lg font-medium hover:bg-th-accent-700 disabled:opacity-60 transition-colors"
+                className="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-th-accent-600 text-white rounded-lg font-medium hover:bg-th-accent-700 disabled:opacity-60 transition-colors"
               >
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                <span>{saving ? 'Saving…' : 'Save'}</span>
+                <span className="hidden sm:inline">{saving ? 'Saving…' : 'Save'}</span>
               </button>
             </>
           ) : (
@@ -415,143 +618,109 @@ export default function PageEditor() {
                 type="button"
                 onClick={() => handleSave(false)}
                 disabled={saving}
-                className="inline-flex items-center gap-2 px-4 py-2 border border-th-border rounded-lg text-th-text-secondary hover:bg-surface-tertiary disabled:opacity-60 transition-colors"
+                className="inline-flex items-center gap-2 px-3 py-1.5 text-sm border border-th-border rounded-lg text-th-text-secondary hover:bg-surface-tertiary disabled:opacity-60 transition-colors"
               >
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                <span>{saving ? 'Saving…' : 'Save Draft'}</span>
+                <span className="hidden sm:inline">{saving ? 'Saving…' : 'Draft'}</span>
               </button>
               <button
                 type="button"
                 onClick={() => handleSave(true)}
                 disabled={saving}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-th-accent-600 text-white rounded-lg font-medium hover:bg-th-accent-700 disabled:opacity-60 transition-colors"
+                className="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-th-accent-600 text-white rounded-lg font-medium hover:bg-th-accent-700 disabled:opacity-60 transition-colors"
               >
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Globe className="w-4 h-4" />}
-                <span>{saving ? 'Publishing…' : 'Publish'}</span>
+                <span className="hidden sm:inline">{saving ? 'Publishing…' : 'Publish'}</span>
               </button>
             </>
           )}
         </div>
       </div>
 
-      {/* Page-level fields */}
-      <div className="bg-surface-primary border border-th-border rounded-xl p-6 space-y-4">
-        <div>
-          <input
-            type="text"
-            value={form.title}
-            onChange={(e) => handleTitleChange(e.target.value)}
-            placeholder="Page title…"
-            className={`w-full text-3xl font-bold text-th-text-primary bg-transparent border-0 focus:outline-none focus:ring-0 placeholder-th-text-tertiary ${
-              missing.has('title')
-                ? 'outline-2 outline-dashed outline-red-300 rounded-lg px-2 -mx-2'
-                : ''
-            }`}
-          />
-          {missing.has('title') && (
-            <p className="text-xs text-red-600 mt-1">Title is required.</p>
-          )}
-        </div>
-
-        <div className="grid sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-th-text-secondary mb-1">
-              URL Path *
-            </label>
-            <input
-              type="text"
-              value={form.path}
-              onChange={(e) => setForm((p) => ({ ...p, path: e.target.value }))}
-              placeholder="/p/your-slug"
-              className={`w-full px-3 py-2 bg-surface-primary border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary font-mono text-sm ${
-                missing.has('path') ? 'border-red-400' : 'border-th-border'
-              }`}
-            />
-            <p className="text-xs text-th-text-tertiary mt-1">
-              Where this page lives on the public site (e.g. <code>/p/about</code>).
-            </p>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-th-text-secondary mb-1">
-              Slug
-            </label>
-            <input
-              type="text"
-              value={form.slug}
-              onChange={(e) => setForm((p) => ({ ...p, slug: slugify(e.target.value) }))}
-              placeholder="auto-generated from title"
-              className="w-full px-3 py-2 bg-surface-primary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary font-mono text-sm"
-            />
-            <p className="text-xs text-th-text-tertiary mt-1">
-              Short identifier (lowercase, dashes only).
-            </p>
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-th-text-secondary mb-1">
-            Description
-          </label>
-          <textarea
-            value={form.description}
-            onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
-            placeholder="Short description — used for SEO meta and previews."
-            rows={2}
-            className="w-full px-3 py-2 bg-surface-primary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary placeholder-th-text-tertiary"
-          />
-        </div>
-
-        <button
-          type="button"
-          onClick={() => setShowMeta((v) => !v)}
-          className="inline-flex items-center gap-2 text-sm text-th-text-secondary hover:text-th-text-primary"
-        >
-          <SettingsIcon className="w-4 h-4" />
-          {showMeta ? 'Hide' : 'Show'} SEO / social settings
-          <ChevronRight className={`w-4 h-4 transition-transform ${showMeta ? 'rotate-90' : ''}`} />
-        </button>
-        {showMeta && <MetaEditor meta={form.meta} onChange={(meta) => setForm((p) => ({ ...p, meta }))} />}
-      </div>
-
-      {/* Sections list */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-th-text-primary">
-            Sections{' '}
-            <span className="text-sm font-normal text-th-text-tertiary">
-              ({form.sections.length})
-            </span>
-          </h2>
-        </div>
-
-        {form.sections.length === 0 ? (
-          <div className="bg-surface-primary border border-dashed border-th-border rounded-xl p-12 text-center">
-            <p className="text-th-text-secondary mb-4">
-              No sections yet. Add your first block below.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {form.sections.map((block, idx) => (
-              <SectionRow
-                key={block.id}
-                block={block}
-                index={idx}
-                total={form.sections.length}
-                open={openSectionId === block.id}
-                onToggle={() =>
-                  setOpenSectionId((id) => (id === block.id ? null : block.id))
-                }
-                onUpdate={(b) => updateSection(block.id, () => b)}
-                onMoveUp={() => moveSection(block.id, -1)}
-                onMoveDown={() => moveSection(block.id, 1)}
-                onRemove={() => removeSection(block.id)}
+      {/* Three-panel builder */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left panel: Page settings & inspector */}
+        {showLeftPanel && (
+          <div className="w-80 flex-shrink-0 border-r border-th-border bg-surface-primary overflow-y-auto">
+            {selectedBlock ? (
+              <BlockInspector
+                block={selectedBlock}
+                onUpdate={(b) => updateSection(selectedBlock.id, () => b)}
+                onClose={() => setOpenSectionId(null)}
+                renderBlockForm={(block, onChange) => <BlockForm block={block} onChange={onChange} />}
               />
-            ))}
+            ) : (
+              <div className="p-4 space-y-4">
+                <h3 className="text-sm font-semibold text-th-text-primary">Page Settings</h3>
+
+                <div>
+                  <label className="block text-xs font-medium text-th-text-secondary mb-1">URL Path *</label>
+                  <input
+                    type="text"
+                    value={form.path}
+                    onChange={(e) => setForm((p) => ({ ...p, path: e.target.value }))}
+                    placeholder="/p/your-slug"
+                    className={`w-full px-3 py-2 bg-surface-primary border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary font-mono text-sm ${
+                      missing.has('path') ? 'border-red-400' : 'border-th-border'
+                    }`}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-th-text-secondary mb-1">Slug</label>
+                  <input
+                    type="text"
+                    value={form.slug}
+                    onChange={(e) => setForm((p) => ({ ...p, slug: slugify(e.target.value) }))}
+                    placeholder="auto-generated"
+                    className="w-full px-3 py-2 bg-surface-primary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary font-mono text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-th-text-secondary mb-1">Description</label>
+                  <textarea
+                    value={form.description}
+                    onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
+                    placeholder="SEO description…"
+                    rows={2}
+                    className="w-full px-3 py-2 bg-surface-primary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary placeholder-th-text-tertiary text-sm"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowMeta((v) => !v)}
+                  className="inline-flex items-center gap-2 text-xs text-th-text-secondary hover:text-th-text-primary"
+                >
+                  <SettingsIcon className="w-3.5 h-3.5" />
+                  {showMeta ? 'Hide' : 'Show'} SEO settings
+                  <ChevronRight className={`w-3.5 h-3.5 transition-transform ${showMeta ? 'rotate-90' : ''}`} />
+                </button>
+                {showMeta && <MetaEditor meta={form.meta} onChange={(meta) => setForm((p) => ({ ...p, meta }))} />}
+              </div>
+            )}
           </div>
         )}
 
-        <AddBlockPicker onAdd={addSection} />
+        {/* Center: Visual canvas */}
+        <div className="flex-1 min-w-0">
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <PageBuilderCanvas
+              blocks={form.sections}
+              selectedBlockId={openSectionId}
+              onSelectBlock={(id) => setOpenSectionId(id)}
+              onRemoveBlock={(id) => removeSection(id)}
+            />
+          </DndContext>
+        </div>
+
+        {/* Right panel: Block palette */}
+        {showRightPanel && (
+          <div className="w-64 flex-shrink-0 border-l border-th-border bg-surface-primary overflow-y-auto p-4">
+            <BlockPalette onAddBlock={addSection} />
+          </div>
+        )}
       </div>
     </div>
   );
@@ -625,112 +794,6 @@ function MetaEditor({
   );
 }
 
-// ---------------------------------------------------------------------------
-// Section row (collapsible)
-// ---------------------------------------------------------------------------
-
-function SectionRow({
-  block,
-  index,
-  total,
-  open,
-  onToggle,
-  onUpdate,
-  onMoveUp,
-  onMoveDown,
-  onRemove,
-}: {
-  block: CmsBlock;
-  index: number;
-  total: number;
-  open: boolean;
-  onToggle: () => void;
-  onUpdate: (b: CmsBlock) => void;
-  onMoveUp: () => void;
-  onMoveDown: () => void;
-  onRemove: () => void;
-}) {
-  const meta = BLOCKS.find((b) => b.kind === block.kind);
-  return (
-    <div className="bg-surface-primary border border-th-border rounded-xl overflow-hidden">
-      <div className="flex items-center gap-2 p-3">
-        <button
-          type="button"
-          onClick={onToggle}
-          className="flex-1 flex items-center gap-3 text-left"
-        >
-          <span className="inline-flex items-center justify-center w-6 h-6 text-xs font-semibold rounded-md bg-th-accent-600/10 text-th-accent-700 dark:text-th-accent-300 tabular-nums">
-            {index + 1}
-          </span>
-          <span className="font-medium text-th-text-primary">
-            {meta?.label ?? block.kind}
-          </span>
-          <span className="text-xs text-th-text-tertiary truncate">
-            {summarize(block)}
-          </span>
-        </button>
-        <div className="flex items-center gap-0.5">
-          <button
-            type="button"
-            onClick={onMoveUp}
-            disabled={index === 0}
-            title="Move up"
-            className="p-1.5 rounded text-th-text-tertiary hover:bg-surface-tertiary hover:text-th-text-primary disabled:opacity-30"
-          >
-            <ChevronUp className="w-4 h-4" />
-          </button>
-          <button
-            type="button"
-            onClick={onMoveDown}
-            disabled={index === total - 1}
-            title="Move down"
-            className="p-1.5 rounded text-th-text-tertiary hover:bg-surface-tertiary hover:text-th-text-primary disabled:opacity-30"
-          >
-            <ChevronDown className="w-4 h-4" />
-          </button>
-          <button
-            type="button"
-            onClick={onRemove}
-            title="Remove section"
-            className="p-1.5 rounded text-th-text-tertiary hover:bg-rose-500/10 hover:text-rose-600"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-      {open && (
-        <div className="border-t border-th-border p-4 bg-surface-secondary/40">
-          <BlockForm block={block} onChange={onUpdate} />
-        </div>
-      )}
-    </div>
-  );
-}
-
-function summarize(block: CmsBlock): string {
-  switch (block.kind) {
-    case 'hero':
-      return block.props.title || 'Untitled hero';
-    case 'rich_text':
-      return (block.props.html || '').replace(/<[^>]+>/g, '').slice(0, 60) || 'Empty';
-    case 'image':
-      return block.props.src ? block.props.src.split('/').pop() ?? '' : 'No image';
-    case 'image_grid':
-      return `${block.props.items.length} images`;
-    case 'cta_band':
-      return block.props.title || 'Untitled CTA';
-    case 'stats':
-      return `${block.props.items.length} stats`;
-    case 'two_column':
-      return block.props.title || 'Two-column';
-    case 'faq':
-      return `${block.props.items.length} questions`;
-    case 'embed':
-      return block.props.url || 'No URL';
-    case 'spacer':
-      return `${block.props.size ?? 'md'} spacer`;
-  }
-}
 
 // ---------------------------------------------------------------------------
 // Block form router
@@ -764,6 +827,42 @@ function BlockForm({
       return <EmbedForm block={block} onChange={onChange} />;
     case 'spacer':
       return <SpacerForm block={block} onChange={onChange} />;
+    case 'banner':
+      return <GenericJsonForm block={block} onChange={onChange} />;
+    case 'testimonial':
+      return <GenericJsonForm block={block} onChange={onChange} />;
+    case 'testimonial_carousel':
+      return <GenericJsonForm block={block} onChange={onChange} />;
+    case 'pricing_table':
+      return <GenericJsonForm block={block} onChange={onChange} />;
+    case 'tabs':
+      return <GenericJsonForm block={block} onChange={onChange} />;
+    case 'accordion':
+      return <GenericJsonForm block={block} onChange={onChange} />;
+    case 'team_grid':
+      return <GenericJsonForm block={block} onChange={onChange} />;
+    case 'logo_wall':
+      return <GenericJsonForm block={block} onChange={onChange} />;
+    case 'countdown':
+      return <GenericJsonForm block={block} onChange={onChange} />;
+    case 'newsletter_signup':
+      return <GenericJsonForm block={block} onChange={onChange} />;
+    case 'divider':
+      return <GenericJsonForm block={block} onChange={onChange} />;
+    case 'video_hero':
+      return <GenericJsonForm block={block} onChange={onChange} />;
+    case 'icon_grid':
+      return <GenericJsonForm block={block} onChange={onChange} />;
+    case 'alert_box':
+      return <GenericJsonForm block={block} onChange={onChange} />;
+    case 'button_group':
+      return <GenericJsonForm block={block} onChange={onChange} />;
+    case 'map':
+      return <GenericJsonForm block={block} onChange={onChange} />;
+    case 'table':
+      return <GenericJsonForm block={block} onChange={onChange} />;
+    default:
+      return <GenericJsonForm block={block} onChange={onChange} />;
   }
 }
 
@@ -1433,40 +1532,40 @@ function SpacerForm({
   );
 }
 
-// ---------------------------------------------------------------------------
-// Add-block picker (shown below the section list)
-// ---------------------------------------------------------------------------
+function GenericJsonForm({
+  block,
+  onChange,
+}: {
+  block: CmsBlock;
+  onChange: (b: CmsBlock) => void;
+}) {
+  const [json, setJson] = useState(() => JSON.stringify(block.props, null, 2));
+  const [error, setError] = useState<string | null>(null);
 
-function AddBlockPicker({ onAdd }: { onAdd: (kind: CmsBlockKind) => void }) {
-  const [open, setOpen] = useState(false);
+  const handleBlur = () => {
+    try {
+      const parsed = JSON.parse(json);
+      setError(null);
+      onChange({ ...block, props: parsed } as CmsBlock);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Invalid JSON');
+    }
+  };
+
   return (
-    <div className="bg-surface-primary border border-dashed border-th-border rounded-xl p-4">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-center gap-2 py-3 text-th-accent-600 font-medium hover:bg-surface-tertiary rounded-lg transition-colors"
-      >
-        <Plus className="w-5 h-5" />
-        Add section
-      </button>
-      {open && (
-        <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 pt-3 border-t border-th-border">
-          {BLOCKS.map((b) => (
-            <button
-              key={b.kind}
-              type="button"
-              onClick={() => {
-                onAdd(b.kind);
-                setOpen(false);
-              }}
-              className="text-left p-3 rounded-lg border border-th-border hover:border-th-accent-500 hover:bg-surface-tertiary transition-colors"
-            >
-              <div className="font-medium text-th-text-primary">{b.label}</div>
-              <div className="text-xs text-th-text-tertiary mt-0.5">{b.description}</div>
-            </button>
-          ))}
-        </div>
-      )}
+    <div className="space-y-2">
+      <Field label={`${block.kind.replace(/_/g, ' ')} properties (JSON)`} hint="Edit the raw JSON properties for this block.">
+        <textarea
+          value={json}
+          onChange={(e) => setJson(e.target.value)}
+          onBlur={handleBlur}
+          rows={12}
+          className={`${inputClass} font-mono text-xs`}
+          spellCheck={false}
+        />
+      </Field>
+      {error && <p className="text-xs text-red-600">{error}</p>}
     </div>
   );
 }
+

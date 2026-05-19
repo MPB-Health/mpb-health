@@ -274,6 +274,73 @@ export {
   type PageFilters,
 } from './content/PagesAdminService';
 
+// CMS Media Library
+export {
+  MediaLibraryService,
+  mediaLibraryService,
+  type MediaAsset,
+  type MediaUploadInput,
+  type MediaUpdateInput,
+  type MediaFilters,
+} from './content/MediaLibraryService';
+
+// CMS Revision History
+export {
+  RevisionService,
+  revisionService,
+  type CmsRevision,
+  type RevisionEntityType,
+} from './content/RevisionService';
+
+// CMS Redirect Manager
+export {
+  RedirectService,
+  redirectService,
+  type CmsRedirect,
+  type RedirectCreateInput,
+  type RedirectUpdateInput,
+} from './content/RedirectService';
+
+// CMS Templates & Global Blocks
+export {
+  TemplateService,
+  templateService,
+  type CmsTemplate,
+  type GlobalBlock,
+  type TemplateCreateInput,
+  type GlobalBlockCreateInput,
+} from './content/TemplateService';
+
+// CMS Theme / Global Styles
+export {
+  ThemeService,
+  themeService,
+  type ThemeSettings,
+} from './content/ThemeService';
+
+// CMS Form Builder
+export {
+  FormBuilderService,
+  formBuilderService,
+  type CmsForm,
+  type FormField,
+  type FormFieldType,
+  type FormSubmission,
+  type FormCreateInput,
+  type FormUpdateInput,
+} from './content/FormBuilderService';
+
+// CMS Popup Builder
+export {
+  PopupService,
+  popupService,
+  type CmsPopup,
+  type PopupTrigger,
+  type PopupTargeting,
+  type PopupCreateInput,
+  type PopupUpdateInput,
+} from './content/PopupService';
+
 // Newsletter management
 export {
   NewsletterAdminService,

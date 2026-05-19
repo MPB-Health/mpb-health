@@ -48,6 +48,15 @@ const EventEditor = lazyRetry(() => import('./pages/EventEditor'));
 const CmsHub = lazyRetry(() => import('./pages/CmsHub'));
 const PagesList = lazyRetry(() => import('./pages/PagesList'));
 const PageEditor = lazyRetry(() => import('./pages/PageEditor'));
+const MediaLibrary = lazyRetry(() => import('./pages/MediaLibrary'));
+const RedirectManager = lazyRetry(() => import('./pages/RedirectManager'));
+const ContentCalendar = lazyRetry(() => import('./pages/ContentCalendar'));
+const SeoSuite = lazyRetry(() => import('./pages/SeoSuite'));
+const ContentPermissions = lazyRetry(() => import('./pages/ContentPermissions'));
+const TemplateLibrary = lazyRetry(() => import('./pages/TemplateLibrary'));
+const ThemeEditor = lazyRetry(() => import('./pages/ThemeEditor'));
+const PopupBuilder = lazyRetry(() => import('./pages/PopupBuilder'));
+const FormBuilder = lazyRetry(() => import('./pages/FormBuilder'));
 // Operations / Marketing pages
 const LeadSubmissions = lazyRetry(() => import('./pages/LeadSubmissions'));
 const NewsletterAdmin = lazyRetry(() => import('./pages/NewsletterAdmin'));
@@ -312,6 +321,17 @@ export default function App() {
               <Route path="cms/pages" element={<PagesList />} />
               <Route path="cms/pages/new" element={<PageEditor />} />
               <Route path="cms/pages/:pageId" element={<PageEditor />} />
+              <Route path="cms/media" element={<MediaLibrary />} />
+              <Route path="cms/redirects" element={<RedirectManager />} />
+              <Route path="cms/calendar" element={<ContentCalendar />} />
+              <Route path="cms/seo" element={<SeoSuite />} />
+              <Route path="cms/permissions" element={<ContentPermissions />} />
+              <Route path="cms/templates" element={<TemplateLibrary />} />
+              <Route path="cms/theme" element={<ThemeEditor />} />
+              <Route path="cms/popups" element={<PopupBuilder />} />
+              <Route path="cms/popups/:popupId" element={<PopupBuilder />} />
+              <Route path="cms/forms" element={<FormBuilder />} />
+              <Route path="cms/forms/:formId" element={<FormBuilder />} />
               <Route path="content/blog" element={<BlogPosts />} />
               <Route path="content/blog/new" element={<BlogEditor />} />
               <Route path="content/blog/:postId" element={<BlogEditor />} />

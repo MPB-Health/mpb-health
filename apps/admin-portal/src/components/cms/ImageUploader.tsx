@@ -1,19 +1,19 @@
 import { useEffect, useState, useRef } from 'react';
-import { Upload, X, Loader2 } from 'lucide-react';
+import { Upload, X, Loader2, FolderOpen } from 'lucide-react';
 import { uploadEventImage, validateImageFile } from './imageUploadService';
+import { MediaPickerModal } from './MediaPickerModal';
 
 interface ImageUploaderProps {
   value: string;
   onChange: (url: string) => void;
   slug?: string;
-  // Surfaces upload state to the parent so Save/Publish can block until the
-  // file is verifiably in storage. Same pattern as EventGallerySection.
   onUploadingChange?: (uploading: boolean) => void;
 }
 
 export function ImageUploader({ value, onChange, slug, onUploadingChange }: ImageUploaderProps) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showPicker, setShowPicker] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -63,22 +63,32 @@ export function ImageUploader({ value, onChange, slug, onUploadingChange }: Imag
           </button>
         </div>
       ) : (
-        <div
-          onClick={() => fileInputRef.current?.click()}
-          className="border-2 border-dashed border-th-border rounded-lg p-8 text-center cursor-pointer hover:border-th-accent-400 hover:bg-surface-tertiary transition-all"
-        >
-          {uploading ? (
-            <div className="flex flex-col items-center gap-2">
-              <Loader2 className="h-8 w-8 text-th-accent-600 animate-spin" />
-              <span className="text-sm text-th-text-secondary">Uploading...</span>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center gap-2">
-              <Upload className="h-8 w-8 text-th-text-tertiary" />
-              <span className="text-sm text-th-text-secondary">Click to upload image</span>
-              <span className="text-xs text-th-text-tertiary">PNG, JPG, WebP up to 5MB</span>
-            </div>
-          )}
+        <div className="flex gap-2">
+          <div
+            onClick={() => fileInputRef.current?.click()}
+            className="flex-1 border-2 border-dashed border-th-border rounded-lg p-6 text-center cursor-pointer hover:border-th-accent-400 hover:bg-surface-tertiary transition-all"
+          >
+            {uploading ? (
+              <div className="flex flex-col items-center gap-2">
+                <Loader2 className="h-8 w-8 text-th-accent-600 animate-spin" />
+                <span className="text-sm text-th-text-secondary">Uploading...</span>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-2">
+                <Upload className="h-8 w-8 text-th-text-tertiary" />
+                <span className="text-sm text-th-text-secondary">Upload</span>
+                <span className="text-xs text-th-text-tertiary">PNG, JPG, WebP up to 5MB</span>
+              </div>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowPicker(true)}
+            className="flex flex-col items-center justify-center gap-2 px-6 border-2 border-dashed border-th-border rounded-lg cursor-pointer hover:border-th-accent-400 hover:bg-surface-tertiary transition-all"
+          >
+            <FolderOpen className="h-8 w-8 text-th-text-tertiary" />
+            <span className="text-sm text-th-text-secondary">Library</span>
+          </button>
         </div>
       )}
 
@@ -100,6 +110,16 @@ export function ImageUploader({ value, onChange, slug, onUploadingChange }: Imag
         accept="image/png,image/jpeg,image/webp"
         onChange={handleFileSelect}
         className="hidden"
+      />
+
+      <MediaPickerModal
+        open={showPicker}
+        onClose={() => setShowPicker(false)}
+        onSelect={(asset) => {
+          onChange(asset.url);
+          setShowPicker(false);
+        }}
+        mimeFilter="image"
       />
     </div>
   );

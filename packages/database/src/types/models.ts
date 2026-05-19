@@ -184,7 +184,27 @@ export type CmsBlockKind =
   | 'two_column'
   | 'faq'
   | 'embed'
-  | 'spacer';
+  | 'spacer'
+  | 'banner'
+  | 'testimonial'
+  | 'testimonial_carousel'
+  | 'pricing_table'
+  | 'tabs'
+  | 'accordion'
+  | 'team_grid'
+  | 'logo_wall'
+  | 'countdown'
+  | 'newsletter_signup'
+  | 'divider'
+  | 'video_hero'
+  | 'icon_grid'
+  | 'alert_box'
+  | 'button_group'
+  | 'map'
+  | 'table'
+  | 'section'
+  | 'columns'
+  | 'container';
 
 export interface CmsBlockBase<K extends CmsBlockKind, P> {
   id: string;
@@ -252,6 +272,194 @@ export interface CmsSpacerProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
 }
 
+export interface CmsBannerProps {
+  text: string;
+  link_url?: string;
+  link_label?: string;
+  variant?: 'info' | 'warning' | 'success' | 'error' | 'promo';
+  dismissible?: boolean;
+  icon?: string;
+}
+
+export interface CmsTestimonialProps {
+  quote: string;
+  author_name: string;
+  author_title?: string;
+  author_company?: string;
+  author_avatar?: string;
+  rating?: number;
+}
+
+export interface CmsTestimonialCarouselProps {
+  title?: string;
+  items: Array<{
+    quote: string;
+    author_name: string;
+    author_title?: string;
+    author_company?: string;
+    author_avatar?: string;
+    rating?: number;
+  }>;
+  auto_rotate?: boolean;
+  interval_ms?: number;
+}
+
+export interface CmsPricingTableProps {
+  title?: string;
+  subtitle?: string;
+  plans: Array<{
+    name: string;
+    price: string;
+    period?: string;
+    description?: string;
+    features: string[];
+    cta: { label: string; href: string };
+    highlighted?: boolean;
+  }>;
+}
+
+export interface CmsTabsProps {
+  tabs: Array<{
+    label: string;
+    content_html: string;
+  }>;
+}
+
+export interface CmsAccordionProps {
+  title?: string;
+  items: Array<{
+    heading: string;
+    content_html: string;
+  }>;
+  allow_multiple?: boolean;
+}
+
+export interface CmsTeamGridProps {
+  title?: string;
+  columns?: 2 | 3 | 4;
+  members: Array<{
+    name: string;
+    role: string;
+    bio?: string;
+    photo_url?: string;
+    linkedin_url?: string;
+  }>;
+}
+
+export interface CmsLogoWallProps {
+  title?: string;
+  logos: Array<{
+    src: string;
+    alt: string;
+    href?: string;
+  }>;
+  columns?: 3 | 4 | 5 | 6;
+  grayscale?: boolean;
+}
+
+export interface CmsCountdownProps {
+  title?: string;
+  target_date: string;
+  expired_text?: string;
+  show_days?: boolean;
+  show_hours?: boolean;
+  show_minutes?: boolean;
+  show_seconds?: boolean;
+}
+
+export interface CmsNewsletterSignupProps {
+  title?: string;
+  subtitle?: string;
+  placeholder?: string;
+  button_label?: string;
+  success_message?: string;
+}
+
+export interface CmsDividerProps {
+  style?: 'line' | 'dashed' | 'dotted' | 'gradient' | 'wave';
+  color?: string;
+  spacing?: 'sm' | 'md' | 'lg';
+}
+
+export interface CmsVideoHeroProps {
+  title: string;
+  subtitle?: string;
+  video_url: string;
+  poster_image?: string;
+  overlay_opacity?: number;
+  primary_cta?: { label: string; href: string };
+  secondary_cta?: { label: string; href: string };
+}
+
+export interface CmsIconGridProps {
+  title?: string;
+  subtitle?: string;
+  columns?: 2 | 3 | 4;
+  items: Array<{
+    icon: string;
+    title: string;
+    description: string;
+    link_url?: string;
+  }>;
+}
+
+export interface CmsAlertBoxProps {
+  variant: 'info' | 'warning' | 'success' | 'error';
+  title?: string;
+  content_html: string;
+  dismissible?: boolean;
+}
+
+export interface CmsButtonGroupProps {
+  alignment?: 'left' | 'center' | 'right';
+  buttons: Array<{
+    label: string;
+    href: string;
+    variant?: 'primary' | 'secondary' | 'ghost';
+    size?: 'sm' | 'md' | 'lg';
+  }>;
+}
+
+export interface CmsMapProps {
+  address?: string;
+  latitude?: number;
+  longitude?: number;
+  zoom?: number;
+  height?: string;
+}
+
+export interface CmsTableProps {
+  title?: string;
+  headers: string[];
+  rows: string[][];
+  striped?: boolean;
+  bordered?: boolean;
+}
+
+export interface CmsSectionProps {
+  background_color?: string;
+  background_image?: string;
+  background_gradient?: string;
+  padding_top?: 'none' | 'sm' | 'md' | 'lg' | 'xl';
+  padding_bottom?: 'none' | 'sm' | 'md' | 'lg' | 'xl';
+  full_width?: boolean;
+  children: CmsBlock[];
+}
+
+export interface CmsColumnsProps {
+  layout: '1/2-1/2' | '1/3-2/3' | '2/3-1/3' | '1/3-1/3-1/3' | '1/4-1/4-1/4-1/4';
+  gap?: 'none' | 'sm' | 'md' | 'lg';
+  vertical_align?: 'top' | 'center' | 'bottom';
+  columns: Array<{ blocks: CmsBlock[] }>;
+}
+
+export interface CmsContainerProps {
+  max_width?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
+  alignment?: 'left' | 'center' | 'right';
+  padding?: 'none' | 'sm' | 'md' | 'lg';
+  children: CmsBlock[];
+}
+
 export type CmsBlock =
   | CmsBlockBase<'hero', CmsHeroProps>
   | CmsBlockBase<'rich_text', CmsRichTextProps>
@@ -262,7 +470,27 @@ export type CmsBlock =
   | CmsBlockBase<'two_column', CmsTwoColumnProps>
   | CmsBlockBase<'faq', CmsFaqProps>
   | CmsBlockBase<'embed', CmsEmbedProps>
-  | CmsBlockBase<'spacer', CmsSpacerProps>;
+  | CmsBlockBase<'spacer', CmsSpacerProps>
+  | CmsBlockBase<'banner', CmsBannerProps>
+  | CmsBlockBase<'testimonial', CmsTestimonialProps>
+  | CmsBlockBase<'testimonial_carousel', CmsTestimonialCarouselProps>
+  | CmsBlockBase<'pricing_table', CmsPricingTableProps>
+  | CmsBlockBase<'tabs', CmsTabsProps>
+  | CmsBlockBase<'accordion', CmsAccordionProps>
+  | CmsBlockBase<'team_grid', CmsTeamGridProps>
+  | CmsBlockBase<'logo_wall', CmsLogoWallProps>
+  | CmsBlockBase<'countdown', CmsCountdownProps>
+  | CmsBlockBase<'newsletter_signup', CmsNewsletterSignupProps>
+  | CmsBlockBase<'divider', CmsDividerProps>
+  | CmsBlockBase<'video_hero', CmsVideoHeroProps>
+  | CmsBlockBase<'icon_grid', CmsIconGridProps>
+  | CmsBlockBase<'alert_box', CmsAlertBoxProps>
+  | CmsBlockBase<'button_group', CmsButtonGroupProps>
+  | CmsBlockBase<'map', CmsMapProps>
+  | CmsBlockBase<'table', CmsTableProps>
+  | CmsBlockBase<'section', CmsSectionProps>
+  | CmsBlockBase<'columns', CmsColumnsProps>
+  | CmsBlockBase<'container', CmsContainerProps>;
 
 export interface CmsPageMeta {
   og_image?: string;

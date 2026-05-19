@@ -19,6 +19,7 @@ import { StateEligibilityBanner } from './components/blocks/StateEligibilityBann
 import { ZohoSalesIQMonitor } from './components/ZohoSalesIQMonitor';
 import { SilentErrorBoundary } from './components/ErrorBoundary';
 import LazyLoadErrorBoundary from './components/LazyLoadErrorBoundary';
+import { Toaster } from 'sonner';
 
 // Critical routes - loaded immediately
 import { Landing } from './pages/Landing';
@@ -178,7 +179,9 @@ const AdvisorCMSSharingGuidelines = lazyAuto(() => import('./pages/admin/advisor
 const AdvisorCMSARM = lazyAuto(() => import('./pages/admin/advisor-cms/ARMManager'));
 
 // Website CMS Suite
+const CmsAdminLayout = lazyAuto(() => import('./pages/admin/cms/CmsAdminLayout'));
 const CmsHub = lazyAuto(() => import('./pages/admin/cms/CmsHub'));
+const CmsPagesList = lazyAuto(() => import('./pages/admin/cms/PagesList'));
 const CmsPageEditor = lazyAuto(() => import('./pages/admin/cms/PageEditor'));
 const CmsMediaLibrary = lazyAuto(() => import('./pages/admin/cms/MediaLibrary'));
 const CmsBlogEditor = lazyAuto(() => import('./pages/admin/cms/CmsBlogEditor'));
@@ -321,6 +324,7 @@ const App = () => {
 
   return (
     <HelmetProvider>
+      <Toaster position="top-right" richColors closeButton />
       <AuthProvider>
         <NavigationProvider>
           <TerminalProvider>
@@ -810,23 +814,34 @@ const App = () => {
                     }
                   />
 
-                  {/* Website CMS Suite */}
-                  <Route path="/admin/cms" element={<ProtectedRoute requiredRole="admin"><CmsHub /></ProtectedRoute>} />
-                  <Route path="/admin/cms/pages/new" element={<ProtectedRoute requiredRole="admin"><CmsPageEditor /></ProtectedRoute>} />
-                  <Route path="/admin/cms/pages/:id" element={<ProtectedRoute requiredRole="admin"><CmsPageEditor /></ProtectedRoute>} />
-                  <Route path="/admin/cms/media" element={<ProtectedRoute requiredRole="admin"><CmsMediaLibrary /></ProtectedRoute>} />
-                  <Route path="/admin/cms/blog/new" element={<ProtectedRoute requiredRole="admin"><CmsBlogEditor /></ProtectedRoute>} />
-                  <Route path="/admin/cms/blog/:id" element={<ProtectedRoute requiredRole="admin"><CmsBlogEditor /></ProtectedRoute>} />
-                  <Route path="/admin/cms/templates" element={<ProtectedRoute requiredRole="admin"><CmsTemplateLibrary /></ProtectedRoute>} />
-                  <Route path="/admin/cms/theme" element={<ProtectedRoute requiredRole="admin"><CmsThemeEditor /></ProtectedRoute>} />
-                  <Route path="/admin/cms/forms/new" element={<ProtectedRoute requiredRole="admin"><CmsFormBuilder /></ProtectedRoute>} />
-                  <Route path="/admin/cms/forms/:id" element={<ProtectedRoute requiredRole="admin"><CmsFormBuilder /></ProtectedRoute>} />
-                  <Route path="/admin/cms/popups" element={<ProtectedRoute requiredRole="admin"><CmsPopupBuilder /></ProtectedRoute>} />
-                  <Route path="/admin/cms/popups/:id" element={<ProtectedRoute requiredRole="admin"><CmsPopupBuilder /></ProtectedRoute>} />
-                  <Route path="/admin/cms/redirects" element={<ProtectedRoute requiredRole="admin"><CmsRedirectManager /></ProtectedRoute>} />
-                  <Route path="/admin/cms/calendar" element={<ProtectedRoute requiredRole="admin"><CmsContentCalendar /></ProtectedRoute>} />
-                  <Route path="/admin/cms/seo" element={<ProtectedRoute requiredRole="admin"><CmsSeoSuite /></ProtectedRoute>} />
-                  <Route path="/admin/cms/permissions" element={<ProtectedRoute requiredRole="admin"><CmsContentPermissions /></ProtectedRoute>} />
+                  {/* Website CMS Suite — uses admin sidebar via CmsAdminLayout */}
+                  <Route
+                    path="/admin/cms"
+                    element={
+                      <ProtectedRoute requiredRole="admin">
+                        <CmsAdminLayout />
+                      </ProtectedRoute>
+                    }
+                  >
+                    <Route index element={<CmsHub />} />
+                    <Route path="pages" element={<CmsPagesList />} />
+                    <Route path="pages/new" element={<CmsPageEditor />} />
+                    <Route path="pages/:id" element={<CmsPageEditor />} />
+                    <Route path="media" element={<CmsMediaLibrary />} />
+                    <Route path="blog/new" element={<CmsBlogEditor />} />
+                    <Route path="blog/:id" element={<CmsBlogEditor />} />
+                    <Route path="templates" element={<CmsTemplateLibrary />} />
+                    <Route path="theme" element={<CmsThemeEditor />} />
+                    <Route path="forms" element={<CmsFormBuilder />} />
+                    <Route path="forms/new" element={<CmsFormBuilder />} />
+                    <Route path="forms/:id" element={<CmsFormBuilder />} />
+                    <Route path="popups" element={<CmsPopupBuilder />} />
+                    <Route path="popups/:id" element={<CmsPopupBuilder />} />
+                    <Route path="redirects" element={<CmsRedirectManager />} />
+                    <Route path="calendar" element={<CmsContentCalendar />} />
+                    <Route path="seo" element={<CmsSeoSuite />} />
+                    <Route path="permissions" element={<CmsContentPermissions />} />
+                  </Route>
 
                   {/* Forms Manager */}
                   <Route

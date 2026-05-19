@@ -38,6 +38,13 @@ import {
   ArrowRight,
   Clock,
   Calculator,
+  LayoutTemplate,
+  FolderOpen,
+  Palette,
+  FormInput,
+  MessageSquare,
+  ArrowRightLeft,
+  Shield,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
@@ -101,27 +108,44 @@ const navGroups: { title: string; items: NavItem[] }[] = [
     ]
   },
   {
+    title: 'Website CMS',
+    items: [
+      { id: 'cms-hub', label: 'CMS Hub', icon: Sparkles, href: '/admin/cms' },
+      { id: 'cms-pages', label: 'All Pages', icon: FileText, href: '/admin/cms/pages' },
+      { id: 'cms-page-new', label: 'Page Builder', icon: LayoutTemplate, href: '/admin/cms/pages/new' },
+      { id: 'cms-media', label: 'Media Library', icon: FolderOpen, href: '/admin/cms/media' },
+      { id: 'cms-templates', label: 'Templates', icon: Layers, href: '/admin/cms/templates' },
+      { id: 'cms-theme', label: 'Theme & Styles', icon: Palette, href: '/admin/cms/theme' },
+      { id: 'cms-forms', label: 'Form Builder', icon: FormInput, href: '/admin/cms/forms' },
+      { id: 'cms-popups', label: 'Popups', icon: MessageSquare, href: '/admin/cms/popups' },
+      { id: 'cms-redirects', label: 'Redirects', icon: ArrowRightLeft, href: '/admin/cms/redirects' },
+      { id: 'cms-calendar', label: 'Content Calendar', icon: Calendar, href: '/admin/cms/calendar' },
+      { id: 'cms-seo', label: 'SEO Suite', icon: Search, href: '/admin/cms/seo' },
+      { id: 'cms-permissions', label: 'Permissions', icon: Shield, href: '/admin/cms/permissions' },
+    ],
+  },
+  {
     title: 'Content',
     items: [
       { id: 'content-panel', label: 'Content Analytics', icon: BarChart3, viewId: 'content' },
-      { id: 'blog', label: 'Blog Management', icon: BookOpen, href: '/admin/blog' },
+      { id: 'blog', label: 'Blog Posts', icon: BookOpen, href: '/admin/blog' },
       { id: 'ai-blog', label: 'AI Blog Generator', icon: Sparkles, href: '/admin/gemini-blog-generator' },
+      { id: 'events', label: 'Events', icon: Calendar, href: '/admin/events' },
       { id: 'newsletter-subs', label: 'Newsletter Subscribers', icon: Mail, href: '/admin/newsletter-subscribers' },
       { id: 'newsletter-camp', label: 'Newsletter Campaigns', icon: Send, href: '/admin/newsletter-campaigns' },
-      { id: 'faq', label: 'FAQ Management', icon: HelpCircle, href: '/admin/faq' },
+      { id: 'faq', label: 'FAQ', icon: HelpCircle, href: '/admin/faq' },
       { id: 'resources', label: 'Resource Library', icon: Database, href: '/admin/resources' },
       { id: 'handbooks', label: 'Member Handbooks', icon: Book, href: '/admin/handbooks' },
-      { id: 'video-manager', label: 'Video Manager', icon: Video, href: '/admin/settings?tab=media' },
-      { id: 'forms-manager', label: 'Forms Manager', icon: FileText, href: '/admin/forms' },
+      { id: 'forms-manager', label: 'Legacy Forms', icon: FileText, href: '/admin/forms' },
       { id: 'advisor-cms', label: 'Advisor Portal CMS', icon: GraduationCap, href: '/admin/advisor-cms' },
-    ]
+    ],
   },
   {
     title: 'SEO',
     items: [
       { id: 'seoanalytics', label: 'SEO Analytics', icon: TrendingUp, viewId: 'seoanalytics' },
-      { id: 'seo', label: 'SEO Settings', icon: Search, viewId: 'seo' },
-    ]
+      { id: 'seo', label: 'SEO Settings (Dashboard)', icon: Search, viewId: 'seo' },
+    ],
   },
   {
     title: 'Operations',
@@ -166,7 +190,12 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
 }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [expandedGroups, setExpandedGroups] = useState<string[]>(['Dashboard', 'Analytics', 'Marketing', 'CRM', 'Content']);
+  const [expandedGroups, setExpandedGroups] = useState<string[]>([
+    'Dashboard',
+    'Website CMS',
+    'Content',
+    'CRM',
+  ]);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   // Search state
@@ -274,7 +303,31 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       return activeView === item.viewId;
     }
     if (item.href) {
-      return location.pathname === item.href;
+      const path = location.pathname;
+      if (path === item.href) return true;
+      if (item.href === '/admin/cms') return false;
+
+      if (item.id === 'cms-pages') {
+        return (
+          path === '/admin/cms/pages' ||
+          /^\/admin\/cms\/pages\/[0-9a-f-]{36}$/i.test(path)
+        );
+      }
+      if (item.id === 'cms-page-new') {
+        return path === '/admin/cms/pages/new';
+      }
+      if (item.id === 'cms-forms') {
+        return (
+          path === '/admin/cms/forms' ||
+          /^\/admin\/cms\/forms\/[0-9a-f-]{36}$/i.test(path)
+        );
+      }
+      if (item.id === 'cms-popups') {
+        return path === '/admin/cms/popups' || /^\/admin\/cms\/popups\/[0-9a-f-]{36}$/i.test(path);
+      }
+
+      if (path.startsWith(item.href + '/')) return true;
+      return false;
     }
     return false;
   };

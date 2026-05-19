@@ -1016,12 +1016,17 @@ function FormsList({
 
 export default function CmsFormBuilder() {
   const navigate = useNavigate();
-  const { formId } = useParams<{ formId?: string }>();
-  const [editingId, setEditingId] = useState<string | null | undefined>(formId ?? undefined);
+  const { id } = useParams<{ id?: string }>();
+  const resolvedId = id === 'new' ? null : id;
+  const [editingId, setEditingId] = useState<string | null | undefined>(
+    id === undefined ? undefined : resolvedId ?? null
+  );
 
   useEffect(() => {
-    setEditingId(formId ?? undefined);
-  }, [formId]);
+    if (id === undefined) setEditingId(undefined);
+    else if (id === 'new') setEditingId(null);
+    else setEditingId(id);
+  }, [id]);
 
   if (editingId !== undefined) {
     return (
@@ -1046,7 +1051,7 @@ export default function CmsFormBuilder() {
         }}
         onCreate={() => {
           setEditingId(null);
-          navigate('/admin/cms/forms');
+          navigate('/admin/cms/forms/new');
         }}
       />
     </div>

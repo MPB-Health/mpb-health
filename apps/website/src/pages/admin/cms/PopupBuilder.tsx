@@ -587,7 +587,7 @@ function PopupEditor({ popupId }: { popupId: string }) {
 
 // ── Router Switch ────────────────────────────────────────────────────────────
 export default function PopupBuilder() {
-  const { popupId } = useParams<{ popupId?: string }>();
-  if (popupId) return <PopupEditor popupId={popupId} />;
+  const { id } = useParams<{ id?: string }>();
+  if (id) return <PopupEditor popupId={id} />;
   return <PopupList />;
 }

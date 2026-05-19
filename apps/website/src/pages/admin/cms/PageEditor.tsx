@@ -539,7 +539,7 @@ export default function PageEditor() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)]">
+    <div className="flex flex-col h-full min-h-0">
       {/* Top bar */}
       <div className="flex-shrink-0 z-20 px-4 py-2 bg-surface-secondary/90 backdrop-blur border-b border-th-border/40 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">

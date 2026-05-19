@@ -1,26 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { Plus, Search, FileText, Loader2 } from 'lucide-react';
 import {
-  Plus,
-  Search,
-  Globe,
-  EyeOff,
-  ExternalLink,
-  Copy,
-  Trash2,
-  FileText,
-  Loader2,
-} from 'lucide-react';
-import { pagesAdminService } from '@mpbhealth/admin-core';
+  buildPageListRows,
+  pagesAdminService,
+  type SitePageCatalogEntry,
+} from '@mpbhealth/admin-core';
+import { PageListRowItem } from './PageListRowItem';
 import { supabase, safeRemoveChannel } from '@mpbhealth/database';
 import type { CmsPage } from '@mpbhealth/database';
 
 type Filter = 'all' | 'published' | 'drafts';
-
-const PUBLIC_SITE_URL =
-  (import.meta.env.VITE_PUBLIC_SITE_URL as string | undefined) ||
-  'https://mpb.health';
 
 function formatRelative(iso: string | null): string {
   if (!iso) return '—';
@@ -45,8 +36,6 @@ export default function PagesList() {
     () => async () => {
       try {
         const data = await pagesAdminService.getPages({
-          is_published:
-            filter === 'published' ? true : filter === 'drafts' ? false : undefined,
           search: search.trim() || undefined,
         });
         setPages(data);
@@ -61,7 +50,12 @@ export default function PagesList() {
         setLoading(false);
       }
     },
-    [filter, search]
+    [search]
+  );
+
+  const rows = useMemo(
+    () => buildPageListRows(pages, { search: search.trim(), filter }),
+    [pages, search, filter]
   );
 
   useEffect(() => {
@@ -116,6 +110,22 @@ export default function PagesList() {
     }
   };
 
+  const handleEnableInCms = async (entry: SitePageCatalogEntry) => {
+    setPendingAction(entry.path);
+    const toastId = toast.loading('Preparing page in CMS…');
+    try {
+      const page = await pagesAdminService.ensureSitePage(entry);
+      toast.success('Ready to edit', { id: toastId });
+      navigate(`/admin/cms/pages/${page.id}`);
+    } catch (e) {
+      toast.error(`Failed: ${e instanceof Error ? e.message : 'Unknown error'}`, {
+        id: toastId,
+      });
+    } finally {
+      setPendingAction(null);
+    }
+  };
+
   const handleDelete = async (page: CmsPage) => {
     if (!window.confirm(`Delete "${page.title}"? This cannot be undone.`)) return;
     setPendingAction(page.id);
@@ -138,9 +148,9 @@ export default function PagesList() {
         <div>
           <h1 className="text-2xl font-bold text-th-text-primary">Pages</h1>
           <p className="text-sm text-th-text-secondary mt-1">
-            Build pages for the public site with the visual block editor. Published pages render at{' '}
-            <code className="px-1.5 py-0.5 bg-surface-tertiary rounded text-xs">/p/&lt;slug&gt;</code>
-            .
+            Edit every page on the public site. Published CMS content replaces the legacy React
+            page at the same URL (e.g. <code className="px-1.5 py-0.5 bg-surface-tertiary rounded text-xs">/about-us</code>
+            ). Extra pages can also live at <code className="px-1.5 py-0.5 bg-surface-tertiary rounded text-xs">/p/&lt;slug&gt;</code>.
           </p>
         </div>
         <Link
@@ -186,7 +196,7 @@ export default function PagesList() {
           <div className="p-12 flex items-center justify-center">
             <Loader2 className="w-6 h-6 animate-spin text-th-accent-600" />
           </div>
-        ) : pages.length === 0 ? (
+        ) : rows.length === 0 ? (
           <div className="p-12 text-center">
             <FileText className="w-10 h-10 text-th-text-tertiary mx-auto mb-3" />
             <p className="text-th-text-secondary">
@@ -204,80 +214,18 @@ export default function PagesList() {
           </div>
         ) : (
           <div className="divide-y divide-th-border/60">
-            {pages.map((page) => (
-              <div
-                key={page.id}
-                className="p-4 sm:p-5 hover:bg-surface-secondary/40 transition-colors flex flex-col sm:flex-row sm:items-center gap-4"
-              >
-                <Link to={`/admin/cms/pages/${page.id}`} className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-semibold text-th-text-primary truncate">{page.title}</span>
-                    {page.is_published ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300">
-                        <Globe className="w-3 h-3" />
-                        Published
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-300">
-                        <EyeOff className="w-3 h-3" />
-                        Draft
-                      </span>
-                    )}
-                  </div>
-                  <div className="mt-1 flex items-center gap-3 text-xs text-th-text-tertiary">
-                    <code className="bg-surface-tertiary px-1.5 py-0.5 rounded">{page.path}</code>
-                    <span>{page.sections.length} sections</span>
-                    <span>Updated {formatRelative(page.updated_at)}</span>
-                  </div>
-                </Link>
-
-                <div className="flex items-center gap-1">
-                  {page.is_published && (
-                    <a
-                      href={`${PUBLIC_SITE_URL}${page.path}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      title="View on site"
-                      className="p-2 rounded-md text-th-text-tertiary hover:bg-surface-tertiary hover:text-th-text-primary transition-colors"
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                    </a>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => handleTogglePublish(page)}
-                    disabled={pendingAction === page.id}
-                    title={page.is_published ? 'Unpublish' : 'Publish'}
-                    className="p-2 rounded-md text-th-text-tertiary hover:bg-surface-tertiary hover:text-th-text-primary transition-colors disabled:opacity-50"
-                  >
-                    {pendingAction === page.id ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : page.is_published ? (
-                      <EyeOff className="w-4 h-4" />
-                    ) : (
-                      <Globe className="w-4 h-4" />
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDuplicate(page)}
-                    disabled={pendingAction === page.id}
-                    title="Duplicate"
-                    className="p-2 rounded-md text-th-text-tertiary hover:bg-surface-tertiary hover:text-th-text-primary transition-colors disabled:opacity-50"
-                  >
-                    <Copy className="w-4 h-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(page)}
-                    disabled={pendingAction === page.id}
-                    title="Delete"
-                    className="p-2 rounded-md text-th-text-tertiary hover:bg-rose-500/10 hover:text-rose-600 transition-colors disabled:opacity-50"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
+            {rows.map((row) => (
+              <PageListRowItem
+                key={row.kind === 'cms' ? row.page.id : row.entry.path}
+                row={row}
+                pendingAction={pendingAction}
+                formatRelative={formatRelative}
+                onTogglePublish={handleTogglePublish}
+                onDuplicate={handleDuplicate}
+                onDelete={handleDelete}
+                onEnableInCms={handleEnableInCms}
+                editorBasePath="/admin/cms/pages"
+              />
             ))}
           </div>
         )}

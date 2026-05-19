@@ -273,6 +273,16 @@ export {
   type PageUpdateInput,
   type PageFilters,
 } from './content/PagesAdminService';
+export {
+  SITE_PAGES_CATALOG,
+  getSitePageByPath,
+  type SitePageCatalogEntry,
+} from './content/sitePagesCatalog';
+export {
+  buildPageListRows,
+  type PageListRow,
+  type PageListFilter,
+} from './content/pagesListUtils';
 
 // CMS Media Library
 export {

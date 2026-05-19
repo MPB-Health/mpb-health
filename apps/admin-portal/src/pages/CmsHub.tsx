@@ -47,7 +47,7 @@ const CONTENT_TYPES: ContentType[] = [
   {
     key: 'pages',
     label: 'Pages',
-    description: 'Build any page on the public site with the block editor',
+    description: 'Edit all public site pages (home, about, plans, contact, and more) with the block editor',
     icon: LayoutTemplate,
     table: 'cms_pages',
     publishedColumn: 'is_published',

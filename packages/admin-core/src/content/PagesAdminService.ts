@@ -4,6 +4,7 @@ import type {
   CmsBlock,
   CmsPageMeta,
 } from '@mpbhealth/database';
+import type { SitePageCatalogEntry } from './sitePagesCatalog';
 
 export interface PageCreateInput {
   path: string;
@@ -154,6 +155,25 @@ export class PagesAdminService {
    * draft and gets a `-copy` suffix on path + slug to avoid the unique-constraint
    * collision.
    */
+  /**
+   * Ensure a `cms_pages` row exists for a known site route so admins can edit it
+   * in the block editor. Returns the existing row if the path is already taken.
+   */
+  async ensureSitePage(entry: SitePageCatalogEntry): Promise<CmsPage> {
+    const path = normalizePath(entry.path);
+    const existing = await this.getPageByPath(path);
+    if (existing) return existing;
+
+    return this.createPage({
+      path,
+      slug: entry.slug,
+      title: entry.title,
+      description: entry.description ?? null,
+      sections: [],
+      is_published: false,
+    });
+  }
+
   async duplicatePage(id: string): Promise<CmsPage> {
     const source = await this.getPage(id);
     if (!source) throw new Error('Page not found');

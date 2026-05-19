@@ -20,6 +20,7 @@ import { ZohoSalesIQMonitor } from './components/ZohoSalesIQMonitor';
 import { SilentErrorBoundary } from './components/ErrorBoundary';
 import LazyLoadErrorBoundary from './components/LazyLoadErrorBoundary';
 import { Toaster } from 'sonner';
+import { MANAGED_SITE_PATHS, ManagedSitePage } from './lib/sitePageFallbacks';
 
 // Critical routes - loaded immediately
 import { Landing } from './pages/Landing';
@@ -339,13 +340,6 @@ const App = () => {
               <LazyLoadErrorBoundary>
                 <Suspense fallback={<PageSpinner />}>
                   <Routes>
-                  <Route path="/" element={<Landing />} />
-                  <Route path="/mvp" element={<LandingMVP />} />
-                  <Route path="/plans" element={<Plans />} />
-                  <Route path="/compare-plans" element={<PlanComparison />} />
-                  <Route path="/enrollment" element={<Enrollment />} />
-                  <Route path="/get-started" element={<GetStarted />} />
-                  <Route path="/get-a-quote" element={<GetAQuote />} />
                   <Route path="/quote" element={<Navigate to="/get-a-quote" replace />} />
                   <Route path="/calculator" element={<Navigate to="/get-started" replace />} />
                   <Route path="/freequote" element={<Navigate to="/get-started" replace />} />
@@ -353,15 +347,14 @@ const App = () => {
                   <Route path="/individuals-families" element={<Navigate to="/individuals-and-families" replace />} />
                   <Route path="/businesses-organizations" element={<Navigate to="/businesses-and-organizations" replace />} />
                   <Route path="/resource-library" element={<Navigate to="/resources" replace />} />
-                  <Route path="/individuals-and-families" element={<IndividualsAndFamilies />} />
-                  <Route path="/businesses-and-organizations" element={<BusinessesOrganizations />} />
-                  <Route path="/advisors-and-brokers" element={<AdvisorsAndBrokers />} />
-                  <Route path="/how-it-works" element={<HowItWorksPage />} />
-                  <Route path="/faq" element={<FAQ />} />
-                  <Route path="/support" element={<Support />} />
-                  <Route path="/join-our-team" element={<JoinOurTeam />} />
-                  <Route path="/download-app" element={<DownloadApp />} />
-                  <Route path="/welcome" element={<Welcome />} />
+                  {/* Marketing pages: CMS block editor overrides when published */}
+                  {MANAGED_SITE_PATHS.map((sitePath) => (
+                    <Route
+                      key={sitePath}
+                      path={sitePath}
+                      element={<ManagedSitePage path={sitePath} />}
+                    />
+                  ))}
 
                   {/* Protected Member Routes */}
                   <Route path="/member" element={<ProtectedRoute requiredRole="member"><MemberDashboard /></ProtectedRoute>} />
@@ -489,8 +482,6 @@ const App = () => {
                       apps/website/src/components/cms-blocks/. Resolves live via
                       Supabase Realtime — published changes appear within ~1s. */}
                   <Route path="/p/:slug" element={<CmsPage />} />
-                  <Route path="/member-stories" element={<MemberStories />} />
-                  <Route path="/podcast" element={<HealthyCarePodcast />} />
                   <Route path="/logout" element={<Logout />} />
                   <Route path="/forbidden" element={<Forbidden />} />
                   <Route
@@ -517,20 +508,8 @@ const App = () => {
                       </ProtectedRoute>
                     }
                   />
-                  <Route path="/about-us" element={<AboutUs />} />
-                  <Route path="/contact" element={<Contact />} />
-                  <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-                  <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
-                  <Route path="/state-notices" element={<StateNotices />} />
-                  <Route path="/washington-statement" element={<WashingtonStatement />} />
-                  <Route path="/education-enrollment" element={<EducationEnrollment />} />
-                  <Route path="/care-support-hub" element={<CareSupportHub />} />
-                  <Route path="/insights-analytics" element={<InsightsAnalytics />} />
-                  <Route path="/resources" element={<ResourceLibrary />} />
                   <Route path="/resources/:slug" element={<ResourceDetail />} />
-                  <Route path="/benefits" element={<Benefits />} />
                   <Route path="/benefits/:benefitId" element={<BenefitDetail />} />
-                  <Route path="/features" element={<Features />} />
                   <Route path="/features/:featureId" element={<FeatureDetail />} />
                   <Route path="/plan-categories/:slug" element={<PlanCategoryDetail />} />
                   <Route path="/newsletter/unsubscribe" element={<NewsletterUnsubscribe />} />

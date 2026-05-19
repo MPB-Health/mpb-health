@@ -68,6 +68,28 @@ async function extractFunctionError(error: unknown): Promise<string> {
   return fallback;
 }
 
+/** Storage PUT timeout — without this, a stalled signed URL hangs the reply UI forever. */
+const STORAGE_PUT_TIMEOUT_MS = 90_000;
+
+async function fetchWithTimeout(
+  url: string,
+  init: RequestInit,
+  timeoutMs: number,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timer = globalThis.setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } catch (e) {
+    if (e instanceof DOMException && e.name === 'AbortError') {
+      throw new Error(`Upload timed out after ${Math.round(timeoutMs / 1000)}s`);
+    }
+    throw e;
+  } finally {
+    globalThis.clearTimeout(timer);
+  }
+}
+
 /** SDK fallback message when JSON body wasn't parsed — retry won't fix these. */
 function isGenericFunctionsInvokeMessage(msg: string): boolean {
   const m = msg.trim();
@@ -232,23 +254,44 @@ export class TicketService {
 
   /**
    * Signed read URLs for objects in the ITSTS `ticket-attachments` bucket (same project as ticket DB).
+   * Convenience wrapper around `signTicketAttachmentUrlsDetailed` that drops failures.
    */
   async signTicketAttachmentUrls(storagePaths: string[]): Promise<Record<string, string>> {
+    const detailed = await this.signTicketAttachmentUrlsDetailed(storagePaths);
+    const out: Record<string, string> = {};
+    for (const [path, entry] of Object.entries(detailed)) {
+      if (entry.url) out[path] = entry.url;
+    }
+    return out;
+  }
+
+  /**
+   * Detailed variant of `signTicketAttachmentUrls` — returns per-path `{ url, error }`
+   * so callers can surface "Access denied" / "Failed to sign" instead of silently
+   * showing "Preparing link…" forever when the proxy refuses an individual path.
+   */
+  async signTicketAttachmentUrlsDetailed(
+    storagePaths: string[],
+  ): Promise<Record<string, { url: string | null; error?: string }>> {
     if (!storagePaths.length) return {};
     const normalized = [...new Set(storagePaths.map((p) => p.replace(/^\//, '').trim()).filter(Boolean))];
     if (!normalized.length) return {};
 
-    const out: Record<string, string> = {};
+    const out: Record<string, { url: string | null; error?: string }> = {};
     const chunkSize = 20;
     for (let i = 0; i < normalized.length; i += chunkSize) {
       const chunk = normalized.slice(i, i + chunkSize);
-      const data = await this.call<{ success: boolean; signed_urls: { path: string; url: string | null }[] }>(
-        'resign_attachments',
-        { storage_paths: chunk },
-        { timeoutMs: 25_000, maxRetries: 1 },
-      );
+      const data = await this.call<{
+        success: boolean;
+        signed_urls: { path: string; url: string | null; error?: string }[];
+      }>('resign_attachments', { storage_paths: chunk }, { timeoutMs: 25_000, maxRetries: 1 });
       for (const row of data.signed_urls || []) {
-        if (row.url) out[row.path] = row.url;
+        out[row.path] = { url: row.url, error: row.error };
+      }
+      // Defend against the (rare) case where the proxy omits a path entirely —
+      // map a clear marker so the UI doesn't loop forever on "Preparing link…".
+      for (const p of chunk) {
+        if (!(p in out)) out[p] = { url: null, error: 'No response for this attachment' };
       }
     }
     return out;
@@ -315,13 +358,17 @@ export class TicketService {
         formData.append('cacheControl', '3600');
         formData.append('', file);
 
-        const putRes = await fetch(slot.signed_url, {
-          method: 'PUT',
-          headers: {
-            'x-upsert': 'false',
+        const putRes = await fetchWithTimeout(
+          slot.signed_url,
+          {
+            method: 'PUT',
+            headers: {
+              'x-upsert': 'false',
+            },
+            body: formData,
           },
-          body: formData,
-        });
+          STORAGE_PUT_TIMEOUT_MS,
+        );
 
         if (!putRes.ok) {
           const errText = await putRes.text().catch(() => '');
@@ -775,11 +822,20 @@ export class TicketService {
   }
 
   async replyToTicket(ticketId: string, content: string, contentFormat?: TicketContentFormat): Promise<void> {
-    await this.call<{ success: boolean }>('reply', {
-      ticket_id: ticketId,
-      content,
-      ...(contentFormat ? { content_format: contentFormat } : {}),
-    });
+    await this.call<{ success: boolean }>(
+      'reply',
+      {
+        ticket_id: ticketId,
+        content,
+        ...(contentFormat ? { content_format: contentFormat } : {}),
+      },
+      {
+        // HTML replies with embedded attachment links can be large; allow more
+        // time than the default 20s list/detail budget.
+        timeoutMs: contentFormat === 'html' ? 60_000 : 25_000,
+        maxRetries: 1,
+      },
+    );
   }
 
   // ── Admin read methods ─────────────────────────────────────────────────
@@ -973,15 +1029,34 @@ export class TicketService {
 /** Append attachment download links as HTML to an existing HTML string. */
 export function appendTicketAttachmentsHtml(html: string, uploads: TicketAttachmentUploadResult[]): string {
   if (!uploads.length) return html;
-  const links = uploads
+  const items = uploads
     .map((u) => {
-      const kb = Math.max(1, Math.round(u.size / 1024));
       const safeHref = escapeHtml(u.accessUrl);
       const safeName = escapeHtml(u.fileName);
-      return `<li><a href="${safeHref}" target="_blank" rel="noopener noreferrer">${safeName}</a> (${kb} KB)</li>`;
+      const sizeLabel =
+        u.size < 1024
+          ? `${u.size} B`
+          : u.size < 1024 * 1024
+            ? `${(u.size / 1024).toFixed(1)} KB`
+            : `${(u.size / (1024 * 1024)).toFixed(1)} MB`;
+      const safeSize = escapeHtml(sizeLabel);
+      return (
+        `<li class="tkt-att__item">` +
+        `<a href="${safeHref}" target="_blank" rel="noopener noreferrer" class="tkt-att__card">` +
+        `<span class="tkt-att__name">${safeName}</span>` +
+        `<span class="tkt-att__size">${safeSize}</span>` +
+        `</a></li>`
+      );
     })
     .join('');
-  return `${html}<br/><p><strong>Attachments:</strong></p><ul>${links}</ul>`;
+  const bridge = html.trim() ? '<br/>' : '';
+  return (
+    `${html}${bridge}` +
+    `<div class="tkt-att">` +
+    `<p class="tkt-att__label">Attachments</p>` +
+    `<ul class="tkt-att__list">${items}</ul>` +
+    `</div>`
+  );
 }
 
 export const ticketService = new TicketService();

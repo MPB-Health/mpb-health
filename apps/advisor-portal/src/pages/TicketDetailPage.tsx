@@ -48,8 +48,10 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
 const MAX_REPLY_ATTACHMENTS = 10;
 const MAX_REPLY_FILE_BYTES = 15 * 1024 * 1024;
-/** Upload + edge reply can exceed a single `call()` timeout when many/large files are attached. */
-const REPLY_SEND_TOTAL_TIMEOUT_MS = 240_000;
+/** Per-file storage PUT + prepare/resign for typical attachments. */
+const REPLY_UPLOAD_TIMEOUT_MS = 120_000;
+/** Edge `reply` after upload (HTML with attachment links can be large). */
+const REPLY_SEND_TIMEOUT_MS = 90_000;
 
 function withDeadline<T>(promise: Promise<T>, ms: number, label = 'Operation timed out'): Promise<T> {
   return new Promise<T>((resolve, reject) => {
@@ -201,7 +203,10 @@ export default function TicketDetailPage() {
 
   const [replyContent, setReplyContent] = useState('');
   const [replySending, setReplySending] = useState(false);
+  /** Shown on the Send button while upload vs reply are in flight. */
+  const [replySendPhase, setReplySendPhase] = useState<'idle' | 'uploading' | 'sending'>('idle');
   const [replyError, setReplyError] = useState('');
+  const replySendGenRef = useRef(0);
   const replyTextareaRef = useRef<HTMLTextAreaElement>(null);
   const replyAttachmentsInputRef = useRef<HTMLInputElement>(null);
   const [replyAttachments, setReplyAttachments] = useState<File[]>([]);
@@ -215,37 +220,78 @@ export default function TicketDetailPage() {
   const mountedRef = useRef(true);
   useEffect(() => () => { mountedRef.current = false; }, []);
 
+  /** Per-file sign error (e.g. "Access denied", "Failed to sign") so the UI can show *why* a download link is missing. */
+  const [openingAttachmentErrors, setOpeningAttachmentErrors] = useState<Record<string, string>>({});
+  const [openingAttachmentsSigning, setOpeningAttachmentsSigning] = useState(false);
+  /** Bumped to force the signing effect to re-run when the user clicks Retry. */
+  const [openingAttachmentsResignNonce, setOpeningAttachmentsResignNonce] = useState(0);
+
   useEffect(() => {
     const files = detail?.ticket_files;
     if (!files?.length) {
       setOpeningAttachmentUrls({});
+      setOpeningAttachmentErrors({});
+      setOpeningAttachmentsSigning(false);
       return;
     }
     let cancelled = false;
+    setOpeningAttachmentsSigning(true);
     void (async () => {
       try {
         const paths = files.map((f) => f.storage_path.replace(/^\//, '').trim()).filter(Boolean);
-        const signed = await executeWithAuth(() => ticketService.signTicketAttachmentUrls(paths));
+        const signed = await executeWithAuth(() =>
+          ticketService.signTicketAttachmentUrlsDetailed(paths),
+        );
         if (cancelled) return;
-        const next: Record<string, string> = {};
+        const nextUrls: Record<string, string> = {};
+        const nextErrs: Record<string, string> = {};
         for (const f of files) {
           const path = f.storage_path.replace(/^\//, '').trim();
-          const url = signed[path];
-          if (url) next[f.id] = url;
+          const entry = signed[path];
+          if (entry?.url) {
+            nextUrls[f.id] = entry.url;
+          } else if (entry?.error) {
+            console.warn('[TicketDetailPage] attachment sign failed', {
+              ticketId: detail?.ticket.id,
+              fileId: f.id,
+              filename: f.filename,
+              path,
+              error: entry.error,
+            });
+            nextErrs[f.id] = entry.error;
+          } else {
+            nextErrs[f.id] = 'Could not create a download link';
+          }
         }
-        setOpeningAttachmentUrls(next);
-      } catch {
-        if (!cancelled) setOpeningAttachmentUrls({});
+        setOpeningAttachmentUrls(nextUrls);
+        setOpeningAttachmentErrors(nextErrs);
+      } catch (err) {
+        if (cancelled) return;
+        const msg = err instanceof Error ? err.message : 'Could not load download links';
+        console.warn('[TicketDetailPage] attachment sign batch failed', err);
+        const errs: Record<string, string> = {};
+        for (const f of files) errs[f.id] = msg;
+        setOpeningAttachmentUrls({});
+        setOpeningAttachmentErrors(errs);
+      } finally {
+        if (!cancelled) setOpeningAttachmentsSigning(false);
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [detail?.ticket_files, executeWithAuth]);
+  }, [detail?.ticket_files, detail?.ticket.id, executeWithAuth, openingAttachmentsResignNonce]);
+
+  const retryOpeningAttachments = useCallback(() => {
+    setOpeningAttachmentsResignNonce((n) => n + 1);
+  }, []);
 
   useEffect(() => {
+    replySendGenRef.current += 1;
     setReplySending(false);
+    setReplySendPhase('idle');
     setReplyError('');
+    setOutboundPendingId(null);
   }, [ticketId]);
 
   const mergeReplyAttachments = useCallback((files: File[]) => {
@@ -304,12 +350,20 @@ export default function TicketDetailPage() {
   }, [detail]);
 
   const handleSendReply = async () => {
-    if (!detail) return;
+    if (!detail || replySending) return;
 
     const plainSnapshot = replyContent.trim();
     const filesSnapshot = [...replyAttachments];
 
     if (!plainSnapshot && filesSnapshot.length === 0) return;
+
+    const sendGen = ++replySendGenRef.current;
+    const finishSend = () => {
+      if (sendGen !== replySendGenRef.current) return;
+      setReplySending(false);
+      setReplySendPhase('idle');
+      setOutboundPendingId(null);
+    };
 
     const commentAuthorId = detail.ticket.requester_id || profile?.user_id || profile?.id || '';
     const authorName = profile
@@ -322,6 +376,8 @@ export default function TicketDetailPage() {
 
     setReplyError('');
     setOutboundPendingId(null);
+    setReplySending(true);
+    setReplySendPhase(filesSnapshot.length > 0 ? 'uploading' : 'sending');
 
     const rollbackReplyFailure = () => {
       const b = replyDraftBackupRef.current;
@@ -344,11 +400,14 @@ export default function TicketDetailPage() {
 
     try {
       if (filesSnapshot.length > 0) {
-        setReplySending(true);
-        const uploads = await executeWithAuth(() =>
-          ticketService.uploadFilesForTicketReply(detail.ticket.id, filesSnapshot),
+        const uploads = await withDeadline(
+          executeWithAuth(() =>
+            ticketService.uploadFilesForTicketReply(detail.ticket.id, filesSnapshot),
+          ),
+          REPLY_UPLOAD_TIMEOUT_MS,
+          'UPLOAD_TIMEOUT',
         );
-        if (!mountedRef.current) return;
+        if (sendGen !== replySendGenRef.current) return;
         const textHtml =
           plainSnapshot !== '' ? `<p>${escapeHtml(plainSnapshot).replace(/\n/g, '<br/>')}</p>` : '';
         payloadContent = sanitizeHtml(appendTicketAttachmentsHtml(textHtml, uploads));
@@ -389,16 +448,16 @@ export default function TicketDetailPage() {
         });
       });
 
-      setReplySending(true);
+      setReplySendPhase('sending');
       await withDeadline(
         executeWithAuth(async () => {
           await ticketService.replyToTicket(detail.ticket.id, payloadContent, payloadFormat);
         }),
-        REPLY_SEND_TOTAL_TIMEOUT_MS,
+        REPLY_SEND_TIMEOUT_MS,
         'SEND_REPLY_TIMEOUT',
       );
 
-      if (!mountedRef.current) return;
+      if (sendGen !== replySendGenRef.current) return;
 
       replyDraftBackupRef.current = null;
       void queryClient.invalidateQueries({ queryKey: ['advisorTickets'] });
@@ -435,26 +494,47 @@ export default function TicketDetailPage() {
         }
       })();
     } catch (err) {
-      if (!mountedRef.current) return;
+      if (sendGen !== replySendGenRef.current) return;
       if (err instanceof Error && err.message === 'SESSION_EXPIRED') {
         rollbackReplyFailure();
         window.location.href = '/login';
         return;
       }
       rollbackReplyFailure();
+      if (err instanceof Error && err.message === 'UPLOAD_TIMEOUT') {
+        setReplyError(
+          'Uploading attachments timed out. Try a smaller file, fewer files, or check your connection.',
+        );
+        toast.error('Attachment upload timed out — your draft has been restored.');
+        return;
+      }
       if (err instanceof Error && err.message === 'SEND_REPLY_TIMEOUT') {
         setReplyError(
           'Sending timed out. If you attached large files, try fewer files or a smaller size, then try again.',
         );
+        toast.error('Reply timed out — your draft has been restored.');
         return;
       }
-      const msg = err instanceof Error ? err.message : 'Failed to send reply';
-      setReplyError(msg.length > 200 ? 'Your reply could not be sent. Please try again.' : msg);
-      toast.error('Reply was not delivered. Your draft has been restored.');
+      const rawMsg = err instanceof Error ? err.message : 'Failed to send reply';
+      // Hide noisy internal retry tokens — these surface when the chain bails
+      // before a structured server message could land. Anything else, including
+      // the proxy's "Ticket not found", "Only the ticket's requester can …",
+      // or "createSignedUploadUrl failed", is genuinely useful to surface so
+      // the user knows whether it's an auth / config / data problem.
+      const looksInternal = /^(_RETRYABLE|_AUTH_RETRYABLE|TIMEOUT|SESSION_EXPIRED)$/.test(rawMsg.trim());
+      const userMsg = looksInternal
+        ? 'Your reply could not be sent. Please try again.'
+        : rawMsg.length > 240
+          ? 'Your reply could not be sent. Please try again.'
+          : rawMsg;
+      console.warn('[TicketDetailPage] send reply failed', err);
+      setReplyError(userMsg);
+      // Surface the actual reason in the toast too — generic "Reply was not
+      // delivered" hid real causes (auth, requester mismatch, storage misconfig).
+      toast.error(`Reply not delivered: ${userMsg}`, { duration: 6000 });
     } finally {
+      finishSend();
       if (mountedRef.current) {
-        setReplySending(false);
-        setOutboundPendingId(null);
         window.requestAnimationFrame(() => {
           window.requestAnimationFrame(() => {
             if (!mountedRef.current) return;
@@ -742,6 +822,7 @@ export default function TicketDetailPage() {
                 <ul className="divide-y divide-slate-200 rounded-lg border border-slate-200 bg-white dark:divide-slate-700 dark:border-slate-700 dark:bg-slate-900/40">
                   {openingAttachments.map((f) => {
                     const href = openingAttachmentUrls[f.id];
+                    const signErr = openingAttachmentErrors[f.id];
                     const sizeLabel = formatAttachmentSize(f.file_size);
                     const viewHint = attachmentUsuallyPreviewableInBrowser(f.mime_type, f.filename)
                       ? 'Opens in a new tab — your browser may show it inline (e.g. PDF or image).'
@@ -783,8 +864,27 @@ export default function TicketDetailPage() {
                                 Download
                               </a>
                             </>
+                          ) : signErr ? (
+                            <span
+                              className="inline-flex items-center gap-2 text-xs text-amber-700 dark:text-amber-300"
+                              title={signErr}
+                            >
+                              <AlertCircle size={12} className="shrink-0" aria-hidden />
+                              <span className="max-w-[18rem] truncate">{signErr}</span>
+                              <button
+                                type="button"
+                                onClick={retryOpeningAttachments}
+                                disabled={openingAttachmentsSigning}
+                                className="ml-1 rounded border border-amber-200 px-2 py-0.5 text-[11px] font-semibold text-amber-800 hover:bg-amber-50 disabled:opacity-50 dark:border-amber-700 dark:text-amber-200 dark:hover:bg-amber-950/40"
+                              >
+                                {openingAttachmentsSigning ? 'Retrying…' : 'Retry'}
+                              </button>
+                            </span>
                           ) : (
-                            <span className="text-xs text-slate-500 dark:text-slate-400">Preparing link…</span>
+                            <span className="inline-flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                              <Loader2 size={12} className="animate-spin shrink-0" aria-hidden />
+                              Preparing link…
+                            </span>
                           )}
                         </div>
                       </li>
@@ -915,6 +1015,7 @@ export default function TicketDetailPage() {
                                 <TicketCommentContent
                                   content={comment.content}
                                   contentFormat={comment.content_format}
+                                  bubbleTone={isRequesterMessage ? 'requester' : 'support'}
                                 />
                               </div>
                             </div>
@@ -1010,7 +1111,7 @@ export default function TicketDetailPage() {
                     {replySending ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin" />
-                        Sending…
+                        {replySendPhase === 'uploading' ? 'Uploading…' : 'Sending…'}
                       </>
                     ) : (
                       <>

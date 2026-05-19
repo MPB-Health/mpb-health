@@ -1,15 +1,45 @@
+import { useMemo } from 'react';
 import { sanitizeHtml } from '@mpbhealth/utils';
 import type { TicketContentFormat } from '@mpbhealth/advisor-core';
+import { splitTicketMessageHtml } from './parseTicketMessageAttachments';
+import { TicketMessageAttachments } from './TicketMessageAttachments';
 
 interface TicketCommentContentProps {
   content: string;
   contentFormat?: TicketContentFormat;
   /** Admin ticket management uses theme tokens; default advisor view uses neutral. */
   variant?: 'advisor' | 'admin' | 'description';
+  /** Thread bubble styling for attachment cards. */
+  bubbleTone?: 'requester' | 'support';
 }
 
-export function TicketCommentContent({ content, contentFormat, variant = 'advisor' }: TicketCommentContentProps) {
-  if (contentFormat === 'html') {
+function htmlHasVisibleBody(bodyHtml: string): boolean {
+  if (!bodyHtml.trim()) return false;
+  if (/<img\b/i.test(bodyHtml)) return true;
+  const text = bodyHtml
+    .replace(/<br\s*\/?>/gi, ' ')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/gi, ' ')
+    .trim();
+  return text.length > 0;
+}
+
+export function TicketCommentContent({
+  content,
+  contentFormat,
+  variant = 'advisor',
+  bubbleTone = 'support',
+}: TicketCommentContentProps) {
+  const parsed = useMemo(() => {
+    if (contentFormat !== 'html') return null;
+    return splitTicketMessageHtml(content);
+  }, [content, contentFormat]);
+
+  if (contentFormat === 'html' && parsed) {
+    const { bodyHtml, attachments } = parsed;
+    const sanitizedBody = bodyHtml ? sanitizeHtml(bodyHtml) : '';
+    const showBody = htmlHasVisibleBody(sanitizedBody);
+
     const img =
       '[&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-md [&_img]:border [&_img]:border-neutral-200/80 dark:[&_img]:border-slate-600';
     const lists =
@@ -21,7 +51,6 @@ export function TicketCommentContent({ content, contentFormat, variant = 'adviso
         ? `text-sm text-th-text-primary prose prose-sm max-w-none [&_a]:text-blue-600 [&_a]:underline [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 ${lists} ${links} ${img}`
         : `text-sm text-neutral-700 dark:text-slate-200 prose prose-sm max-w-none [&_a]:text-blue-600 dark:[&_a]:text-sky-400 [&_a]:underline [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 ${lists} ${links} ${img}`;
 
-    /** Opening ticket body — comfortable reading size (not thread bubble scale). */
     const proseDescription =
       'prose-slate dark:prose-invert text-base sm:text-[1.0625rem] text-slate-900 dark:text-slate-100 prose prose-base sm:prose-lg max-w-none [&_p]:leading-[1.65] [&_p]:mb-4 last:[&_p]:mb-0 [&_a]:text-blue-600 dark:[&_a]:text-sky-400 [&_a]:underline [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_strong]:font-semibold ' +
       `${lists} ${links} ${img}`;
@@ -29,12 +58,18 @@ export function TicketCommentContent({ content, contentFormat, variant = 'adviso
     const prose = variant === 'description' ? proseDescription : proseCompact;
 
     return (
-      <div
-        className={prose}
-        dangerouslySetInnerHTML={{ __html: sanitizeHtml(content) }}
-      />
+      <div className="space-y-0">
+        {showBody ? (
+          <div
+            className={prose}
+            dangerouslySetInnerHTML={{ __html: sanitizedBody }}
+          />
+        ) : null}
+        <TicketMessageAttachments items={attachments} tone={bubbleTone} />
+      </div>
     );
   }
+
   const plainAdmin = 'text-sm text-th-text-primary whitespace-pre-wrap';
   const plainAdvisor = 'text-sm text-neutral-700 dark:text-slate-200 whitespace-pre-wrap';
   const plainDescription =

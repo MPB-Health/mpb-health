@@ -7,7 +7,6 @@ import {
   getCachedSession,
   invalidateCachedSession,
   isSessionDead,
-  markSessionDead,
 } from '@mpbhealth/database';
 import {
   profileService,
@@ -123,10 +122,36 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
     };
   };
 
-  const loadProfile = useCallback(async () => {
+  // Single-flight wrapper. Coalesces concurrent `loadProfile()` calls so
+  // INITIAL_SESSION + visibility-recovery + auth-listener slow-path can't each
+  // spawn parallel SELECTs that contend on the same Supabase Web Lock and
+  // each blow PROFILE_DEADLINE_MS. The wrapper is set/cleared in the inner
+  // body's finally, so it never leaks across calls.
+  const _inflightLoadRef = useRef<Promise<void> | null>(null);
+
+  const loadProfileInner = useCallback(async () => {
     const gen = ++loadProfileGenRef.current;
-    /** Profile body deadline. Session reads are bounded separately by `getCachedSession`. */
-    const PROFILE_DEADLINE_MS = 12_000;
+    /**
+     * Body deadline. Session reads are bounded separately by `getCachedSession` (8s).
+     * The advisor_profiles SELECT (+ optional self-heal upsert) typically finishes in
+     * <1s; an 8s ceiling gives slow networks room while keeping us comfortably under
+     * the spinner-stuck detector (10s) so a hung run is caught before the spinner
+     * timer fires a second redundant warning.
+     */
+    const PROFILE_DEADLINE_MS = 8_000;
+    /**
+     * We deliberately do NOT pre-emptively call `refreshSessionOnce()` here.
+     * `supabase.auth` already auto-refreshes the JWT before `INITIAL_SESSION` /
+     * `SIGNED_IN` fires (its autoRefreshToken default), and a hard `refresh_token`
+     * failure is latched globally by `installAuthRefreshGuard` (which sets
+     * `markSessionDead` and triggers the redirect). Adding another awaited
+     * refresh here just serialised 8s of avoidable latency at boot AND raced the
+     * `_acquireLock` taken by the supabase client's internal auto-refresh, which
+     * is what was producing the "Profile load timed out" warning.
+     */
+    const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
+    const t0 = now();
+    let tAfterSession = t0;
     setProfileLoading(true);
     setError(null);
     try {
@@ -155,52 +180,15 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
           throw e;
         }
       }
+      tAfterSession = now();
       if (gen !== loadProfileGenRef.current) return;
+
+      if (isSessionDead()) return;
 
       if (!session?.user) {
         setProfile(null);
         setSessionUserCreatedAt(undefined);
         return;
-      }
-
-      // CRITICAL: pre-validate the access token before letting the rest of the
-      // app react to `profile`. Storage may hold a session whose access_token
-      // expired and whose refresh_token was rotated/revoked — in that case
-      // every downstream service call (chat list, ticket list, edge-fn warmup)
-      // 401s in parallel, the refresh attempt 400s, and the user sees a wall
-      // of console errors before the redirect lands. Pre-emptively refreshing
-      // here means by the time `profile` is set, the JWT is fresh OR we've
-      // marked the session dead and the onSessionDead listener has redirected
-      // — and `useChat`/warmup never even fire.
-      const ACCESS_TOKEN_EXPIRY_BUFFER_SECONDS = 30;
-      const nowSec = Math.floor(Date.now() / 1000);
-      const accessTokenAboutToExpire =
-        !session.expires_at || session.expires_at < nowSec + ACCESS_TOKEN_EXPIRY_BUFFER_SECONDS;
-
-      if (accessTokenAboutToExpire) {
-        try {
-          const { data: refreshed, error: refreshErr } = await refreshSessionOnce();
-          if (refreshErr || !refreshed?.session?.user) {
-            // refreshSessionOnce already called markSessionDead — listener
-            // will redirect. Bail out without setting profile so dependent
-            // queries (useChat, warmup) never enable.
-            return;
-          }
-          if (gen !== loadProfileGenRef.current) return;
-          session = refreshed.session;
-        } catch (e) {
-          const msg = e instanceof Error ? e.message : '';
-          if (msg === 'SESSION_DEAD' || isSessionDead()) return;
-          if (msg === 'REFRESH_SESSION_TIMEOUT') {
-            // Network may be slow rather than session dead — surface a soft
-            // error but don't latch death, so the next auth event can recover.
-            console.warn('[AdvisorContext] Boot refresh timed out — surfacing soft error');
-            setError('Your session check is slow. Check your connection or refresh the page.');
-            return;
-          }
-          markSessionDead(`boot_refresh_threw:${msg || 'unknown'}`);
-          return;
-        }
       }
 
       setSessionUserCreatedAt(session.user.created_at);
@@ -250,10 +238,23 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
           window.setTimeout(() => reject(new Error('PROFILE_LOAD_TIMEOUT')), PROFILE_DEADLINE_MS);
         }),
       ]);
+      const tEnd = now();
+      // Diagnostic: surface where the time went so future regressions are obvious
+      // in the console. Stays under DEBUG threshold so it won't flood production
+      // unless someone is actively investigating.
+      console.debug('[AdvisorContext] loadProfile timing', {
+        sessionMs: Math.round(tAfterSession - t0),
+        bodyMs: Math.round(tEnd - tAfterSession),
+        totalMs: Math.round(tEnd - t0),
+      });
     } catch (err) {
+      const tEnd = now();
       if (err instanceof Error && err.message === 'PROFILE_LOAD_TIMEOUT') {
         if (gen === loadProfileGenRef.current) {
-          console.warn('[AdvisorContext] Profile load timed out — using session fallback');
+          console.warn('[AdvisorContext] Profile load timed out — using session fallback', {
+            sessionMs: Math.round(tAfterSession - t0),
+            bodyMs: Math.round(tEnd - tAfterSession),
+          });
           try {
             const sessionRes = await readSession();
             const s2 = sessionRes.data.session;
@@ -282,6 +283,21 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
       }
     }
   }, []);
+
+  const loadProfile = useCallback(async () => {
+    if (_inflightLoadRef.current) {
+      return _inflightLoadRef.current;
+    }
+    const p = (async () => {
+      try {
+        await loadProfileInner();
+      } finally {
+        _inflightLoadRef.current = null;
+      }
+    })();
+    _inflightLoadRef.current = p;
+    return p;
+  }, [loadProfileInner]);
 
   // Load training data
   const refreshTraining = useCallback(async () => {
@@ -441,6 +457,16 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
             setSessionUserCreatedAt(undefined);
           }
         } else if (event === 'SIGNED_IN') {
+          // Supabase occasionally re-fires SIGNED_IN after TOKEN_REFRESHED or
+          // when storage syncs across tabs — skip the reload if the user id is
+          // unchanged. Two back-to-back SIGNED_INs for the same user was the
+          // direct cause of the duplicate "Profile load timed out" pair in the
+          // console (each one paid the full 8s+8s waterfall).
+          const incomingUserId = session?.user?.id ?? null;
+          const currentUserId = profileRef.current?.user_id ?? profileRef.current?.id ?? null;
+          if (incomingUserId && currentUserId === incomingUserId) {
+            return;
+          }
           await loadProfile();
         } else if (event === 'SIGNED_OUT') {
           setProfile(null);
@@ -458,7 +484,14 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
     };
   }, [loadProfile]);
 
-  /** Last resort if `loadProfile` hangs in an edge we did not anticipate — never leave shell stuck on skeleton. */
+  /**
+   * Last resort if `loadProfile` hangs in an edge we did not anticipate — never
+   * leave shell stuck on skeleton. The threshold sits above the loadProfile
+   * inner budget (session 8s + body 8s = 16s worst case before the inner
+   * timeouts fire and reject) so this only triggers when the inner timeouts
+   * also failed to surface — i.e. a true hang in user code, not a slow path
+   * that's still about to complete.
+   */
   useEffect(() => {
     if (!profileLoading) return;
     const t = globalThis.setTimeout(() => {
@@ -476,7 +509,7 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
           prev ??
           'Your account took too long to load. Use Refresh, or sign out and back in if this continues.',
       );
-    }, 18_000);
+    }, 20_000);
     return () => globalThis.clearTimeout(t);
   }, [profileLoading]);
 

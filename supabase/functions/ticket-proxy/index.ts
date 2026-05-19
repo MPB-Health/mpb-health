@@ -848,14 +848,35 @@ async function prepareTicketAttachmentUploads(
   ticketId: string,
   metas: Array<{ filename: string; content_type?: string | null; file_size: number }>,
 ): Promise<{ uploads: Array<{ path: string; signed_url: string; token: string }> }> {
-  const { data: ticket, error: ticketErr } = await itstsAdmin
+  // Look up the ticket WITHOUT the requester filter first so we can return a
+  // precise error when the ticket exists but belongs to someone else. The
+  // generic "Ticket not found or access denied" obscures whether it's an
+  // ITSTS sync issue, a wrong-account upload, or a typo'd ticket id.
+  const { data: ticketRow, error: ticketErr } = await itstsAdmin
     .from("tickets")
-    .select("id")
+    .select("id, requester_id")
     .eq("id", ticketId)
-    .eq("requester_id", advisorItstsId)
     .maybeSingle();
 
-  if (ticketErr || !ticket) throw new Error("Ticket not found or access denied");
+  if (ticketErr) {
+    log.error("prepareTicketAttachmentUploads ticket lookup failed", {
+      ticketId,
+      message: ticketErr.message,
+    });
+    throw new Error(`Ticket lookup failed: ${ticketErr.message}`);
+  }
+  if (!ticketRow) {
+    throw new Error("Ticket not found");
+  }
+  if (ticketRow.requester_id !== advisorItstsId) {
+    log.warn("prepareTicketAttachmentUploads requester mismatch", {
+      ticketId,
+      ticket_requester_id: ticketRow.requester_id,
+      caller_itsts_id: advisorItstsId,
+      caller_auth_id: primaryAuthUserId,
+    });
+    throw new Error("Only the ticket's requester can upload attachments to this thread.");
+  }
 
   if (!metas?.length) throw new Error("attachment_uploads required");
   if (metas.length > MAX_ATTACHMENT_PREP_COUNT) {
@@ -916,14 +937,31 @@ async function saveTicketFilesForRequester(
   primaryAuthUserId: string,
   files: Array<{ filename: string; storage_path: string; file_size: number; mime_type?: string | null; comment_id?: string | null }>,
 ) {
-  const { data: ticket, error: ticketErr } = await itstsAdmin
+  const { data: ticketRow, error: ticketErr } = await itstsAdmin
     .from("tickets")
-    .select("id")
+    .select("id, requester_id")
     .eq("id", ticketId)
-    .eq("requester_id", advisorItstsId)
     .maybeSingle();
 
-  if (ticketErr || !ticket) throw new Error("Ticket not found or access denied");
+  if (ticketErr) {
+    log.error("saveTicketFilesForRequester ticket lookup failed", {
+      ticketId,
+      message: ticketErr.message,
+    });
+    throw new Error(`Ticket lookup failed: ${ticketErr.message}`);
+  }
+  if (!ticketRow) {
+    throw new Error("Ticket not found");
+  }
+  if (ticketRow.requester_id !== advisorItstsId) {
+    log.warn("saveTicketFilesForRequester requester mismatch", {
+      ticketId,
+      ticket_requester_id: ticketRow.requester_id,
+      caller_itsts_id: advisorItstsId,
+      caller_auth_id: primaryAuthUserId,
+    });
+    throw new Error("Only the ticket's requester can save attachments to this thread.");
+  }
 
   if (!files?.length) throw new Error("No files to register");
   if (files.length > MAX_SAVE_TICKET_FILES) {
@@ -1663,6 +1701,25 @@ Deno.serve(async (req: Request) => {
           );
         }
         const isAdmin = await checkAdminRole(supabaseAdmin, user.id);
+
+        // Per-ticket ownership cache so a batch of attachments from the same
+        // ticket only hits ITSTS once.
+        const ticketOwnershipCache = new Map<string, boolean>();
+        const checkTicketOwnership = async (ticketIdFromPath: string): Promise<boolean> => {
+          if (!UUID_RE.test(ticketIdFromPath) || !itstsUserId) return false;
+          const cached = ticketOwnershipCache.get(ticketIdFromPath);
+          if (cached !== undefined) return cached;
+          const { data: ticketRow } = await itstsAdmin
+            .from("tickets")
+            .select("id")
+            .eq("id", ticketIdFromPath)
+            .eq("requester_id", itstsUserId)
+            .maybeSingle();
+          const owned = !!ticketRow;
+          ticketOwnershipCache.set(ticketIdFromPath, owned);
+          return owned;
+        };
+
         const signed: { path: string; url: string | null; error?: string }[] = [];
         for (const raw of paths) {
           const p = typeof raw === "string" ? raw.trim().replace(/^\//, "") : "";
@@ -1676,7 +1733,32 @@ Deno.serve(async (req: Request) => {
             signed.push({ path: p, url: null, error: "Invalid path" });
             continue;
           }
-          if (!isAdmin && !p.startsWith(`${user.id}/`)) {
+
+          // Allow if:
+          //  1) Admin (existing rule)
+          //  2) Path is owned by the caller's auth user (existing rule — covers
+          //     attachments the user uploaded with their CURRENT auth id)
+          //  3) The path's embedded ticket id belongs to a ticket whose
+          //     requester is this user (covers legacy paths and account
+          //     migrations where the auth uid changed but the ticket is
+          //     still theirs — without this, `Preparing link…` is permanent).
+          let allowed = isAdmin || p.startsWith(`${user.id}/`);
+          if (!allowed) {
+            const parts = p.split("/");
+            // Expected layout: `{uploaderAuthUid}/{ticketId}/{file}`
+            const ticketIdFromPath = parts.length >= 2 ? parts[1] : "";
+            if (ticketIdFromPath) {
+              allowed = await checkTicketOwnership(ticketIdFromPath);
+            }
+          }
+
+          if (!allowed) {
+            log.warn("resign_attachments denied", {
+              correlationId,
+              user_id: user.id,
+              path: p,
+              has_itsts_id: !!itstsUserId,
+            });
             signed.push({ path: p, url: null, error: "Access denied" });
             continue;
           }

@@ -177,6 +177,20 @@ const AdvisorCMSFlyers = lazyAuto(() => import('./pages/admin/advisor-cms/Flyers
 const AdvisorCMSSharingGuidelines = lazyAuto(() => import('./pages/admin/advisor-cms/SharingGuidelinesManager'));
 const AdvisorCMSARM = lazyAuto(() => import('./pages/admin/advisor-cms/ARMManager'));
 
+// Website CMS Suite
+const CmsHub = lazyAuto(() => import('./pages/admin/cms/CmsHub'));
+const CmsPageEditor = lazyAuto(() => import('./pages/admin/cms/PageEditor'));
+const CmsMediaLibrary = lazyAuto(() => import('./pages/admin/cms/MediaLibrary'));
+const CmsBlogEditor = lazyAuto(() => import('./pages/admin/cms/CmsBlogEditor'));
+const CmsTemplateLibrary = lazyAuto(() => import('./pages/admin/cms/TemplateLibrary'));
+const CmsThemeEditor = lazyAuto(() => import('./pages/admin/cms/ThemeEditor'));
+const CmsFormBuilder = lazyAuto(() => import('./pages/admin/cms/CmsFormBuilder'));
+const CmsPopupBuilder = lazyAuto(() => import('./pages/admin/cms/PopupBuilder'));
+const CmsRedirectManager = lazyAuto(() => import('./pages/admin/cms/RedirectManager'));
+const CmsContentCalendar = lazyAuto(() => import('./pages/admin/cms/ContentCalendar'));
+const CmsSeoSuite = lazyAuto(() => import('./pages/admin/cms/SeoSuite'));
+const CmsContentPermissions = lazyAuto(() => import('./pages/admin/cms/ContentPermissions'));
+
 // Forms Manager
 const FormsManager = lazyAuto(() => import('./pages/admin/FormsManager'));
 
@@ -795,6 +809,24 @@ const App = () => {
                       </ProtectedRoute>
                     }
                   />
+
+                  {/* Website CMS Suite */}
+                  <Route path="/admin/cms" element={<ProtectedRoute requiredRole="admin"><CmsHub /></ProtectedRoute>} />
+                  <Route path="/admin/cms/pages/new" element={<ProtectedRoute requiredRole="admin"><CmsPageEditor /></ProtectedRoute>} />
+                  <Route path="/admin/cms/pages/:id" element={<ProtectedRoute requiredRole="admin"><CmsPageEditor /></ProtectedRoute>} />
+                  <Route path="/admin/cms/media" element={<ProtectedRoute requiredRole="admin"><CmsMediaLibrary /></ProtectedRoute>} />
+                  <Route path="/admin/cms/blog/new" element={<ProtectedRoute requiredRole="admin"><CmsBlogEditor /></ProtectedRoute>} />
+                  <Route path="/admin/cms/blog/:id" element={<ProtectedRoute requiredRole="admin"><CmsBlogEditor /></ProtectedRoute>} />
+                  <Route path="/admin/cms/templates" element={<ProtectedRoute requiredRole="admin"><CmsTemplateLibrary /></ProtectedRoute>} />
+                  <Route path="/admin/cms/theme" element={<ProtectedRoute requiredRole="admin"><CmsThemeEditor /></ProtectedRoute>} />
+                  <Route path="/admin/cms/forms/new" element={<ProtectedRoute requiredRole="admin"><CmsFormBuilder /></ProtectedRoute>} />
+                  <Route path="/admin/cms/forms/:id" element={<ProtectedRoute requiredRole="admin"><CmsFormBuilder /></ProtectedRoute>} />
+                  <Route path="/admin/cms/popups" element={<ProtectedRoute requiredRole="admin"><CmsPopupBuilder /></ProtectedRoute>} />
+                  <Route path="/admin/cms/popups/:id" element={<ProtectedRoute requiredRole="admin"><CmsPopupBuilder /></ProtectedRoute>} />
+                  <Route path="/admin/cms/redirects" element={<ProtectedRoute requiredRole="admin"><CmsRedirectManager /></ProtectedRoute>} />
+                  <Route path="/admin/cms/calendar" element={<ProtectedRoute requiredRole="admin"><CmsContentCalendar /></ProtectedRoute>} />
+                  <Route path="/admin/cms/seo" element={<ProtectedRoute requiredRole="admin"><CmsSeoSuite /></ProtectedRoute>} />
+                  <Route path="/admin/cms/permissions" element={<ProtectedRoute requiredRole="admin"><CmsContentPermissions /></ProtectedRoute>} />
 
                   {/* Forms Manager */}
                   <Route

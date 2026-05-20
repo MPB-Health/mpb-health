@@ -13,7 +13,8 @@
 // flagship "Platform Operator OS" for white-label health-sharing tenants.
 
 import { useEffect, useState, type CSSProperties } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
+import { detectBrand } from '@mpbhealth/ui';
 import {
   Activity,
   AlertCircle,
@@ -129,6 +130,14 @@ export default function AdminLandingPage() {
   const navigate = useNavigate();
   const { scrollY } = useScroll();
   const heroParallax = useTransform(scrollY, [0, 500], [0, -120]);
+
+  // Brand guard (runs AFTER hooks to satisfy Rules of Hooks): this is the
+  // ARYX flagship landing page. MPB Health tenants (admin.mpb.health) must
+  // NEVER see it — bounce them straight to /login so we don't leak the
+  // white-label parent brand to MPB users.
+  if (detectBrand() !== 'aryx') {
+    return <Navigate to="/login" replace />;
+  }
 
   const goLogin = () => navigate('/login');
   const scrollTo = (id: string) => {

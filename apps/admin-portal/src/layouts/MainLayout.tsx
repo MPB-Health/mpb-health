@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useNavigate, Navigate } from 'react-router-dom';
-import { getBrandLogo } from '@mpbhealth/ui';
+import { getBrandLogo, detectBrand } from '@mpbhealth/ui';
 import {
   LayoutDashboard,
   Users,
@@ -185,10 +185,13 @@ export default function MainLayout() {
     }
   }, [safeGetPortalUrl]);
 
-  // No session — send unauthenticated visitors to the marketing landing
-  // page (which routes them onward to /login via its "Sign in" CTA).
+  // No session — route unauthenticated visitors based on brand:
+  //   * ARYX hosts (admin.aryxcloud.com)  → /landing (marketing page)
+  //   * MPB Health hosts (admin.mpb.health) → /login (skip marketing entirely
+  //     so MPB tenants never see the ARYX-branded parent platform pitch).
   if (!loading && !user) {
-    return <Navigate to="/landing" replace />;
+    const target = detectBrand() === 'aryx' ? '/landing' : '/login';
+    return <Navigate to={target} replace />;
   }
 
   // Build navigation with dynamic badge

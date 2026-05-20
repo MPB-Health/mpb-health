@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useCallback } from 'react';
-import { getBrandLogo, AppLayout, PortalSwitcher, Button, type NavItem, type PortalKey } from '@mpbhealth/ui';
+import { getBrandLogo, AppLayout, PortalSwitcher, Button, detectBrand, type NavItem, type PortalKey } from '@mpbhealth/ui';
 import { Outlet, NavLink, useNavigate, Navigate, useLocation } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
@@ -404,12 +404,15 @@ export default function MainLayout() {
     return { isMeetingDay, nextMeeting };
   }, []);
 
-  // No Supabase session — send unauthenticated visitors to the marketing
-  // landing page (which routes them onward to /login when they hit "Sign in").
+  // No Supabase session — route unauthenticated visitors based on brand:
+  //   * ARYX hosts (advisor.aryxcloud.com)  → /landing (marketing page)
+  //   * MPB Health hosts (advisor.mpb.health) → /login (skip marketing entirely
+  //     so MPB tenants never see the ARYX-branded parent platform pitch).
   // We avoid kicking users who DO have a session but suffered a transient
   // profile-fetch failure (they get the recovery UI below instead).
   if (!loading && !hasSession) {
-    return <Navigate to="/landing" replace />;
+    const target = detectBrand() === 'aryx' ? '/landing' : '/login';
+    return <Navigate to={target} replace />;
   }
 
   // Session exists but profile never hydrated — recovery UI (not login; session is still valid)

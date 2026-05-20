@@ -1,5 +1,10 @@
 // Lead Management
 export { LeadService, createLeadService, LEAD_ROW_SELECT } from './leads/leadService';
+export {
+  getLeadAssignees,
+  type LeadAssignee,
+  type LeadAssigneeKind,
+} from './leads/leadAssigneeService';
 export { PipelineService, createPipelineService } from './leads/pipelineService';
 export type {
   Lead,

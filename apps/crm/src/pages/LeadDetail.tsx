@@ -70,6 +70,7 @@ import { initiateGotoConnectCall } from '../lib/clickToCall';
 import { useFocusItems } from '../hooks/useFocusItems';
 import { useProfileTimeTracker } from '../hooks/useProfileTimeTracker';
 import { useOrg } from '../contexts/OrgContext';
+import { useLeadAssignees, type LeadAssignee } from '../hooks/useLeadAssignees';
 import { logAuditEvent, AUDIT_ACTIONS } from '@mpbhealth/auth';
 import type { Lead, LeadActivity, LeadTask, FamilyMember, PhoneNumber } from '@mpbhealth/crm-core';
 import {
@@ -257,8 +258,8 @@ export default function LeadDetail() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [showAssign, setShowAssign] = useState(false);
-  const [staffUsers, setStaffUsers] = useState<{ id: string; email: string; first_name: string; last_name: string }[]>([]);
   const [assigning, setAssigning] = useState(false);
+  const { data: leadAssignees = [], isLoading: loadingAssignees, refetch: refetchAssignees } = useLeadAssignees();
   const focusItems = useFocusItems();
 
   // More Actions dropdown + modals
@@ -442,15 +443,6 @@ export default function LeadDetail() {
       setDeleting(false);
       setShowDeleteConfirm(false);
     }
-  };
-
-  const loadStaffUsers = async () => {
-    const { data } = await supabase
-      .from('admin_users')
-      .select('id, email, first_name, last_name')
-      .in('status', ['active', 'Active'])
-      .order('first_name');
-    setStaffUsers(data ?? []);
   };
 
   const handleAssignLead = async (userId: string) => {
@@ -726,7 +718,10 @@ export default function LeadDetail() {
             <PermissionGate permission="leads.update">
               <div className="relative">
                 <button
-                  onClick={() => { setShowAssign(!showAssign); if (!staffUsers.length) loadStaffUsers(); }}
+                  onClick={() => {
+                    setShowAssign(!showAssign);
+                    if (!showAssign && !leadAssignees.length) void refetchAssignees();
+                  }}
                   className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium border border-th-border text-th-text-secondary hover:bg-surface-secondary transition-colors"
                 >
                   <UserPlus className="w-4 h-4" />
@@ -741,20 +736,29 @@ export default function LeadDetail() {
                       </button>
                     </div>
                     <div className="max-h-64 overflow-y-auto">
-                      {staffUsers.length === 0 ? (
+                      {loadingAssignees ? (
                         <div className="p-4 text-center text-sm text-th-text-tertiary">Loading...</div>
+                      ) : leadAssignees.length === 0 ? (
+                        <div className="p-4 text-center text-sm text-th-text-tertiary">No assignees found</div>
                       ) : (
-                        staffUsers.map((u) => (
+                        leadAssignees.map((u: LeadAssignee) => (
                           <button
-                            key={u.id}
-                            onClick={() => handleAssignLead(u.id)}
+                            key={u.user_id}
+                            onClick={() => handleAssignLead(u.user_id)}
                             disabled={assigning}
                             className={`w-full text-left px-3 py-2 text-sm hover:bg-surface-secondary transition-colors flex items-center justify-between ${
-                              lead?.assigned_to === u.id ? 'bg-th-accent-50 text-th-accent-700' : 'text-th-text-primary'
+                              lead?.assigned_to === u.user_id ? 'bg-th-accent-50 text-th-accent-700' : 'text-th-text-primary'
                             }`}
                           >
-                            <span>{u.first_name} {u.last_name}</span>
-                            <span className="text-xs text-th-text-tertiary">{u.email.split('@')[0]}</span>
+                            <span>
+                              {u.display_name}
+                              <span className="ml-1.5 text-[10px] uppercase text-th-text-tertiary">
+                                {u.kind === 'advisor' ? 'Advisor' : 'Rep'}
+                              </span>
+                            </span>
+                            <span className="text-xs text-th-text-tertiary">
+                              {u.email ? u.email.split('@')[0] : ''}
+                            </span>
                           </button>
                         ))
                       )}

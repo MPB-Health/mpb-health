@@ -3,7 +3,7 @@ import { Loader2 } from 'lucide-react';
 import { Modal } from './Modal';
 import toast from 'react-hot-toast';
 import { useCRM } from '../contexts/CRMContext';
-import { useOrgReps } from '../hooks/useOrgReps';
+import { useLeadAssignees, type LeadAssignee } from '../hooks/useLeadAssignees';
 
 interface Props {
   open: boolean;
@@ -31,7 +31,7 @@ interface Props {
 
 export function BulkAssignModal({ open, onClose, leadIds, onSuccess }: Props) {
   const { leadService } = useCRM();
-  const { data: reps = [], isLoading: loadingReps } = useOrgReps();
+  const { data: reps = [], isLoading: loadingReps } = useLeadAssignees();
   const [assigneeId, setAssigneeId] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -50,7 +50,7 @@ export function BulkAssignModal({ open, onClose, leadIds, onSuccess }: Props) {
       const repName =
         assigneeId === ''
           ? 'Unassigned'
-          : reps.find((r) => r.user_id === assigneeId)?.display_name ?? 'selected rep';
+          : reps.find((r: LeadAssignee) => r.user_id === assigneeId)?.display_name ?? 'selected rep';
       if (result.failed === 0) {
         toast.success(`Assigned ${result.success} lead${result.success !== 1 ? 's' : ''} to ${repName}`);
       } else {
@@ -86,9 +86,10 @@ export function BulkAssignModal({ open, onClose, leadIds, onSuccess }: Props) {
               className="w-full border border-th-border rounded-lg px-3 py-2 text-sm bg-surface-primary focus:outline-none focus:ring-2 focus:ring-th-accent-500"
             >
               <option value="">— Unassigned (return to round-robin pool) —</option>
-              {reps.map((r) => (
+              {reps.map((r: LeadAssignee) => (
                 <option key={r.user_id} value={r.user_id}>
                   {r.display_name}
+                  {r.kind === 'advisor' ? ' [Advisor]' : ''}
                   {r.email ? ` (${r.email})` : ''}
                 </option>
               ))}

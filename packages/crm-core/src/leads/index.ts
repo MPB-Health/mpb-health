@@ -6,3 +6,8 @@ export {
   createLeadSourceService,
   type LeadSourceType,
 } from './leadSourceService';
+export {
+  getLeadAssignees,
+  type LeadAssignee,
+  type LeadAssigneeKind,
+} from './leadAssigneeService';

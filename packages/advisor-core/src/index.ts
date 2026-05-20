@@ -33,7 +33,15 @@ export { VideoService, videoService, type AdvisorVideo } from './videos/VideoSer
 export { EnrollmentService, enrollmentService, type EnrollmentLink } from './enrollment/EnrollmentService';
 export { PortalSettingsService, portalSettingsService, type PortalSetting } from './settings/PortalSettingsService';
 export { AnnouncementService, announcementService, type Announcement } from './announcements/AnnouncementService';
-export type { AssignedLeadView, LeadDetail, LeadActivity } from './leads/types';
+export type {
+  AssignedLeadView,
+  LeadDetail,
+  LeadActivity,
+  LeadTask,
+  AdvisorLeadUpdateInput,
+  CreateLeadTaskInput,
+  LogLeadActivityInput,
+} from './leads/types';
 export {
   TicketService,
   ticketService,

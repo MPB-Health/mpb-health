@@ -22,6 +22,8 @@ const routeModules = {
   Profile: () => import('./pages/Profile'),
   Inbox: () => import('./pages/Inbox'),
   ConversationThread: () => import('./pages/ConversationThread'),
+  LeadsList: () => import('./pages/LeadsList'),
+  AssignedLeadDetail: () => import('./pages/AssignedLeadDetail'),
   AuditLog: () => import('./pages/AuditLog'),
   VideoLibrary: () => import('./pages/VideoLibrary'),
   Tickets: () => import('./pages/Tickets'),
@@ -73,6 +75,7 @@ const pathToModule: Record<string, keyof typeof routeModules> = {
   '/submit-group': 'SubmitGroup',
   '/chat': 'ChatPage',
   '/inbox': 'Inbox',
+  '/leads': 'LeadsList',
   '/profile': 'Profile',
   '/settings': 'SettingsHub',
   '/audit-log': 'AuditLog',
@@ -101,6 +104,8 @@ const Contact = React.lazy(routeModules.Contact);
 const Profile = React.lazy(routeModules.Profile);
 const Inbox = React.lazy(routeModules.Inbox);
 const ConversationThread = React.lazy(routeModules.ConversationThread);
+const LeadsList = React.lazy(routeModules.LeadsList);
+const AssignedLeadDetail = React.lazy(routeModules.AssignedLeadDetail);
 const AuditLog = React.lazy(routeModules.AuditLog);
 const VideoLibrary = React.lazy(routeModules.VideoLibrary);
 const Tickets = React.lazy(routeModules.Tickets);
@@ -314,6 +319,8 @@ export default function App() {
               <Route path="chat/:conversationId" element={<Suspense fallback={routeFallback('Loading page…')}><ChatPage /></Suspense>} />
               <Route path="inbox" element={<Suspense fallback={routeFallback('Loading page…')}><Inbox /></Suspense>} />
               <Route path="inbox/:conversationId" element={<Suspense fallback={routeFallback('Loading page…')}><ConversationThread /></Suspense>} />
+              <Route path="leads" element={<Suspense fallback={routeFallback('Loading page…')}><LeadsList /></Suspense>} />
+              <Route path="leads/:leadId" element={<Suspense fallback={routeFallback('Loading page…')}><AssignedLeadDetail /></Suspense>} />
               <Route path="audit-log" element={<Suspense fallback={routeFallback('Loading page…')}><AuditLog /></Suspense>} />
               <Route path="events/manage/new" element={<Suspense fallback={routeFallback('Loading page…')}><EventForm /></Suspense>} />
               <Route

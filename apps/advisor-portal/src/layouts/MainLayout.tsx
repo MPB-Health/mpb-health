@@ -169,6 +169,7 @@ const fallbackNavigation: NavItem[] = [
   },
   { name: 'Video Library', href: '/videos', icon: Video },
   { name: 'Submit Group', href: '/submit-group', icon: UsersRound },
+  { name: 'Assigned Leads', href: '/leads', icon: Users },
   { name: 'Support Tickets', href: '/tickets', icon: Headphones },
   { name: 'Contact', href: '/contact', icon: Mail },
 ];
@@ -317,6 +318,9 @@ export default function MainLayout() {
     }
     if (!base.some((item) => item.href === '/videos' || item.name === 'Video Library')) {
       base.push({ name: 'Video Library', href: '/videos', icon: Video });
+    }
+    if (!base.some((item) => item.href === '/leads' || item.name === 'Assigned Leads')) {
+      base.push({ name: 'Assigned Leads', href: '/leads', icon: Users });
     }
     if (!base.some((item) => item.href === '/tickets' || item.name === 'Support Tickets')) {
       base.push({ name: 'Support Tickets', href: '/tickets', icon: Headphones });

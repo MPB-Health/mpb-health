@@ -1,4 +1,6 @@
 import { supabase } from '@mpbhealth/database';
+import { getLeadAssignees, type LeadAssignee } from '@mpbhealth/crm-core/leads';
+import { MPB_ORG_ID } from './leadAssigneeConstants';
 
 export interface AssignableLead {
   id: string;
@@ -44,14 +46,21 @@ export class LeadAssignmentService {
     return (data || []).map((d: any) => ({ ...d, assigned_advisor_name: null })) as unknown as AssignableLead[];
   }
 
-  async getAdvisors(): Promise<AdvisorOption[]> {
-    const { data, error } = await supabase
-      .from('advisor_profiles')
-      .select('id, first_name, last_name, email')
-      .eq('status', 'active')
-      .order('last_name', { ascending: true });
-    if (error) throw error;
-    return (data || []) as unknown as AdvisorOption[];
+  async getAdvisors(orgId: string = MPB_ORG_ID): Promise<AdvisorOption[]> {
+    const assignees = await getLeadAssignees(supabase, orgId);
+    return assignees
+      .filter((a: LeadAssignee) => a.kind === 'advisor' || a.kind === 'rep')
+      .map((a: LeadAssignee) => {
+        const parts = a.display_name.split(' ');
+        const first = parts[0] ?? a.display_name;
+        const last = parts.slice(1).join(' ');
+        return {
+          id: a.user_id,
+          first_name: first,
+          last_name: last,
+          email: a.email ?? '',
+        };
+      });
   }
 
   async assignLead(leadId: string, advisorId: string): Promise<void> {

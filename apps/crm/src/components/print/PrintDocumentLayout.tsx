@@ -63,7 +63,7 @@ export function PrintDocumentLayout({
   currency = 'USD',
   termsAndConditions,
   notes,
-  companyName = 'MPB Health',
+  companyName = 'ARYX',
   companyAddress = '123 Business St, Suite 100, City, ST 12345',
   companyPhone = '(555) 123-4567',
   companyEmail = 'billing@mpbhealth.com',

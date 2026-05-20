@@ -270,7 +270,7 @@ export default function AcceptInvite() {
         <div className="text-center mb-8">
           <img
             src={getBrandLogo()}
-            alt="MPB Health"
+            alt="ARYX"
             className="h-12 mx-auto mb-4"
           />
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">

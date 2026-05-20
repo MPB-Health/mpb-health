@@ -51,7 +51,7 @@ export default function Login() {
       ]}
       formFooter={
         <p className="text-center text-sm text-neutral-400">
-          Access restricted to authorized MPB Health concierge staff
+          Access restricted to authorized ARYX concierge staff
         </p>
       }
     />

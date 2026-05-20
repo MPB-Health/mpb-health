@@ -31,7 +31,7 @@ export default function Login() {
     return (
       <AryxAuthShell
         appName="CRM"
-        appDescription="MPB Health Customer Relationship Management"
+        appDescription="Customer Relationship Management"
         onSubmit={handleSubmit}
         emailPlaceholder="you@mympb.com"
       />
@@ -41,7 +41,7 @@ export default function Login() {
   return (
     <LoginLayout
       appName="CRM"
-      appDescription="MPB Health Customer Relationship Management"
+      appDescription="Customer Relationship Management"
       onSubmit={handleSubmit}
       accentVariant="blue"
       showForgotPassword={false}

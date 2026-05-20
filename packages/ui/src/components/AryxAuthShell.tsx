@@ -1,7 +1,6 @@
 // ARYX Auth Shell — used by all 3 portal Login pages on *.aryxcloud.com.
 // Drop-in replacement for <LoginLayout> on the ARYX brand: dark cinematic
-// shell with orange ARYX wordmark, tenant attribution ("by MPB Health"),
-// and a focused single-card form.
+// shell with orange ARYX wordmark and a focused single-card form.
 //
 // Each Login.tsx conditionally renders this on detectBrand() === 'aryx'.
 
@@ -13,7 +12,7 @@ export interface AryxAuthShellProps {
   appName: string;
   /** Short subtitle beneath "Sign in to ${appName}". */
   appDescription?: string;
-  /** Tenant attribution shown beneath the ARYX wordmark. Defaults to "MPB Health". */
+  /** Optional tenant attribution shown beneath the ARYX wordmark. */
   tenantName?: string;
   /** Submit handler — throw an Error to display it. */
   onSubmit: (email: string, password: string) => Promise<void>;
@@ -44,7 +43,7 @@ function useInterTight() {
 export function AryxAuthShell({
   appName,
   appDescription = 'Sign in to continue',
-  tenantName = 'MPB Health',
+  tenantName,
   onSubmit,
   emailPlaceholder = 'you@example.com',
   showForgotPassword = false,
@@ -208,10 +207,10 @@ export function AryxAuthShell({
       <div style={styles.grain} aria-hidden />
 
       <div style={styles.container}>
-        {/* ── ARYX wordmark + tenant attribution ── */}
+        {/* ── ARYX wordmark ── */}
         <div style={{ textAlign: 'center' }}>
           <div style={styles.wordmark}>ARYX</div>
-          <div style={styles.tagline}>by {tenantName}</div>
+          {tenantName && <div style={styles.tagline}>by {tenantName}</div>}
         </div>
 
         {/* ── Card ── */}
@@ -323,7 +322,7 @@ export function AryxAuthShell({
         </div>
 
         <p style={styles.footerNote}>
-          ARYX is the platform behind {tenantName}. Your sign-in is encrypted end-to-end.
+          Your sign-in is encrypted end-to-end.
         </p>
       </div>
     </div>

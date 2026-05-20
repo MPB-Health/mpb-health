@@ -17,7 +17,7 @@ export function AdPreviewCard({
   primaryText,
   description,
   cta,
-  pageName = 'MPB Health',
+  pageName = 'ARYX',
 }: AdPreviewCardProps) {
   const ctaLabel = AD_CTA_LABELS[cta];
   const imageBlock = (

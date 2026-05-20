@@ -16,7 +16,7 @@ const footerLinks: Record<string, FooterLink[]> = {
     { label: 'Integrations', href: '#features' },
   ],
   Company: [
-    { label: 'About MPB Health', href: 'https://mpb.health/about', external: true },
+    { label: 'About ARYX', href: 'https://mpb.health/about', external: true },
     { label: 'Careers', href: 'https://mpb.health/careers', external: true },
     { label: 'Contact', href: 'mailto:sales@mpb.health', external: true },
     { label: 'Blog', href: 'https://mpb.health/blog', external: true },
@@ -79,11 +79,11 @@ export function LandingFooter() {
           <div className="flex items-center gap-3">
             <img
               src={getBrandLogo({ dark: true })}
-              alt="MPB Health"
+              alt="ARYX"
               className="h-8 w-auto opacity-60"
             />
             <span className="text-sm text-neutral-500">
-              &copy; {new Date().getFullYear()} MPB Health. All rights reserved.
+              &copy; {new Date().getFullYear()} ARYX. All rights reserved.
             </span>
           </div>
 

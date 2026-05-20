@@ -330,7 +330,7 @@ export default function PublicForm() {
         </form>
 
         <p className="text-xs text-th-text-tertiary mt-6 text-center">
-          Powered by MPB Health CRM
+          Powered by ARYX CRM
         </p>
       </div>
     </div>

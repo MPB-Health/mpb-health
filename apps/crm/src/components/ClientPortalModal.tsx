@@ -169,7 +169,7 @@ export function ClientPortalModal({
                     <Shield className="w-4 h-4 text-white" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-white">MPB Health Client Portal</p>
+                    <p className="text-sm font-semibold text-white">ARYX Client Portal</p>
                     <p className="text-[10px] text-white/70">Welcome, {clientName}</p>
                   </div>
                 </div>

@@ -37,17 +37,12 @@ export function LandingNav() {
           <Link to="/" className="flex items-center gap-3 shrink-0">
             <img
               src={getBrandLogo()}
-              alt="MPB Health"
+              alt="ARYX"
               className="h-9 w-auto"
             />
             <div className="hidden sm:block">
               <span className={`text-lg font-bold tracking-tight ${scrolled ? 'text-neutral-900' : 'text-white'}`}>
                 CRM
-              </span>
-              <span className={`text-xs font-medium ml-2 px-2 py-0.5 rounded-full ${
-                scrolled ? 'bg-primary-50 text-primary-700' : 'bg-white/15 text-white/90'
-              }`}>
-                by MPB Health
               </span>
             </div>
           </Link>

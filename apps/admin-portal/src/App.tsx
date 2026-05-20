@@ -18,6 +18,7 @@ const BulletinEditor = lazyRetry(() => import('./pages/BulletinEditor'));
 const Settings = lazyRetry(() => import('./pages/Settings'));
 const AuditLogs = lazyRetry(() => import('./pages/AuditLogs'));
 const Login = lazyRetry(() => import('./pages/Login'));
+const LandingPage = lazyRetry(() => import('./pages/LandingPage'));
 const AcceptInvite = lazyRetry(() => import('./pages/AcceptInvite'));
 const PaymentProcessors = lazyRetry(() => import('./pages/PaymentProcessors'));
 const SmsAccounts = lazyRetry(() => import('./pages/SmsAccounts'));
@@ -305,6 +306,9 @@ export default function App() {
       <RouteErrorBoundary>
         <Suspense fallback={<LoadingSpinner />}>
           <Routes>
+            {/* Public marketing landing — shown to unauthenticated visitors
+                (MainLayout redirects here when there's no session). */}
+            <Route path="/landing" element={<LandingPage />} />
             <Route path="/login" element={<Login />} />
             <Route path="/accept-invite" element={<AcceptInvite />} />
             <Route path="/" element={<MainLayout />}>

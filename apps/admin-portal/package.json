@@ -33,6 +33,7 @@
     "@tiptap/react": "catalog:",
     "@tiptap/starter-kit": "catalog:",
     "date-fns": "catalog:",
+    "framer-motion": "^12.34.3",
     "lucide-react": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",

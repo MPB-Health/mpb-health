@@ -185,9 +185,10 @@ export default function MainLayout() {
     }
   }, [safeGetPortalUrl]);
 
-  // Redirect to login if not authenticated
+  // No session — send unauthenticated visitors to the marketing landing
+  // page (which routes them onward to /login via its "Sign in" CTA).
   if (!loading && !user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/landing" replace />;
   }
 
   // Build navigation with dynamic badge

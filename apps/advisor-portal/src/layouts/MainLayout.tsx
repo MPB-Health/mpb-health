@@ -404,9 +404,12 @@ export default function MainLayout() {
     return { isMeetingDay, nextMeeting };
   }, []);
 
-  // No Supabase session — send to login (avoid kicking users who have a session but a failed profile fetch)
+  // No Supabase session — send unauthenticated visitors to the marketing
+  // landing page (which routes them onward to /login when they hit "Sign in").
+  // We avoid kicking users who DO have a session but suffered a transient
+  // profile-fetch failure (they get the recovery UI below instead).
   if (!loading && !hasSession) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/landing" replace />;
   }
 
   // Session exists but profile never hydrated — recovery UI (not login; session is still valid)

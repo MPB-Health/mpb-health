@@ -32,6 +32,7 @@ const routeModules = {
   EventsManager: () => import('./pages/EventsManager'),
   EventForm: () => import('./pages/EventForm'),
   AddAdvisor: () => import('./pages/AddAdvisor'),
+  LandingPage: () => import('./pages/LandingPage'),
   Login: () => import('./pages/Login'),
   ForgotPassword: () => import('./pages/ForgotPassword'),
   ResetPassword: () => import('./pages/ResetPassword'),
@@ -110,6 +111,7 @@ const AdminTickets = React.lazy(routeModules.AdminTickets);
 const EventsManager = React.lazy(routeModules.EventsManager);
 const EventForm = React.lazy(routeModules.EventForm);
 const AddAdvisor = React.lazy(routeModules.AddAdvisor);
+const LandingPage = React.lazy(routeModules.LandingPage);
 const Login = React.lazy(routeModules.Login);
 const ForgotPassword = React.lazy(routeModules.ForgotPassword);
 const ResetPassword = React.lazy(routeModules.ResetPassword);
@@ -254,6 +256,10 @@ export default function App() {
       <TourProvider>
         <RouteErrorBoundary>
           <Routes>
+            {/* Public marketing landing — rendered for unauthenticated visitors
+                hitting any non-app URL (MainLayout redirects here when there's no session). */}
+            <Route path="/landing" element={<Suspense fallback={routeFallback('Loading…', 'Preparing the platform.')}><LandingPage /></Suspense>} />
+
             {/* Auth routes — own Suspense so they don't depend on MainLayout */}
             <Route path="/login" element={<Suspense fallback={routeFallback('Loading…', 'Preparing sign-in.')}><Login /></Suspense>} />
             <Route path="/forgot-password" element={<Suspense fallback={routeFallback('Loading…', 'Preparing password reset.')}><ForgotPassword /></Suspense>} />

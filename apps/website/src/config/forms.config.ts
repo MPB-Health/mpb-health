@@ -60,7 +60,7 @@ export const FORMS: FormEntry[] = [
     icon: 'Users',
     estimatedMinutes: 8,
     requiresAuth: false,
-    cognitoEmbed: '',
+    cognitoEmbed: '<script src="https://www.cognitoforms.com/f/seamless.js" data-key="K4Fk3PtQHE-6M-fMiX2fVA" data-form="452"></script>',
   },
   {
     slug: '/permission-to-discuss-plan/',

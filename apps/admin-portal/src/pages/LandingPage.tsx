@@ -176,7 +176,7 @@ function TopNav({ onSignIn, onScrollTo }: { onSignIn: () => void; onScrollTo: (i
       <div style={navStyles.inner}>
         <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} style={navStyles.brand}>
           <span style={navStyles.wordmark}>ARYX</span>
-          <span style={navStyles.tenant}>Admin · by MPB Health</span>
+          <span style={navStyles.tenant}>Admin</span>
         </button>
         <div style={navStyles.links}>
           <button onClick={() => onScrollTo('features')} style={navStyles.navLink}>Capabilities</button>
@@ -221,7 +221,7 @@ function HeroSection({ onPrimary, onSecondary, parallax }: { onPrimary: () => vo
 
           <motion.div variants={fadeUp} style={{ textAlign: 'center' }}>
             <div style={heroStyles.wordmark}>ARYX</div>
-            <div style={heroStyles.tagline}>Admin · by MPB Health</div>
+            <div style={heroStyles.tagline}>Admin</div>
           </motion.div>
 
           <motion.h1 variants={fadeUp} style={heroStyles.headline}>
@@ -708,7 +708,7 @@ function TrustSection() {
             <div style={trustStyles.quoteAvatar}>MH</div>
             <div>
               <div style={trustStyles.quoteName}>Platform Engineering</div>
-              <div style={trustStyles.quoteRole}>MPB Health · Founding Tenant</div>
+              <div style={trustStyles.quoteRole}>Founding Tenant</div>
             </div>
           </div>
         </motion.div>
@@ -781,7 +781,7 @@ function Footer() {
       <div style={footerStyles.container}>
         <div style={footerStyles.brandBlock}>
           <span style={footerStyles.wordmark}>ARYX</span>
-          <span style={footerStyles.tenant}>Admin · by MPB Health</span>
+          <span style={footerStyles.tenant}>Admin</span>
         </div>
         <p style={footerStyles.tagline}>
           ARYX is the multi-tenant platform behind modern health sharing. Built for scale.

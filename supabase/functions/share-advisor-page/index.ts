@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { getCorsHeaders, handleCorsPreflightRequest } from '../_shared/cors.ts';
 import { checkRateLimit, getClientIdentifier, isValidEmail, sanitizeInput } from '../_shared/security.ts';
+import { wrapEmailLayout, emailCta } from "../_shared/emailLayout.ts";
 
 interface RequestBody {
   recipientName: string;
@@ -108,63 +109,25 @@ function buildEmailHtml(
   advisorName: string,
   advisorUrl: string,
 ): string {
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MPB Health Advisor Page</title>
-</head>
-<body style="margin:0;padding:0;background-color:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f5;padding:40px 20px;">
-    <tr>
-      <td align="center">
-        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
-          <!-- Header -->
-          <tr>
-            <td style="background: linear-gradient(135deg, #1e40af, #3b82f6); padding: 32px 40px; text-align: center;">
-              <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:700;">MPB Health</h1>
-              <p style="margin:8px 0 0;color:#bfdbfe;font-size:14px;">Affordable Health Sharing</p>
-            </td>
-          </tr>
-          <!-- Body -->
-          <tr>
-            <td style="padding:40px;">
-              <p style="margin:0 0 20px;color:#374151;font-size:16px;line-height:1.6;">
-                Hi ${escapeHtml(recipientName)},
-              </p>
-              <p style="margin:0 0 20px;color:#374151;font-size:16px;line-height:1.6;">
-                <strong>${escapeHtml(advisorName)}</strong> has shared their MPB Health Advisor Page with you. Click the button below to explore affordable health sharing options.
-              </p>
-              <!-- CTA Button -->
-              <table role="presentation" cellpadding="0" cellspacing="0" style="margin:32px auto;">
-                <tr>
-                  <td style="border-radius:8px;background-color:#2563eb;">
-                    <a href="${escapeHtml(advisorUrl)}" target="_blank" style="display:inline-block;padding:14px 32px;color:#ffffff;font-size:16px;font-weight:600;text-decoration:none;border-radius:8px;">
-                      View Advisor Page
-                    </a>
-                  </td>
-                </tr>
-              </table>
-              <p style="margin:24px 0 0;color:#6b7280;font-size:14px;line-height:1.6;text-align:center;">
-                Or copy this link: <a href="${escapeHtml(advisorUrl)}" style="color:#2563eb;text-decoration:underline;">${escapeHtml(advisorUrl)}</a>
-              </p>
-            </td>
-          </tr>
-          <!-- Footer -->
-          <tr>
-            <td style="padding:24px 40px;background-color:#f9fafb;border-top:1px solid #e5e7eb;text-align:center;">
-              <p style="margin:0;color:#9ca3af;font-size:12px;">
-                &copy; ${new Date().getFullYear()} MPB Health. All rights reserved.
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`;
+  const bodyHtml = `
+    <p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 16px;">
+      Hi ${escapeHtml(recipientName)},
+    </p>
+    <p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 8px;">
+      <strong>${escapeHtml(advisorName)}</strong> has shared their Advisor Page with you. Click the button below to explore affordable health sharing options.
+    </p>
+    ${emailCta(escapeHtml(advisorUrl), "View Advisor Page", "#2563eb")}
+    <p style="color:#6b7280;font-size:13px;line-height:1.5;margin:20px 0 0;text-align:center;word-break:break-all;">
+      Or copy this link: <a href="${escapeHtml(advisorUrl)}" style="color:#2563eb;text-decoration:underline;">${escapeHtml(advisorUrl)}</a>
+    </p>`;
+
+  return wrapEmailLayout({
+    appName: "Advisor Page",
+    accentColor: "#2563eb",
+    heading: "Health Sharing Options Shared With You",
+    preheader: `${escapeHtml(advisorName)} shared their Advisor Page with you.`,
+    portalUrl: "https://mpb.health",
+  }, bodyHtml);
 }
 
 function escapeHtml(str: string): string {

@@ -3,6 +3,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
 import { createLogger } from "../_shared/logger.ts";
 import { checkRateLimit, getClientIdentifier } from "../_shared/security.ts";
+import { wrapEmailLayout, emailCta, emailCallout } from "../_shared/emailLayout.ts";
 
 const log = createLogger("mass-password-reset");
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
@@ -17,89 +18,31 @@ interface ResetRequest {
 
 function buildResetEmail(firstName: string, email: string, resetLink: string): { html: string; text: string } {
   const greeting = firstName || "Advisor";
+  const accent = "#0d9488";
 
-  const html = `<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reset Your Password — MPB Health Advisor Portal</title>
-  </head>
-  <body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background-color:#f4f5f7;-webkit-font-smoothing:antialiased;">
-    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color:#f4f5f7;padding:48px 16px;">
-      <tr>
-        <td align="center">
-          <table width="560" cellpadding="0" cellspacing="0" role="presentation" style="max-width:560px;width:100%;background-color:#ffffff;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,0.08);">
-            <!-- Logo Header -->
-            <tr>
-              <td style="padding:32px 40px 16px 40px;text-align:center;">
-                <img src="${LOGO_URL}" alt="MPB Health" width="160" style="display:block;margin:0 auto;max-width:160px;height:auto;" />
-              </td>
-            </tr>
-            <!-- Divider -->
-            <tr>
-              <td style="padding:0 40px;">
-                <div style="height:1px;background-color:#e5e7eb;"></div>
-              </td>
-            </tr>
-            <!-- Content -->
-            <tr>
-              <td style="padding:32px 40px;">
-                <h1 style="color:#111827;font-size:22px;font-weight:600;margin:0 0 16px 0;text-align:center;">Reset Your Password</h1>
-                <p style="color:#4b5563;font-size:15px;line-height:1.6;margin:0 0 16px 0;">
-                  Hi ${greeting},
-                </p>
-                <p style="color:#4b5563;font-size:15px;line-height:1.6;margin:0 0 16px 0;">
-                  A password reset has been requested for your MPB Health Advisor Portal account
-                  (<strong style="color:#111827;">${email}</strong>).
-                </p>
-                <p style="color:#4b5563;font-size:15px;line-height:1.6;margin:0 0 28px 0;">
-                  Click the button below to choose a new password. This link is valid for 24 hours and can only be used once.
-                </p>
-                <!-- CTA Button -->
-                <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
-                  <tr>
-                    <td align="center">
-                      <a href="${resetLink}" target="_blank" style="display:inline-block;background-color:#0d9488;color:#ffffff;text-decoration:none;padding:14px 36px;border-radius:8px;font-weight:600;font-size:15px;letter-spacing:0.01em;mso-padding-alt:0;text-align:center;">
-                        <!--[if mso]><i style="mso-font-width:150%;mso-text-raise:30px;" hidden>&nbsp;</i><![endif]-->
-                        Reset My Password
-                        <!--[if mso]><i style="mso-font-width:150%;" hidden>&nbsp;</i><![endif]-->
-                      </a>
-                    </td>
-                  </tr>
-                </table>
-                <!-- Fallback link -->
-                <p style="color:#9ca3af;font-size:12px;line-height:1.5;margin:20px 0 0 0;text-align:center;word-break:break-all;">
-                  If the button doesn't work, copy and paste this link into your browser:<br/>
-                  <a href="${resetLink}" style="color:#0d9488;text-decoration:underline;">${resetLink}</a>
-                </p>
-              </td>
-            </tr>
-            <!-- Security note -->
-            <tr>
-              <td style="padding:0 40px 32px 40px;">
-                <div style="background-color:#fefce8;border:1px solid #fef08a;padding:14px 16px;border-radius:8px;">
-                  <p style="margin:0;color:#854d0e;font-size:13px;line-height:1.5;">
-                    If you did not request this password reset, no action is needed — your account remains secure.
-                  </p>
-                </div>
-              </td>
-            </tr>
-            <!-- Footer -->
-            <tr>
-              <td style="padding:20px 40px;background-color:#f9fafb;border-top:1px solid #f3f4f6;text-align:center;border-radius:0 0 12px 12px;">
-                <p style="color:#9ca3af;font-size:12px;line-height:1.5;margin:0;">
-                  MPB Health, Inc. &middot; Advisor Portal<br/>
-                  This is an automated message. Please do not reply.
-                </p>
-              </td>
-            </tr>
-          </table>
-        </td>
-      </tr>
-    </table>
-  </body>
-</html>`;
+  const bodyHtml = `
+    <p style="color:#4b5563;font-size:15px;line-height:1.6;margin:0 0 16px;">Hi ${greeting},</p>
+    <p style="color:#4b5563;font-size:15px;line-height:1.6;margin:0 0 16px;">
+      A password reset has been requested for your Advisor Portal account
+      (<strong style="color:#111827;">${email}</strong>).
+    </p>
+    <p style="color:#4b5563;font-size:15px;line-height:1.6;margin:0 0 8px;">
+      Click the button below to choose a new password. This link is valid for 24 hours and can only be used once.
+    </p>
+    ${emailCta(resetLink, "Reset My Password", accent)}
+    <p style="color:#9ca3af;font-size:12px;line-height:1.5;margin:20px 0 0;text-align:center;word-break:break-all;">
+      If the button doesn't work, copy and paste this link into your browser:<br/>
+      <a href="${resetLink}" style="color:${accent};text-decoration:underline;">${resetLink}</a>
+    </p>
+    ${emailCallout("If you did not request this password reset, no action is needed — your account remains secure.", "warning")}`;
+
+  const html = wrapEmailLayout({
+    appName: "Advisor Portal",
+    accentColor: accent,
+    heading: "Reset Your Password",
+    preheader: "Reset the password for your Advisor Portal account.",
+    portalUrl: ADVISOR_RESET_URL,
+  }, bodyHtml);
 
   const text = `Reset Your Password — MPB Health Advisor Portal
 

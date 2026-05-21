@@ -19,6 +19,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { createLogger } from "../_shared/logger.ts";
 import { escapeHtml } from "../_shared/security.ts";
+import { wrapEmailLayout, emailCta } from "../_shared/emailLayout.ts";
 
 const log = createLogger("send-ticket-notification");
 
@@ -80,63 +81,14 @@ const STATUS_LABELS: Record<string, string> = {
 // ── Email HTML builder ────────────────────────────────────────────────────────
 
 function wrap(title: string, preheader: string, body: string, appUrl: string): string {
-  const ticketListUrl = `${appUrl}/tickets`;
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>${title}</title>
-</head>
-<body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background-color:#f3f4f6;">
-  <!-- preheader -->
-  <span style="display:none;max-height:0;overflow:hidden;">${preheader}</span>
-
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#f3f4f6;padding:40px 0;">
-    <tr>
-      <td align="center">
-        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,.08);">
-
-          <!-- Header -->
-          <tr>
-            <td style="background:linear-gradient(135deg,#3b82f6 0%,#6366f1 100%);padding:28px 40px;text-align:center;">
-              <img src="${appUrl}/mpb-logo-white.png" alt="MPB Health" width="120" style="max-width:120px;height:auto;display:block;margin:0 auto 10px;" onerror="this.style.display='none'" />
-              <p style="color:rgba(255,255,255,.85);margin:0;font-size:13px;letter-spacing:0.5px;text-transform:uppercase;font-weight:600;">
-                MPB Health · Advisor Support
-              </p>
-            </td>
-          </tr>
-
-          <!-- Body -->
-          <tr>
-            <td style="padding:36px 40px 28px;">
-              ${body}
-            </td>
-          </tr>
-
-          <!-- Footer -->
-          <tr>
-            <td style="background:#f9fafb;padding:22px 40px;border-top:1px solid #e5e7eb;text-align:center;">
-              <p style="color:#6b7280;margin:0 0 6px;font-size:12px;">
-                MPB Health · Advisor Support System
-              </p>
-              <p style="color:#9ca3af;margin:0;font-size:11px;">
-                <a href="${ticketListUrl}" style="color:#6b7280;text-decoration:underline;">Advisor Portal</a>
-                &nbsp;&bull;&nbsp;
-                <a href="${appUrl}/settings?tab=notifications" style="color:#6b7280;text-decoration:underline;">Notification preferences</a>
-              </p>
-              <p style="color:#d1d5db;margin:14px 0 0;font-size:11px;">
-                &copy; ${new Date().getFullYear()} MPB Health. All rights reserved.
-              </p>
-            </td>
-          </tr>
-
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`;
+  return wrapEmailLayout({
+    appName: "Advisor Support",
+    accentColor: "#6366f1",
+    heading: title,
+    preheader,
+    portalUrl: `${appUrl}/tickets`,
+    supportEmail: "support@mpb.health",
+  }, body);
 }
 
 function ticketMetaRow(label: string, value: string): string {

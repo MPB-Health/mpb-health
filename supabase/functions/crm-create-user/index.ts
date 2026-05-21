@@ -24,6 +24,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
 import { createLogger } from "../_shared/logger.ts";
 import { checkRateLimit, getClientIdentifier } from "../_shared/security.ts";
+import { wrapEmailLayout, emailCta, emailInfoCard, emailInfoRow, emailCallout } from "../_shared/emailLayout.ts";
 
 const log = createLogger("crm-create-user");
 
@@ -98,38 +99,28 @@ async function sendInviteEmail(
     );
   }
 
-  const html = `
-    <!DOCTYPE html>
-    <html>
-      <head><meta charset="utf-8"><title>Welcome to MPB Health CRM</title></head>
-      <body style="margin:0;padding:0;font-family:Arial,sans-serif;background-color:#f5f5f5;">
-        <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f5f5;padding:40px 0;">
-          <tr><td align="center">
-            <table width="600" cellpadding="0" cellspacing="0" style="background-color:#fff;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
-              <tr><td style="background:linear-gradient(to right,#2563eb,#06b6d4);padding:30px 40px;border-radius:8px 8px 0 0;text-align:center;">
-                <h1 style="color:#fff;font-size:24px;margin:0;">Welcome to MPB Health CRM</h1>
-              </td></tr>
-              <tr><td style="padding:40px;">
-                <p style="color:#333;font-size:16px;margin:0 0 20px;">Hi ${firstName},</p>
-                <p style="color:#333;font-size:16px;margin:0 0 20px;">You've been added to <strong>${orgName}</strong> on the MPB Health CRM. Here are your login credentials:</p>
-                <div style="background-color:#f8fafc;border:1px solid #e2e8f0;padding:20px;border-radius:8px;margin:20px 0;">
-                  <p style="margin:0 0 10px;"><strong>Email:</strong> ${email}</p>
-                  <p style="margin:0;"><strong>Temporary Password:</strong> <code style="background-color:#e2e8f0;padding:2px 8px;border-radius:4px;">${tempPassword}</code></p>
-                </div>
-                <p style="color:#666;font-size:14px;margin:20px 0;">Please change your password after your first login.</p>
-                <div style="text-align:center;margin:30px 0;">
-                  <a href="${CRM_LOGIN_URL}" style="display:inline-block;background:linear-gradient(to right,#2563eb,#06b6d4);color:#fff;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:bold;font-size:16px;">Log in to CRM</a>
-                </div>
-              </td></tr>
-              <tr><td style="padding:20px 40px;background-color:#f9fafb;border-top:1px solid #e5e7eb;text-align:center;border-radius:0 0 8px 8px;">
-                <p style="color:#999;font-size:12px;margin:0;">This is an automated message from MPB Health.</p>
-              </td></tr>
-            </table>
-          </td></tr>
-        </table>
-      </body>
-    </html>
-  `;
+  const accent = "#4f46e5";
+  const body = `
+    <p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 16px;">Hi ${firstName},</p>
+    <p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 20px;">
+      You've been added to <strong>${orgName}</strong> on the <strong>CRM</strong>. Use the credentials below to log in.
+    </p>
+    ${emailInfoCard(
+      emailInfoRow("Organization", orgName) +
+      emailInfoRow("Email", email) +
+      emailInfoRow("Temporary Password", `<code style="background-color:#e2e8f0;padding:2px 8px;border-radius:4px;font-size:14px;">${tempPassword}</code>`),
+      accent,
+    )}
+    ${emailCallout("Please change your password after your first login.", "warning")}
+    ${emailCta(CRM_LOGIN_URL, "Log in to CRM", accent)}`;
+
+  const html = wrapEmailLayout({
+    appName: "CRM",
+    accentColor: accent,
+    heading: `Welcome to ${orgName}`,
+    preheader: `You've been added to ${orgName} on the CRM. Log in with your temporary credentials.`,
+    portalUrl: CRM_LOGIN_URL,
+  }, body);
 
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -142,7 +133,7 @@ async function sendInviteEmail(
         Deno.env.get("RESEND_FROM_EMAIL") ||
         "MPB Health <notifications@mpb.health>",
       to: [email],
-      subject: `Welcome to MPB Health CRM – ${orgName}`,
+      subject: `Your CRM Account Is Ready — ${orgName}`,
       html,
     }),
   });

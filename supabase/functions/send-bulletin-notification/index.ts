@@ -6,6 +6,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getCorsHeaders, handleCorsPreflightRequest } from '../_shared/cors.ts';
 import { createLogger } from '../_shared/logger.ts';
 import { checkRateLimit, getClientIdentifier } from '../_shared/security.ts';
+import { wrapEmailLayout, emailCta } from "../_shared/emailLayout.ts";
 const log = createLogger('send-bulletin-notification');
 
 interface Recipient {
@@ -102,83 +103,28 @@ serve(async (req) => {
     const bulletinUrl = `${APP_URL}/advisor/content/${bulletin_slug}`;
     const unsubscribeUrl = `${APP_URL}/advisor/settings?tab=notifications`;
 
-    const htmlContent = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${bulletin_title}</title>
-</head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f5f5f5; padding: 40px 0;">
-    <tr>
-      <td align="center">
-        <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
-          <!-- Header -->
-          <tr>
-            <td style="background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%); padding: 32px 40px; text-align: center;">
-              <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 700;">
-                New Advisor Bulletin
-              </h1>
-              <p style="color: rgba(255, 255, 255, 0.9); margin: 8px 0 0; font-size: 14px;">
-                MPB Health Advisor Portal
-              </p>
-            </td>
-          </tr>
+    const accent = "#0d9488";
+    const excerptText = bulletin_excerpt
+      ? bulletin_excerpt.replace(/<[^>]*>/g, '').substring(0, 300) + (bulletin_excerpt.length > 300 ? '...' : '')
+      : '';
 
-          <!-- Content -->
-          <tr>
-            <td style="padding: 40px;">
-              <h2 style="color: #1f2937; margin: 0 0 16px; font-size: 22px; font-weight: 600; line-height: 1.3;">
-                ${bulletin_title}
-              </h2>
+    const bodyHtml = `
+      <h2 style="color:#1f2937;margin:0 0 16px;font-size:20px;font-weight:600;line-height:1.3;">${bulletin_title}</h2>
+      ${excerptText ? `<p style="color:#4b5563;margin:0 0 8px;font-size:15px;line-height:1.6;">${excerptText}</p>` : ''}
+      ${emailCta(bulletinUrl, "Read Full Bulletin", accent)}
+      <p style="color:#9ca3af;margin:24px 0 0;font-size:14px;line-height:1.5;text-align:center;">
+        This bulletin is available exclusively to MPB Health advisors.<br/>
+        <a href="${unsubscribeUrl}" style="color:#6b7280;text-decoration:underline;font-size:12px;">Manage notification preferences</a>
+      </p>`;
 
-              ${bulletin_excerpt ? `
-              <p style="color: #4b5563; margin: 0 0 24px; font-size: 16px; line-height: 1.6;">
-                ${bulletin_excerpt.replace(/<[^>]*>/g, '').substring(0, 300)}${bulletin_excerpt.length > 300 ? '...' : ''}
-              </p>
-              ` : ''}
-
-              <table role="presentation" cellspacing="0" cellpadding="0" style="margin: 24px 0;">
-                <tr>
-                  <td style="background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%); border-radius: 8px;">
-                    <a href="${bulletinUrl}" target="_blank" style="display: inline-block; padding: 14px 32px; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600;">
-                      Read Full Bulletin
-                    </a>
-                  </td>
-                </tr>
-              </table>
-
-              <p style="color: #9ca3af; margin: 24px 0 0; font-size: 14px; line-height: 1.5;">
-                This bulletin is available exclusively to MPB Health advisors.
-                <a href="${bulletinUrl}" style="color: #3b82f6; text-decoration: none;">View in your Advisor Portal</a>
-              </p>
-            </td>
-          </tr>
-
-          <!-- Footer -->
-          <tr>
-            <td style="background-color: #f9fafb; padding: 24px 40px; border-top: 1px solid #e5e7eb;">
-              <p style="color: #6b7280; margin: 0 0 8px; font-size: 12px; text-align: center;">
-                You're receiving this email because you're a registered advisor with MPB Health.
-              </p>
-              <p style="color: #9ca3af; margin: 0; font-size: 12px; text-align: center;">
-                <a href="${unsubscribeUrl}" style="color: #6b7280; text-decoration: underline;">Manage notification preferences</a>
-                &nbsp;&bull;&nbsp;
-                <a href="${APP_URL}/advisor" style="color: #6b7280; text-decoration: underline;">Advisor Portal</a>
-              </p>
-              <p style="color: #9ca3af; margin: 16px 0 0; font-size: 11px; text-align: center;">
-                &copy; ${new Date().getFullYear()} MPB Health. All rights reserved.
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`;
+    const htmlContent = wrapEmailLayout({
+      appName: "Advisor Portal",
+      accentColor: accent,
+      heading: "New Advisor Bulletin",
+      preheader: `New bulletin: ${bulletin_title}`,
+      portalUrl: `${APP_URL}/advisor`,
+      supportEmail: "advisors@mpb.health",
+    }, bodyHtml);
 
     const textContent = `
 New Advisor Bulletin: ${bulletin_title}

@@ -4,6 +4,7 @@ import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
 import { createLogger } from "../_shared/logger.ts";
 import { syncUserToItsts } from "../_shared/itsts-sync.ts";
 import { checkRateLimit, getClientIdentifier } from "../_shared/security.ts";
+import { wrapEmailLayout, emailCta, emailInfoCard, emailInfoRow, emailCallout } from "../_shared/emailLayout.ts";
 
 const log = createLogger("create-user");
 
@@ -77,6 +78,22 @@ async function provisionAdvisorProfile(
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 
+interface PortalInfo {
+  appName: string;
+  portalUrl: string;
+  accent: string;
+}
+
+function resolvePortal(roles: UserRole[]): PortalInfo {
+  if (roles.includes("advisor"))
+    return { appName: "Advisor Portal", portalUrl: "https://advisor.mpb.health", accent: "#0d9488" };
+  if (roles.includes("admin") || roles.includes("super_admin"))
+    return { appName: "Admin Portal", portalUrl: "https://admin.mpb.health", accent: "#2563eb" };
+  if (roles.includes("crm_user"))
+    return { appName: "CRM", portalUrl: "https://crm.mpb.health", accent: "#4f46e5" };
+  return { appName: "Member Portal", portalUrl: "https://app.mpb.health", accent: "#2563eb" };
+}
+
 async function sendInviteEmail(
   email: string,
   firstName: string,
@@ -88,51 +105,32 @@ async function sendInviteEmail(
     throw new Error("RESEND_API_KEY is not configured in Supabase. Add it in Project Settings → Edge Functions → Secrets.");
   }
 
-  const portalUrl = roles.includes("advisor")
-    ? "https://advisor.mpbhealth.com"
-    : roles.includes("admin") || roles.includes("super_admin")
-      ? "https://admin.mpb.health"
-      : roles.includes("crm_user")
-        ? "https://crm.mpbhealth.com"
-        : "https://app.mpbhealth.com";
-
+  const portal = resolvePortal(roles);
   const roleLabels = roles
     .map((r) => r.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()))
     .join(", ");
 
-  const html = `
-    <!DOCTYPE html>
-    <html>
-      <head><meta charset="utf-8"><title>Welcome to MPB Health</title></head>
-      <body style="margin:0;padding:0;font-family:Arial,sans-serif;background-color:#f5f5f5;">
-        <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f5f5;padding:40px 0;">
-          <tr><td align="center">
-            <table width="600" cellpadding="0" cellspacing="0" style="background-color:#fff;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
-              <tr><td style="background:linear-gradient(to right,#2563eb,#06b6d4);padding:30px 40px;border-radius:8px 8px 0 0;text-align:center;">
-                <h1 style="color:#fff;font-size:24px;margin:0;">Welcome to MPB Health!</h1>
-              </td></tr>
-              <tr><td style="padding:40px;">
-                <p style="color:#333;font-size:16px;margin:0 0 20px;">Hi ${firstName},</p>
-                <p style="color:#333;font-size:16px;margin:0 0 20px;">Your account has been created. Here are your login credentials:</p>
-                <div style="background-color:#f8fafc;border:1px solid #e2e8f0;padding:20px;border-radius:8px;margin:20px 0;">
-                  <p style="margin:0 0 10px;"><strong>Email:</strong> ${email}</p>
-                  <p style="margin:0 0 10px;"><strong>Temporary Password:</strong> <code style="background-color:#e2e8f0;padding:2px 8px;border-radius:4px;">${tempPassword}</code></p>
-                  <p style="margin:0;"><strong>Role${roles.length > 1 ? "s" : ""}:</strong> ${roleLabels}</p>
-                </div>
-                <p style="color:#666;font-size:14px;margin:20px 0;">Please change your password after your first login.</p>
-                <div style="text-align:center;margin:30px 0;">
-                  <a href="${portalUrl}" style="display:inline-block;background:linear-gradient(to right,#2563eb,#06b6d4);color:#fff;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:bold;font-size:16px;">Login Now</a>
-                </div>
-              </td></tr>
-              <tr><td style="padding:20px 40px;background-color:#f9fafb;border-top:1px solid #e5e7eb;text-align:center;border-radius:0 0 8px 8px;">
-                <p style="color:#999;font-size:12px;margin:0;">This is an automated message from MPB Health.</p>
-              </td></tr>
-            </table>
-          </td></tr>
-        </table>
-      </body>
-    </html>
-  `;
+  const body = `
+    <p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 16px;">Hi ${firstName},</p>
+    <p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 20px;">
+      A new account has been created for you on the <strong>${portal.appName}</strong>. Use the credentials below to log in.
+    </p>
+    ${emailInfoCard(
+      emailInfoRow("Email", email) +
+      emailInfoRow("Temporary Password", `<code style="background-color:#e2e8f0;padding:2px 8px;border-radius:4px;font-size:14px;">${tempPassword}</code>`) +
+      emailInfoRow("Role" + (roles.length > 1 ? "s" : ""), roleLabels),
+      portal.accent,
+    )}
+    ${emailCallout("Please change your password after your first login.", "warning")}
+    ${emailCta(portal.portalUrl, `Log in to ${portal.appName}`, portal.accent)}`;
+
+  const html = wrapEmailLayout({
+    appName: portal.appName,
+    accentColor: portal.accent,
+    heading: "Your Account Is Ready",
+    preheader: `Your ${portal.appName} account has been created. Log in with your temporary credentials.`,
+    portalUrl: portal.portalUrl,
+  }, body);
 
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -143,7 +141,7 @@ async function sendInviteEmail(
     body: JSON.stringify({
       from: Deno.env.get("RESEND_FROM_EMAIL") || "MPB Health <notifications@mpb.health>",
       to: [email],
-      subject: "Welcome to MPB Health – Your Account Is Ready",
+      subject: `Your ${portal.appName} Account Is Ready`,
       html,
     }),
   });

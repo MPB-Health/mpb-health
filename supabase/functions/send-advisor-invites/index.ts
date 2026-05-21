@@ -3,6 +3,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
 import { createLogger } from "../_shared/logger.ts";
 import { checkRateLimit, getClientIdentifier } from "../_shared/security.ts";
+import { wrapEmailLayout, emailCta, emailInfoCard, emailInfoRow, emailCallout } from "../_shared/emailLayout.ts";
 
 const log = createLogger("send-advisor-invites");
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
@@ -28,62 +29,30 @@ function buildInviteEmail(
   agentId: string | null,
 ): string {
   const loginUrl = "https://advisor.mpb.health/login";
+  const accent = "#0d9488";
 
-  return `
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <meta charset="utf-8">
-        <title>Welcome to the MPB Health Advisor Portal</title>
-      </head>
-      <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f5f5f5;">
-        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5; padding: 40px 0;">
-          <tr>
-            <td align="center">
-              <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                <tr>
-                  <td style="background: linear-gradient(135deg, #0d9488, #0891b2); padding: 30px 40px; border-radius: 8px 8px 0 0; text-align: center;">
-                    <h1 style="color: #ffffff; font-size: 24px; margin: 0;">Welcome to the Advisor Portal!</h1>
-                    <p style="color: rgba(255,255,255,0.9); font-size: 14px; margin: 8px 0 0 0;">MPB Health - Your Advisor Hub</p>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding: 40px;">
-                    <p style="color: #333; font-size: 16px; margin: 0 0 20px 0;">Hi ${firstName || "Advisor"},</p>
-                    <p style="color: #333; font-size: 16px; margin: 0 0 20px 0;">Your MPB Health Advisor Portal account is ready! Here you'll find training materials, SOPs, bulletins, enrollment forms, and everything you need to serve your clients.</p>
+  const bodyHtml = `
+    <p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 16px;">Hi ${firstName || "Advisor"},</p>
+    <p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 20px;">
+      Your Advisor Portal account is ready! Here you'll find training materials, SOPs, bulletins, enrollment forms, and everything you need to serve your clients.
+    </p>
+    ${emailInfoCard(
+      emailInfoRow("Email", email) +
+      emailInfoRow("Temporary Password", `<code style="background-color:#e2e8f0;padding:2px 8px;border-radius:4px;font-size:14px;">${password}</code>`) +
+      (agentId ? emailInfoRow("Agent ID", agentId) : ""),
+      accent,
+    )}
+    ${emailCallout("<strong>Important:</strong> You will be asked to create a new password when you log in for the first time.", "warning")}
+    ${emailCta(loginUrl, "Log In to Advisor Portal", accent)}
+    <p style="color:#6b7280;font-size:14px;line-height:1.5;margin:20px 0 0;">If you have any questions, reach out to your MPB Health team contact.</p>`;
 
-                    <div style="background-color: #f0fdfa; border: 1px solid #99f6e4; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                      <p style="margin: 0 0 10px 0; font-weight: bold; color: #0d9488;">Your Login Credentials</p>
-                      <p style="margin: 0 0 8px 0;"><strong>Email:</strong> ${email}</p>
-                      <p style="margin: 0 0 8px 0;"><strong>Temporary Password:</strong> <code style="background-color: #ccfbf1; padding: 2px 8px; border-radius: 4px; font-size: 15px;">${password}</code></p>
-                      ${agentId ? `<p style="margin: 0;"><strong>Agent ID:</strong> ${agentId}</p>` : ""}
-                    </div>
-
-                    <div style="background-color: #fef3c7; border: 1px solid #fde68a; padding: 12px 16px; border-radius: 8px; margin: 20px 0;">
-                      <p style="margin: 0; color: #92400e; font-size: 14px;">
-                        <strong>Important:</strong> You will be asked to create a new password when you log in for the first time.
-                      </p>
-                    </div>
-
-                    <div style="text-align: center; margin: 30px 0;">
-                      <a href="${loginUrl}" style="display: inline-block; background: linear-gradient(135deg, #0d9488, #0891b2); color: #ffffff; text-decoration: none; padding: 14px 40px; border-radius: 8px; font-weight: bold; font-size: 16px;">Log In to Advisor Portal</a>
-                    </div>
-
-                    <p style="color: #666; font-size: 14px; margin: 20px 0 0 0;">If you have any questions, reach out to your MPB Health team contact.</p>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding: 20px 40px; background-color: #f9fafb; border-top: 1px solid #e5e7eb; text-align: center; border-radius: 0 0 8px 8px;">
-                    <p style="color: #999; font-size: 12px; margin: 0;">This is an automated message from MPB Health. Please do not reply.</p>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-        </table>
-      </body>
-    </html>
-  `;
+  return wrapEmailLayout({
+    appName: "Advisor Portal",
+    accentColor: accent,
+    heading: "Your Account Is Ready",
+    preheader: "Your Advisor Portal account has been created. Log in with your temporary credentials.",
+    portalUrl: loginUrl,
+  }, bodyHtml);
 }
 
 Deno.serve(async (req: Request) => {

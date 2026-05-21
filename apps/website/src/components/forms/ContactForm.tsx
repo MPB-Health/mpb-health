@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Check } from 'lucide-react';
+import { Check, ShieldCheck, AlertCircle } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/Card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/Input';
@@ -7,7 +7,8 @@ import { Select } from '../ui/Select';
 import { typography } from '../../lib/typography';
 import { sendContactFormNotification } from '../../lib/emailService';
 
-const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY || '1x00000000000000000000AA';
+const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY;
+const CAPTCHA_LOAD_TIMEOUT_MS = 8000;
 
 interface ContactFormData {
   firstName: string;
@@ -30,47 +31,100 @@ interface ContactFormProps {
   className?: string;
 }
 
-function TurnstileWidget({ onVerify, onExpire }: { onVerify: (token: string) => void; onExpire: () => void }) {
+type CaptchaStatus = 'loading' | 'ready' | 'verified' | 'expired' | 'error' | 'unavailable';
+
+interface TurnstileApi {
+  render: (el: HTMLElement, opts: Record<string, unknown>) => string;
+  remove: (id: string) => void;
+  reset: (id: string) => void;
+}
+
+function TurnstileWidget({
+  onVerify,
+  onExpire,
+  onStatusChange,
+}: {
+  onVerify: (token: string) => void;
+  onExpire: () => void;
+  onStatusChange: (status: CaptchaStatus) => void;
+}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | null>(null);
+  const mountedRef = useRef(true);
 
   useEffect(() => {
+    mountedRef.current = true;
+
+    if (!TURNSTILE_SITE_KEY) {
+      onStatusChange('unavailable');
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      if (mountedRef.current && widgetIdRef.current === null) {
+        onStatusChange('error');
+      }
+    }, CAPTCHA_LOAD_TIMEOUT_MS);
+
     const renderWidget = () => {
-      if (!containerRef.current || widgetIdRef.current !== null) return;
-      const win = window as unknown as { turnstile?: { render: (el: HTMLElement, opts: Record<string, unknown>) => string; remove: (id: string) => void } };
+      if (!mountedRef.current || !containerRef.current || widgetIdRef.current !== null) return;
+      const win = window as unknown as { turnstile?: TurnstileApi };
       if (!win.turnstile) return;
-      widgetIdRef.current = win.turnstile.render(containerRef.current, {
-        sitekey: TURNSTILE_SITE_KEY,
-        callback: onVerify,
-        'expired-callback': onExpire,
-        theme: 'light',
-      });
+      try {
+        widgetIdRef.current = win.turnstile.render(containerRef.current, {
+          sitekey: TURNSTILE_SITE_KEY,
+          callback: (token: string) => {
+            if (mountedRef.current) {
+              onStatusChange('verified');
+              onVerify(token);
+            }
+          },
+          'expired-callback': () => {
+            if (mountedRef.current) {
+              onStatusChange('expired');
+              onExpire();
+            }
+          },
+          'error-callback': () => {
+            if (mountedRef.current) onStatusChange('error');
+          },
+          theme: 'light',
+        });
+        if (mountedRef.current) onStatusChange('ready');
+      } catch {
+        if (mountedRef.current) onStatusChange('error');
+      }
     };
 
     if ((window as unknown as { turnstile?: unknown }).turnstile) {
       renderWidget();
     } else {
-      const script = document.querySelector('script[src*="turnstile"]');
-      if (!script) {
+      const existingScript = document.querySelector('script[src*="turnstile"]');
+      if (!existingScript) {
         const s = document.createElement('script');
         s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
         s.async = true;
         s.onload = renderWidget;
+        s.onerror = () => { if (mountedRef.current) onStatusChange('error'); };
         document.head.appendChild(s);
       } else {
-        script.addEventListener('load', renderWidget);
+        existingScript.addEventListener('load', renderWidget);
+        existingScript.addEventListener('error', () => { if (mountedRef.current) onStatusChange('error'); });
       }
     }
 
     return () => {
-      const win = window as unknown as { turnstile?: { remove: (id: string) => void } };
+      mountedRef.current = false;
+      clearTimeout(timeoutId);
+      const win = window as unknown as { turnstile?: TurnstileApi };
       if (widgetIdRef.current !== null && win.turnstile) {
         win.turnstile.remove(widgetIdRef.current);
         widgetIdRef.current = null;
       }
     };
-  }, [onVerify, onExpire]);
+  }, []); // stable — callbacks are captured via refs internally
 
+  if (!TURNSTILE_SITE_KEY) return null;
   return <div ref={containerRef} className="flex justify-center" />;
 }
 
@@ -81,9 +135,15 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSubmit, className }) => {
   const [isSuccess, setIsSuccess] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [captchaStatus, setCaptchaStatus] = useState<CaptchaStatus>(
+    TURNSTILE_SITE_KEY ? 'loading' : 'unavailable'
+  );
 
   const handleCaptchaVerify = useCallback((token: string) => setCaptchaToken(token), []);
   const handleCaptchaExpire = useCallback(() => setCaptchaToken(null), []);
+  const handleCaptchaStatusChange = useCallback((status: CaptchaStatus) => setCaptchaStatus(status), []);
+
+  const captchaRequired = captchaStatus === 'ready' || captchaStatus === 'loading' || captchaStatus === 'verified' || captchaStatus === 'expired';
 
   const updateFormData = (field: keyof ContactFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -109,8 +169,8 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSubmit, className }) => {
     e.preventDefault();
     if (!validateForm()) return;
 
-    if (!captchaToken) {
-      setSubmitError('Please complete the verification check.');
+    if (captchaRequired && !captchaToken) {
+      setSubmitError('Please complete the verification check below.');
       return;
     }
 
@@ -124,7 +184,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSubmit, className }) => {
         message: formData.message,
         source: 'Contact Form',
         referralSource: formData.referralSource || undefined,
-        captchaToken,
+        captchaToken: captchaToken ?? undefined,
       });
 
       if (!emailResult.success) {
@@ -245,9 +305,30 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSubmit, className }) => {
           </div>
 
           <div className="flex flex-col items-center gap-4 mt-8">
-            <TurnstileWidget onVerify={handleCaptchaVerify} onExpire={handleCaptchaExpire} />
-            <Button type="submit" disabled={isSubmitting || !captchaToken}>
-              {isSubmitting ? 'Sending...' : 'Send'}
+            <TurnstileWidget
+              onVerify={handleCaptchaVerify}
+              onExpire={handleCaptchaExpire}
+              onStatusChange={handleCaptchaStatusChange}
+            />
+
+            {captchaStatus === 'loading' && (
+              <p className="text-xs text-neutral-400">Loading verification...</p>
+            )}
+            {captchaStatus === 'verified' && (
+              <div className="flex items-center gap-1.5 text-xs text-green-600">
+                <ShieldCheck className="h-3.5 w-3.5" />
+                <span>Verified</span>
+              </div>
+            )}
+            {captchaStatus === 'error' && (
+              <div className="flex items-center gap-1.5 text-xs text-amber-600">
+                <AlertCircle className="h-3.5 w-3.5" />
+                <span>Verification unavailable — you can still submit</span>
+              </div>
+            )}
+
+            <Button type="submit" disabled={isSubmitting} size="lg">
+              {isSubmitting ? 'Sending...' : 'Send Message'}
             </Button>
           </div>
         </form>

@@ -213,7 +213,7 @@ export interface AdvisorForm {
   id: string;
   slug: string;
   label: string;
-  category: 'employer' | 'member';
+  category: 'employer' | 'member' | 'advisor';
   description: string | null;
   icon: string;
   estimated_minutes: number;

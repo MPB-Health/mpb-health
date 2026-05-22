@@ -1394,14 +1394,16 @@ function DailyLogTab({
     return sortLogEntriesByCreatedAtDesc(searched);
   }, [logsForSheetDay, query, repFilter]);
 
-  /** Per-rep counts for the selected log-date sheet (chip badges). */
-  const repCountsToday = useMemo(() => {
-    const counts = new Map<string, number>();
+  /** Per-rep weighted touches for the selected log-date sheet (chip badges). */
+  const repTouchesToday = useMemo(() => {
+    const touches = new Map<string, number>();
     for (const l of logsForSheetDay) {
-      counts.set(l.teamMember, (counts.get(l.teamMember) ?? 0) + 1);
+      touches.set(l.teamMember, (touches.get(l.teamMember) ?? 0) + metricTouches(l));
     }
-    return counts;
+    return touches;
   }, [logsForSheetDay]);
+
+  const totalTouchesToday = useMemo(() => sumTouches(logsForSheetDay), [logsForSheetDay]);
 
   return (
     <div className="space-y-6">
@@ -1621,8 +1623,8 @@ function DailyLogTab({
               <span className="text-sm font-normal text-slate-500">
                 (
                 {query || repFilter
-                  ? `${filteredLogs.length} match${filteredLogs.length !== 1 ? 'es' : ''}`
-                  : `${filteredLogs.length} rows · Log date ${logSheetYmd} · Newest on top`}
+                  ? `${filteredLogs.length} match${filteredLogs.length !== 1 ? 'es' : ''} · ${sumTouches(filteredLogs)} touches`
+                  : `${filteredLogs.length} rows · ${totalTouchesToday} touches · Log date ${logSheetYmd} · Newest on top`}
                 )
                 {!query && !repFilter && (
                   <>
@@ -1734,12 +1736,12 @@ function DailyLogTab({
               }`}
             >
               All
-              <span className="ml-1.5 text-[10px] opacity-70">{logsForSheetDay.length}</span>
+              <span className="ml-1.5 text-[10px] opacity-70">{totalTouchesToday}</span>
             </button>
             {rosterTeam
               .filter((m) => m.status === 'Active')
               .map((m) => {
-                const count = repCountsToday.get(m.name) ?? 0;
+                const touches = repTouchesToday.get(m.name) ?? 0;
                 const active = repFilter === m.name;
                 return (
                   <button
@@ -1751,9 +1753,10 @@ function DailyLogTab({
                         ? 'bg-[#4A7C8A] text-white border-[#4A7C8A]'
                         : 'bg-white text-[#2F3E2F] border-[#A8B8AC]/40 hover:bg-[#A8B8AC]/10'
                     }`}
+                    title={`${touches} touch${touches !== 1 ? 'es' : ''}`}
                   >
                     {m.name.split(' ')[0]}
-                    <span className="ml-1.5 text-[10px] opacity-70">{count}</span>
+                    <span className="ml-1.5 text-[10px] opacity-70">{touches}</span>
                   </button>
                 );
               })}

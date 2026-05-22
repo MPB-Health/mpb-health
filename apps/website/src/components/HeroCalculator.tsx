@@ -87,7 +87,7 @@ const householdTypes = [
   { value: 'member-family', label: 'Full Family', icon: '👨‍👩‍👧‍👦', description: 'Spouse + kids' },
 ];
 
-const TOTAL_STEPS = 3;
+const TOTAL_STEPS = 4;
 
 interface InlineResults {
   estimates: ReturnType<typeof estimateAllMemberships>;
@@ -104,13 +104,11 @@ export default function HeroCalculator() {
   const [isSubmittingLead, setIsSubmittingLead] = useState(false);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [inlineResults, setInlineResults] = useState<InlineResults | null>(null);
-  const [showContactForm, setShowContactForm] = useState(false);
   const [leadSubmitted, setLeadSubmitted] = useState(false);
   const { track } = useAnalytics();
 
   const {
     register,
-    handleSubmit,
     watch,
     setValue,
     reset,
@@ -199,21 +197,20 @@ export default function HeroCalculator() {
       const valid = await trigger(fields);
       if (valid && canProceedStep1()) setStep(2);
     } else if (step === 2 && canProceedStep2()) {
-      computeInlineResults();
       setStep(3);
+    } else if (step === 3) {
+      await handleContactSubmitAndShowResults();
     }
   };
 
   const handlePrevStep = () => {
-    if (step === 3) {
+    if (step === 4) {
       setInlineResults(null);
-      setShowContactForm(false);
     }
     setStep(Math.max(1, step - 1));
   };
 
-  /** Compute and display results immediately — no form required */
-  const computeInlineResults = () => {
+  const computeInlineResults = (): InlineResults | null => {
     try {
       setIsCalculating(true);
       const comparisonInput = {
@@ -239,7 +236,8 @@ export default function HeroCalculator() {
         })
       );
 
-      setInlineResults({ estimates, recommendations, traditionalCost });
+      const results: InlineResults = { estimates, recommendations, traditionalCost };
+      setInlineResults(results);
 
       track({
         event: AnalyticsEvents.CALCULATE_RATE,
@@ -265,23 +263,30 @@ export default function HeroCalculator() {
         traditional_cost: traditionalCost,
         source_path: typeof window !== 'undefined' ? window.location.pathname : '',
       });
+
+      return results;
     } catch (error) {
       log.error('Failed to compute results:', error);
+      return null;
     } finally {
       setIsCalculating(false);
     }
   };
 
-  /** Submit contact info to capture the lead (optional step after results) */
-  const onSubmit = async (data: HeroCalculatorInput) => {
-    if (!inlineResults) return;
+  /** Validate contact info, compute rates, submit the lead, then advance to results */
+  const handleContactSubmitAndShowResults = async () => {
+    const contactValid = await trigger(['firstName', 'lastName', 'email']);
+    if (!contactValid || !watchedFirstName?.trim() || !watchedLastName?.trim() || !watchedEmail?.trim()) return;
+
+    const results = computeInlineResults();
+    if (!results) return;
 
     setIsSubmittingLead(true);
     setSubmissionError(null);
 
     try {
       const allPlanRates: Record<string, any> = {};
-      inlineResults.estimates.plans.forEach(plan => {
+      results.estimates.plans.forEach(plan => {
         allPlanRates[plan.planId] = {
           planLabel: plan.planLabel,
           lowestPrice: plan.lowestPrice,
@@ -292,15 +297,15 @@ export default function HeroCalculator() {
       });
 
       let householdSize = 1;
-      if (data.householdType === 'member-spouse') householdSize = 2;
-      else if (data.householdType === 'member-child') householdSize = 1 + (data.dependentsCount || 0);
-      else if (data.householdType === 'member-family') householdSize = 2 + (data.dependentsCount || 0);
+      if (watchedHouseholdType === 'member-spouse') householdSize = 2;
+      else if (watchedHouseholdType === 'member-child') householdSize = 1 + (watchedDependentsCount || 0);
+      else if (watchedHouseholdType === 'member-family') householdSize = 2 + (watchedDependentsCount || 0);
 
       const result = await leadSubmissionService.submitLead({
-        firstName: data.firstName,
-        lastName: data.lastName,
-        email: data.email,
-        phone: data.phone?.trim() || 'Not provided',
+        firstName: watchedFirstName,
+        lastName: watchedLastName,
+        email: watchedEmail,
+        phone: watchedPhone?.trim() || 'Not provided',
         householdSize,
         zipCode: '',
         sourcePage: window.location.pathname,
@@ -308,18 +313,18 @@ export default function HeroCalculator() {
         formData: {
           lead_type: 'Quick Rate Estimate Leads',
           quote_calc_session_id: getQuoteCalculatorSessionId(),
-          household_type: data.householdType,
-          state: data.state,
-          primary_age: data.primaryAge,
-          spouse_age: data.spouseAge,
-          dependents_count: data.dependentsCount,
-          oldest_dependent_age: data.oldestDependentAge,
-          membership_priorities: data.membershipPriorities,
+          household_type: watchedHouseholdType,
+          state: watchedState,
+          primary_age: watchedAge,
+          spouse_age: watchedSpouseAge,
+          dependents_count: watchedDependentsCount,
+          oldest_dependent_age: watchedOldestDependentAge,
+          membership_priorities: selectedPriorities,
           all_plan_rates: allPlanRates,
-          priorities_matched: data.membershipPriorities,
-          traditional_cost_estimate: inlineResults.traditionalCost,
-          best_match_plan: inlineResults.recommendations[0]?.planId || null,
-          best_match_percentage: inlineResults.recommendations[0]?.matchPercentage || 0,
+          priorities_matched: selectedPriorities,
+          traditional_cost_estimate: results.traditionalCost,
+          best_match_plan: results.recommendations[0]?.planId || null,
+          best_match_percentage: results.recommendations[0]?.matchPercentage || 0,
         },
       });
 
@@ -328,8 +333,8 @@ export default function HeroCalculator() {
       }
 
       recordQuoteCalculatorEvent('lead_submitted', {
-        state: data.state,
-        household_type: data.householdType,
+        state: watchedState,
+        household_type: watchedHouseholdType,
       });
 
       track({
@@ -338,15 +343,15 @@ export default function HeroCalculator() {
         label: 'lead-captured-from-results',
         value: 1,
         custom_parameters: {
-          household_type: data.householdType,
-          state: data.state,
-          primary_age: data.primaryAge,
+          household_type: watchedHouseholdType,
+          state: watchedState,
+          primary_age: watchedAge,
           email_captured: true,
         },
       });
 
       setLeadSubmitted(true);
-      setShowContactForm(false);
+      setStep(4);
     } catch (error) {
       console.error('[HeroCalculator] Lead submission error:', error);
       setSubmissionError(error instanceof Error ? error.message : 'An unexpected error occurred.');
@@ -366,10 +371,10 @@ export default function HeroCalculator() {
           </div>
           <div>
             <h3 className="text-white font-bold text-lg leading-tight">
-              {step === 3 && inlineResults ? 'Your Rate Comparison' : 'Quick Rate Estimate'}
+              {step === 4 && inlineResults ? 'Your Rate Comparison' : 'Quick Rate Estimate'}
             </h3>
             <p className="text-white/90 text-sm">
-              {step === 3 && inlineResults ? `${inlineResults.estimates.plans.length} plans compared instantly` : 'Compare all plans in 30 seconds'}
+              {step === 4 && inlineResults ? `${inlineResults.estimates.plans.length} plans compared instantly` : 'Compare all plans in 30 seconds'}
             </p>
           </div>
         </div>
@@ -394,12 +399,12 @@ export default function HeroCalculator() {
       </div>
 
       <CardContent className="p-5 sm:p-6">
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <form onSubmit={(e) => e.preventDefault()}>
           {/* Step 1: Household & location */}
           {step === 1 && (
             <div className="space-y-5 animate-in fade-in slide-in-from-right-2 duration-300">
               <div>
-                <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider mb-1">Step 1 of 3</p>
+                <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider mb-1">Step 1 of 4</p>
                 <h4 className="text-base font-bold text-gray-900">Who is included?</h4>
                 <p className="text-sm text-gray-500 mt-0.5">30 seconds to your comparison</p>
               </div>
@@ -502,7 +507,7 @@ export default function HeroCalculator() {
           {step === 2 && (
             <div className="space-y-5 animate-in fade-in slide-in-from-right-2 duration-300">
               <div>
-                <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider mb-1">Step 2 of 3 — one more step</p>
+                <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider mb-1">Step 2 of 4</p>
                 <h4 className="text-base font-bold text-gray-900">What matters most?</h4>
                 <p className="text-sm text-gray-500 mt-0.5">We&apos;ll match you to your best plan</p>
               </div>
@@ -521,8 +526,50 @@ export default function HeroCalculator() {
             </div>
           )}
 
-          {/* Step 3: Inline Results — shown immediately, no form required */}
+          {/* Step 3: Contact form — collect lead before showing prices */}
           {step === 3 && (
+            <div className="space-y-5 animate-in fade-in slide-in-from-right-2 duration-300">
+              <div>
+                <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider mb-1">Step 3 of 4 — almost there</p>
+                <h4 className="text-base font-bold text-gray-900">Where should we send your results?</h4>
+                <p className="text-sm text-gray-500 mt-0.5">Enter your details to see your personalized rate comparison</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="hero-first-name" className="text-sm font-semibold text-gray-700">First Name</Label>
+                  <Input id="hero-first-name" type="text" placeholder="John" className="h-10 text-sm" {...register('firstName')} />
+                  {errors.firstName && <p className="text-xs text-red-600">{errors.firstName.message}</p>}
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="hero-last-name" className="text-sm font-semibold text-gray-700">Last Name</Label>
+                  <Input id="hero-last-name" type="text" placeholder="Smith" className="h-10 text-sm" {...register('lastName')} />
+                  {errors.lastName && <p className="text-xs text-red-600">{errors.lastName.message}</p>}
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="hero-email" className="text-sm font-semibold text-gray-700">Email</Label>
+                <Input id="hero-email" type="email" placeholder="your@email.com" className="h-10 text-sm" {...register('email')} />
+                {errors.email && <p className="text-xs text-red-600">{errors.email.message}</p>}
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="hero-phone" className="text-sm font-semibold text-gray-700">
+                  Phone <span className="font-normal text-gray-400">(optional)</span>
+                </Label>
+                <Input id="hero-phone" type="tel" placeholder="(555) 123-4567" className="h-10 text-sm" {...register('phone')} />
+              </div>
+
+              <div className="flex items-center gap-2 text-xs text-gray-500 bg-gray-50 rounded-lg p-2.5">
+                <Lock className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+                <span>We&apos;ll never spam you. Your info is only used to send your rate comparison.</span>
+              </div>
+            </div>
+          )}
+
+          {/* Step 4: Results */}
+          {step === 4 && (
             <div className="space-y-4 animate-in fade-in slide-in-from-right-2 duration-300">
               {isCalculating ? (
                 <div className="flex flex-col items-center justify-center py-8">
@@ -531,6 +578,16 @@ export default function HeroCalculator() {
                 </div>
               ) : inlineResults ? (
                 <>
+                  {leadSubmitted && (
+                    <div className="p-4 rounded-xl border-2 border-emerald-200 bg-emerald-50 text-center">
+                      <Shield className="h-6 w-6 text-emerald-600 mx-auto mb-2" />
+                      <p className="text-sm font-bold text-emerald-800">You&apos;re all set!</p>
+                      <p className="text-xs text-emerald-700 mt-1">
+                        An advisor will reach out shortly to help you enroll. Check your email for your full comparison.
+                      </p>
+                    </div>
+                  )}
+
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <Sparkles className="h-4 w-4 text-blue-600" />
@@ -541,7 +598,6 @@ export default function HeroCalculator() {
                     </h4>
                   </div>
 
-                  {/* Traditional insurance comparison banner */}
                   {inlineResults.traditionalCost > 0 && (
                     <div className="p-3 rounded-lg bg-red-50 border border-red-200 flex items-center justify-between">
                       <div>
@@ -552,7 +608,6 @@ export default function HeroCalculator() {
                     </div>
                   )}
 
-                  {/* Plan cards */}
                   <div className="space-y-2.5">
                     {inlineResults.estimates.plans
                       .sort((a, b) => {
@@ -618,7 +673,6 @@ export default function HeroCalculator() {
                               </div>
                             </div>
 
-                            {/* Tier range for plans with multiple tiers */}
                             {plan.tiers && plan.tiers.length > 1 && (
                               <div className="mt-2 pt-2 border-t border-gray-100 flex flex-wrap gap-1.5">
                                 {plan.tiers.map(tier => (
@@ -633,82 +687,20 @@ export default function HeroCalculator() {
                       })}
                   </div>
 
-                  {/* CTA: get exact rate (opens contact form) */}
-                  {!showContactForm && !leadSubmitted && (
-                    <div className="space-y-2 pt-1">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          recordQuoteCalculatorEvent('contact_opened', {
-                            source_path: typeof window !== 'undefined' ? window.location.pathname : '',
-                          });
-                          setShowContactForm(true);
-                        }}
-                        className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-semibold text-sm transition-all shadow-sm flex items-center justify-center gap-2"
-                      >
-                        <Sparkles className="h-4 w-4" />
-                        Get Your Exact Rate
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => navigate('/get-a-quote', {
-                          state: {
-                            estimates: inlineResults.estimates,
-                            recommendations: inlineResults.recommendations,
-                            traditionalCost: inlineResults.traditionalCost,
-                          },
-                        })}
-                        className="w-full py-2.5 px-4 rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-700 font-medium text-sm transition-colors flex items-center justify-center gap-2"
-                      >
-                        <ArrowRight className="h-4 w-4" />
-                        View Full Comparison
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Lead submitted success */}
-                  {leadSubmitted && (
-                    <div className="p-4 rounded-xl border-2 border-emerald-200 bg-emerald-50 text-center">
-                      <Shield className="h-6 w-6 text-emerald-600 mx-auto mb-2" />
-                      <p className="text-sm font-bold text-emerald-800">You&apos;re all set!</p>
-                      <p className="text-xs text-emerald-700 mt-1">
-                        An advisor will reach out shortly to help you enroll. Check your email for your full comparison.
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Optional contact form (only shown when CTA is clicked) */}
-                  {showContactForm && !leadSubmitted && (
-                    <div className="space-y-3 pt-2 border-t border-gray-100 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                      <p className="text-sm font-semibold text-gray-800">Get your exact rate &mdash; takes 10 seconds</p>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1.5">
-                          <Label htmlFor="hero-first-name" className="text-sm font-semibold text-gray-700">First Name</Label>
-                          <Input id="hero-first-name" type="text" placeholder="John" className="h-10 text-sm" {...register('firstName')} />
-                          {errors.firstName && <p className="text-xs text-red-600">{errors.firstName.message}</p>}
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label htmlFor="hero-last-name" className="text-sm font-semibold text-gray-700">Last Name</Label>
-                          <Input id="hero-last-name" type="text" placeholder="Smith" className="h-10 text-sm" {...register('lastName')} />
-                          {errors.lastName && <p className="text-xs text-red-600">{errors.lastName.message}</p>}
-                        </div>
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <Label htmlFor="hero-email" className="text-sm font-semibold text-gray-700">Email</Label>
-                        <Input id="hero-email" type="email" placeholder="your@email.com" className="h-10 text-sm" {...register('email')} />
-                        {errors.email && <p className="text-xs text-red-600">{errors.email.message}</p>}
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <Label htmlFor="hero-phone" className="text-sm font-semibold text-gray-700">
-                          Phone <span className="font-normal text-gray-400">(optional)</span>
-                        </Label>
-                        <Input id="hero-phone" type="tel" placeholder="(555) 123-4567" className="h-10 text-sm" {...register('phone')} />
-                      </div>
-                    </div>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => navigate('/get-a-quote', {
+                      state: {
+                        estimates: inlineResults.estimates,
+                        recommendations: inlineResults.recommendations,
+                        traditionalCost: inlineResults.traditionalCost,
+                      },
+                    })}
+                    className="w-full py-2.5 px-4 rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-700 font-medium text-sm transition-colors flex items-center justify-center gap-2"
+                  >
+                    <ArrowRight className="h-4 w-4" />
+                    View Full Comparison
+                  </button>
                 </>
               ) : null}
             </div>
@@ -729,13 +721,13 @@ export default function HeroCalculator() {
 
           {/* Navigation */}
           <div className="mt-6 flex gap-3">
-            {step > 1 && (
+            {step > 1 && step < 4 && (
               <Button type="button" variant="outline" onClick={handlePrevStep} className="flex-1 h-11">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back
               </Button>
             )}
-            {step < TOTAL_STEPS && (
+            {step < 3 && (
               <Button
                 type="button"
                 onClick={handleNextStep}
@@ -745,34 +737,26 @@ export default function HeroCalculator() {
                 }
                 className={cn('flex-1 h-11', step === 1 ? '' : 'flex-[2]')}
               >
-                {step === 2 ? (
-                  <>
-                    <Calculator className="h-4 w-4 mr-2" />
-                    See My Rates
-                  </>
-                ) : (
-                  <>
-                    Continue
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </>
-                )}
+                Continue
+                <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
             )}
-            {step === TOTAL_STEPS && showContactForm && !leadSubmitted && (
+            {step === 3 && (
               <Button
-                type="submit"
+                type="button"
+                onClick={handleNextStep}
                 disabled={isSubmittingLead || !watchedFirstName || !watchedLastName || !watchedEmail}
                 className="flex-[2] h-11 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700"
               >
                 {isSubmittingLead ? (
                   <span className="flex items-center gap-2">
                     <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Sending...
+                    Calculating...
                   </span>
                 ) : (
                   <>
-                    <Sparkles className="h-4 w-4 mr-2" />
-                    Get My Exact Rate
+                    <Calculator className="h-4 w-4 mr-2" />
+                    See My Rates
                   </>
                 )}
               </Button>

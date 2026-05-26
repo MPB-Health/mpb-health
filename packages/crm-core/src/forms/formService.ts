@@ -443,11 +443,15 @@ export class FormService {
   /**
    * Generate embed code for a form
    */
+  /**
+   * Generate embed code for a form.
+   * Uses slug in public URLs since the `/forms/:slug` route resolves by slug.
+   */
   generateEmbedCode(
-    formId: string,
+    form: { id: string; slug: string },
     baseUrl: string
-  ): { iframe: string; script: string } {
-    const formUrl = `${baseUrl}/forms/${formId}`;
+  ): { iframe: string; script: string; react: string } {
+    const formUrl = `${baseUrl}/forms/${form.slug}`;
 
     const iframe = `<iframe
   src="${formUrl}"
@@ -458,10 +462,10 @@ export class FormService {
   title="Contact Form"
 ></iframe>`;
 
-    const script = `<div id="mpb-form-${formId}"></div>
+    const script = `<div id="mpb-form-${form.id}"></div>
 <script>
 (function() {
-  var container = document.getElementById('mpb-form-${formId}');
+  var container = document.getElementById('mpb-form-${form.id}');
   var iframe = document.createElement('iframe');
   iframe.src = '${formUrl}?embed=1';
   iframe.width = '100%';
@@ -473,14 +477,22 @@ export class FormService {
   container.appendChild(iframe);
 
   window.addEventListener('message', function(e) {
-    if (e.data && e.data.type === 'mpb-form-resize' && e.data.formId === '${formId}') {
+    if (e.data && e.data.type === 'mpb-form-resize' && e.data.formId === '${form.id}') {
       iframe.height = e.data.height;
     }
   });
 })();
 </script>`;
 
-    return { iframe, script };
+    const react = `import { MPBFormEmbed } from '@mpbhealth/form-embed';
+
+<MPBFormEmbed
+  formId="${form.id}"
+  supabaseUrl="YOUR_SUPABASE_URL"
+  supabaseAnonKey="YOUR_SUPABASE_ANON_KEY"
+/>`;
+
+    return { iframe, script, react };
   }
 }
 

@@ -26,6 +26,9 @@ import {
   X,
   Pencil,
   FileText,
+  Code,
+  Copy,
+  Check,
 } from 'lucide-react';
 import {
   DndContext,
@@ -69,6 +72,87 @@ const FIELD_TYPES: { type: FormFieldType; label: string; icon: typeof Type }[] =
 
 function getFieldIcon(type: FormFieldType) {
   return FIELD_TYPES.find((f) => f.type === type)?.icon || Type;
+}
+
+// ── Embed Code Modal ─────────────────────────────────────────────────────────
+
+function EmbedCodeModal({
+  form,
+  onClose,
+}: {
+  form: { id: string; slug: string | null };
+  onClose: () => void;
+}) {
+  const [tab, setTab] = useState<'iframe' | 'script' | 'react'>('iframe');
+  const [copied, setCopied] = useState(false);
+
+  const baseUrl = window.location.origin;
+  const { iframe, script, react } = formBuilderService.generateEmbedCode(form, baseUrl);
+
+  const codeMap = { iframe, script, react };
+  const code = codeMap[tab];
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
+      <div className="relative w-full max-w-lg bg-white rounded-xl shadow-2xl">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+          <h2 className="text-lg font-semibold text-gray-900">Embed Code</h2>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100">
+            <X size={20} className="text-gray-500" />
+          </button>
+        </div>
+        <div className="p-6">
+          <div className="flex gap-2 mb-4">
+            {([
+              { key: 'iframe' as const, label: 'iFrame' },
+              { key: 'script' as const, label: 'JavaScript' },
+              { key: 'react' as const, label: 'React' },
+            ]).map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => { setTab(key); setCopied(false); }}
+                className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                  tab === key
+                    ? 'bg-blue-100 text-blue-700'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <div className="relative">
+            <pre className="bg-gray-900 text-gray-100 text-xs p-4 rounded-lg overflow-x-auto max-h-64">
+              <code>{code}</code>
+            </pre>
+            <button
+              onClick={handleCopy}
+              className="absolute top-2 right-2 flex items-center gap-1 px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs text-gray-200"
+            >
+              {copied ? <Check size={12} /> : <Copy size={12} />}
+              {copied ? 'Copied' : 'Copy'}
+            </button>
+          </div>
+
+          <p className="text-xs text-gray-500 mt-3">
+            {tab === 'iframe'
+              ? 'Paste this HTML snippet where you want the form to appear.'
+              : tab === 'script'
+                ? 'This script creates an auto-resizing iframe. Paste it where you want the form.'
+                : 'Install @mpbhealth/form-embed and use this React component in your app.'}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function generateId() {
@@ -429,7 +513,10 @@ function SubmissionsInbox({
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Date
                 </th>
-                {fieldNames.slice(0, 4).map((name) => (
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                {fieldNames.slice(0, 3).map((name) => (
                   <th
                     key={name}
                     className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
@@ -488,7 +575,23 @@ function SubmissionRow({
         <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
           {formatDateTime(submission.created_at)}
         </td>
-        {fieldNames.slice(0, 4).map((name) => (
+        <td className="px-4 py-3">
+          {(() => {
+            const s = (submission as FormSubmission).status || 'new';
+            const statusColors: Record<string, string> = {
+              new: 'bg-blue-100 text-blue-700',
+              converted: 'bg-green-100 text-green-700',
+              duplicate: 'bg-amber-100 text-amber-700',
+              spam: 'bg-red-100 text-red-700',
+            };
+            return (
+              <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[s] || statusColors.new}`}>
+                {s}
+              </span>
+            );
+          })()}
+        </td>
+        {fieldNames.slice(0, 3).map((name) => (
           <td key={name} className="px-4 py-3 text-sm text-gray-900 truncate max-w-[200px]">
             {String(submission.data[name] ?? '')}
           </td>
@@ -507,7 +610,7 @@ function SubmissionRow({
       </tr>
       {isExpanded && (
         <tr>
-          <td colSpan={fieldNames.slice(0, 4).length + 3} className="bg-gray-50 px-6 py-4">
+          <td colSpan={fieldNames.slice(0, 3).length + 4} className="bg-gray-50 px-6 py-4">
             <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm max-w-2xl">
               {Object.entries(submission.data).map(([key, value]) => (
                 <div key={key}>
@@ -519,6 +622,12 @@ function SubmissionRow({
                 <div>
                   <span className="font-medium text-gray-600">IP:</span>{' '}
                   <span className="text-gray-900">{submission.ip_address}</span>
+                </div>
+              )}
+              {(submission as FormSubmission).lead_id && (
+                <div>
+                  <span className="font-medium text-gray-600">Lead ID:</span>{' '}
+                  <span className="text-gray-900 font-mono text-xs">{(submission as FormSubmission).lead_id}</span>
                 </div>
               )}
             </div>
@@ -549,8 +658,11 @@ function FormEditor({
   const [notificationEmails, setNotificationEmails] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [redirectUrl, setRedirectUrl] = useState('');
+  const [status, setStatus] = useState<CmsForm['status']>('draft');
+  const [entityType, setEntityType] = useState<CmsForm['entity_type']>('lead');
   const [showSettings, setShowSettings] = useState(false);
   const [viewSubmissions, setViewSubmissions] = useState(false);
+  const [showEmbedCode, setShowEmbedCode] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -572,6 +684,8 @@ function FormEditor({
           setNotificationEmails((data.notification_emails || []).join(', '));
           setSuccessMessage(data.settings?.success_message || '');
           setRedirectUrl(data.settings?.redirect_url || '');
+          setStatus(data.status || 'draft');
+          setEntityType(data.entity_type || 'lead');
         }
       } catch (e) {
         toast.error(`Failed to load form: ${e instanceof Error ? e.message : 'Unknown'}`);
@@ -631,6 +745,8 @@ function FormEditor({
         name: name.trim(),
         slug: slug.trim() || slugify(name),
         fields,
+        status,
+        entity_type: entityType,
         settings: {
           success_message: successMessage || undefined,
           redirect_url: redirectUrl || undefined,
@@ -686,13 +802,22 @@ function FormEditor({
         </div>
         <div className="flex items-center gap-2">
           {form && (
-            <button
-              onClick={() => setViewSubmissions(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
-            >
-              <Inbox size={16} />
-              Submissions
-            </button>
+            <>
+              <button
+                onClick={() => setViewSubmissions(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                <Inbox size={16} />
+                Submissions
+              </button>
+              <button
+                onClick={() => setShowEmbedCode(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                <Code size={16} />
+                Embed
+              </button>
+            </>
           )}
           <button
             onClick={() => setShowSettings(!showSettings)}
@@ -747,6 +872,32 @@ function FormEditor({
       {showSettings && (
         <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg space-y-4">
           <h3 className="text-sm font-semibold text-gray-700">Form Settings</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value as CmsForm['status'])}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="draft">Draft</option>
+                <option value="active">Active</option>
+                <option value="archived">Archived</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Lead Type</label>
+              <select
+                value={entityType}
+                onChange={(e) => setEntityType(e.target.value as CmsForm['entity_type'])}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="lead">Lead</option>
+                <option value="contact">Contact</option>
+                <option value="quote_request">Quote Request</option>
+              </select>
+            </div>
+          </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Notification Emails (comma-separated)
@@ -862,6 +1013,13 @@ function FormEditor({
           )}
         </div>
       </div>
+
+      {showEmbedCode && form && (
+        <EmbedCodeModal
+          form={{ id: form.id, slug: form.slug }}
+          onClose={() => setShowEmbedCode(false)}
+        />
+      )}
     </div>
   );
 }
@@ -950,6 +1108,9 @@ function FormsList({
                   Slug
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Fields
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -962,7 +1123,13 @@ function FormsList({
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {forms.map((form) => (
+              {forms.map((form) => {
+                const statusStyles = {
+                  active: 'bg-green-100 text-green-700',
+                  draft: 'bg-gray-100 text-gray-600',
+                  archived: 'bg-amber-100 text-amber-700',
+                };
+                return (
                 <tr
                   key={form.id}
                   className="hover:bg-gray-50 cursor-pointer"
@@ -972,6 +1139,11 @@ function FormsList({
                     <p className="text-sm font-medium text-gray-900">{form.name}</p>
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-500 font-mono">{form.slug || '—'}</td>
+                  <td className="px-4 py-3">
+                    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${statusStyles[form.status] || statusStyles.draft}`}>
+                      {form.status}
+                    </span>
+                  </td>
                   <td className="px-4 py-3 text-sm text-gray-600">
                     {(form.fields || []).length}
                   </td>
@@ -1003,7 +1175,8 @@ function FormsList({
                     </div>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>

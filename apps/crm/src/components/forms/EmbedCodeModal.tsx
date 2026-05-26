@@ -6,21 +6,29 @@ interface EmbedCodeModalProps {
   onClose: () => void;
   iframe: string;
   script: string;
+  react?: string;
 }
 
-export function EmbedCodeModal({ open, onClose, iframe, script }: EmbedCodeModalProps) {
-  const [tab, setTab] = useState<'iframe' | 'script'>('iframe');
+export function EmbedCodeModal({ open, onClose, iframe, script, react }: EmbedCodeModalProps) {
+  const [tab, setTab] = useState<'iframe' | 'script' | 'react'>('iframe');
   const [copied, setCopied] = useState(false);
 
   if (!open) return null;
 
-  const code = tab === 'iframe' ? iframe : script;
+  const codeMap = { iframe, script, react: react || '' };
+  const code = codeMap[tab];
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(code);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  const tabs: { key: typeof tab; label: string }[] = [
+    { key: 'iframe', label: 'iFrame' },
+    { key: 'script', label: 'JavaScript' },
+    ...(react ? [{ key: 'react' as const, label: 'React' }] : []),
+  ];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -35,26 +43,19 @@ export function EmbedCodeModal({ open, onClose, iframe, script }: EmbedCodeModal
 
         <div className="p-6">
           <div className="flex gap-2 mb-4">
-            <button
-              onClick={() => setTab('iframe')}
-              className={`px-3 py-1.5 text-sm rounded-lg ${
-                tab === 'iframe'
-                  ? 'bg-th-accent-100 text-th-accent-700'
-                  : 'text-th-text-secondary hover:bg-surface-secondary'
-              }`}
-            >
-              iFrame
-            </button>
-            <button
-              onClick={() => setTab('script')}
-              className={`px-3 py-1.5 text-sm rounded-lg ${
-                tab === 'script'
-                  ? 'bg-th-accent-100 text-th-accent-700'
-                  : 'text-th-text-secondary hover:bg-surface-secondary'
-              }`}
-            >
-              JavaScript
-            </button>
+            {tabs.map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => { setTab(key); setCopied(false); }}
+                className={`px-3 py-1.5 text-sm rounded-lg ${
+                  tab === key
+                    ? 'bg-th-accent-100 text-th-accent-700'
+                    : 'text-th-text-secondary hover:bg-surface-secondary'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
 
           <div className="relative">
@@ -73,7 +74,9 @@ export function EmbedCodeModal({ open, onClose, iframe, script }: EmbedCodeModal
           <p className="text-xs text-th-text-tertiary mt-3">
             {tab === 'iframe'
               ? 'Paste this HTML snippet where you want the form to appear.'
-              : 'This script creates an auto-resizing iframe. Paste it where you want the form.'}
+              : tab === 'script'
+                ? 'This script creates an auto-resizing iframe. Paste it where you want the form.'
+                : 'Install @mpbhealth/form-embed and use this React component in your app.'}
           </p>
         </div>
       </div>

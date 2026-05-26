@@ -1,0 +1,36 @@
+{
+  "name": "@mpbhealth/form-embed",
+  "version": "0.1.0",
+  "description": "Embeddable form component for MPB Health CRM web forms",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --external react --external react-dom",
+    "dev": "tsup src/index.ts --format esm --dts --external react --external react-dom --watch",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
+  },
+  "devDependencies": {
+    "@mpbhealth/typescript-config": "workspace:*",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "tsup": "catalog:",
+    "typescript": "catalog:"
+  }
+}

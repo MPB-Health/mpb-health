@@ -18,10 +18,11 @@ export default function WebForms() {
   const [statusFilter, setStatusFilter] = useState<FormStatus | ''>('');
 
   // Embed modal state
-  const [embedModal, setEmbedModal] = useState<{ open: boolean; iframe: string; script: string }>({
+  const [embedModal, setEmbedModal] = useState<{ open: boolean; iframe: string; script: string; react: string }>({
     open: false,
     iframe: '',
     script: '',
+    react: '',
   });
 
   const loadForms = useCallback(async () => {
@@ -60,8 +61,8 @@ export default function WebForms() {
   };
 
   const handleShowEmbed = (form: WebForm) => {
-    const { iframe, script } = formService.generateEmbedCode(form.id, window.location.origin);
-    setEmbedModal({ open: true, iframe, script });
+    const { iframe, script, react } = formService.generateEmbedCode(form, window.location.origin);
+    setEmbedModal({ open: true, iframe, script, react });
   };
 
   const activeForms = forms.filter((f) => f.status === 'active').length;
@@ -147,9 +148,10 @@ export default function WebForms() {
       {/* Embed code modal */}
       <EmbedCodeModal
         open={embedModal.open}
-        onClose={() => setEmbedModal({ open: false, iframe: '', script: '' })}
+        onClose={() => setEmbedModal({ open: false, iframe: '', script: '', react: '' })}
         iframe={embedModal.iframe}
         script={embedModal.script}
+        react={embedModal.react}
       />
     </div>
   );

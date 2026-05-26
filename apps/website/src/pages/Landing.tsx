@@ -39,9 +39,6 @@ const Landing: React.FC = () => {
         />
         <meta name="keywords" content="healthshare memberships, health sharing, healthcare costs, insurance alternative, community health, medical cost sharing, affordable healthcare" />
 
-        {/* Preload critical resources */}
-        <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" as="style" />
-
         {/* Open Graph */}
         <meta property="og:title" content="Affordable HealthShare Memberships | MPB Health" />
         <meta property="og:description" content="MPB Health offers flexible, affordable HealthShare memberships for individuals and families. Save on healthcare costs with our community-driven solutions." />

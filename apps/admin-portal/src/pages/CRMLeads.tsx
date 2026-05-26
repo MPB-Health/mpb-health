@@ -109,9 +109,9 @@ export default function CRMLeads() {
                 <tr>
                   <th className="text-left py-3 px-4 text-sm font-medium text-th-text-secondary">Name</th>
                   <th className="text-left py-3 px-4 text-sm font-medium text-th-text-secondary">Email</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-th-text-secondary">Company</th>
-                  <th className="text-left py-3 px-4 text-sm font-medium text-th-text-secondary">Status</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-th-text-secondary">Stage</th>
                   <th className="text-left py-3 px-4 text-sm font-medium text-th-text-secondary">Source</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-th-text-secondary">Score</th>
                   <th className="text-left py-3 px-4 text-sm font-medium text-th-text-secondary">Created</th>
                 </tr>
               </thead>
@@ -128,15 +128,15 @@ export default function CRMLeads() {
                       </p>
                     </td>
                     <td className="py-3 px-4 text-sm text-th-text-secondary">{lead.email || '-'}</td>
-                    <td className="py-3 px-4 text-sm text-th-text-secondary">{lead.company || '-'}</td>
                     <td className="py-3 px-4">
-                      {lead.status && (
-                        <span className={`px-2 py-1 text-xs rounded-full font-medium ${STATUS_COLORS[lead.status] || 'bg-neutral-100 text-neutral-600'}`}>
-                          {lead.status}
+                      {lead.pipeline_stage && (
+                        <span className={`px-2 py-1 text-xs rounded-full font-medium ${STATUS_COLORS[lead.pipeline_stage] || 'bg-neutral-100 text-neutral-600'}`}>
+                          {lead.pipeline_stage}
                         </span>
                       )}
                     </td>
-                    <td className="py-3 px-4 text-sm text-th-text-secondary">{lead.source || '-'}</td>
+                    <td className="py-3 px-4 text-sm text-th-text-secondary">{lead.lead_source || '-'}</td>
+                    <td className="py-3 px-4 text-sm text-th-text-secondary">{lead.lead_score ?? '-'}</td>
                     <td className="py-3 px-4 text-sm text-th-text-tertiary">
                       {new Date(lead.created_at).toLocaleDateString()}
                     </td>

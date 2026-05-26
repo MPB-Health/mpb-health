@@ -405,7 +405,7 @@ export class LeadService {
     filters?: LeadFilters
   ): Promise<Lead[]> {
     try {
-      let query = this.supabase.from('lead_submissions').select('id, org_id, first_name, last_name, email, phone, source, status, stage, priority, assigned_to, score, tags, metadata, notes, next_followup_at, created_by, created_at, updated_at');
+      let query = this.supabase.from('lead_submissions').select('id, org_id, first_name, last_name, email, phone, lead_source, pipeline_stage, priority, plan_type, assigned_to, lead_score, tags, primary_concern, zip_code, city, state, next_followup_at, created_at, updated_at');
 
       if (leadIds && leadIds.length > 0) {
         query = query.in('id', leadIds);

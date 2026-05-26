@@ -259,7 +259,8 @@ export async function sendLeadNotification(data: {
     subject: `🎯 New Lead: ${data.name || data.email}`,
     html,
     replyTo: data.email,
-    text: `New Lead Generated\n\n${data.name ? `Name: ${data.name}\n` : ''}Email: ${data.email}\n${data.phone ? `Phone: ${data.phone}\n` : ''}${data.householdType ? `Household: ${data.householdType}\n` : ''}${data.estimatedCost ? `Estimated Cost: $${data.estimatedCost}/month\n` : ''}Source: ${data.source}`
+    text: `New Lead Generated\n\n${data.name ? `Name: ${data.name}\n` : ''}Email: ${data.email}\n${data.phone ? `Phone: ${data.phone}\n` : ''}${data.householdType ? `Household: ${data.householdType}\n` : ''}${data.estimatedCost ? `Estimated Cost: $${data.estimatedCost}/month\n` : ''}Source: ${data.source}`,
+    emailType: 'staff-lead-notification',
   });
 }
 

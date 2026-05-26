@@ -27,13 +27,13 @@ export interface CRMLead {
   last_name: string | null;
   email: string | null;
   phone: string | null;
-  company: string | null;
-  source: string | null;
-  status: string | null;
-  pipeline_stage_id: string | null;
+  lead_source: string | null;
+  pipeline_stage: string | null;
   stage_name?: string;
   plan_type?: string | null;
   assigned_to: string | null;
+  tags?: string[] | null;
+  lead_score?: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -161,7 +161,7 @@ export class CRMBridgeService {
       const { count } = await supabase
         .from('lead_submissions')
         .select('id', { count: 'exact', head: true })
-        .eq('pipeline_stage_id', stage.id);
+        .eq('pipeline_stage', stage.id);
       results.push({
         stage: stage.name,
         count: count || 0,
@@ -192,7 +192,7 @@ export class CRMBridgeService {
     const { count } = await supabase
       .from('lead_submissions')
       .select('id', { count: 'exact', head: true })
-      .eq('pipeline_stage_id', stages[0].id);
+      .eq('pipeline_stage', stages[0].id);
     return count || 0;
   }
 
@@ -209,21 +209,21 @@ export class CRMBridgeService {
   async getLeads(filters?: CRMLeadFilters): Promise<{ data: CRMLead[]; count: number }> {
     let query = supabase
       .from('lead_submissions')
-      .select('id, first_name, last_name, email, phone, company, source, status, pipeline_stage_id, plan_type, assigned_to, created_at, updated_at', { count: 'exact' })
+      .select('id, first_name, last_name, email, phone, lead_source, pipeline_stage, plan_type, assigned_to, tags, lead_score, created_at, updated_at', { count: 'exact' })
       .order('created_at', { ascending: false });
 
     if (filters?.status) {
-      query = query.eq('status', filters.status);
+      query = query.eq('pipeline_stage', filters.status);
     }
     if (filters?.stage_id) {
-      query = query.eq('pipeline_stage_id', filters.stage_id);
+      query = query.eq('pipeline_stage', filters.stage_id);
     }
     if (filters?.plan_type) {
       query = query.eq('plan_type', filters.plan_type);
     }
     if (filters?.search) {
       query = query.or(
-        `first_name.ilike.%${filters.search}%,last_name.ilike.%${filters.search}%,email.ilike.%${filters.search}%,company.ilike.%${filters.search}%`
+        `first_name.ilike.%${filters.search}%,last_name.ilike.%${filters.search}%,email.ilike.%${filters.search}%`
       );
     }
     if (filters?.assigned_to) {
@@ -242,7 +242,7 @@ export class CRMBridgeService {
   async getLead(leadId: string): Promise<CRMLeadDetail | null> {
     const { data, error } = await supabase
       .from('lead_submissions')
-      .select('id, first_name, last_name, email, phone, company, source, status, pipeline_stage_id, plan_type, assigned_to, notes, metadata, created_at, updated_at')
+      .select('id, first_name, last_name, email, phone, lead_source, pipeline_stage, plan_type, assigned_to, tags, lead_score, primary_concern, zip_code, city, state, created_at, updated_at')
       .eq('id', leadId)
       .single();
 
@@ -286,7 +286,7 @@ export class CRMBridgeService {
   async updateLeadStage(leadId: string, stageId: string): Promise<void> {
     const { error } = await supabase
       .from('lead_submissions')
-      .update({ pipeline_stage_id: stageId, updated_at: new Date().toISOString() })
+      .update({ pipeline_stage: stageId, updated_at: new Date().toISOString() })
       .eq('id', leadId);
 
     if (error) throw error;
@@ -314,7 +314,7 @@ export class CRMBridgeService {
     // 1. Get the lead
     const { data: lead, error: leadError } = await supabase
       .from('lead_submissions')
-      .select('id, first_name, last_name, email, phone, company, source, status, pipeline_stage_id, plan_type, assigned_to, notes, metadata, utm_source, created_at, updated_at')
+      .select('id, first_name, last_name, email, phone, lead_source, pipeline_stage, plan_type, assigned_to, tags, lead_score, primary_concern, zip_code, city, state, created_at, updated_at')
       .eq('id', leadId)
       .single();
 
@@ -372,7 +372,7 @@ export class CRMBridgeService {
       updated_at: now,
     };
     if (wonStage && wonStage.length > 0) {
-      leadUpdate.pipeline_stage_id = wonStage[0].id;
+      leadUpdate.pipeline_stage = wonStage[0].id;
     }
 
     await supabase

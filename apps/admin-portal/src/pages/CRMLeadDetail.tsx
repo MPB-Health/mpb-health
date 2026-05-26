@@ -57,7 +57,7 @@ export default function CRMLeadDetail() {
     if (!leadId) return;
     try {
       await crmBridgeService.updateLeadStage(leadId, stageId);
-      setLead((prev) => prev ? { ...prev, pipeline_stage_id: stageId } : prev);
+      setLead((prev) => prev ? { ...prev, pipeline_stage: stageId } : prev);
       toast.success('Stage updated');
     } catch {
       toast.error('Failed to update stage');
@@ -73,11 +73,10 @@ export default function CRMLeadDetail() {
       setConvertedContactId(contact.id);
       setShowConvertModal(false);
       // Update lead state to reflect conversion
-      setLead((prev) => prev ? { ...prev, status: 'converted' } : prev);
-      // Move to won stage visually
+      setLead((prev) => prev ? { ...prev, pipeline_stage: 'closed_won' } : prev);
       const wonStage = stages.find((s) => s.name.toLowerCase() === 'won');
       if (wonStage) {
-        setLead((prev) => prev ? { ...prev, pipeline_stage_id: wonStage.id } : prev);
+        setLead((prev) => prev ? { ...prev, pipeline_stage: wonStage.id } : prev);
       }
       toast.success('Lead converted to contact successfully');
     } catch (err) {
@@ -114,17 +113,14 @@ export default function CRMLeadDetail() {
             <h1 className="text-2xl font-bold text-th-text-primary">
               {lead.first_name} {lead.last_name}
             </h1>
-            {lead.company && (
-              <p className="text-sm text-th-text-tertiary">{lead.company}</p>
-            )}
           </div>
-          {lead.status && (
+          {lead.pipeline_stage && (
             <span className={`px-3 py-1 text-sm rounded-full font-medium ${
-              lead.status === 'converted'
+              lead.pipeline_stage === 'closed_won'
                 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
                 : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
             }`}>
-              {lead.status}
+              {lead.pipeline_stage}
             </span>
           )}
         </div>
@@ -156,8 +152,7 @@ export default function CRMLeadDetail() {
             <div className="grid grid-cols-2 gap-4">
               <InfoRow icon={Mail} label="Email" value={lead.email || '-'} />
               <InfoRow icon={Phone} label="Phone" value={lead.phone || '-'} />
-              <InfoRow icon={Building2} label="Company" value={lead.company || '-'} />
-              <InfoRow icon={User} label="Source" value={lead.source || '-'} />
+              <InfoRow icon={User} label="Source" value={lead.lead_source || '-'} />
             </div>
           </div>
 
@@ -171,11 +166,11 @@ export default function CRMLeadDetail() {
                     key={stage.id}
                     onClick={() => handleStageChange(stage.id)}
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                      lead.pipeline_stage_id === stage.id
+                      lead.pipeline_stage === stage.id
                         ? 'ring-2 ring-offset-2 ring-th-accent-500 text-white'
                         : 'bg-surface-tertiary text-th-text-secondary hover:bg-surface-secondary'
                     }`}
-                    style={lead.pipeline_stage_id === stage.id ? { backgroundColor: stage.color } : {}}
+                    style={lead.pipeline_stage === stage.id ? { backgroundColor: stage.color } : {}}
                   >
                     {stage.name}
                   </button>
@@ -384,8 +379,8 @@ function ConvertToContactModal({
               <span className="text-th-text-primary">{lead.phone || '—'}</span>
             </div>
             <div>
-              <span className="text-th-text-tertiary">Company:</span>{' '}
-              <span className="text-th-text-primary">{lead.company || '—'}</span>
+              <span className="text-th-text-tertiary">Source:</span>{' '}
+              <span className="text-th-text-primary">{lead.lead_source || '—'}</span>
             </div>
           </div>
         </div>

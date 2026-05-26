@@ -28,6 +28,7 @@ import {
   BookOpen,
   ClipboardList,
   Briefcase,
+  FileInput,
 } from 'lucide-react';
 import { OrgSwitcher, usePortalAccess } from '@mpbhealth/auth';
 import { useAuth } from '../contexts/AuthContext';
@@ -125,6 +126,7 @@ const navigationSections: NavSection[] = [
     items: [
       { name: 'Leads', href: '/leads', icon: Users, permission: 'leads.read' },
       { name: 'Pipeline', href: '/pipeline', icon: Kanban, permission: 'pipeline.read' },
+      { name: 'Web Forms', href: '/web-forms', icon: FileInput, permission: 'campaigns.read' },
     ],
   },
   {

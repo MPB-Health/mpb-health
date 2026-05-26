@@ -75,7 +75,6 @@ export const SITE_PAGES_CATALOG: SitePageCatalogEntry[] = [
     title: 'Washington Statement',
     group: 'legal',
   },
-  { path: '/benefits', slug: 'benefits', title: 'Benefits', group: 'content' },
   { path: '/features', slug: 'features', title: 'Features', group: 'content' },
   { path: '/resources', slug: 'resources', title: 'Resource Library', group: 'content' },
   { path: '/blog', slug: 'blog', title: 'Blog', group: 'content' },

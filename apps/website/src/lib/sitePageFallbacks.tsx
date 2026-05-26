@@ -28,7 +28,6 @@ import EducationEnrollment from '../pages/EducationEnrollment';
 import CareSupportHub from '../pages/CareSupportHub';
 import InsightsAnalytics from '../pages/InsightsAnalytics';
 import ResourceLibrary from '../pages/ResourceLibrary';
-import Benefits from '../pages/Benefits';
 import Features from '../pages/Features';
 import Blog from '../pages/Blog';
 import Events from '../pages/Events';
@@ -65,7 +64,6 @@ export const SITE_PAGE_FALLBACKS: Record<string, ComponentType> = {
   '/care-support-hub': CareSupportHub,
   '/insights-analytics': InsightsAnalytics,
   '/resources': ResourceLibrary,
-  '/benefits': Benefits,
   '/features': Features,
   '/blog': Blog,
   '/events': Events,

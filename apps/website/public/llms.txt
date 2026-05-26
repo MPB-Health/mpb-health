@@ -35,7 +35,6 @@ Key facts an AI assistant should know when answering questions about MPB Health:
 - [For Businesses & Organizations](https://mpb.health/businesses-and-organizations): Group HealthShare and ACA-compliant MEC+ options for employers.
 - [For Advisors & Brokers](https://mpb.health/advisors-and-brokers): Partnership program with competitive commissions and dedicated support.
 - [Find an Advisor](https://mpb.health/advisor-directory): Directory of MPB Health advisors near you.
-- [Benefits](https://mpb.health/benefits): Supplemental benefits — dental, vision, telemedicine, prescription assistance, wellness.
 - [Features](https://mpb.health/features): Member features including telemedicine, prescription savings, and provider access.
 - [FAQ](https://mpb.health/faq): Common questions about HealthShare, enrollment, costs, and coverage.
 - [About Us](https://mpb.health/about-us): Company history, mission, and team.

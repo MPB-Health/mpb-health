@@ -108,15 +108,6 @@
     "canonicalUrl": "https://mpb.health/advisor-directory",
     "robots": "index, follow"
   },
-  "/benefits": {
-    "title": "Member Benefits & Voluntary Membership | MPB Health",
-    "description": "Explore additional benefits: dental, vision, telemedicine, prescription assistance, and wellness programs. Comprehensive healthcare solutions.",
-    "keywords": "health benefits, dental membership, vision insurance, telemedicine, prescription assistance, wellness programs",
-    "ogTitle": "Member Benefits | MPB Health",
-    "ogDescription": "Dental, vision, telemedicine, and more supplemental benefits.",
-    "canonicalUrl": "https://mpb.health/benefits",
-    "robots": "index, follow"
-  },
   "/resources": {
     "title": "Health Sharing Resources & Guides | MPB Health",
     "description": "Access helpful resources, guides, forms, and educational materials about health sharing. Download member handbooks and enrollment guides.",

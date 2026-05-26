@@ -25,7 +25,6 @@ Allow: /how-it-works
 Allow: /faq
 Allow: /blog
 Allow: /advisors
-Allow: /benefits
 Allow: /features
 Allow: /get-a-quote
 Allow: /get-started

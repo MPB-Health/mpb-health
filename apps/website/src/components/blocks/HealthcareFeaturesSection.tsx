@@ -122,7 +122,7 @@ export const HealthcareFeaturesSection: React.FC = () => {
                 </div>
 
                 <Link
-                  to="/benefits"
+                  to="/features"
                   className="mt-6 inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl group"
                 >
                   Explore All Benefits

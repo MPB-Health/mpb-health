@@ -11,7 +11,7 @@ export const BenefitDetail: React.FC = () => {
   const benefit = voluntaryBenefits.find((b) => b.id === benefitId);
 
   if (!benefit) {
-    return <Navigate to="/benefits" replace />;
+    return <Navigate to="/features" replace />;
   }
 
   const Icon = benefit.icon;
@@ -30,11 +30,11 @@ export const BenefitDetail: React.FC = () => {
           <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="mb-6">
               <Link
-                to="/benefits"
+                to="/features"
                 className="inline-flex items-center gap-2 text-white/90 hover:text-white transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" />
-                Back to Benefits
+                Back to Features
               </Link>
             </div>
 

@@ -248,14 +248,6 @@ const Header = () => {
           href: 'https://app.mpb.health',
           external: true,
         },
-        {
-          id: 'submit-ticket',
-          label: 'Submit a Ticket',
-          description: 'Get help with technical or account issues',
-          icon: 'HelpCircle',
-          href: 'https://support.mpb.health/support/member',
-          external: true,
-        },
       ],
     },
     {
@@ -791,17 +783,6 @@ const Header = () => {
                       <div className="flex items-center space-x-2">
                         <ExternalLink className="h-4 w-4 text-primary" />
                         <span>Access Member Portal</span>
-                      </div>
-                    </a>
-                    <a
-                      href="https://support.mpb.health/support/member"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block px-4 py-3 text-sm text-neutral-700 hover:bg-neutral-50 rounded-lg transition-colors"
-                    >
-                      <div className="flex items-center space-x-2">
-                        <HelpCircle className="h-4 w-4 text-primary" />
-                        <span>Submit a Ticket</span>
                       </div>
                     </a>
 

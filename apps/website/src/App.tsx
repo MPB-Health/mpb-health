@@ -55,8 +55,7 @@ const CmsPage = lazyAuto(() => import('./pages/CmsPage'));
 const MemberStories = lazyAuto(() => import('./pages/MemberStories'));
 const HealthyCarePodcast = lazyAuto(() => import('./pages/HealthyCarePodcast'));
 
-// Benefits & Features
-const Benefits = lazyAuto(() => import('./pages/Benefits'));
+// Features
 const BenefitDetail = lazyAuto(() => import('./pages/BenefitDetail'));
 const Features = lazyAuto(() => import('./pages/Features'));
 const FeatureDetail = lazyAuto(() => import('./pages/FeatureDetail'));

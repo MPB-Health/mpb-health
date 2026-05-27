@@ -1158,6 +1158,7 @@ export default function LeadDetail() {
         ]}
         onClone={async (overrides) => {
           await leadService.createLead({
+            org_id: lead.org_id || undefined,
             first_name: overrides.first_name || lead.first_name,
             last_name: overrides.last_name || lead.last_name,
             email: overrides.email || lead.email,

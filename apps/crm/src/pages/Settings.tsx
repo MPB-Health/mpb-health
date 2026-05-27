@@ -238,7 +238,7 @@ export default function Settings() {
         
         for (const lead of batch) {
           try {
-            await leadService.createLead(lead);
+            await leadService.createLead({ ...lead, org_id: activeOrgId || undefined });
             imported++;
           } catch (error) {
             console.error('Failed to import lead:', error);

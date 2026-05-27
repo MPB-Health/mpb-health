@@ -205,6 +205,7 @@ export interface BulkUpdateResult {
 
 // Lead creation input
 export interface LeadCreateInput {
+  org_id?: string;
   first_name: string;
   last_name: string;
   email: string;

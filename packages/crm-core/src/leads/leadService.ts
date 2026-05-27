@@ -167,6 +167,7 @@ export class LeadService {
       const { data, error } = await this.supabase
         .from('lead_submissions')
         .insert({
+          org_id: input.org_id,
           ...input,
           pipeline_stage: 'new',
           priority: 'medium',

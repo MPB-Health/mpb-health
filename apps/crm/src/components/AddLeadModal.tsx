@@ -45,6 +45,7 @@ export function AddLeadModal({ open, onClose, onSuccess }: AddLeadModalProps) {
       : undefined;
 
     const result = await leadService.createLead({
+      org_id: activeOrgId || undefined,
       first_name: values.first_name,
       last_name: values.last_name,
       email: values.email,

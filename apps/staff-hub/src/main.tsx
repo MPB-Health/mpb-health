@@ -2,11 +2,16 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import { installAuthRefreshGuard } from '@mpbhealth/database';
 import { ThemeProvider } from '@mpbhealth/ui';
 import App from './App';
 import '@mpbhealth/ui/theme-tokens.css';
 import './index.css';
 import '@mpbhealth/ui/login-animations.css';
+
+// Detect dead refresh tokens at the network level and redirect to /login.
+// Must run before React renders to catch early Supabase auto-refresh failures.
+installAuthRefreshGuard({ loginPath: '/login' });
 
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },

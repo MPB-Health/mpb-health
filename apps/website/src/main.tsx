@@ -1,9 +1,17 @@
 import React, { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import LazyLoadErrorBoundary from './components/LazyLoadErrorBoundary';
+import { installAuthRefreshGuard } from '@mpbhealth/database';
 import './index.css';
 import '@mpbhealth/ui/login-animations.css';
 import App from './App';
+
+// Detect dead refresh tokens at the network level and redirect to /login.
+// Must run before React renders to catch early Supabase auto-refresh failures.
+installAuthRefreshGuard({
+  loginPath: '/login',
+  excludePaths: ['/login', '/admin/login', '/forgot-password', '/reset-password'],
+});
 
 // Filter out StackBlitz platform errors from console
 if (import.meta.env.DEV) {

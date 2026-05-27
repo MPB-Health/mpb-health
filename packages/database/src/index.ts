@@ -143,6 +143,10 @@ export {
   onSessionDead,
 } from './authHelper';
 
+// Auth refresh guard (install once in each app's main.tsx before React renders)
+export { installAuthRefreshGuard } from './authRefreshGuard';
+export type { AuthRefreshGuardOptions } from './authRefreshGuard';
+
 // Hooks
 export {
   useSupabaseQuery,

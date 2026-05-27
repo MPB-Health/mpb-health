@@ -8,7 +8,7 @@ import App from './App';
 import { QueryStaleRecovery } from './components/QueryStaleRecovery';
 import { getAdvisorQueryClient } from './query/advisorQueryClient';
 import { setupServiceWorker } from './registerServiceWorker';
-import { installAuthRefreshGuard } from './utils/installAuthRefreshGuard';
+import { installAdvisorAuthRefreshGuard } from './utils/installAuthRefreshGuard';
 import './index.css';
 import '@mpbhealth/ui/brand/aryx-brand.css';
 import '@mpbhealth/ui/login-animations.css';
@@ -25,7 +25,7 @@ const queryClient = getAdvisorQueryClient();
 // overlay CSS applies on first paint (no flash of mpb-blue on advisor.aryxcloud.com).
 initBrand({ mpbLogo: '/assets/MPB-Health-No-background.png' });
 
-installAuthRefreshGuard();
+installAdvisorAuthRefreshGuard();
 setupServiceWorker();
 
 const SW_RELOAD_GUARD_KEY = 'advisor-sw-reload-ts';

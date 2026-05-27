@@ -8,6 +8,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { OrgProvider } from './contexts/OrgContext';
 import { CRMProvider } from './contexts/CRMContext';
 import { AppErrorBoundary } from './components/ErrorBoundary';
+import { installAuthRefreshGuard } from '@mpbhealth/database';
 import { initBrand } from '@mpbhealth/ui';
 import '@mpbhealth/ui/theme-tokens.css';
 import './index.css';
@@ -17,6 +18,10 @@ import '@mpbhealth/ui/login-animations.css';
 // Stamp <html class="brand-mpb"> or "brand-aryx" before first render so the
 // overlay CSS applies on first paint (no flash of mpb-blue on crm.aryxcloud.com).
 initBrand({ mpbLogo: '/assets/MPB-Health-No-background.png' });
+
+// Detect dead refresh tokens at the network level and redirect to /login.
+// Must run before React renders to catch early Supabase auto-refresh failures.
+installAuthRefreshGuard({ loginPath: '/login' });
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

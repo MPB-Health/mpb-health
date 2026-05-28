@@ -4,6 +4,53 @@ import { createClientLogger } from '@mpbhealth/utils';
 
 const log = createClientLogger('LeadSubmission');
 
+// ─────────────────────────────────────────────────────────────────────────────
+// ARYX dual-write (added 2026-05-28)
+//
+// MPB website leads must land in BOTH the legacy CRM (`crm.mpb.health`) and the
+// new ARYX CRM (`crm.aryx.pro`). The legacy intake is the source of truth — we
+// fire ARYX intake in the background and a failure on the ARYX side never
+// blocks the website success state. ARYX has its own RLS + read-only policies
+// that prevent any double-effects on the MPB tenant.
+//
+// Env vars (set in Vercel for the website project):
+//   VITE_ARYX_FUNCTIONS_URL = https://knelbprqqbjggqfqvfmc.supabase.co
+//   VITE_ARYX_ANON_KEY      = <ARYX anon key>
+// Leave both unset to disable dual-write (useful for previews / dev).
+// ─────────────────────────────────────────────────────────────────────────────
+const ARYX_FUNCTIONS_URL = (import.meta.env.VITE_ARYX_FUNCTIONS_URL ?? '').replace(/\/+$/, '');
+const ARYX_ANON_KEY = import.meta.env.VITE_ARYX_ANON_KEY ?? '';
+
+async function dualWriteToAryx(payload: Record<string, unknown>): Promise<void> {
+  if (!ARYX_FUNCTIONS_URL || !ARYX_ANON_KEY) return;
+  try {
+    const res = await fetch(
+      `${ARYX_FUNCTIONS_URL}/functions/v1/crm-website-lead-intake`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${ARYX_ANON_KEY}`,
+          apikey: ARYX_ANON_KEY,
+          'X-Dual-Write-Source': 'mpb-website',
+        },
+        body: JSON.stringify(payload),
+        // Don't block the user — a slow ARYX response shouldn't delay UI.
+        signal: AbortSignal.timeout(5000),
+      },
+    );
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      log.warn(`[LeadSubmission] ARYX dual-write non-OK ${res.status}: ${text.slice(0, 240)}`);
+      return;
+    }
+    log.info('[LeadSubmission] ARYX dual-write succeeded');
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    log.warn(`[LeadSubmission] ARYX dual-write error (non-fatal): ${msg}`);
+  }
+}
+
 export interface LeadFormData {
   firstName: string;
   lastName: string;
@@ -102,6 +149,9 @@ class LeadSubmissionService {
         referrer: formData.referrer,
         form_data: formData.formData,
       };
+
+      // Fire ARYX dual-write in parallel; never await it on the critical path.
+      void dualWriteToAryx(payload);
 
       const { data: intake, error: intakeError } =
         await supabase.functions.invoke<IntakeResponse>(INTAKE_FUNCTION, {

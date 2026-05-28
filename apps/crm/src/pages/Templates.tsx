@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, lazy, Suspense } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Plus,
@@ -32,6 +32,7 @@ import {
   Save,
   FilePlus2,
   Variable,
+  ShieldCheck,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useCRM } from '../contexts/CRMContext';
@@ -39,6 +40,8 @@ import { useOrg } from '../contexts/OrgContext';
 import { PermissionGate } from '../components/PermissionGate';
 import type { CRMTemplate, TemplateFilters, TemplateType } from '@mpbhealth/crm-core';
 import { HelpBanner } from '../components/help';
+
+const MasterTemplates = lazy(() => import('./MasterTemplates'));
 
 // =============================================================================
 // Constants
@@ -1291,7 +1294,61 @@ function AnalyticsPanel({
 // Main Templates Page
 // =============================================================================
 
+type TemplatesTab = 'my' | 'master';
+
 export default function Templates() {
+  const { can } = useOrg();
+  const [activeTab, setActiveTab] = useState<TemplatesTab>('my');
+  const hasMasterPerm = can('templates.master.manage');
+
+  return (
+    <div className="space-y-5">
+      {/* Tab bar */}
+      <div className="flex items-center gap-1 bg-surface-secondary rounded-xl p-1 w-fit">
+        <button
+          onClick={() => setActiveTab('my')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            activeTab === 'my'
+              ? 'bg-surface-primary text-th-accent-700 shadow-sm'
+              : 'text-th-text-tertiary hover:text-th-text-secondary'
+          }`}
+        >
+          <Mail className="w-4 h-4" />
+          My Templates
+        </button>
+        {hasMasterPerm && (
+          <button
+            onClick={() => setActiveTab('master')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              activeTab === 'master'
+                ? 'bg-surface-primary text-th-accent-700 shadow-sm'
+                : 'text-th-text-tertiary hover:text-th-text-secondary'
+            }`}
+          >
+            <ShieldCheck className="w-4 h-4" />
+            Master Library
+          </button>
+        )}
+      </div>
+
+      {activeTab === 'my' ? (
+        <MyTemplatesTab />
+      ) : hasMasterPerm ? (
+        <Suspense
+          fallback={
+            <div className="flex items-center justify-center py-12 text-th-text-tertiary">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-th-accent-600" />
+            </div>
+          }
+        >
+          <MasterTemplates />
+        </Suspense>
+      ) : null}
+    </div>
+  );
+}
+
+function MyTemplatesTab() {
   const { templateService, supabase } = useCRM();
   const { activeOrgId } = useOrg();
 
@@ -1517,7 +1574,7 @@ export default function Templates() {
   // ----- Render -----
 
   return (
-    <div className="space-y-5">
+    <>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -1869,6 +1926,6 @@ export default function Templates() {
         }}
         template={previewTemplate}
       />
-    </div>
+    </>
   );
 }

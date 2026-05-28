@@ -51,6 +51,10 @@ import type { CRMTemplate, EmailSignature, EnhancedEmailSendInput } from '@mpbhe
 // Types
 // ============================================================================
 
+export interface MergeTokenMap {
+  [token: string]: string;
+}
+
 interface EmailComposerProps {
   mode?: 'compose' | 'reply' | 'forward';
   draftId?: string;
@@ -63,6 +67,8 @@ interface EmailComposerProps {
   initialTo?: string[];
   initialSubject?: string;
   initialBody?: string;
+  /** Token merge map applied when inserting a template (e.g. `{ '#firstname': 'Jane' }`). */
+  mergeTokens?: MergeTokenMap;
   onSent?: (emailId: string) => void;
   onSaved?: (draftId: string) => void;
   onDiscard?: () => void;
@@ -512,6 +518,7 @@ export const EmailComposer = forwardRef<EmailComposerHandle, EmailComposerProps>
   initialTo = [],
   initialSubject = '',
   initialBody = '',
+  mergeTokens,
   onSent,
   onSaved,
   onDiscard,
@@ -833,10 +840,18 @@ export const EmailComposer = forwardRef<EmailComposerHandle, EmailComposerProps>
     return () => document.removeEventListener('keydown', onDocKey, true);
   }, [handleDiscard, showScheduleModal]);
 
-  // Apply template
+  const applyMergeTokens = useCallback((text: string): string => {
+    if (!mergeTokens || !text) return text;
+    let result = text;
+    for (const [token, value] of Object.entries(mergeTokens)) {
+      result = result.replaceAll(token, value);
+    }
+    return result;
+  }, [mergeTokens]);
+
   const applyTemplate = (template: CRMTemplate) => {
-    setSubject(template.subject || '');
-    editor?.commands.setContent(template.body);
+    setSubject(applyMergeTokens(template.subject || ''));
+    editor?.commands.setContent(applyMergeTokens(template.body));
     setShowTemplateDropdown(false);
     toast.success(`Template "${template.name}" applied`);
   };

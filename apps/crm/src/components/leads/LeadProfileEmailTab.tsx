@@ -103,6 +103,18 @@ export const LeadProfileEmailTab = forwardRef<LeadProfileEmailTabHandle, LeadPro
     return '';
   }, [replyTo?.subject]);
 
+  const mergeTokens = useMemo(() => {
+    const l = lead as unknown as Record<string, unknown>;
+    return {
+      '#lead name': `${lead.first_name ?? ''} ${lead.last_name ?? ''}`.trim(),
+      '#firstname': lead.first_name ?? '',
+      '#lastname': lead.last_name ?? '',
+      '#plan': String(l.plan_type ?? ''),
+      '#quote price': l.monthly_premium != null ? `$${l.monthly_premium}` : '',
+      '#yoursignature': '',
+    };
+  }, [lead]);
+
   if (!lead.email) {
     return (
       <div className="text-center py-12">
@@ -135,6 +147,7 @@ export const LeadProfileEmailTab = forwardRef<LeadProfileEmailTabHandle, LeadPro
           leadId={lead.id}
           initialTo={initialTo}
           initialSubject={initialSubject}
+          mergeTokens={mergeTokens}
           onSent={() => {
             toast.success('Email sent');
             setReplyTo(null);

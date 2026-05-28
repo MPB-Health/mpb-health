@@ -241,25 +241,42 @@ export class LeadService {
   }
 
   /**
-   * Bulk update multiple leads
+   * Bulk update multiple leads via the `crm_bulk_update_leads` RPC.
+   * Falls back to per-row iteration if the RPC is unavailable.
    */
   async bulkUpdateLeads(
     leadIds: string[],
     updates: LeadUpdateInput
   ): Promise<BulkUpdateResult> {
     const result: BulkUpdateResult = { success: 0, failed: 0, errors: [] };
+    if (leadIds.length === 0) return result;
 
-    for (const id of leadIds) {
-      const updateResult = await this.updateLead(id, updates);
-      if (updateResult.success) {
-        result.success++;
-      } else {
-        result.failed++;
-        result.errors.push(`Lead ${id}: ${updateResult.error}`);
+    try {
+      const { data, error } = await this.supabase.rpc('crm_bulk_update_leads', {
+        p_lead_ids: leadIds,
+        p_updates: updates as unknown as Record<string, unknown>,
+      });
+
+      if (error) throw error;
+
+      const rpcResult = data as { updated: number; total: number; error?: string };
+      result.success = rpcResult.updated ?? 0;
+      result.failed = (rpcResult.total ?? leadIds.length) - result.success;
+      if (rpcResult.error) result.errors.push(rpcResult.error);
+      return result;
+    } catch {
+      // Fallback: iterate per-row (works before migration is applied).
+      for (const id of leadIds) {
+        const updateResult = await this.updateLead(id, updates);
+        if (updateResult.success) {
+          result.success++;
+        } else {
+          result.failed++;
+          result.errors.push(`Lead ${id}: ${updateResult.error}`);
+        }
       }
+      return result;
     }
-
-    return result;
   }
 
   /**

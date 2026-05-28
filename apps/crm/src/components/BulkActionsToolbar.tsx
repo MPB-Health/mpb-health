@@ -1,4 +1,4 @@
-import { Users, GitBranch, Mail, Download, Trash2, X, RefreshCw, UserCheck, GitMerge, Tag, XCircle } from 'lucide-react';
+import { Users, GitBranch, Mail, Download, Trash2, X, RefreshCw, UserCheck, GitMerge, Tag, XCircle, Activity } from 'lucide-react';
 
 interface Props {
   selectedCount: number;
@@ -13,6 +13,8 @@ interface Props {
   onTagManager?: () => void;
   /** Section 6: bulk-mark selected leads as Lost (DNC). */
   onMarkLost?: () => void;
+  /** Phase 3: enroll selected leads in a cadence. */
+  onEnrollCadence?: () => void;
   onClear: () => void;
 }
 
@@ -28,6 +30,7 @@ export function BulkActionsToolbar({
   onMerge,
   onTagManager,
   onMarkLost,
+  onEnrollCadence,
   onClear,
 }: Props) {
   if (selectedCount === 0) return null;
@@ -92,6 +95,16 @@ export function BulkActionsToolbar({
           >
             <Tag className="w-4 h-4" />
             <span>Tags</span>
+          </button>
+        )}
+        {onEnrollCadence && (
+          <button
+            onClick={onEnrollCadence}
+            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-white/10 transition-colors"
+            title="Enroll selected leads in a cadence"
+          >
+            <Activity className="w-4 h-4" />
+            <span>Enroll in Cadence</span>
           </button>
         )}
         {onMarkLost && (

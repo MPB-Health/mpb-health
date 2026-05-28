@@ -45,6 +45,7 @@ import {
 import toast from 'react-hot-toast';
 import { useCRM } from '../contexts/CRMContext';
 import { useCRMService } from '../contexts/CRMServiceContext';
+import { useAuth } from '../contexts/AuthContext';
 import { PermissionGate } from '../components/PermissionGate';
 import { EditLeadModal } from '../components/EditLeadModal';
 import { AddNoteModal, LogCallModal, LogMeetingModal } from '../components/QuickActionModals';
@@ -58,6 +59,7 @@ import { DuplicateDetectionModal } from '../components/DuplicateDetectionModal';
 import { RelatedRecordsModal } from '../components/RelatedRecordsModal';
 import { PrintPreviewModal } from '../components/PrintPreviewModal';
 import { AIInsightsPanel } from '../components/AIInsightsPanel';
+import { EnrollCadenceModal } from '../components/EnrollCadenceModal';
 import { ScoreBreakdownPanel } from '../components/ScoreBreakdownPanel';
 import { UnifiedTimeline } from '../components/UnifiedTimeline';
 import { AttachmentList } from '../components/AttachmentList';
@@ -85,9 +87,10 @@ import {
 } from '@mpbhealth/crm-core';
 import { supabase } from '../lib/supabase';
 
-type DetailAction = 'clone' | 'audit' | 'schedule' | 'tags' | 'enrich' | 'duplicates' | 'related' | 'print' | null;
+type DetailAction = 'clone' | 'audit' | 'schedule' | 'tags' | 'enrich' | 'duplicates' | 'related' | 'print' | 'enroll_cadence' | null;
 
 const MORE_ACTIONS: { id: DetailAction; icon: typeof Copy; label: string }[] = [
+  { id: 'enroll_cadence', icon: Activity, label: 'Enroll in Cadence' },
   { id: 'clone', icon: Copy, label: 'Clone Lead' },
   { id: 'audit', icon: History, label: 'Audit Trail' },
   { id: 'schedule', icon: CalendarPlus, label: 'Schedule' },
@@ -171,6 +174,93 @@ function PlanTypeBadge({ planType }: { planType?: string | null }) {
       <Shield className="w-3.5 h-3.5" />
       {PLAN_TYPE_LABELS[planType as keyof typeof PLAN_TYPE_LABELS] || planType}
     </span>
+  );
+}
+
+function QuoteHistorySection({ leadId, orgId }: { leadId: string; orgId: string | null | undefined }) {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const [qPlan, setQPlan] = useState('');
+  const [qStruct, setQStruct] = useState('');
+  const [qPrice, setQPrice] = useState('');
+
+  const { data: quotes = [] } = useQuery({
+    queryKey: ['crmLeadQuotes', leadId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('crm_lead_quote_history')
+        .select('id, plan_name, plan_structure, monthly_price, quote_date')
+        .eq('lead_id', leadId)
+        .order('quote_date', { ascending: false });
+      if (error) throw error;
+      return (data || []) as Array<{
+        id: string;
+        plan_name: string;
+        plan_structure: string | null;
+        monthly_price: number | null;
+        quote_date: string;
+      }>;
+    },
+    enabled: !!leadId,
+  });
+
+  const addQuote = async () => {
+    if (!qPlan.trim()) { toast.error('Plan name required'); return; }
+    if (!orgId) { toast.error('Lead has no org'); return; }
+    const { error } = await supabase.from('crm_lead_quote_history').insert({
+      org_id: orgId,
+      lead_id: leadId,
+      plan_name: qPlan.trim(),
+      plan_structure: qStruct.trim() || null,
+      monthly_price: qPrice ? parseFloat(qPrice) : null,
+      created_by: user?.id ?? null,
+    });
+    if (error) { toast.error(error.message); return; }
+    setQPlan(''); setQStruct(''); setQPrice('');
+    queryClient.invalidateQueries({ queryKey: ['crmLeadQuotes', leadId] });
+    toast.success('Quote saved');
+  };
+
+  return (
+    <div className="bg-surface-primary rounded-2xl border border-th-border p-6">
+      <SectionHeader icon={DollarSign} title="Quote History" count={quotes.length} />
+      {quotes.length === 0 ? (
+        <p className="text-sm text-th-text-tertiary">No quotes recorded yet.</p>
+      ) : (
+        <div className="space-y-2 max-h-48 overflow-y-auto mb-3">
+          {quotes.map((q) => (
+            <div key={q.id} className="flex items-center justify-between p-3 rounded-xl border border-th-border bg-surface-secondary/40">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-th-text-primary truncate">{q.plan_name}</p>
+                <p className="text-xs text-th-text-tertiary">
+                  {q.plan_structure && <span>{q.plan_structure} · </span>}
+                  {q.quote_date}
+                </p>
+              </div>
+              {q.monthly_price != null && (
+                <span className="text-sm font-semibold text-th-text-primary shrink-0 ml-3">
+                  ${q.monthly_price}/mo
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+      <PermissionGate permission="leads.update">
+        <div className="flex flex-wrap gap-2 items-end mt-3 pt-3 border-t border-th-border-subtle">
+          <input value={qPlan} onChange={(e) => setQPlan(e.target.value)} placeholder="Plan name"
+            className="flex-1 min-w-[120px] border border-th-border rounded-lg px-2 py-1.5 text-sm" />
+          <input value={qStruct} onChange={(e) => setQStruct(e.target.value)} placeholder="Structure"
+            className="flex-1 min-w-[100px] border border-th-border rounded-lg px-2 py-1.5 text-sm" />
+          <input value={qPrice} onChange={(e) => setQPrice(e.target.value)} placeholder="$/mo" type="number"
+            className="w-24 border border-th-border rounded-lg px-2 py-1.5 text-sm" />
+          <button type="button" onClick={addQuote}
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-th-accent-600 text-white text-sm">
+            <Plus className="w-3.5 h-3.5" /> Add
+          </button>
+        </div>
+      </PermissionGate>
+    </div>
   );
 }
 
@@ -845,6 +935,9 @@ export default function LeadDetail() {
         />
       </div>
 
+      {/* ─── Quote History (primary section — Section 6, P2) ─── */}
+      <QuoteHistorySection leadId={lead.id} orgId={lead.org_id} />
+
       {/* ─── Main Content + Sidebar ─── */}
       <div className="flex gap-6">
       <div className="flex-1 min-w-0 grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -1139,6 +1232,14 @@ export default function LeadDetail() {
       />
       <LogMeetingModal open={showLogMeeting} onClose={() => setShowLogMeeting(false)} leadId={lead.id} onSuccess={() => refreshLead()} />
       <AddTaskModal open={showAddTask} onClose={() => setShowAddTask(false)} leadId={lead.id} onSuccess={() => refreshLead()} />
+
+      {/* Cadence Enrollment — Phase 3 */}
+      <EnrollCadenceModal
+        open={activeAction === 'enroll_cadence'}
+        onClose={closeAction}
+        leadIds={id ? [id] : []}
+        onSuccess={() => refreshLead()}
+      />
 
       {/* ─── More Actions Modals ─── */}
       <CloneRecordModal

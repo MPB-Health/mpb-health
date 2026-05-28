@@ -30,6 +30,7 @@ import { MassTransferModal } from '../components/MassTransferModal';
 import { MergeRecordsModal } from '../components/MergeRecordsModal';
 import { TagManagerModal } from '../components/TagManagerModal';
 import { ScoringRulesModal } from '../components/ScoringRulesModal';
+import { EnrollCadenceModal } from '../components/EnrollCadenceModal';
 import { LeadRowActionsMenu } from '../components/LeadRowActionsMenu';
 import { SidePeek } from '../components/SidePeek';
 import { SavedViewsBar } from '../components/SavedViewsBar';
@@ -118,6 +119,7 @@ export default function LeadsList() {
   const [showBulkAssign, setShowBulkAssign] = useState(false);
   const [showBulkStage, setShowBulkStage] = useState(false);
   const [showBulkEmail, setShowBulkEmail] = useState(false);
+  const [showEnrollCadence, setShowEnrollCadence] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [showMassUpdate, setShowMassUpdate] = useState(false);
   const [showMassTransfer, setShowMassTransfer] = useState(false);
@@ -465,6 +467,7 @@ export default function LeadsList() {
         onMerge={() => setShowMerge(true)}
         onTagManager={() => setShowBulkTags(true)}
         onMarkLost={() => setShowBulkMarkLost(true)}
+        onEnrollCadence={() => setShowEnrollCadence(true)}
         onExport={handleExportSelected}
         onDelete={() => setShowDeleteConfirm(true)}
         onClear={() => setSelectedLeads(new Set())}
@@ -906,12 +909,19 @@ export default function LeadsList() {
           { name: 'priority', label: 'Priority', type: 'select', options: [{ value: 'low', label: 'Low' }, { value: 'medium', label: 'Medium' }, { value: 'high', label: 'High' }, { value: 'urgent', label: 'Urgent' }] },
           { name: 'source', label: 'Source', type: 'text' },
           { name: 'tags', label: 'Tags', type: 'text' },
+          { name: 'workflow_subsection', label: 'Subsection', type: 'select', options: [{ value: 'working', label: 'Working' }, { value: 'nurture', label: 'Nurture' }, { value: 'linkedin', label: 'LinkedIn' }, { value: 'do_not_contact', label: 'Do Not Contact' }] },
+          { name: 'assigned_to', label: 'Lead Owner', type: 'select', options: teamMembers.map((m) => ({ value: m.id, label: m.name })) },
+          { name: 'plan_type', label: 'Plan Type', type: 'select', options: [{ value: 'healthshare', label: 'Healthshare' }, { value: 'traditional_insurance', label: 'Traditional Insurance' }] },
+          { name: 'contact_preference', label: 'Contact Preference', type: 'select', options: [{ value: 'email', label: 'Email' }, { value: 'phone', label: 'Phone' }, { value: 'text', label: 'Text' }] },
         ]}
         onUpdate={async (updates) => {
-          for (const id of selectedIds) {
-            const fieldMap: Record<string, unknown> = {};
-            updates.forEach((u) => { fieldMap[u.field] = u.value; });
-            await leadService.updateLead(id, fieldMap);
+          const fieldMap: Record<string, unknown> = {};
+          updates.forEach((u) => { fieldMap[u.field] = u.value; });
+          const result = await leadService.bulkUpdateLeads(selectedIds, fieldMap);
+          if (result.failed > 0) {
+            toast.error(`Updated ${result.success}, failed ${result.failed}`);
+          } else {
+            toast.success(`Updated ${result.success} lead${result.success !== 1 ? 's' : ''}`);
           }
           handleBulkSuccess();
         }}
@@ -961,6 +971,14 @@ export default function LeadsList() {
         entityType="lead"
         rules={scoringRulesForModal}
         onSave={handleScoringRulesSave}
+      />
+
+      {/* Cadence Enrollment — Phase 3 */}
+      <EnrollCadenceModal
+        open={showEnrollCadence}
+        onClose={() => setShowEnrollCadence(false)}
+        leadIds={selectedIds}
+        onSuccess={handleBulkSuccess}
       />
 
       {/* Bulk Mark as Lost — Section 6 / Round 5 */}

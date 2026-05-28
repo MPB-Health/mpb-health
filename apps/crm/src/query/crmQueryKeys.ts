@@ -58,6 +58,7 @@ export const crmQueryKeys = {
   reportAnnualRevenue: (orgId: string | null, year: number) => [...crmQueryRoot, orgId ?? 'none', 'report', 'annualRevenue', year] as const,
   reportAnnualSource: (orgId: string | null, year: number) => [...crmQueryRoot, orgId ?? 'none', 'report', 'annualSource', year] as const,
   reportAnnualConversion: (orgId: string | null, year: number) => [...crmQueryRoot, orgId ?? 'none', 'report', 'annualConversion', year] as const,
+  reportStageConversion: (orgId: string | null, month: number, year: number) => [...crmQueryRoot, orgId ?? 'none', 'report', 'stageConversion', month, year] as const,
   // Round 13 (2026-05-15) — Sales vs Cancellations vs Leads snapshot.
   reportSalesCancellationsLeads: (
     orgId: string | null,

@@ -820,5 +820,16 @@ export type {
 } from './product-forms/productFormService';
 export * from './product-forms';
 
+// Recruiting
+export { RecruitingService, createRecruitingService } from './recruiting/recruitingService';
+export type {
+  RecruitingRecord,
+  RecruitingPipelineStage,
+  RecruitingFilters,
+  RecruitingCreateInput,
+  RecruitingUpdateInput,
+  RecruitingBulkResult,
+} from './recruiting';
+
 // Utilities
 export { sanitizeSearchInput } from './utils/sanitize';

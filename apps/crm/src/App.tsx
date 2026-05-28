@@ -113,6 +113,9 @@ const SalesCancellationsLeadsSnapshot = lazyRetry(
 );
 const DailyLogReport = lazyRetry(() => import('./pages/reports/DailyLogReport'));
 const PipelineReports = lazyRetry(() => import('./pages/reports/PipelineReports'));
+const NurtureReactivationReport = lazyRetry(() => import('./pages/reports/NurtureReactivationReport'));
+const OEReactivationReport = lazyRetry(() => import('./pages/reports/OEReactivationReport'));
+const SpecialProjectsReport = lazyRetry(() => import('./pages/reports/SpecialProjectsReport'));
 const MessageTemplatesPage = lazyRetry(() => import('./pages/MessageTemplatesPage'));
 const IntegrationsHub = lazyRetry(() => import('./pages/IntegrationsHub'));
 
@@ -515,6 +518,9 @@ export default function App() {
                 <Route path="/reports/annual" element={<Guarded permission="reports.read"><Suspense fallback={<PageLoader />}><AnnualOverview /></Suspense></Guarded>} />
                 <Route path="/reports/quote-results-returned" element={<Guarded permission="reports.read"><Suspense fallback={<PageLoader />}><QuoteResultsReturnedPage /></Suspense></Guarded>} />
                 <Route path="/reports/sales-cancellations-leads" element={<Guarded permission="reports.read"><Suspense fallback={<PageLoader />}><SalesCancellationsLeadsSnapshot /></Suspense></Guarded>} />
+                <Route path="/reports/nurture-reactivation" element={<Guarded permission="reports.read"><Suspense fallback={<PageLoader />}><NurtureReactivationReport /></Suspense></Guarded>} />
+                <Route path="/reports/oe-reactivation" element={<Guarded permission="reports.read"><Suspense fallback={<PageLoader />}><OEReactivationReport /></Suspense></Guarded>} />
+                <Route path="/reports/special-projects" element={<Guarded permission="reports.read"><Suspense fallback={<PageLoader />}><SpecialProjectsReport /></Suspense></Guarded>} />
                 <Route
                   path="/reports/daily-log"
                   element={

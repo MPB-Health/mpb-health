@@ -35,6 +35,134 @@ type ConversionRow = {
   overall_conv_pct: number;
 };
 
+const STAGE_PAIRS = [
+  { from: 'new', to: 'quoted', label: 'New → Quoted' },
+  { from: 'quoted', to: 'working', label: 'Quoted → Working' },
+  { from: 'working', to: 'engaged', label: 'Working → Engaged' },
+  { from: 'engaged', to: 'application_in_progress', label: 'Engaged → Application' },
+  { from: 'application_in_progress', to: 'won', label: 'Application → Won' },
+] as const;
+
+interface StageFunnelRow {
+  from_stage: string;
+  to_stage: string;
+  entered_from: number;
+  advanced_to: number;
+  conversion_pct: number;
+}
+
+function StageFunnelSection({ orgId, month, year }: { orgId: string; month: number; year: number }) {
+  const { supabase } = useCRMService();
+
+  const { data: funnelRows = [], isLoading } = useQuery({
+    queryKey: crmQueryKeys.reportStageConversion(orgId, month, year),
+    enabled: !!orgId,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('crm_stage_conversion_funnel', {
+        p_org_id: orgId,
+        p_month: month,
+        p_year: year,
+      });
+      if (error) {
+        const fallback: StageFunnelRow[] = [];
+        for (const pair of STAGE_PAIRS) {
+          const { count: entered } = await supabase
+            .from('lead_submissions')
+            .select('*', { count: 'exact', head: true })
+            .eq('org_id', orgId)
+            .eq('pipeline_stage', pair.to)
+            .gte('stage_changed_at', `${year}-${String(month).padStart(2, '0')}-01`)
+            .lt('stage_changed_at', month === 12 ? `${year + 1}-01-01` : `${year}-${String(month + 1).padStart(2, '0')}-01`);
+          const { count: total } = await supabase
+            .from('lead_submissions')
+            .select('*', { count: 'exact', head: true })
+            .eq('org_id', orgId)
+            .eq('pipeline_stage', pair.from);
+          const e = entered ?? 0;
+          const t = total ?? 1;
+          fallback.push({
+            from_stage: pair.from,
+            to_stage: pair.to,
+            entered_from: t,
+            advanced_to: e,
+            conversion_pct: t > 0 ? Math.round((e / t) * 1000) / 10 : 0,
+          });
+        }
+        return fallback;
+      }
+      return (data ?? []) as StageFunnelRow[];
+    },
+  });
+
+  const chartData = useMemo(
+    () =>
+      STAGE_PAIRS.map((pair) => {
+        const row = funnelRows.find((r) => r.from_stage === pair.from && r.to_stage === pair.to);
+        return {
+          label: pair.label,
+          entered: row?.entered_from ?? 0,
+          advanced: row?.advanced_to ?? 0,
+          pct: row?.conversion_pct ?? 0,
+        };
+      }),
+    [funnelRows],
+  );
+
+  return (
+    <div className="space-y-4">
+      <h3 className="text-sm font-semibold text-th-text-primary">Stage-to-Stage Conversion Funnel</h3>
+      {isLoading ? (
+        <p className="text-sm text-th-text-tertiary text-center py-6">Loading funnel data…</p>
+      ) : (
+        <>
+          <div className="rounded-lg border border-th-border bg-surface-primary overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-th-border text-left text-th-text-secondary">
+                  <th className="p-3 font-medium">Stage Transition</th>
+                  <th className="p-3 font-medium text-right">Entered From</th>
+                  <th className="p-3 font-medium text-right">Advanced To</th>
+                  <th className="p-3 font-medium text-right">Conv %</th>
+                  <th className="p-3 font-medium">Funnel</th>
+                </tr>
+              </thead>
+              <tbody>
+                {chartData.map((row) => (
+                  <tr key={row.label} className="border-b border-th-border/60">
+                    <td className="p-3 font-medium text-th-text-primary">{row.label}</td>
+                    <td className="p-3 text-right tabular-nums">{row.entered}</td>
+                    <td className="p-3 text-right tabular-nums">{row.advanced}</td>
+                    <td className="p-3 text-right tabular-nums font-medium">{row.pct}%</td>
+                    <td className="p-3">
+                      <div className="w-full bg-th-border/30 rounded-full h-2.5">
+                        <div
+                          className="bg-th-accent-500 h-2.5 rounded-full transition-all"
+                          style={{ width: `${Math.min(row.pct, 100)}%` }}
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="rounded-lg border border-th-border bg-surface-primary p-4 h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData} margin={{ left: 12, right: 16, top: 8, bottom: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-th-border" />
+                <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+                <YAxis tickFormatter={(v: number) => `${v}%`} />
+                <Tooltip formatter={(v: number) => `${v}%`} />
+                <Bar dataKey="pct" name="Conversion %" fill={COLORS[2]} radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function ConversionReport() {
   const now = new Date();
   const [month, setMonth] = useState(() => now.getMonth() + 1);
@@ -191,6 +319,9 @@ export default function ConversionReport() {
           </ResponsiveContainer>
         )}
       </div>
+      {(orgId ?? activeOrgId) && (
+        <StageFunnelSection orgId={(orgId ?? activeOrgId)!} month={month} year={year} />
+      )}
     </ReportLayout>
   );
 }

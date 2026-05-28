@@ -264,10 +264,11 @@ export class CRMBridgeService {
         .limit(20),
     ]);
 
+    const raw = data as Record<string, unknown>;
     return {
       ...(data as unknown as CRMLead),
-      notes: data.notes || null,
-      metadata: data.metadata || null,
+      notes: (raw.notes as string) ?? null,
+      metadata: (raw.metadata as Record<string, unknown>) ?? null,
       activities: (activities.data || []) as unknown as CRMActivity[],
       tasks: (tasks.data || []) as unknown as CRMTask[],
     };
@@ -314,7 +315,7 @@ export class CRMBridgeService {
     // 1. Get the lead
     const { data: lead, error: leadError } = await supabase
       .from('lead_submissions')
-      .select('id, first_name, last_name, email, phone, lead_source, pipeline_stage, plan_type, assigned_to, tags, lead_score, primary_concern, zip_code, city, state, created_at, updated_at')
+      .select('id, first_name, last_name, email, phone, lead_source, pipeline_stage, plan_type, assigned_to, tags, lead_score, primary_concern, zip_code, city, state, utm_source, created_at, updated_at')
       .eq('id', leadId)
       .single();
 
@@ -345,12 +346,12 @@ export class CRMBridgeService {
         salutation: extras?.salutation || null,
         title: extras?.title || null,
         department: extras?.department || null,
-        lead_source: lead.source || lead.utm_source || null,
+        lead_source: lead.lead_source || lead.utm_source || null,
         converted_from_lead_id: leadId,
         converted_at: now,
         account_id: extras?.account_id || null,
         tags: extras?.tags || [],
-        description: extras?.description || lead.notes || null,
+        description: extras?.description || null,
         owner_id: lead.assigned_to || authUser.id,
         created_by: authUser.id,
       })

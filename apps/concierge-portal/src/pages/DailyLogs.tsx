@@ -133,6 +133,7 @@ const REASONS = [
   'Provider Search',
   'Plan Education',
   'Welcome Call',
+  'Welcome Call Attempt',
   'Zion Portal Log In',
   'Preventive/Billing',
   'Follow Up',

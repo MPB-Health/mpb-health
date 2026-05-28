@@ -57,7 +57,7 @@ export default function CRMPipeline() {
   }, [search, load]);
 
   function leadsForStage(stageId: string) {
-    return leads.filter((l) => l.pipeline_stage_id === stageId);
+    return leads.filter((l) => l.pipeline_stage === stageId);
   }
 
   function handleDragStart(leadId: string) {
@@ -72,7 +72,7 @@ export default function CRMPipeline() {
   async function handleDrop(targetStageId: string) {
     if (!draggingId || movingRef.current) return;
     const lead = leads.find((l) => l.id === draggingId);
-    if (!lead || lead.pipeline_stage_id === targetStageId) {
+    if (!lead || lead.pipeline_stage === targetStageId) {
       setDraggingId(null);
       setDragOverStage(null);
       return;
@@ -81,7 +81,7 @@ export default function CRMPipeline() {
     // Optimistic update
     setLeads((prev) =>
       prev.map((l) =>
-        l.id === draggingId ? { ...l, pipeline_stage_id: targetStageId } : l,
+        l.id === draggingId ? { ...l, pipeline_stage: targetStageId } : l,
       ),
     );
     setDraggingId(null);
@@ -95,7 +95,7 @@ export default function CRMPipeline() {
       // Revert optimistic update
       setLeads((prev) =>
         prev.map((l) =>
-          l.id === draggingId ? { ...l, pipeline_stage_id: lead.pipeline_stage_id } : l,
+          l.id === draggingId ? { ...l, pipeline_stage: lead.pipeline_stage } : l,
         ),
       );
     } finally {
@@ -249,18 +249,18 @@ function LeadCard({ lead, isDragging, onDragStart, onDragEnd, onClick }: LeadCar
             {[lead.first_name, lead.last_name].filter(Boolean).join(' ') || 'Unknown'}
           </p>
         </div>
-        {lead.status && (
-          <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium shrink-0 ${STATUS_COLORS[lead.status] || 'bg-neutral-100 text-neutral-600'}`}>
-            {lead.status}
+        {lead.pipeline_stage && (
+          <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium shrink-0 ${STATUS_COLORS[lead.pipeline_stage] || 'bg-neutral-100 text-neutral-600'}`}>
+            {lead.pipeline_stage}
           </span>
         )}
       </div>
 
-      {/* Company */}
-      {lead.company && (
+      {/* Plan type */}
+      {lead.plan_type && (
         <div className="flex items-center gap-1.5 mb-1">
           <Building2 className="w-3 h-3 text-th-text-tertiary shrink-0" />
-          <p className="text-xs text-th-text-secondary truncate">{lead.company}</p>
+          <p className="text-xs text-th-text-secondary truncate">{lead.plan_type}</p>
         </div>
       )}
 
@@ -274,8 +274,8 @@ function LeadCard({ lead, isDragging, onDragStart, onDragEnd, onClick }: LeadCar
 
       {/* Source + date */}
       <div className="flex items-center justify-between mt-2 pt-2 border-t border-th-border-subtle">
-        {lead.source ? (
-          <span className="text-xs text-th-text-tertiary truncate">{lead.source}</span>
+        {lead.lead_source ? (
+          <span className="text-xs text-th-text-tertiary truncate">{lead.lead_source}</span>
         ) : (
           <span />
         )}

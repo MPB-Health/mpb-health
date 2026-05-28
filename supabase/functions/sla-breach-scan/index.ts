@@ -75,12 +75,17 @@ serve(async () => {
 
   for (const cfg of (configs ?? []) as SLAConfigRow[]) {
     // Fetch still-uncontacted leads in early pipeline stages (MP 8-stage model)
+    // Only scan leads created within the last 3 days — older uncontacted leads
+    // should be reassigned, not spamming the team with repeated alerts.
+    const ageCutoff = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+
     const { data: leads, error: leadErr } = await supabase
       .from('lead_submissions')
       .select('id, first_name, last_name, assigned_to, created_at, pipeline_stage, last_contacted_at')
       .eq('org_id', cfg.org_id)
       .is('last_contacted_at', null)
-      .in('pipeline_stage', ['new', 'working']);
+      .in('pipeline_stage', ['new', 'working'])
+      .gte('created_at', ageCutoff);
 
     if (leadErr) {
       log.warn('Failed to load leads for org', { org_id: cfg.org_id, error: leadErr.message });
@@ -110,13 +115,14 @@ serve(async () => {
       const deadline = new Date(deadlineRow as string);
       if (Date.now() < deadline.getTime()) continue;
 
-      const recipients = cfg.escalation_to.length > 0
-        ? cfg.escalation_to
-        : lead.assigned_to
-        ? [lead.assigned_to]
-        : [];
+      // Only notify the assigned rep (in-app). Email only the first escalation
+      // contact (typically the manager) to avoid flooding the whole team's inbox.
+      const inAppRecipient = lead.assigned_to ? [lead.assigned_to] : [];
+      const emailRecipient = cfg.escalation_to.length > 0
+        ? [cfg.escalation_to[0]]
+        : inAppRecipient;
 
-      for (const recipientId of recipients) {
+      for (const recipientId of inAppRecipient) {
         // Idempotency: skip if an open notification of this type already exists
         const { count } = await supabase
           .from('lead_notifications')
@@ -137,8 +143,22 @@ serve(async () => {
           message: `SLA breach — ${[lead.first_name, lead.last_name].filter(Boolean).join(' ') || 'lead'} has not been contacted within the required time.`,
         });
         escalated += 1;
+      }
 
-        if (cfg.escalation_email && resendKey) {
+      // Send email only to the single escalation contact (manager)
+      if (cfg.escalation_email && resendKey && emailRecipient.length > 0) {
+        const recipientId = emailRecipient[0];
+        // Check idempotency for email too — reuse the notification check
+        const { count: existingCount } = await supabase
+          .from('lead_notifications')
+          .select('id', { count: 'exact', head: true })
+          .eq('lead_id', lead.id)
+          .eq('user_id', recipientId)
+          .eq('notification_type', 'sla_breach')
+          .not('acknowledged_at', 'is', null);
+
+        // Only email if we haven't already notified about this lead
+        if ((existingCount ?? 0) === 0) {
           const { data: { user } } = await supabase.auth.admin.getUserById(recipientId);
           const email = user?.email;
           if (email) {

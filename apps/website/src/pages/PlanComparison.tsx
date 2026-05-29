@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Helmet } from 'react-helmet-async';
+import { generateFAQSchema, comparePlansFaqQuestions } from '@/lib/schemaMarkup';
 import { usePlans } from '@/hooks/usePlans';
 import { PlanComparisonTable } from '@/components/blocks/PlanComparisonTable';
 import { PlanComparisonGuide } from '@/components/blocks/PlanComparisonGuide';
@@ -21,6 +22,7 @@ const planIcons: Record<string, React.ElementType> = {
 
 export default function PlanComparison() {
   const { plans, loading } = usePlans();
+  const compareFaqSchema = generateFAQSchema(comparePlansFaqQuestions);
   const [selectedPlans, setSelectedPlans] = useState<string[]>([]);
 
   const handlePlanToggle = (slug: string) => {
@@ -64,12 +66,17 @@ export default function PlanComparison() {
   return (
     <>
     <Helmet>
-      <title>Compare Health Sharing Plans Side by Side | MPB Health 2026</title>
-      <meta name="description" content="Compare MPB Health sharing plans: Essentials, Care Plus, Direct, and Secure HSA. See pricing, benefits, and features side by side to find your best fit." />
+      <title>Compare Health Sharing Plans vs Traditional Insurance | MPB</title>
+      <meta name="description" content="Compare health sharing plans side by side and see how they differ from traditional insurance in cost, benefits, HSA options, and provider flexibility." />
+      <meta name="robots" content="index, follow" />
+      <meta name="googlebot" content="index, follow" />
+      <meta name="bingbot" content="index, follow" />
       <link rel="canonical" href="https://mpb.health/compare-plans" />
-      <meta property="og:title" content="Compare Health Sharing Plans | MPB Health" />
-      <meta property="og:description" content="Side-by-side plan comparison. Find the right health sharing plan for your family." />
+      <meta property="og:title" content="Compare Health Sharing Plans vs Traditional Insurance | MPB" />
+      <meta property="og:description" content="Compare health sharing plans side by side and see how they differ from traditional insurance in cost, benefits, HSA options, and provider flexibility." />
       <meta property="og:url" content="https://mpb.health/compare-plans" />
+      {/* PAA FAQ Schema */}
+      <script type="application/ld+json">{JSON.stringify(compareFaqSchema)}</script>
     </Helmet>
     <div className="min-h-screen bg-gradient-to-b from-primary-50 via-white to-neutral-50 py-12 relative overflow-x-hidden">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary-100/40 via-transparent to-transparent"></div>

@@ -1,11 +1,13 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { SEOHead } from '../components/SEOHead';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '../components/ui/Accordion';
 import { Button } from '../components/ui/button';
 import { Phone } from 'lucide-react';
 import { sanitizeHtml } from '@mpbhealth/utils';
 import { useFAQ } from '../hooks/useFAQ';
+import { generateFAQSchema, faqPagePaaQuestions } from '../lib/schemaMarkup';
 
 /** Aligned with About Us / marketing FAQ; also seeded as category `mpb-faq-main` in DB. */
 const FALLBACK_FAQS = [
@@ -63,6 +65,7 @@ const FALLBACK_FAQS = [
 
 const FAQ: React.FC = () => {
   const { faqItems, loading } = useFAQ();
+  const paaFaqSchema = generateFAQSchema(faqPagePaaQuestions);
 
   const hasDatabaseFAQs = !loading && faqItems.length > 0;
 
@@ -80,6 +83,10 @@ const FAQ: React.FC = () => {
         structuredDataType="faq"
         structuredDataContent={{ questions: structuredFaqs }}
       />
+      {/* PAA FAQ Schema — People Also Ask targeting */}
+      <Helmet>
+        <script type="application/ld+json">{JSON.stringify(paaFaqSchema)}</script>
+      </Helmet>
 
       <div className="min-h-screen bg-gradient-to-b from-neutral-50 to-white">
         <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-16 sm:py-24">

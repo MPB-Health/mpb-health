@@ -1,15 +1,37 @@
 # MPB Health Robots.txt
-# https://www.robotstxt.org/robotstxt.html
+# Optimized for Search Engines & Generative AI Crawlers
 
 User-agent: *
 Allow: /
 
-# Disallow admin and member portals
-Disallow: /admin
-Disallow: /advisor
-Disallow: /member
+# AI & LLM Crawlers
+User-agent: GPTBot
+Allow: /
 
-# Disallow forms that are not publicly accessible
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-User
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+# Restricted Areas
+Disallow: /admin/
+Disallow: /advisor/
+Disallow: /member/
+
+# Restricted Internal Forms
 Disallow: /employee-removal
 Disallow: /list-bill-setup
 Disallow: /list-bill-update

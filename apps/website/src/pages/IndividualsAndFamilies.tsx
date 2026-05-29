@@ -9,7 +9,7 @@ import RateCalculator from '../components/RateCalculator';
 import { AffiliateProvider } from '../components/AffiliateProvider';
 import { IndividualsFamiliesHero } from '../components/blocks/IndividualsFamiliesHero';
 import { PlanComparisonGuide } from '../components/blocks/PlanComparisonGuide';
-import { generateHealthSharePlanSchema, generateOrganizationSchema } from '../lib/schemaMarkup';
+import { generateHealthSharePlanSchema, generateOrganizationSchema, generateFAQSchema, individualsAndFamiliesFaqQuestions } from '../lib/schemaMarkup';
 import { Link } from 'react-router-dom';
 import { GitCompare, FileText } from 'lucide-react';
 
@@ -40,29 +40,33 @@ const IndividualsAndFamilies = () => {
   );
 
   const orgSchema = generateOrganizationSchema();
+  const familiesFaqSchema = generateFAQSchema(individualsAndFamiliesFaqQuestions);
 
   return (
     <>
       <Helmet>
-        <title>Health Sharing for Individuals & Families | MPB Health</title>
+        <title>Alternatives to Traditional Insurance for Families | MPB</title>
         <meta
           name="description"
-          content="Save up to 60% on healthcare with MPB Health sharing plans for individuals and families. No network restrictions, transparent pricing, and comprehensive coverage options."
+          content="Explore alternatives to traditional insurance for families with affordable health coverage, provider freedom, and flexible healthsharing memberships."
         />
-        <meta name="keywords" content="family health sharing, individual health plan, affordable healthcare, medical cost sharing, health share alternative" />
+        <meta name="keywords" content="alternatives to traditional insurance, family health sharing, individual health plan, affordable healthcare, healthsharing memberships" />
+        <meta name="robots" content="index, follow" />
+        <meta name="googlebot" content="index, follow" />
+        <meta name="bingbot" content="index, follow" />
         <link rel="canonical" href="https://mpb.health/individuals-and-families" />
 
         {/* Open Graph */}
-        <meta property="og:title" content="Health Sharing for Individuals & Families | MPB Health" />
-        <meta property="og:description" content="Save up to 60% on healthcare with MPB Health sharing plans for individuals and families." />
+        <meta property="og:title" content="Alternatives to Traditional Insurance for Families | MPB" />
+        <meta property="og:description" content="Explore alternatives to traditional insurance for families with affordable health coverage, provider freedom, and flexible healthsharing memberships." />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://mpb.health/individuals-and-families" />
         <meta property="og:site_name" content="MPB Health" />
 
         {/* Twitter */}
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Health Sharing for Individuals & Families | MPB Health" />
-        <meta name="twitter:description" content="Save up to 60% on healthcare with MPB Health sharing plans." />
+        <meta name="twitter:title" content="Alternatives to Traditional Insurance for Families | MPB" />
+        <meta name="twitter:description" content="Explore alternatives to traditional insurance for families with affordable health coverage and flexible healthsharing memberships." />
 
         {/* Organization Schema */}
         <script type="application/ld+json">
@@ -78,6 +82,11 @@ const IndividualsAndFamilies = () => {
         </script>
         <script type="application/ld+json">
           {JSON.stringify(secureHSASchema)}
+        </script>
+
+        {/* PAA FAQ Schema */}
+        <script type="application/ld+json">
+          {JSON.stringify(familiesFaqSchema)}
         </script>
       </Helmet>
 

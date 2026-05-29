@@ -26,6 +26,12 @@ interface SLAConfigRow {
   business_days: number[];
   timezone: string | null;
   escalation_to: string[];
+  /**
+   * Static email recipients (e.g. `ops@mympb.com`, shared inboxes, managers
+   * without an auth.users row). Sent in addition to the assigned rep and any
+   * `escalation_to` user UUIDs.
+   */
+  escalation_emails: string[];
   escalation_email: boolean;
   is_active: boolean;
 }
@@ -60,7 +66,7 @@ serve(async () => {
   const { data: configs, error: configErr } = await supabase
     .from('crm_sla_config')
     .select(
-      'id, org_id, sla_hours, business_hours_start, business_hours_end, business_days, timezone, escalation_to, escalation_email, is_active',
+      'id, org_id, sla_hours, business_hours_start, business_hours_end, business_days, timezone, escalation_to, escalation_emails, escalation_email, is_active',
     )
     .eq('is_active', true);
 
@@ -70,8 +76,10 @@ serve(async () => {
   }
 
   let scanned = 0;
+  let pastDeadline = 0;
   let escalated = 0;
   let emailed = 0;
+  const emailFailures: Array<{ to: string; status?: number; error?: string }> = [];
 
   for (const cfg of (configs ?? []) as SLAConfigRow[]) {
     // Fetch still-uncontacted leads in early pipeline stages (MP 8-stage model)
@@ -114,13 +122,23 @@ serve(async () => {
 
       const deadline = new Date(deadlineRow as string);
       if (Date.now() < deadline.getTime()) continue;
+      pastDeadline += 1;
 
-      // Only notify the assigned rep (in-app). Email only the first escalation
-      // contact (typically the manager) to avoid flooding the whole team's inbox.
+      // ----------------------------------------------------------------
+      // Has this lead been escalated before? Used to suppress duplicate
+      // emails on the cron's 15-minute heartbeat. We check ANY existing
+      // sla_breach notification for the lead (regardless of recipient)
+      // because the in-app insert below will create one on the first run,
+      // and we don't want subsequent runs to keep emailing.
+      // ----------------------------------------------------------------
+      const { count: priorEscalations } = await supabase
+        .from('lead_notifications')
+        .select('id', { count: 'exact', head: true })
+        .eq('lead_id', lead.id)
+        .eq('notification_type', 'sla_breach');
+      const isFirstEscalation = (priorEscalations ?? 0) === 0;
+
       const inAppRecipient = lead.assigned_to ? [lead.assigned_to] : [];
-      const emailRecipient = cfg.escalation_to.length > 0
-        ? [cfg.escalation_to[0]]
-        : inAppRecipient;
 
       for (const recipientId of inAppRecipient) {
         // Idempotency: skip if an open notification of this type already exists
@@ -145,49 +163,82 @@ serve(async () => {
         escalated += 1;
       }
 
-      // Send email only to the single escalation contact (manager)
-      if (cfg.escalation_email && resendKey && emailRecipient.length > 0) {
-        const recipientId = emailRecipient[0];
-        // Check idempotency for email too — reuse the notification check
-        const { count: existingCount } = await supabase
-          .from('lead_notifications')
-          .select('id', { count: 'exact', head: true })
-          .eq('lead_id', lead.id)
-          .eq('user_id', recipientId)
-          .eq('notification_type', 'sla_breach')
-          .not('acknowledged_at', 'is', null);
+      // ----------------------------------------------------------------
+      // Email fan-out (only on the first escalation for a lead).
+      // Three sources, deduped by address:
+      //   1. cfg.escalation_to[0] → primary in-system manager (auth lookup)
+      //      else lead.assigned_to → assigned rep
+      //   2. cfg.escalation_emails[*] → static external recipients
+      //      (ops inboxes, managers without an auth row, etc.)
+      // ----------------------------------------------------------------
+      if (cfg.escalation_email && resendKey && isFirstEscalation) {
+        const recipients = new Set<string>();
 
-        // Only email if we haven't already notified about this lead
-        if ((existingCount ?? 0) === 0) {
-          const { data: { user } } = await supabase.auth.admin.getUserById(recipientId);
-          const email = user?.email;
-          if (email) {
-            fetch('https://api.resend.com/emails', {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${resendKey}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                from: 'MPB Health <notifications@mpb.health>',
-                to: email,
-                subject: `SLA breach: ${[lead.first_name, lead.last_name].filter(Boolean).join(' ') || 'lead'}`,
-                html: `<p>A lead passed its SLA deadline without being contacted.</p>
+        const primaryUserId = cfg.escalation_to.length > 0
+          ? cfg.escalation_to[0]
+          : (lead.assigned_to ?? null);
+
+        if (primaryUserId) {
+          const { data: userRes } = await supabase.auth.admin.getUserById(primaryUserId);
+          const email = userRes?.user?.email;
+          if (email) recipients.add(email.toLowerCase());
+        }
+
+        for (const e of cfg.escalation_emails ?? []) {
+          if (e && e.includes('@')) recipients.add(e.toLowerCase());
+        }
+
+        if (recipients.size > 0) {
+          const subject = `SLA breach: ${[lead.first_name, lead.last_name].filter(Boolean).join(' ') || 'lead'}`;
+          const html = `<p>A lead passed its SLA deadline without being contacted.</p>
                        <p>Deadline was: <strong>${deadline.toISOString()}</strong></p>
-                       <p>Open the CRM to follow up or reassign.</p>`,
-              }),
-            }).catch((err) => log.warn('Resend send failed', { error: String(err) }));
-            emailed += 1;
+                       <p>Open the CRM to follow up or reassign.</p>`;
+
+          for (const to of recipients) {
+            try {
+              const res = await fetch('https://api.resend.com/emails', {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${resendKey}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  from: 'MPB Health <notifications@mpb.health>',
+                  to,
+                  subject,
+                  html,
+                }),
+              });
+              if (res.ok) {
+                emailed += 1;
+              } else {
+                emailFailures.push({ to, status: res.status });
+                log.warn('Resend non-2xx', { to, status: res.status });
+              }
+            } catch (err) {
+              emailFailures.push({ to, error: String(err) });
+              log.warn('Resend send failed', { to, error: String(err) });
+            }
           }
         }
       }
     }
   }
 
-  log.info('sla-breach-scan complete', { scanned, escalated, emailed });
+  const summary = {
+    success: true,
+    scanned,
+    past_deadline: pastDeadline,
+    escalated,
+    emailed,
+    resend_configured: !!resendKey,
+    email_failures: emailFailures.slice(0, 10),
+    configs_active: (configs ?? []).length,
+  };
+  log.info('sla-breach-scan complete', summary);
 
   return new Response(
-    JSON.stringify({ success: true, scanned, escalated, emailed }),
+    JSON.stringify(summary),
     { status: 200, headers: { 'Content-Type': 'application/json' } },
   );
 });

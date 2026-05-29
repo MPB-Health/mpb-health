@@ -1,10 +1,10 @@
 {
   "/": {
-    "title": "Affordable HealthShare Memberships | MPB Health",
-    "description": "MPB Health offers flexible, affordable HealthShare memberships for individuals and families. Save on healthcare costs with our community-driven solutions.",
-    "keywords": "healthshare memberships, health sharing, healthcare costs, insurance alternative, affordable healthcare, medical cost sharing, community health",
-    "ogTitle": "Affordable HealthShare Memberships | MPB Health",
-    "ogDescription": "MPB Health offers flexible, affordable HealthShare memberships for individuals and families. Save on healthcare costs with our community-driven solutions.",
+    "title": "Healthsharing Memberships & Medical Cost Sharing | MPB",
+    "description": "Explore healthsharing memberships with medical cost sharing, no network limits, and clear monthly costs. Get a smarter alternative to traditional insurance.",
+    "keywords": "healthsharing memberships, medical cost sharing, health sharing, healthcare costs, insurance alternative, affordable healthcare, community health",
+    "ogTitle": "Healthsharing Memberships & Medical Cost Sharing | MPB",
+    "ogDescription": "Explore healthsharing memberships with medical cost sharing, no network limits, and clear monthly costs. Get a smarter alternative to traditional insurance.",
     "ogImage": "https://mpb.health/assets/MPB-Health-No-background.png?v=2",
     "canonicalUrl": "https://mpb.health/",
     "robots": "index, follow"
@@ -19,11 +19,11 @@
     "robots": "index, follow"
   },
   "/plans": {
-    "title": "Health Sharing Plans & Pricing | MPB Health 2026",
-    "description": "Compare MPB Health sharing plans: Essentials, Care Plus, Direct, and Secure HSA. Transparent pricing, flexible membership options. Find your perfect plan.",
-    "keywords": "health sharing plans, healthcare pricing, plan comparison, essentials plan, care plus, secure HSA, medical cost sharing options",
-    "ogTitle": "Compare Health Sharing Plans | MPB Health",
-    "ogDescription": "Transparent pricing, flexible options. Find the right plan for your family.",
+    "title": "Affordable Healthcare Memberships | Health Sharing Plans | MPB",
+    "description": "Compare affordable healthcare memberships and health sharing plans with HSA options, preventive care, and flexible monthly costs at MPB Health.",
+    "keywords": "affordable healthcare memberships, health sharing plans, healthcare pricing, plan comparison, essentials plan, care plus, secure HSA, medical cost sharing options",
+    "ogTitle": "Affordable Healthcare Memberships | Health Sharing Plans | MPB",
+    "ogDescription": "Compare affordable healthcare memberships and health sharing plans with HSA options, preventive care, and flexible monthly costs at MPB Health.",
     "canonicalUrl": "https://mpb.health/plans",
     "robots": "index, follow"
   },
@@ -37,11 +37,11 @@
     "robots": "index, follow"
   },
   "/how-it-works": {
-    "title": "How Health Sharing Works | MPB Health Explained",
-    "description": "Discover how community-based health sharing works. Members share medical expenses through a proven, faith-based model. Learn the step-by-step process.",
-    "keywords": "how health sharing works, medical cost sharing explained, community health, healthcare alternative, health sharing process",
-    "ogTitle": "How Health Sharing Works | MPB Health",
-    "ogDescription": "Community members share medical expenses. Simple, transparent, affordable.",
+    "title": "How Health Sharing Works | Medical Cost Sharing Explained | MPB",
+    "description": "Learn how health sharing works, how medical cost sharing works, what an IUA is, and how members share eligible healthcare costs through MPB Health.",
+    "keywords": "how health sharing works, medical cost sharing explained, IUA, community health, healthcare alternative, health sharing process",
+    "ogTitle": "How Health Sharing Works | Medical Cost Sharing Explained | MPB",
+    "ogDescription": "Learn how health sharing works, how medical cost sharing works, what an IUA is, and how members share eligible healthcare costs through MPB Health.",
     "canonicalUrl": "https://mpb.health/how-it-works",
     "robots": "index, follow"
   },
@@ -64,11 +64,11 @@
     "robots": "index, follow"
   },
   "/faq": {
-    "title": "Frequently Asked Questions - Health Sharing | MPB Health",
-    "description": "Get answers to common questions about health sharing, enrollment, coverage, costs, and more. Comprehensive FAQ for MPB Health members.",
-    "keywords": "health sharing FAQ, common questions, health sharing answers, enrollment questions, membership FAQ",
-    "ogTitle": "Health Sharing FAQ | MPB Health",
-    "ogDescription": "Find answers to your health sharing questions.",
+    "title": "Healthcare Sharing Membership FAQ | Pros, Cons & More | MPB",
+    "description": "Get answers about healthcare sharing memberships, medical cost sharing, plan benefits, enrollment timing, and pros and cons of health share plans.",
+    "keywords": "healthcare sharing membership FAQ, health share pros cons, medical cost sharing FAQ, health sharing answers, enrollment questions, membership FAQ",
+    "ogTitle": "Healthcare Sharing Membership FAQ | Pros, Cons & More | MPB",
+    "ogDescription": "Get answers about healthcare sharing memberships, medical cost sharing, plan benefits, enrollment timing, and pros and cons of health share plans.",
     "canonicalUrl": "https://mpb.health/faq",
     "robots": "index, follow"
   },
@@ -82,20 +82,20 @@
     "robots": "index, follow"
   },
   "/individuals-and-families": {
-    "title": "Health Sharing for Individuals & Families | MPB Health",
-    "description": "Affordable health sharing plans designed for individuals and families. Save up to 60% compared to traditional insurance. No network restrictions.",
-    "keywords": "family health sharing, individual health plan, family healthcare, affordable health membership, family medical sharing",
-    "ogTitle": "Health Sharing for Families | MPB Health",
-    "ogDescription": "Affordable plans for individuals and families. Save up to 60%.",
+    "title": "Alternatives to Traditional Insurance for Families | MPB",
+    "description": "Explore alternatives to traditional insurance for families with affordable health coverage, provider freedom, and flexible healthsharing memberships.",
+    "keywords": "alternatives to traditional insurance, family health sharing, individual health plan, family healthcare, affordable health membership, healthsharing memberships",
+    "ogTitle": "Alternatives to Traditional Insurance for Families | MPB",
+    "ogDescription": "Explore alternatives to traditional insurance for families with affordable health coverage, provider freedom, and flexible healthsharing memberships.",
     "canonicalUrl": "https://mpb.health/individuals-and-families",
     "robots": "index, follow"
   },
   "/businesses-and-organizations": {
-    "title": "Business Health Sharing Solutions | Employer Healthcare | MPB Health",
-    "description": "Affordable health sharing for businesses and organizations. MEC+ Essentials satisfies ACA mandate. Secure HSA-compatible options. Save on group healthcare.",
-    "keywords": "business health sharing, employer healthcare, group health plan, ACA compliance, MEC plans, business healthcare solutions",
-    "ogTitle": "Business Health Sharing Solutions | MPB Health",
-    "ogDescription": "Affordable group healthcare for businesses. ACA-compliant options.",
+    "title": "HSA Compatible Health Sharing Plans for Self Employed | MPB",
+    "description": "Discover HSA compatible health sharing plans and medical cost sharing for self employed professionals, 1099 contractors, and small businesses.",
+    "keywords": "HSA compatible health sharing plans, self employed health sharing, 1099 health plan, small business health sharing, medical cost sharing, employer healthcare",
+    "ogTitle": "HSA Compatible Health Sharing Plans for Self Employed | MPB",
+    "ogDescription": "Discover HSA compatible health sharing plans and medical cost sharing for self employed professionals, 1099 contractors, and small businesses.",
     "canonicalUrl": "https://mpb.health/businesses-and-organizations",
     "robots": "index, follow"
   },
@@ -118,11 +118,11 @@
     "robots": "index, follow"
   },
   "/compare-plans": {
-    "title": "Compare Health Sharing Plans Side by Side | MPB Health 2026",
-    "description": "Compare MPB Health sharing plans: Essentials, Care Plus, Direct, and Secure HSA. See pricing, benefits, and features side by side to find your best fit.",
-    "keywords": "compare health plans, plan comparison, health sharing comparison, essentials vs care plus, plan pricing",
-    "ogTitle": "Compare Health Sharing Plans | MPB Health",
-    "ogDescription": "Side-by-side plan comparison. Find the right health sharing plan for your family.",
+    "title": "Compare Health Sharing Plans vs Traditional Insurance | MPB",
+    "description": "Compare health sharing plans side by side and see how they differ from traditional insurance in cost, benefits, HSA options, and provider flexibility.",
+    "keywords": "compare health sharing plans, health sharing vs insurance, plan comparison, health sharing comparison, essentials vs care plus, plan pricing",
+    "ogTitle": "Compare Health Sharing Plans vs Traditional Insurance | MPB",
+    "ogDescription": "Compare health sharing plans side by side and see how they differ from traditional insurance in cost, benefits, HSA options, and provider flexibility.",
     "canonicalUrl": "https://mpb.health/compare-plans",
     "robots": "index, follow"
   },

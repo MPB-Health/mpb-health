@@ -5,7 +5,7 @@ import { ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { getSEOForPage } from '../lib/seoService';
-import { generateAllPlansSchema, generateOrganizationSchema } from '../lib/schemaMarkup';
+import { generateAllPlansSchema, generateOrganizationSchema, generateFAQSchema, plansFaqQuestions } from '../lib/schemaMarkup';
 
 const Plans: React.FC = () => {
   const seo = getSEOForPage('/plans');
@@ -13,6 +13,7 @@ const Plans: React.FC = () => {
   // Generate structured data for all health share plans
   const plansSchema = generateAllPlansSchema();
   const orgSchema = generateOrganizationSchema();
+  const plansFaqSchema = generateFAQSchema(plansFaqQuestions);
 
   return (
     <>
@@ -22,6 +23,8 @@ const Plans: React.FC = () => {
         <meta name="keywords" content={seo.keywords} />
         <link rel="canonical" href={seo.canonicalUrl} />
         <meta name="robots" content={seo.robots} />
+        <meta name="googlebot" content={seo.robots} />
+        <meta name="bingbot" content={seo.robots} />
 
         <meta property="og:title" content={seo.ogTitle} />
         <meta property="og:description" content={seo.ogDescription} />
@@ -46,6 +49,11 @@ const Plans: React.FC = () => {
             {JSON.stringify(schema)}
           </script>
         ))}
+
+        {/* PAA FAQ Schema */}
+        <script type="application/ld+json">
+          {JSON.stringify(plansFaqSchema)}
+        </script>
       </Helmet>
 
       <div className="min-h-screen bg-gradient-to-b from-neutral-50 to-white">

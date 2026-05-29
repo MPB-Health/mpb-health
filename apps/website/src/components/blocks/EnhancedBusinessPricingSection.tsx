@@ -166,9 +166,9 @@ export const EnhancedBusinessPricingSection: React.FC = () => {
     <section id="chooseplan" className="py-16 bg-gradient-to-b from-neutral-50 to-white">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
-          <h1 className="text-4xl sm:text-5xl font-bold text-neutral-900 mb-4">
+          <h2 className="text-4xl sm:text-5xl font-bold text-neutral-900 mb-4">
             Choose Your Membership
-          </h1>
+          </h2>
           <p className="text-lg text-neutral-700 max-w-3xl mx-auto mb-6">
             Save on healthcare expenses and foster a supportive environment for your team. Join
             thousands of small business owners and 1099 professionals who trust community-driven

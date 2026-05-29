@@ -1,6 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { SEOHead } from '../components/SEOHead';
+import { generateFAQSchema, howItWorksFaqQuestions } from '../lib/schemaMarkup';
 import { HowItWorks as HowItWorksAnimation } from '../components/blocks/HowItWorks';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '../components/ui/Accordion';
 import { Button } from '../components/ui/button';
@@ -172,6 +174,8 @@ const whyDifferent = [
 /* ------------------------------------------------------------------ */
 
 const HowItWorksPage: React.FC = () => {
+  const paaFaqSchema = generateFAQSchema(howItWorksFaqQuestions);
+
   return (
     <>
       <SEOHead
@@ -179,6 +183,10 @@ const HowItWorksPage: React.FC = () => {
         structuredDataType="faq"
         structuredDataContent={{ questions: faqsForSchema }}
       />
+      {/* PAA FAQ Schema — People Also Ask targeting */}
+      <Helmet>
+        <script type="application/ld+json">{JSON.stringify(paaFaqSchema)}</script>
+      </Helmet>
 
       <div className="min-h-screen bg-white">
         {/* ── 1. Hero ─────────────────────────────────────────────── */}

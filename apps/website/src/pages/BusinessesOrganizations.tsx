@@ -8,7 +8,7 @@ import { SocialProof } from '../components/blocks/SocialProof';
 import { EnhancedBusinessPricingSection } from '../components/blocks/EnhancedBusinessPricingSection';
 import BusinessRateCalculator from '../components/BusinessRateCalculator';
 import { BusinessesOrganizationsHero } from '../components/blocks/BusinessesOrganizationsHero';
-import { generateHealthSharePlanSchema, generateOrganizationSchema, generateServiceSchema } from '../lib/schemaMarkup';
+import { generateHealthSharePlanSchema, generateOrganizationSchema, generateServiceSchema, generateFAQSchema, businessesFaqQuestions } from '../lib/schemaMarkup';
 
 const BusinessesOrganizations = () => {
   // Generate structured data for business plans
@@ -30,6 +30,7 @@ const BusinessesOrganizations = () => {
 
   const orgSchema = generateOrganizationSchema();
   const serviceSchema = generateServiceSchema();
+  const businessFaqSchema = generateFAQSchema(businessesFaqQuestions);
 
   const whyChooseItems = [
     {
@@ -103,24 +104,27 @@ const BusinessesOrganizations = () => {
   return (
     <>
       <Helmet>
-        <title>Business Health Sharing Solutions | Employer Healthcare | MPB Health</title>
+        <title>HSA Compatible Health Sharing Plans for Self Employed | MPB</title>
         <meta
           name="description"
-          content="Affordable health sharing for businesses, self-employed professionals, and 1099 contractors. ACA-compliant MEC+ plans, HSA-compatible options. Save 40-60% on employee healthcare."
+          content="Discover HSA compatible health sharing plans and medical cost sharing for self employed professionals, 1099 contractors, and small businesses."
         />
-        <meta name="keywords" content="business health sharing, employer healthcare, ACA compliant, MEC plans, self-employed health, 1099 contractor health" />
+        <meta name="keywords" content="HSA compatible health sharing plans, self employed health sharing, 1099 health plan, small business health sharing, medical cost sharing" />
+        <meta name="robots" content="index, follow" />
+        <meta name="googlebot" content="index, follow" />
+        <meta name="bingbot" content="index, follow" />
         <link rel="canonical" href="https://mpb.health/businesses-and-organizations" />
 
         {/* Open Graph */}
-        <meta property="og:title" content="Business Health Sharing Solutions | MPB Health" />
-        <meta property="og:description" content="Affordable health sharing for businesses. ACA-compliant options, HSA-compatible plans." />
+        <meta property="og:title" content="HSA Compatible Health Sharing Plans for Self Employed | MPB" />
+        <meta property="og:description" content="Discover HSA compatible health sharing plans and medical cost sharing for self employed professionals, 1099 contractors, and small businesses." />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://mpb.health/businesses-and-organizations" />
         <meta property="og:site_name" content="MPB Health" />
 
         {/* Twitter */}
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Business Health Sharing Solutions | MPB Health" />
+        <meta name="twitter:title" content="HSA Compatible Health Sharing Plans for Self Employed | MPB" />
 
         {/* Organization Schema */}
         <script type="application/ld+json">
@@ -138,6 +142,11 @@ const BusinessesOrganizations = () => {
         </script>
         <script type="application/ld+json">
           {JSON.stringify(secureHSABusinessSchema)}
+        </script>
+
+        {/* PAA FAQ Schema */}
+        <script type="application/ld+json">
+          {JSON.stringify(businessFaqSchema)}
         </script>
       </Helmet>
 

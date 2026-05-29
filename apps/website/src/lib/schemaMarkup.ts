@@ -841,6 +841,138 @@ export const generateReviewSchema = (
   datePublished,
 });
 
+// ============================================
+// PAA (People Also Ask) FAQ DATA — per page
+// Used to inject FAQPage schema targeting AI-overview
+// and "People Also Ask" search results.
+// ============================================
+
+export const homepageFaqQuestions = [
+  {
+    question: 'What are healthsharing memberships?',
+    answer:
+      'Healthsharing memberships are community-based healthcare programs where members contribute monthly amounts to help share eligible medical expenses. MPB Health connects members with affordable medical cost sharing solutions as an alternative to traditional insurance.',
+  },
+  {
+    question: 'How does medical cost sharing work?',
+    answer:
+      'Medical cost sharing works by members contributing monthly sharing amounts into a community system. When eligible medical expenses occur, approved costs are shared among participating members according to program guidelines.',
+  },
+  {
+    question: 'Is health sharing cheaper than insurance?',
+    answer:
+      'In many cases, health sharing memberships have lower monthly costs than traditional insurance premiums. MPB Health offers flexible healthcare sharing options designed for individuals, families, and self-employed professionals.',
+  },
+];
+
+export const plansFaqQuestions = [
+  {
+    question: 'What are affordable healthcare memberships?',
+    answer:
+      'Affordable healthcare memberships provide community-based medical cost sharing options that help reduce healthcare expenses without relying on traditional insurance structures.',
+  },
+  {
+    question: 'What types of health sharing plans are available?',
+    answer:
+      'MPB Health offers multiple health sharing membership options including large medical expense protection, family healthcare sharing, and HSA-compatible memberships for self-employed individuals.',
+  },
+  {
+    question: 'Can families use health sharing plans?',
+    answer:
+      'Yes. Many health sharing memberships are designed specifically for families seeking affordable healthcare coverage alternatives with flexible monthly sharing options.',
+  },
+];
+
+export const individualsAndFamiliesFaqQuestions = [
+  {
+    question: 'What are alternatives to traditional health insurance?',
+    answer:
+      'Alternatives to traditional health insurance include health sharing memberships, medical cost sharing programs, direct primary care, and HSA-compatible healthcare solutions.',
+  },
+  {
+    question: 'Are health sharing memberships good for families?',
+    answer:
+      'Many families choose health sharing memberships because they may offer lower monthly costs, flexible healthcare access, and community-based medical expense sharing.',
+  },
+  {
+    question: 'Can self-employed individuals use health sharing plans?',
+    answer:
+      'Yes. Health sharing memberships are commonly used by freelancers, entrepreneurs, contractors, and self-employed professionals seeking affordable healthcare alternatives.',
+  },
+];
+
+export const businessesFaqQuestions = [
+  {
+    question: 'What are HSA compatible health sharing plans?',
+    answer:
+      'HSA compatible health sharing plans allow eligible members to combine medical cost sharing with a Health Savings Account for additional tax advantages and healthcare budgeting flexibility.',
+  },
+  {
+    question: 'What expenses can an HSA cover with a health sharing plan?',
+    answer:
+      'HSAs can typically cover qualified medical expenses including doctor visits, prescriptions, diagnostics, dental care, and hospital-related costs that may not be fully shared through the membership.',
+  },
+  {
+    question: 'Are health sharing plans good for small businesses?',
+    answer:
+      'Many small businesses and 1099 workers choose health sharing memberships because they can reduce healthcare costs while providing flexible healthcare support options.',
+  },
+];
+
+export const howItWorksFaqQuestions = [
+  {
+    question: 'How does health sharing work?',
+    answer:
+      'Health sharing works through a community-based system where members contribute monthly amounts that help cover eligible medical expenses for other members. MPB Health simplifies the process with member support and online tools.',
+  },
+  {
+    question: 'What medical expenses are eligible for sharing?',
+    answer:
+      'Eligible medical expenses may include emergency care, hospitalization, surgeries, diagnostics, specialist visits, and maternity care depending on the selected membership guidelines.',
+  },
+  {
+    question: 'Is health sharing considered insurance?',
+    answer:
+      'No. Health sharing memberships are not traditional insurance policies. They operate through community medical cost sharing rather than regulated insurance contracts.',
+  },
+];
+
+export const faqPagePaaQuestions = [
+  {
+    question: 'What is a healthcare sharing membership?',
+    answer:
+      'A healthcare sharing membership is a program where members contribute monthly amounts to help share eligible healthcare expenses across a community-based network.',
+  },
+  {
+    question: 'What are the pros and cons of health share plans?',
+    answer:
+      'Pros may include affordability, flexibility, and lower monthly costs, while limitations may include sharing restrictions, pre-existing condition guidelines, and non-insurance status.',
+  },
+  {
+    question: 'Can I use any doctor with a health sharing plan?',
+    answer:
+      'Many health sharing memberships offer flexible provider access without strict network restrictions, though reimbursement and sharing eligibility may vary by program.',
+  },
+];
+
+export const comparePlansFaqQuestions = [
+  {
+    question: 'Are health sharing plans considered insurance?',
+    answer:
+      'No. Health sharing plans are membership-based healthcare sharing programs rather than traditional insurance policies regulated by insurance companies.',
+  },
+  {
+    question: 'What is the difference between health share and health insurance?',
+    answer:
+      'Health sharing plans operate through community medical expense sharing, while traditional insurance uses a regulated risk-based coverage model with premiums and policy contracts.',
+  },
+  {
+    question: 'Which is more affordable: health sharing or insurance?',
+    answer:
+      'Health sharing memberships may offer lower monthly costs compared to traditional insurance, especially for healthy individuals, families, and self-employed members.',
+  },
+];
+
 /**
  * Generate comprehensive schema bundle for homepage (AI-optimized)
  */

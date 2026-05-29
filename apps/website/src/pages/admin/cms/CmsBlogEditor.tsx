@@ -377,9 +377,7 @@ export default function CmsBlogEditor() {
                   placeholder={formData.title || 'Override page title for search'}
                   className={inputClass}
                 />
-                <p className="text-xs text-th-text-tertiary mt-1">
-                  {(formData.seo_title || formData.title).length}/60 characters
-                </p>
+                <SeoCharHint value={formData.seo_title || formData.title} limit={60} />
               </div>
 
               <div>
@@ -391,9 +389,7 @@ export default function CmsBlogEditor() {
                   rows={3}
                   className={inputClass}
                 />
-                <p className="text-xs text-th-text-tertiary mt-1">
-                  {formData.seo_description.length}/160 characters
-                </p>
+                <SeoCharHint value={formData.seo_description} limit={160} />
               </div>
 
               <div>
@@ -437,6 +433,20 @@ export default function CmsBlogEditor() {
         </div>
       </div>
     </div>
+  );
+}
+
+function SeoCharHint({ value, limit }: { value: string; limit: number }) {
+  const count = value.length;
+  const over = count > limit;
+  const near = !over && count > limit * 0.9;
+  const color = over ? 'text-amber-600' : near ? 'text-amber-500' : 'text-th-text-tertiary';
+  return (
+    <p className={`text-xs mt-1 ${color}`}>
+      {over
+        ? `${count} chars — Google may truncate after ${limit} (no input limit)`
+        : `${count} / ${limit} chars — SEO recommendation only`}
+    </p>
   );
 }
 

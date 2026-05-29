@@ -577,11 +577,14 @@ const CharCount: React.FC<{ value: string; limit: number; hint: string }> = ({ v
   const count = value.length;
   const over = count > limit;
   const near = !over && count > limit * 0.9;
-  const tone = over ? 'text-red-600' : near ? 'text-amber-600' : 'text-neutral-500';
+  const tone = over ? 'text-amber-600' : near ? 'text-amber-500' : 'text-neutral-400';
+  const label = over
+    ? `${count} chars — Google may truncate after ${limit}`
+    : `${count} / ${limit} chars recommended for SEO`;
   return (
     <div className="flex items-start justify-between gap-3 mt-1">
       <p className="text-xs text-neutral-500 flex-1">{hint}</p>
-      <p className={`text-xs font-mono ${tone}`}>{count} / {limit}</p>
+      <p className={`text-xs font-mono whitespace-nowrap ${tone}`}>{label}</p>
     </div>
   );
 };

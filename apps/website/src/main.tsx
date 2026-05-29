@@ -1,5 +1,5 @@
 import React, { StrictMode } from 'react';
-import { createRoot } from 'react-dom/client';
+import { createRoot, hydrateRoot } from 'react-dom/client';
 import LazyLoadErrorBoundary from './components/LazyLoadErrorBoundary';
 import { installAuthRefreshGuard } from '@mpbhealth/database';
 import './index.css';
@@ -50,15 +50,19 @@ const container = document.getElementById('root');
 if (!container) {
   console.error('[MPB Health] No #root element found. Skipping React mount.');
 } else {
-  console.info('[MPB Health] Mounting React app to #root element');
-
-  const root = createRoot(container);
-
-  root.render(
+  const appTree = (
     <StrictMode>
       <LazyLoadErrorBoundary>
         <App />
       </LazyLoadErrorBoundary>
     </StrictMode>
   );
+
+  // If SSG pre-rendered content exists, hydrate over it for faster FCP.
+  // Otherwise, create a fresh root (dev mode, non-prerendered routes).
+  if (container.children.length > 0) {
+    hydrateRoot(container, appTree);
+  } else {
+    createRoot(container).render(appTree);
+  }
 }

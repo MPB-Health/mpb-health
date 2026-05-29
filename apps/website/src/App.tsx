@@ -23,8 +23,6 @@ import { Toaster } from 'sonner';
 import { MANAGED_SITE_PATHS, ManagedSitePage } from './lib/sitePageFallbacks';
 
 // Critical routes - loaded immediately
-import { Landing } from './pages/Landing';
-import { Plans } from './pages/Plans';
 import Login from './pages/Login';
 import Forbidden from './pages/Forbidden';
 import Logout from './pages/Logout';
@@ -312,14 +310,17 @@ const AdvisorPortalRedirect: React.FC = () => {
 
 const App = () => {
   React.useEffect(() => {
-    // Initialize env-var-driven analytics (fallback)
-    initializeAnalytics();
+    const boot = () => {
+      initializeAnalytics();
+      loadDatabaseSnippets();
+      trackPageView(window.location.pathname);
+    };
 
-    // Load and inject snippets configured via the admin panel
-    loadDatabaseSnippets();
-
-    // Track initial page view to GA
-    trackPageView(window.location.pathname);
+    if ('requestIdleCallback' in window) {
+      (window as any).requestIdleCallback(boot, { timeout: 3000 });
+    } else {
+      setTimeout(boot, 2000);
+    }
   }, []);
 
   return (

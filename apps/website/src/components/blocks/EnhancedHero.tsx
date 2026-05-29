@@ -1,27 +1,30 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback, lazy, Suspense } from 'react';
 import { ArrowRight, Play, Star } from 'lucide-react';
 import { Button } from '../ui/button';
 import { typography } from '../../lib/typography';
-import HeroCalculator from '../HeroCalculator';
 import { AffiliateProvider } from '../AffiliateProvider';
-import { siteMediaService } from '../../lib/siteMediaService';
+
+const HeroCalculator = lazy(() => import('../HeroCalculator'));
+
+const HERO_VIDEO_DEFAULT = 'https://player.vimeo.com/video/1135808114?h=c0bfafd29e';
+const BG_VIDEO_DEFAULT = '/assets/young-parents-happy-mother.mp4';
 
 const EnhancedHero: React.FC = () => {
   const [showVideo, setShowVideo] = useState(false);
-  const [heroVideoUrl, setHeroVideoUrl] = useState('');
-  const [backgroundVideoUrl, setBackgroundVideoUrl] = useState('/assets/young-parents-happy-mother.mp4');
+  const [heroVideoUrl, setHeroVideoUrl] = useState(HERO_VIDEO_DEFAULT);
+  const [backgroundVideoUrl] = useState(BG_VIDEO_DEFAULT);
 
-  useEffect(() => {
-    const loadMediaSettings = async () => {
-      const [heroUrl, bgUrl] = await Promise.all([
-        siteMediaService.getVideoUrl('video_homepage_hero'),
-        siteMediaService.getMediaSetting('video_background_mp4')
-      ]);
-      setHeroVideoUrl(heroUrl);
-      if (bgUrl) setBackgroundVideoUrl(bgUrl);
-    };
-    loadMediaSettings();
-  }, []);
+  const handleShowVideo = useCallback(() => {
+    setShowVideo((prev) => !prev);
+    // Lazily fetch admin-configured URL override (non-blocking)
+    if (!showVideo) {
+      import('../../lib/siteMediaService').then(({ siteMediaService }) => {
+        siteMediaService.getVideoUrl('video_homepage_hero').then((url) => {
+          if (url) setHeroVideoUrl(url);
+        });
+      });
+    }
+  }, [showVideo]);
 
   return (
     <section className="relative bg-gradient-to-br from-white via-blue-50/30 to-cyan-50/30 py-16 md:py-24 overflow-hidden">
@@ -97,7 +100,7 @@ const EnhancedHero: React.FC = () => {
               </Button>
 
               <button
-                onClick={() => setShowVideo(!showVideo)}
+                onClick={handleShowVideo}
                 className="flex items-center justify-center gap-2 px-8 py-4 bg-white border-2 border-neutral-200 text-neutral-900 font-semibold rounded-xl hover:bg-neutral-50 hover:border-neutral-300 transition-all duration-300 shadow-sm hover:shadow-md"
               >
                 <Play className="w-5 h-5" />
@@ -126,7 +129,9 @@ const EnhancedHero: React.FC = () => {
             ) : (
               <div className="relative">
                 <AffiliateProvider>
-                  <HeroCalculator />
+                  <Suspense fallback={<div className="animate-pulse bg-white rounded-2xl shadow-xl h-[420px]" />}>
+                    <HeroCalculator />
+                  </Suspense>
                 </AffiliateProvider>
               </div>
             )}

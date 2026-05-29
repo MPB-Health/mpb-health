@@ -736,14 +736,19 @@ const HeaderWithAuth = () => {
             className="flex items-center text-primary hover:text-primary/80 transition-colors group flex-shrink-0"
             aria-label="MPB Health Home"
           >
-            <img
-              src="/assets/MPB-Health-No-background.png?v=2"
-              alt="MPB Health"
-              className={cn(
-                "w-auto transition-all duration-300",
-                isScrolled ? "h-8" : "h-10"
-              )}
-            />
+            <picture>
+              <source srcSet="/assets/MPB-Health-No-background.webp" type="image/webp" />
+              <img
+                src="/assets/MPB-Health-No-background.png?v=2"
+                alt="MPB Health"
+                width={160}
+                height={40}
+                className={cn(
+                  "w-auto transition-all duration-300",
+                  isScrolled ? "h-8" : "h-10"
+                )}
+              />
+            </picture>
           </Link>
 
           <div className="hidden lg:flex items-center space-x-1 absolute left-1/2 transform -translate-x-1/2">

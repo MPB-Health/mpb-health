@@ -1,20 +1,16 @@
 import React, { lazy, Suspense } from 'react';
 import { Helmet } from 'react-helmet-async';
+import { generateFAQSchema, homepageFaqQuestions } from '../lib/schemaMarkup';
 import { EnhancedHero } from '../components/blocks/EnhancedHero';
 import { EnhancedTrustBar } from '../components/blocks/EnhancedTrustBar';
 import { SolutionsSection } from '../components/blocks/SolutionsSection';
 import { UnifiedPathSelector } from '../components/blocks/UnifiedPathSelector';
 import { MedicalCostSharingInfo } from '../components/blocks/MedicalCostSharingInfo';
-import RateCalculator from '../components/RateCalculator';
 import { AffiliateProvider } from '../components/AffiliateProvider';
 import { StickyMobileCTA } from '../components/layout/StickyMobileCTA';
-// Site-wide JSON-LD (Organization, MedicalOrganization+LocalBusiness, WebSite)
-// is now emitted statically from apps/website/index.html so it is visible to
-// non-JS crawlers and so we don't double-emit after hydration. Per-page schemas
-// (Article/FAQ/HowTo/etc.) still come from lib/schemaMarkup.ts via Helmet
-// inside the relevant page components.
 
-// Lazy load below-the-fold components
+// Lazy load below-the-fold / interaction-gated components
+const RateCalculator = lazy(() => import('../components/RateCalculator'));
 const ObjectionBlocks = lazy(() => import('../components/blocks/ObjectionBlocks').then(m => ({ default: m.ObjectionBlocks })));
 const SocialProof = lazy(() => import('../components/blocks/SocialProof').then(m => ({ default: m.SocialProof })));
 
@@ -23,6 +19,8 @@ const Loading = () => (
 );
 
 const Landing: React.FC = () => {
+  const homepageFaqSchema = generateFAQSchema(homepageFaqQuestions);
+
   // Canonical is intentionally NOT set inside <Helmet> below. The static
   // <link rel="canonical" href="https://mpb.health/" /> in
   // apps/website/index.html is the source of truth. Setting another canonical
@@ -32,16 +30,19 @@ const Landing: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>Affordable HealthShare Memberships | MPB Health</title>
+        <title>Healthsharing Memberships & Medical Cost Sharing | MPB</title>
         <meta
           name="description"
-          content="MPB Health offers flexible, affordable HealthShare memberships for individuals and families. Save on healthcare costs with our community-driven solutions."
+          content="Explore healthsharing memberships with medical cost sharing, no network limits, and clear monthly costs. Get a smarter alternative to traditional insurance."
         />
-        <meta name="keywords" content="healthshare memberships, health sharing, healthcare costs, insurance alternative, community health, medical cost sharing, affordable healthcare" />
+        <meta name="keywords" content="healthsharing memberships, medical cost sharing, health sharing, healthcare costs, insurance alternative, community health, affordable healthcare" />
+        <meta name="robots" content="index, follow" />
+        <meta name="googlebot" content="index, follow" />
+        <meta name="bingbot" content="index, follow" />
 
         {/* Open Graph */}
-        <meta property="og:title" content="Affordable HealthShare Memberships | MPB Health" />
-        <meta property="og:description" content="MPB Health offers flexible, affordable HealthShare memberships for individuals and families. Save on healthcare costs with our community-driven solutions." />
+        <meta property="og:title" content="Healthsharing Memberships & Medical Cost Sharing | MPB" />
+        <meta property="og:description" content="Explore healthsharing memberships with medical cost sharing, no network limits, and clear monthly costs. Get a smarter alternative to traditional insurance." />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://mpb.health/" />
         <meta property="og:site_name" content="MPB Health" />
@@ -49,6 +50,9 @@ const Landing: React.FC = () => {
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
         <meta property="og:locale" content="en_US" />
+
+        {/* PAA FAQ Schema */}
+        <script type="application/ld+json">{JSON.stringify(homepageFaqSchema)}</script>
       </Helmet>
 
       {/* Above the fold - critical render path */}
@@ -58,7 +62,9 @@ const Landing: React.FC = () => {
       <UnifiedPathSelector />
       <AffiliateProvider>
         <div id="calculator" className="scroll-mt-24 bg-white py-0">
-          <RateCalculator />
+          <Suspense fallback={<Loading />}>
+            <RateCalculator />
+          </Suspense>
         </div>
       </AffiliateProvider>
 

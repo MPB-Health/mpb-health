@@ -53,6 +53,10 @@ supabase/.temp/
 vite.config.js
 vite.config.d.ts
 
+# Generated WebP/AVIF images (rebuilt by scripts/optimize-images.mjs)
+apps/website/public/assets/**/*.webp
+apps/website/public/assets/**/*-*w.webp
+
 nul
 .vercel
 .env*.local

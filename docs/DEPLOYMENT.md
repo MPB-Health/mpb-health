@@ -186,6 +186,31 @@ Set via `supabase secrets set` and available to all edge functions at runtime.
 | `CALENDLY_API_KEY` | Calendly meeting scheduling |
 | `MICROSOFT_CLIENT_SECRET` | Microsoft Graph API (email sync) |
 | `GOOGLE_CLIENT_SECRET` | Gmail API (email sync) |
+| `CORS_EXTRA_ORIGINS` | Comma-separated extra origins appended to the edge-function CORS allowlist at runtime |
+
+### Edge Function CORS Allowlist
+
+All edge functions share `supabase/functions/_shared/cors.ts`, which reflects the
+request `Origin` only when it is allowed; otherwise it falls back to the first
+allowed origin (so the browser blocks the response). Allowed origins come from
+three places:
+
+1. **Hardcoded list** — the `*.mpb.health` production hosts.
+2. **Regex patterns** — any `*.aryxcloud.com` subdomain (white-label portals),
+   `mpbhealth*.vercel.app` previews, and localhost/loopback dev ports.
+3. **`CORS_EXTRA_ORIGINS` secret** — an exact-match, comma-separated list added at
+   runtime *without redeploying functions*.
+
+Because the allowlist is evaluated at module load, **changing `CORS_EXTRA_ORIGINS`
+recycles the function workers and takes effect within ~30s with no redeploy** —
+the safe way to grant a new origin across the whole fleet. The `*.aryxcloud.com`
+regex is the durable backstop baked into the code; the secret currently enumerates
+the ARYX portal origins so functions deployed before the regex was added also
+honor them. To grant a new origin everywhere instantly:
+
+```bash
+supabase secrets set CORS_EXTRA_ORIGINS="https://admin.aryxcloud.com,https://crm.aryxcloud.com,..." --project-ref <ref>
+```
 
 ### Forbidden VITE_ Variables
 

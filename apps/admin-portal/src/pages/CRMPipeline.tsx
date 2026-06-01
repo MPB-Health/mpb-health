@@ -56,8 +56,8 @@ export default function CRMPipeline() {
     return () => clearTimeout(t);
   }, [search, load]);
 
-  function leadsForStage(stageId: string) {
-    return leads.filter((l) => l.pipeline_stage === stageId);
+  function leadsForStage(stageName: string) {
+    return leads.filter((l) => l.pipeline_stage === stageName);
   }
 
   function handleDragStart(leadId: string) {
@@ -163,14 +163,14 @@ export default function CRMPipeline() {
         /* Kanban board — horizontal scroll */
         <div className="flex gap-4 overflow-x-auto pb-4 flex-1 min-h-0">
           {stages.map((stage) => {
-            const stageLeads = leadsForStage(stage.id);
-            const isOver = dragOverStage === stage.id;
+            const stageLeads = leadsForStage(stage.name);
+            const isOver = dragOverStage === stage.name;
 
             return (
               <div
-                key={stage.id}
-                onDragOver={(e) => handleDragOver(e, stage.id)}
-                onDrop={() => handleDrop(stage.id)}
+                key={stage.name}
+                onDragOver={(e) => handleDragOver(e, stage.name)}
+                onDrop={() => handleDrop(stage.name)}
                 onDragLeave={() => setDragOverStage(null)}
                 className={`flex flex-col min-w-[272px] w-[272px] rounded-xl border transition-colors ${
                   isOver

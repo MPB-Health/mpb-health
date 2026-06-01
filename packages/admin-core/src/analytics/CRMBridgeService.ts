@@ -161,7 +161,7 @@ export class CRMBridgeService {
       const { count } = await supabase
         .from('lead_submissions')
         .select('id', { count: 'exact', head: true })
-        .eq('pipeline_stage', stage.id);
+        .eq('pipeline_stage', stage.name);
       results.push({
         stage: stage.name,
         count: count || 0,
@@ -173,15 +173,13 @@ export class CRMBridgeService {
   }
 
   private async getConvertedCount(): Promise<number> {
-    // Find the "closed won" or final stage
     const { data: stages } = await supabase
       .from('crm_pipeline_stages')
-      .select('id')
+      .select('id, name')
       .eq('is_won_stage', true)
       .limit(1);
 
     if (!stages || stages.length === 0) {
-      // Fallback: count leads with a converted_at timestamp
       const { count } = await supabase
         .from('lead_submissions')
         .select('id', { count: 'exact', head: true })
@@ -192,7 +190,7 @@ export class CRMBridgeService {
     const { count } = await supabase
       .from('lead_submissions')
       .select('id', { count: 'exact', head: true })
-      .eq('pipeline_stage', stages[0].id);
+      .eq('pipeline_stage', stages[0].name);
     return count || 0;
   }
 
@@ -360,21 +358,17 @@ export class CRMBridgeService {
 
     if (insertError) throw insertError;
 
-    // 6. Update the lead status to converted + move to won stage
     const { data: wonStage } = await supabase
       .from('crm_pipeline_stages')
-      .select('id')
+      .select('name')
       .eq('is_won_stage', true)
       .limit(1);
 
     const leadUpdate: Record<string, unknown> = {
-      pipeline_stage: 'closed_won',
+      pipeline_stage: wonStage?.[0]?.name ?? 'won',
       converted_at: now,
       updated_at: now,
     };
-    if (wonStage && wonStage.length > 0) {
-      leadUpdate.pipeline_stage = wonStage[0].id;
-    }
 
     await supabase
       .from('lead_submissions')

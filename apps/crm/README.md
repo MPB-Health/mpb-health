@@ -1,46 +1,107 @@
-# apps/crm — DEPRECATED (2026-05-28)
+# MPB Health CRM
 
-> **This package is the legacy MPB CRM. It has been retired.**
-> The active CRM is the standalone [aryx-crm](https://github.com/MPB-Health/aryx-crm) repo, deployed on the Vercel project `aryx-crm` and serving both:
-> - `https://crm.mpb.health` — MPB tenant (full read-write)
-> - `https://crm.aryx.pro` — ARYX SaaS tenant selector
+> **DEPRECATED (2026-05-28):** Production CRM now runs from the separate `aryx-crm` repository at crm.mpb.health. This copy remains as a reference only.
 
-## What changed (MPB → ARYX single-CRM consolidation)
+Full-featured sales CRM with lead pipeline, email system, automation, recruiting, and reporting.
 
-As of **2026-05-28**, the MPB CRM has been consolidated onto the ARYX CRM
-platform. The cutover:
+**Package:** `@mpbhealth/crm`
 
-1. Mirrored all MPB data (lead_submissions, lead_tasks, auth.users, etc.) into
-   the ARYX Supabase project (`knelbprqqbjggqfqvfmc`) with 0% drift across
-   every critical table.
-2. Dropped the ARYX read-only RLS policies for the MPB tenant
-   (migration `00000000000009_mpb_full_writable.sql` in the aryx-crm repo).
-3. Removed app-layer + edge-function read-only gating so MPB is a fully
-   writable tenant in ARYX.
-4. Re-enabled ARYX pg_cron jobs for MPB
-   (migration `00000000000010_cron_include_mpb.sql`).
-5. Disabled the legacy → ARYX 5-minute sync pipeline
-   (`SYNC_ENABLED=false` GitHub variable on `MPB-Health/aryx-crm`).
-6. Moved the `crm.mpb.health` Vercel domain from this project (`crm`) to
-   `aryx-crm`, so the same hostname now serves the ARYX app with the MPB
-   brand applied via `packages/vendor/ui/brand` host-based detection.
-7. Updated the website lead intake (`apps/website/src/lib/leadSubmissionService.ts`)
-   to single-write to ARYX instead of the legacy dual-write.
+## Tech Stack
 
-## What stays
+- React 18
+- Vite
+- Tailwind CSS
+- Zustand (state management)
+- TanStack Query (server state)
+- Recharts (data visualization)
+- TipTap (rich text editing)
+- xlsx (spreadsheet export)
+- DnD Kit (drag and drop)
 
-- The **legacy Supabase project** (`dtmnkzllidaiqyheguhl`) is **NOT decommissioned
-  today**. It continues to host the live data of record for any external
-  webhook callers that have not yet been reconfigured to ARYX (Resend, Calendly,
-  GoTo Connect, M365/Outlook, Gmail, LinkedIn). The owner will decommission it
-  after the webhook providers are all repointed and a safety period elapses.
-- The **legacy Vercel project** (`crm`) is **NOT deleted**. The `crm.mpb.health`
-  domain has been removed from it; the project still resolves at
-  `crm.aryxcloud.com` and its `crm-rho-beryl.vercel.app` URL for emergency
-  rollback access. Owner: remove the project once the cutover has stabilized.
+## Getting Started
 
-## Do not develop here
+### Prerequisites
 
-All new CRM features ship in the [aryx-crm](https://github.com/MPB-Health/aryx-crm)
-repo. Bug fixes against this codebase will only be merged for **emergency rollback**
-scenarios.
+- Node.js 18+
+- pnpm
+- Access to Supabase project credentials
+- User account with `crm_user` role and org membership
+
+### Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `VITE_SUPABASE_URL` | Supabase project URL |
+| `VITE_SUPABASE_ANON_KEY` | Supabase anonymous/public key |
+
+### Development
+
+```bash
+pnpm install
+pnpm --filter @mpbhealth/crm dev
+```
+
+Runs on `http://localhost:5174`.
+
+## Project Structure
+
+Standard Vite + React SPA layout with feature-based organization under `src/`.
+
+## Key Features
+
+- Full sales CRM with deal tracking
+- Lead pipeline with drag-and-drop stages
+- Email system (inbox, sequences, connected accounts)
+- Automation rules and cadences
+- Reporting suite (15+ report types)
+- Recruiting module
+- AI chat assistant
+- Web form builder
+- Calendar and task management
+- Document management
+- Quoting and invoicing
+
+## Routes
+
+| Group | Description |
+|-------|-------------|
+| Dashboard/Today | Activity feed and daily overview |
+| Leads/Pipeline/Tasks | Lead management and sales pipeline |
+| Email | Inbox, sequences, connected accounts |
+| Reports | 15+ report types with charts |
+| Calendar | Scheduling and event tracking |
+| Daily Logs | Activity logging |
+| Recruiting | Recruitment pipeline |
+| Settings/Automation/Templates | Configuration and workflow automation |
+| Web Forms | Form builder and submissions |
+| Members/Contacts | Contact database |
+| Deals/Quotes/Invoices/Products | Sales transaction management |
+| Cases/Documents | Case tracking and document storage |
+| Team | Team management and performance |
+
+## Auth Model
+
+Authentication is handled via Supabase Auth.
+
+- **Required role:** `crm_user`
+- **Access control:** Organization-scoped permissions
+- Users must have org membership to access CRM data
+- Permissions are scoped per organization
+
+## Deployment
+
+> **Note:** This app is deprecated. Production deployment is managed in the `aryx-crm` repository.
+
+- **Former domain:** crm.mpb.health (now served by external repo)
+- **Port (dev):** 5174
+
+## Workspace Dependencies
+
+- `@mpbhealth/auth`
+- `@mpbhealth/admin-core`
+- `@mpbhealth/config`
+- `@mpbhealth/crm-core`
+- `@mpbhealth/database`
+- `@mpbhealth/plans-core`
+- `@mpbhealth/ui`
+- `@mpbhealth/utils`

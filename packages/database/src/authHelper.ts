@@ -185,7 +185,13 @@ export function getCachedSession(opts: { forceRefresh?: boolean } = {}): Promise
  */
 export async function getResolvedAuthHeader(): Promise<{ Authorization: string } | null> {
   if (_sessionDead) return null;
-  const { data: { session } } = await getCachedSession();
+
+  let session;
+  try {
+    ({ data: { session } } = await getCachedSession());
+  } catch {
+    return null;
+  }
   if (!session?.access_token) return null;
 
   const nowSec = Math.floor(Date.now() / 1000);

@@ -1,0 +1,20 @@
+---
+description: Mandatory safe-change sequence for any production-sensitive task (data, auth, schema, migrations, RLS, integrations, deploys).
+globs:
+alwaysApply: true
+---
+
+For any production-sensitive task (data writes, auth, billing, PHI/PII, schema, migrations, RLS/permissions, integrations, background jobs, edge functions, deploy config, or live user flows), follow this sequence:
+
+discover read-only → design additive/reversible → rehearse safely (rolled-back txn, or staging for non-transactional ops) → dry-run → pilot on smallest scope → verify with a post-rollout watch window → request explicit approval before any production write.
+
+Rules:
+- Design against the LIVE system state, not the migration files (they drift).
+- Tier 0 (read-only / pure-additive, no data touch) → condensed flow. Tier 1+ → full ceremony. Unsure → Tier 1+.
+- Before any UPDATE/DELETE state the expected affected-row count; abort if live count diverges.
+- Backfills: idempotent + batched + resumable + kill switch.
+- RLS/permission changes: verify by querying as two tenants + anon, proving isolation.
+- Non-rehearsable ops (CREATE INDEX CONCURRENTLY, enum ADD VALUE, deploys, env vars, real email/SMS/webhook/payments): rehearse in staging or behind a no-op flag instead.
+- Never mutate prod, migrate, change auth/RLS, deploy, or fire real integrations without explicit approval. Never claim success without verification evidence.
+
+Always provide these sections: Discovery, Risk Classification (Tier + PROD WRITE RISK: YES/NO), Proposed Design, Dry-Run Plan, Pilot Plan, Verification Plan, Rollback Plan, Approval Gate.

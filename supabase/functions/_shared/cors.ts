@@ -20,7 +20,7 @@ function extraOriginsFromEnv(): string[] {
 }
 
 const ALLOWED_ORIGINS: string[] = [
-  // Production
+  // Production — MPB Health
   "https://www.mpb.health",
   "https://mpb.health",
   "https://app.mpb.health",
@@ -29,6 +29,9 @@ const ALLOWED_ORIGINS: string[] = [
   "https://advisor.mpb.health",
   "https://concierge.mpb.health",
   "https://support.mpb.health",
+
+  // Production — ARYX white-label portals (apex + subdomains)
+  // matched via the *.aryxcloud.com pattern in isOriginAllowed() below.
 
   // Vercel preview / branch deploys (any subdomain)
   // Matched via pattern below, not listed literally.
@@ -54,6 +57,14 @@ const ALLOWED_ORIGINS: string[] = [
  */
 function isOriginAllowed(origin: string): boolean {
   if (ALLOWED_ORIGINS.includes(origin)) {
+    return true;
+  }
+
+  // ARYX white-label portals: apex (https://aryxcloud.com) and any subdomain
+  // (admin/crm/advisor/concierge.aryxcloud.com). Mirrors the brand module's
+  // host check (packages/ui/src/brand: host.endsWith('.aryxcloud.com')).
+  // Anchored so lookalikes (evilaryxcloud.com, aryxcloud.com.evil.com) are rejected.
+  if (/^https:\/\/([a-z0-9-]+\.)*aryxcloud\.com$/.test(origin)) {
     return true;
   }
 

@@ -114,6 +114,8 @@ interface EscalationItem {
 interface WeeklyReportExtras {
   /** Rep id → phone time for this report period (column Phone time on weekly table) */
   callTimesByMemberId: Record<string, string>;
+  /** Rep id → sales hours logged for this week. Reps with sales hours are excluded from full-time concierge performance alerts. */
+  salesHoursByMemberId: Record<string, string>;
   /** Total distinct members helped by the team this period (or notes). */
   teamMembersHelped: string;
 }
@@ -356,7 +358,7 @@ function buildReportStorageKey(weekNumber: number, refYear: number): string {
 }
 
 function defaultWeeklyExtras(): WeeklyReportExtras {
-  return { callTimesByMemberId: {}, teamMembersHelped: '' };
+  return { callTimesByMemberId: {}, salesHoursByMemberId: {}, teamMembersHelped: '' };
 }
 
 /** Member-touch weight for one row (weekly totals, performance, header strip). */
@@ -393,17 +395,26 @@ function mondayOfISOWeek(isoWeekYear: number, weekNum: number): Date {
   return startOfISOWeek(setISOWeek(jan4, weekNum));
 }
 
-/** Full-time-only average for weekly totals (excludes part-time and Inactive). */
+/** Full-time concierge average (excludes part-time, Inactive, and reps with sales hours logged). */
 function fullTimeWeekAvg(
   teamRoster: TeamMember[],
   rows: { name: string; total: number }[],
+  salesHours?: Record<string, string>,
 ): number {
   const ft = rows.filter((r) => {
     const m = teamRoster.find((x) => x.name === r.name);
-    return m && m.status === 'Active' && !isPartTimeMember(m);
+    if (!m || m.status !== 'Active' || isPartTimeMember(m)) return false;
+    if (salesHours && hasSalesHours(m.id, salesHours)) return false;
+    return true;
   });
   if (ft.length === 0) return 0;
   return Math.round(ft.reduce((s, r) => s + r.total, 0) / ft.length);
+}
+
+/** Returns true when a rep has non-empty sales hours logged for the period. */
+function hasSalesHours(memberId: string, salesHours: Record<string, string>): boolean {
+  const val = salesHours[memberId]?.trim();
+  return !!val && val !== '0';
 }
 
 function parseLogDate(isoDate: string): Date {
@@ -2338,9 +2349,11 @@ function WeeklyReportTab({
     });
   }, [reportLogs, rosterTeam]);
 
+  const salesHours = weeklyExtras.salesHoursByMemberId;
+
   const fullTimeAvg = useMemo(
-    () => fullTimeWeekAvg(rosterTeam, rows.map((r) => ({ name: r.name, total: r.total }))),
-    [rosterTeam, rows],
+    () => fullTimeWeekAvg(rosterTeam, rows.map((r) => ({ name: r.name, total: r.total })), salesHours),
+    [rosterTeam, rows, salesHours],
   );
 
   const overallAvg = rows.length ? Math.round(rows.reduce((s, r) => s + r.total, 0) / rows.length) : 0;
@@ -2351,10 +2364,11 @@ function WeeklyReportTab({
     for (const r of rows) {
       if (r.member.status !== 'Active') continue;
       if (isPartTimeMember(r.member)) continue;
+      if (hasSalesHours(r.member.id, salesHours)) continue;
       if (r.total <= fullTimeAvg * 0.8) names.push(r.name);
     }
     return names;
-  }, [rows, fullTimeAvg]);
+  }, [rows, fullTimeAvg, salesHours]);
 
   useEffect(() => {
     if (underperformers.length === 0) return;
@@ -2422,6 +2436,9 @@ function WeeklyReportTab({
                 <th className="px-4 py-3 text-right" title="Total phone / on-phone time for the week (entered below)">
                   Phone time
                 </th>
+                <th className="px-4 py-3 text-right" title="Sales hours logged this week (entered below)">
+                  Sales Hrs
+                </th>
                 <th className="px-4 py-3 text-right">Email</th>
                 <th className="px-4 py-3 text-right">SalesIQ</th>
                 <th className="px-4 py-3 text-right">Follow-ups</th>
@@ -2435,18 +2452,23 @@ function WeeklyReportTab({
               {rows.map((r) => {
                 const inactive = r.member.status !== 'Active';
                 const part = isPartTimeMember(r.member);
-                const belowFtAvg = !inactive && !part && fullTimeAvg > 0 && r.total < fullTimeAvg;
-                const alertRow = !inactive && !part && fullTimeAvg > 0 && r.total <= fullTimeAvg * 0.8;
+                const inSales = hasSalesHours(r.member.id, salesHours);
+                const excludedFromFtAvg = part || inSales;
+                const belowFtAvg = !inactive && !excludedFromFtAvg && fullTimeAvg > 0 && r.total < fullTimeAvg;
+                const alertRow = !inactive && !excludedFromFtAvg && fullTimeAvg > 0 && r.total <= fullTimeAvg * 0.8;
                 const rowClass = inactive
                   ? 'bg-slate-50/70 text-slate-600'
-                  : part
-                    ? 'bg-slate-50/80'
-                    : alertRow
-                      ? 'bg-red-50/50'
-                      : belowFtAvg
-                        ? 'bg-yellow-50/50'
-                        : '';
+                  : inSales
+                    ? 'bg-indigo-50/50'
+                    : part
+                      ? 'bg-slate-50/80'
+                      : alertRow
+                        ? 'bg-red-50/50'
+                        : belowFtAvg
+                          ? 'bg-yellow-50/50'
+                          : '';
                 const phoneTimeWeek = weeklyExtras.callTimesByMemberId[r.member.id]?.trim() || '';
+                const salesHrsWeek = salesHours[r.member.id]?.trim() || '';
                 return (
                   <tr key={r.name} className={`${rowClass} hover:bg-[#A8B8AC]/5 transition-colors`}>
                     <td className="px-4 py-3 font-medium text-[#2F3E2F]">
@@ -2459,6 +2481,11 @@ function WeeklyReportTab({
                       {part && !inactive && (
                         <span className="text-[10px] font-normal text-slate-500 uppercase tracking-wide">
                           Part-time
+                        </span>
+                      )}
+                      {inSales && !inactive && (
+                        <span className="text-[10px] font-normal text-indigo-600 uppercase tracking-wide block">
+                          Sales split
                         </span>
                       )}
                     </td>
@@ -2477,6 +2504,13 @@ function WeeklyReportTab({
                         <span className="text-slate-400">—</span>
                       )}
                     </td>
+                    <td className="px-4 py-3 text-right text-indigo-700 text-xs font-medium">
+                      {salesHrsWeek ? (
+                        <span title={`Sales hours: ${salesHrsWeek}`}>{salesHrsWeek}</span>
+                      ) : (
+                        <span className="text-slate-400 font-normal">—</span>
+                      )}
+                    </td>
                     <td className="px-4 py-3 text-right">{r.email}</td>
                     <td className="px-4 py-3 text-right">{r.salesiq}</td>
                     <td className="px-4 py-3 text-right">{r.followups}</td>
@@ -2493,6 +2527,7 @@ function WeeklyReportTab({
                 <td className="px-4 py-3">TEAM TOTAL</td>
                 <td className="px-4 py-3 text-right">{rows.reduce((s, r) => s + r.total, 0)}</td>
                 <td className="px-4 py-3 text-right">{rows.reduce((s, r) => s + r.phone, 0)}</td>
+                <td className="px-4 py-3 text-right text-slate-500 text-xs font-normal">—</td>
                 <td className="px-4 py-3 text-right text-slate-500 text-xs font-normal">—</td>
                 <td className="px-4 py-3 text-right">{rows.reduce((s, r) => s + r.email, 0)}</td>
                 <td className="px-4 py-3 text-right">{rows.reduce((s, r) => s + r.salesiq, 0)}</td>
@@ -2515,6 +2550,9 @@ function WeeklyReportTab({
           <span className="flex items-center gap-1.5">
             <span className="w-3 h-3 rounded bg-slate-100 border border-slate-300" /> Part-time (excluded from alert math)
           </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded bg-indigo-100 border border-indigo-300" /> Sales split (excluded from alert math)
+          </span>
         </div>
         {offDaysThisWeekByMember.length > 0 && (
           <div className="px-4 pb-4 border-t border-[#A8B8AC]/15 pt-4">
@@ -2536,7 +2574,7 @@ function WeeklyReportTab({
             touch per {SPECIAL_PROJECT_MINUTES_PER_TOUCH} min, rounded up). <strong>Phone</strong> is the count of log
             rows on the Phone channel; <strong>Phone time</strong> is the total on-phone or scheduled time you enter
             in <strong>Weekly Call Times</strong> at the bottom of this tab. Other channel/reason columns count log rows.
-            Part-time reps are not compared for performance alerts.
+            Part-time reps and reps with <strong>Sales hours</strong> logged are not compared for performance alerts.
           </p>
         </div>
       </div>
@@ -2601,6 +2639,60 @@ function WeeklyReportTab({
               }
               placeholder="e.g. 28 hrs on phone, M–F 8–6 CT"
               className="w-full px-3 py-2.5 rounded-lg border border-[#A8B8AC]/40 focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm"
+            />
+          </div>
+        </div>
+        )}
+      </div>
+
+      <div className="bg-white rounded-2xl border border-indigo-200/60 p-5">
+        <h3 className="text-base font-bold text-[#2F3E2F] mb-1">Sales Hours</h3>
+        <p className="text-sm text-slate-500 mb-4">
+          Log hours spent on sales work this week. Reps with sales hours are excluded from full-time
+          concierge performance alerts and shown as <strong className="text-indigo-600">Sales split</strong> in
+          the report above for <strong>{periodLabel}</strong>.
+        </p>
+        {rosterTeam.length === 0 ? (
+          <p className="text-sm text-slate-500">No team members on the roster yet.</p>
+        ) : (
+        <div className="flex flex-col sm:flex-row sm:items-end gap-3 max-w-2xl">
+          <div className="flex-1 min-w-[12rem]">
+            <label htmlFor="sales-hours-member" className="block text-xs font-medium text-slate-600 mb-1">
+              Team member
+            </label>
+            <select
+              id="sales-hours-member"
+              value={resolvedCallTimesMemberId}
+              onChange={(e) => setWeeklyCallTimesMemberId(e.target.value)}
+              className="w-full px-3 py-2.5 rounded-lg border border-[#A8B8AC]/40 bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 text-sm"
+            >
+              {rosterTeam.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name}
+                  {m.status !== 'Active' ? ' (inactive)' : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex-[2] min-w-0 w-full">
+            <label htmlFor="sales-hours-value" className="block text-xs font-medium text-slate-600 mb-1">
+              Sales hours this week
+            </label>
+            <input
+              id="sales-hours-value"
+              type="text"
+              value={weeklyExtras.salesHoursByMemberId[resolvedCallTimesMemberId] ?? ''}
+              onChange={(e) =>
+                setWeeklyExtras((prev) => ({
+                  ...prev,
+                  salesHoursByMemberId: {
+                    ...prev.salesHoursByMemberId,
+                    [resolvedCallTimesMemberId]: e.target.value,
+                  },
+                }))
+              }
+              placeholder="e.g. 20 hrs, Mon–Wed full day"
+              className="w-full px-3 py-2.5 rounded-lg border border-[#A8B8AC]/40 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 text-sm"
             />
           </div>
         </div>

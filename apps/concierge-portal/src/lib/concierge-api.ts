@@ -67,6 +67,8 @@ export interface EscalationItem {
 
 export interface WeeklyReportExtras {
   callTimesByMemberId: Record<string, string>;
+  /** Rep id → sales hours logged for the week (e.g. "20" or "Mon–Wed"). Reps with sales hours are excluded from full-time concierge performance alerts. */
+  salesHoursByMemberId: Record<string, string>;
   teamMembersHelped: string;
 }
 
@@ -298,10 +300,12 @@ export async function fetchWeeklyReportExtrasMap(): Promise<Record<string, Weekl
     const r = row as {
       report_key: string;
       call_times_by_member_id: Record<string, string>;
+      sales_hours_by_member_id?: Record<string, string>;
       team_members_helped: string;
     };
     map[r.report_key] = {
       callTimesByMemberId: (r.call_times_by_member_id as Record<string, string>) ?? {},
+      salesHoursByMemberId: (r.sales_hours_by_member_id as Record<string, string>) ?? {},
       teamMembersHelped: r.team_members_helped ?? '',
     };
   }
@@ -458,8 +462,9 @@ export async function upsertWeeklyReportExtras(reportKey: string, extras: Weekly
   const { error } = await db.from(T_WEEK).upsert(
     {
       report_key: reportKey,
-      call_times_by_member_id: extras.callTimesByMemberId,
-      team_members_helped: extras.teamMembersHelped,
+      call_times_by_member_id: extras.callTimesByMemberId ?? {},
+      sales_hours_by_member_id: extras.salesHoursByMemberId ?? {},
+      team_members_helped: extras.teamMembersHelped ?? '',
     },
     { onConflict: 'report_key' },
   );

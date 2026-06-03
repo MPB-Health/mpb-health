@@ -15,6 +15,8 @@ import type {
 
 export class NotificationService {
   private _notificationChannel: RealtimeChannel | null = null;
+  private _notificationUserId: string | null = null;
+  private _notificationListeners = new Set<(notification: Notification) => void>();
   // =========================================================================
   // NOTIFICATIONS
   // =========================================================================
@@ -296,46 +298,86 @@ export class NotificationService {
   // =========================================================================
 
   /**
-   * Subscribe to real-time notifications
+   * Subscribe to real-time notifications.
+   *
+   * Multiple components (e.g. the notification list and the unread badge) can
+   * subscribe for the same user concurrently. They share a single Realtime
+   * channel and each receive every event via a fan-out listener set, so one
+   * subscriber can never clobber another's callback and one subscriber
+   * unmounting can never tear down the channel another still depends on.
+   *
+   * @returns an unsubscribe function — call it on cleanup. The shared channel
+   * is only torn down once the last subscriber unsubscribes.
    */
   subscribeToNotifications(
     userId: string,
     callback: (notification: Notification) => void
-  ) {
-    if (this._notificationChannel) {
+  ): () => void {
+    // If the active subscription is for a different user, tear it down so we
+    // don't leak the previous user's channel or deliver their events.
+    if (this._notificationChannel && this._notificationUserId !== userId) {
       supabase.removeChannel(this._notificationChannel);
+      this._notificationChannel = null;
+      this._notificationUserId = null;
+      this._notificationListeners.clear();
     }
 
-    const channel = supabase
-      .channel(`notifications:${userId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${userId}`,
-        },
-        (payload) => {
-          const notification = payload.new as Notification;
-          if (notification.category === 'support') return;
-          callback(notification);
-        }
-      )
-      .subscribe();
+    this._notificationListeners.add(callback);
+    this._notificationUserId = userId;
 
-    this._notificationChannel = channel;
-    return channel;
+    if (!this._notificationChannel) {
+      this._notificationChannel = supabase
+        .channel(`notifications:${userId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'notifications',
+            filter: `user_id=eq.${userId}`,
+          },
+          (payload) => {
+            const notification = payload.new as Notification;
+            if (notification.category === 'support') return;
+            for (const listener of this._notificationListeners) {
+              try {
+                listener(notification);
+              } catch {
+                /* one listener throwing must not block the others */
+              }
+            }
+          }
+        )
+        .subscribe();
+    }
+
+    let unsubscribed = false;
+    return () => {
+      if (unsubscribed) return;
+      unsubscribed = true;
+      this._notificationListeners.delete(callback);
+      if (this._notificationListeners.size === 0 && this._notificationChannel) {
+        supabase.removeChannel(this._notificationChannel);
+        this._notificationChannel = null;
+        this._notificationUserId = null;
+      }
+    };
   }
 
   /**
-   * Unsubscribe from real-time notifications
+   * Unsubscribe from real-time notifications.
+   *
+   * Prefer the unsubscribe function returned by `subscribeToNotifications`.
+   * This forcibly tears down the shared channel and clears every listener, so
+   * only use it when you intend to drop all subscribers (e.g. on sign-out).
    */
-  unsubscribeFromNotifications(_userId: string) {
+  unsubscribeFromNotifications(_userId?: string) {
     if (this._notificationChannel) {
       supabase.removeChannel(this._notificationChannel);
       this._notificationChannel = null;
     }
+    this._notificationUserId = null;
+    this._notificationListeners.clear();
   }
 }
 

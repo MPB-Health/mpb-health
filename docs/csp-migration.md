@@ -2,7 +2,11 @@
 
 **Goal:** remove `'unsafe-inline'` from the `script-src` directive across all apps so an injected inline `<script>` can no longer execute (CSP becomes a real XSS backstop). Inline scripts we *do* ship are allowed by **SHA-256 hash** instead.
 
-**Status: Phase 1 (Report-Only) — this PR.** No runtime behavior changes; nothing is blocked yet.
+**Status: Phase 2 (ENFORCED) — this branch.** `'unsafe-inline'` has been removed from the enforced `script-src` (and `script-src-elem`) for crm, advisor-portal, staff-hub, admin-portal, and website, with the validated inline-script hashes in place; the Report-Only header is removed. Validated two ways before enforcing: (1) every inline script in each app's built `dist/index.html` matches a CSP hash, and (2) the Phase 1 Report-Only preview console was confirmed clean of `script-src` violations.
+
+**concierge-portal remains Report-Only** — its CSP was a cloned-from-staff-hub baseline; its non-`script` directives (`connect-src`/`frame-src`) need a dedicated audit before it can be enforced.
+
+_The sections below describe the Phase 1 (Report-Only) mechanism; Phase 2 keeps the same validated hashes but moves them from the Report-Only header into the enforced `Content-Security-Policy`._
 
 ## What this PR does
 For every app it adds a **`Content-Security-Policy-Report-Only`** header alongside the existing **`Content-Security-Policy`**:

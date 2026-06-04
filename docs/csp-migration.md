@@ -4,7 +4,17 @@
 
 **Status: Phase 2 (ENFORCED) — this branch.** `'unsafe-inline'` has been removed from the enforced `script-src` (and `script-src-elem`) for crm, advisor-portal, staff-hub, admin-portal, and website, with the validated inline-script hashes in place; the Report-Only header is removed. Validated two ways before enforcing: (1) every inline script in each app's built `dist/index.html` matches a CSP hash, and (2) the Phase 1 Report-Only preview console was confirmed clean of `script-src` violations.
 
-**concierge-portal remains Report-Only** — its CSP was a cloned-from-staff-hub baseline; its non-`script` directives (`connect-src`/`frame-src`) need a dedicated audit before it can be enforced.
+**concierge-portal remains Report-Only** — pending its runtime preview-console check (see audit below).
+
+### concierge-portal CSP audit (2026-06-04)
+Audited every external origin concierge actually uses. Result: **the cloned-from-staff-hub policy is correct and complete — no edits needed.** Findings:
+- **connect-src:** Supabase only — REST + Edge Functions (`advisor-forgot-password`) + realtime `wss://` (App.tsx subscriptions). Covered by `*.supabase.co` + `wss://*.supabase.co`. No other API base (`.env.example` has only `VITE_SUPABASE_URL`).
+- **frame-src:** no iframes/embeds anywhere — `'self'` (+ harmless vercel.live) is sufficient.
+- **script-src:** only the theme-bootstrap inline script (hash `HSOW…`, build-validated) — no external script hosts in `index.html`.
+- **style-src/font-src:** Google Fonts (`fonts.googleapis.com`/`gstatic`) are pulled only by the shared `@mpbhealth/ui` ARYX auth shell on-demand — already allow-listed.
+- `app.mpb.health` is a top-level nav `<a>` (not `connect-src`); `frame-ancestors 'none'` is correct (standalone portal).
+
+**Conclusion:** concierge is safe to enforce with its current Report-Only policy unchanged, after the same preview-console gate as the other apps (checking all directives, since concierge's runtime was not validated during Phase 2).
 
 _The sections below describe the Phase 1 (Report-Only) mechanism; Phase 2 keeps the same validated hashes but moves them from the Report-Only header into the enforced `Content-Security-Policy`._
 

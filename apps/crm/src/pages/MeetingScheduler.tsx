@@ -1410,23 +1410,36 @@ export default function MeetingScheduler() {
       const scheduleList = (data || []) as unknown as MeetingSchedule[];
       setSchedules(scheduleList);
 
-      // Load stats for all schedules
+      // Load stats for all schedules. Was N+1 (one query per schedule); now a single
+      // batched, paginated fetch + client-side aggregation. Pagination makes the count
+      // correct regardless of any PostgREST max-rows cap (no stat undercount). (QA PERF P1)
       const statsMap: Record<string, ScheduleStats> = {};
       const now = new Date().toISOString();
-
       for (const s of scheduleList) {
-        const { data: bookingData } = await supabase
-          .from('crm_meeting_bookings')
-          .select('id, status, start_time')
-          .eq('schedule_id', s.id);
+        statsMap[s.id] = { total: 0, upcoming: 0, completed: 0, no_shows: 0 };
+      }
 
-        const all = bookingData || [];
-        statsMap[s.id] = {
-          total: all.length,
-          upcoming: all.filter((b: { status: string; start_time: string }) => b.status === 'confirmed' && b.start_time > now).length,
-          completed: all.filter((b: { status: string }) => b.status === 'completed').length,
-          no_shows: all.filter((b: { status: string }) => b.status === 'no_show').length,
-        };
+      const scheduleIds = scheduleList.map((s) => s.id);
+      if (scheduleIds.length > 0) {
+        const PAGE = 1000;
+        for (let from = 0; ; from += PAGE) {
+          const { data: bookingData, error: statsErr } = await supabase
+            .from('crm_meeting_bookings')
+            .select('schedule_id, status, start_time')
+            .in('schedule_id', scheduleIds)
+            .range(from, from + PAGE - 1);
+          if (statsErr) break;
+          const batch = (bookingData || []) as { schedule_id: string; status: string; start_time: string }[];
+          for (const b of batch) {
+            const st = statsMap[b.schedule_id];
+            if (!st) continue;
+            st.total += 1;
+            if (b.status === 'confirmed' && b.start_time > now) st.upcoming += 1;
+            if (b.status === 'completed') st.completed += 1;
+            if (b.status === 'no_show') st.no_shows += 1;
+          }
+          if (batch.length < PAGE) break;
+        }
       }
       setScheduleStats(statsMap);
     } catch (err) {

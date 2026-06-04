@@ -2,9 +2,9 @@
 
 **Goal:** remove `'unsafe-inline'` from the `script-src` directive across all apps so an injected inline `<script>` can no longer execute (CSP becomes a real XSS backstop). Inline scripts we *do* ship are allowed by **SHA-256 hash** instead.
 
-**Status: Phase 2 (ENFORCED) — this branch.** `'unsafe-inline'` has been removed from the enforced `script-src` (and `script-src-elem`) for crm, advisor-portal, staff-hub, admin-portal, and website, with the validated inline-script hashes in place; the Report-Only header is removed. Validated two ways before enforcing: (1) every inline script in each app's built `dist/index.html` matches a CSP hash, and (2) the Phase 1 Report-Only preview console was confirmed clean of `script-src` violations.
+**Status: Phase 2 (ENFORCED) — this branch.** `'unsafe-inline'` has been removed from the enforced `script-src` (and `script-src-elem`) for **all apps** — crm, advisor-portal, staff-hub, admin-portal, website, **and concierge-portal** — with the validated inline-script hashes in place; the Report-Only header is removed. Validated two ways before enforcing: (1) every inline script in each app's built `dist/index.html` matches a CSP hash, and (2) the Phase 1 Report-Only preview console was confirmed clean of `script-src` violations.
 
-**concierge-portal remains Report-Only** — pending its runtime preview-console check (see audit below).
+**concierge-portal is now enforced too** — its preview-console was verified clean across all directives (2026-06-04) and its audited policy moved from Report-Only into the enforced CSP unchanged.
 
 ### concierge-portal CSP audit (2026-06-04)
 Audited every external origin concierge actually uses. Result: **the cloned-from-staff-hub policy is correct and complete — no edits needed.** Findings:

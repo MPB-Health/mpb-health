@@ -9,31 +9,35 @@ interface HandbookViewerProps {
   description?: string;
 }
 
+/** Same-origin PDFs use the browser viewer so in-document links and forms work. */
+function isLocalPdf(pdfPath: string): boolean {
+  return pdfPath.startsWith('/docs/') || pdfPath.startsWith('/assets/');
+}
+
 /**
- * Convert various PDF URL formats to embeddable iframe URLs
- * Supports: local files, Google Drive links, direct URLs
+ * Convert various PDF URL formats to embeddable iframe URLs.
+ * Local /docs/ PDFs are served as-is (native browser PDF viewer).
+ * Google Drive falls back to preview embed (links may not work — use Open in New Tab).
  */
 function getEmbedUrl(pdfPath: string): string {
-  // Google Drive share link: https://drive.google.com/file/d/{FILE_ID}/view
+  if (isLocalPdf(pdfPath)) {
+    return pdfPath;
+  }
+
   const driveShareMatch = pdfPath.match(/drive\.google\.com\/file\/d\/([^/]+)/);
   if (driveShareMatch) {
-    const fileId = driveShareMatch[1];
-    return `https://drive.google.com/file/d/${fileId}/preview`;
+    return `https://drive.google.com/file/d/${driveShareMatch[1]}/preview`;
   }
 
-  // Google Drive direct link: https://drive.google.com/open?id={FILE_ID}
   const driveOpenMatch = pdfPath.match(/drive\.google\.com\/open\?id=([^&]+)/);
   if (driveOpenMatch) {
-    const fileId = driveOpenMatch[1];
-    return `https://drive.google.com/file/d/${fileId}/preview`;
+    return `https://drive.google.com/file/d/${driveOpenMatch[1]}/preview`;
   }
 
-  // Google Docs viewer link - already embeddable
   if (pdfPath.includes('docs.google.com')) {
     return pdfPath;
   }
 
-  // Local or direct URL - use as-is
   return pdfPath;
 }
 
@@ -61,6 +65,7 @@ const HandbookViewer: React.FC<HandbookViewerProps> = ({ title, pdfPath, descrip
   const embedUrl = useMemo(() => getEmbedUrl(pdfPath), [pdfPath]);
   const viewUrl = useMemo(() => getViewUrl(pdfPath), [pdfPath]);
   const isGoogleDrive = pdfPath.includes('drive.google.com') || pdfPath.includes('docs.google.com');
+  const isLocal = isLocalPdf(pdfPath);
 
   const handleDownload = () => {
     // For Google Drive, open the view link (download not directly available via programmatic click)
@@ -115,30 +120,66 @@ const HandbookViewer: React.FC<HandbookViewerProps> = ({ title, pdfPath, descrip
           </div>
         </div>
 
+        {isGoogleDrive && (
+          <p className="mb-4 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
+            Links inside this handbook may not work in the embedded preview. Use{' '}
+            <button type="button" onClick={handleOpenNewTab} className="font-semibold underline">
+              Open in New Tab
+            </button>{' '}
+            for full interactivity.
+          </p>
+        )}
+
         <Card className="shadow-2xl">
           <CardContent className="p-0">
             <div className="relative w-full" style={{ height: 'calc(100vh - 250px)', minHeight: '600px' }}>
-              <iframe
-                src={embedUrl}
-                className="w-full h-full rounded-lg"
-                title={title}
-                style={{ border: 'none' }}
-                allow="autoplay"
-                allowFullScreen
-              />
+              {isLocal ? (
+                <object
+                  data={embedUrl}
+                  type="application/pdf"
+                  className="w-full h-full rounded-lg"
+                  aria-label={title}
+                >
+                  <iframe
+                    src={embedUrl}
+                    className="w-full h-full rounded-lg"
+                    title={title}
+                    style={{ border: 'none' }}
+                  />
+                </object>
+              ) : (
+                <iframe
+                  src={embedUrl}
+                  className="w-full h-full rounded-lg"
+                  title={title}
+                  style={{ border: 'none' }}
+                  allow="autoplay"
+                  allowFullScreen
+                />
+              )}
             </div>
           </CardContent>
         </Card>
 
-        <div className="mt-8 text-center">
+        <div className="mt-8 text-center space-y-2">
           <p className="text-sm text-slate-600">
             Having trouble viewing the handbook?{' '}
             <button
+              type="button"
+              onClick={handleOpenNewTab}
+              className="text-blue-600 hover:text-blue-700 font-semibold underline"
+            >
+              Open in a new tab
+            </button>
+            {' '}or{' '}
+            <button
+              type="button"
               onClick={handleDownload}
               className="text-blue-600 hover:text-blue-700 font-semibold underline"
             >
-              Download it here
+              download the PDF
             </button>
+            {isGoogleDrive && ' — embedded Google Drive previews often fail on mobile and strict browsers.'}
           </p>
         </div>
       </div>

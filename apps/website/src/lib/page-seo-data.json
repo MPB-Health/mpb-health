@@ -197,5 +197,23 @@
     "ogDescription": "Real stories from families saving with health sharing.",
     "canonicalUrl": "https://mpb.health/member-stories",
     "robots": "index, follow"
+  },
+  "/3d-flip-book/premium-care": {
+    "title": "Premium Care Member Handbook | MPB Health",
+    "description": "View the Premium Care member handbook with plan benefits, Sedera guidelines, provider resources, and member forms.",
+    "keywords": "Premium Care handbook, member handbook, health sharing, MPB Health, medical cost sharing",
+    "ogTitle": "Premium Care Member Handbook | MPB Health",
+    "ogDescription": "Premium Care member handbook with benefits, guidelines, and member resources.",
+    "canonicalUrl": "https://mpb.health/3d-flip-book/premium-care",
+    "robots": "index, follow"
+  },
+  "/3d-flip-book/premium-hsa": {
+    "title": "Premium HSA Member Handbook | MPB Health",
+    "description": "View the Premium HSA member handbook with HSA-compatible plan benefits, guidelines, and member resources.",
+    "keywords": "Premium HSA handbook, HSA health sharing, member handbook, MPB Health",
+    "ogTitle": "Premium HSA Member Handbook | MPB Health",
+    "ogDescription": "Premium HSA member handbook with benefits, guidelines, and member resources.",
+    "canonicalUrl": "https://mpb.health/3d-flip-book/premium-hsa",
+    "robots": "index, follow"
   }
 }

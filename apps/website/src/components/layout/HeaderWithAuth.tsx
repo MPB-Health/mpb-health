@@ -602,6 +602,22 @@ const HeaderWithAuth = () => {
             external: false,
           },
           {
+            id: 'premium-care-handbook',
+            label: 'Premium Care Handbook',
+            description: 'View the Premium Care plan member handbook',
+            icon: 'FileText',
+            href: '/3d-flip-book/premium-care',
+            external: false,
+          },
+          {
+            id: 'premium-hsa-handbook',
+            label: 'Premium HSA Handbook',
+            description: 'View the Premium HSA plan member handbook',
+            icon: 'FileText',
+            href: '/3d-flip-book/premium-hsa',
+            external: false,
+          },
+          {
             id: 'essentials-handbook',
             label: 'Essentials Handbook',
             description: 'View the Essentials plan member handbook',

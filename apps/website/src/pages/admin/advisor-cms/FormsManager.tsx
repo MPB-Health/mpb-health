@@ -638,7 +638,7 @@ export default function FormsManager() {
                   const previewForm = forms.find(f => f.id === showPreview);
                   if (!previewForm?.cognito_embed) return <p>No embed code</p>;
                   return (
-                    <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(previewForm.cognito_embed, { ADD_TAGS: ['iframe', 'script'], ADD_ATTR: ['src', 'frameborder', 'allowfullscreen', 'allow', 'loading', 'scrolling'] }) }} />
+                    <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(previewForm.cognito_embed, { ADD_TAGS: ['iframe'], ADD_ATTR: ['src', 'frameborder', 'allowfullscreen', 'allow', 'loading', 'scrolling'] }) }} />
                   );
                 })()}
               </div>

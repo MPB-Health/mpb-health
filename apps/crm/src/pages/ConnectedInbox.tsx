@@ -16,6 +16,7 @@ import type {
   MailAccount, MailFolder, MailMessage,
   MailMessageFilters, UnifiedInboxStats,
 } from '@mpbhealth/crm-core';
+import { sanitizeHtml } from '@mpbhealth/utils';
 import toast from 'react-hot-toast';
 
 // ============================================================================
@@ -664,11 +665,7 @@ function formatDate(dateStr: string): string {
   return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
 }
 
-function sanitizeHtml(html: string): string {
-  // Basic sanitization: remove script tags, event handlers
-  return html
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-    .replace(/\son\w+\s*=\s*"[^"]*"/gi, '')
-    .replace(/\son\w+\s*=\s*'[^']*'/gi, '')
-    .replace(/javascript:/gi, '');
-}
+// NOTE: HTML sanitization for inbound email bodies now uses the DOMPurify-backed
+// sanitizeHtml from @mpbhealth/utils (imported above). The previous local regex-only
+// sanitizer was bypassable by unquoted event handlers (e.g. <img src=x onerror=...>),
+// <svg onload>, and <iframe> — an attacker-emailable stored-XSS vector. (QA SEC P0)

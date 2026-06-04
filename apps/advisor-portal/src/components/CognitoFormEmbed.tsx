@@ -79,8 +79,10 @@ export default function CognitoFormEmbed({ form, className = '' }: CognitoFormEm
     <div
       className={`w-full h-full min-h-0 ${className} [&>iframe]:w-full [&>iframe]:h-full [&>iframe]:border-0`}
       dangerouslySetInnerHTML={{
+        // 'script' intentionally NOT allowed: admin-authored cognito_embed must not
+        // execute arbitrary JS in advisors' sessions. Cognito embeds render via <iframe>. (QA SEC)
         __html: sanitizeHtml(embedHtml, {
-          ADD_TAGS: ['iframe', 'script'],
+          ADD_TAGS: ['iframe'],
           ADD_ATTR: ['src', 'frameborder', 'allowfullscreen', 'allow', 'loading', 'scrolling', 'data-key', 'data-form', 'height', 'style'],
         }),
       }}

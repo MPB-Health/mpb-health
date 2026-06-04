@@ -201,9 +201,11 @@ export async function sendLeadNotification(data: {
 }): Promise<EmailResponse> {
   const LEAD_NOTIFICATION_RECIPIENTS = [
     'info@mympb.com',
-    'leonardo@mympb.com',
     'catherine@mympb.com',
     'julia@mympb.com',
+    'sales@mympb.com',
+    'adam@mympb.com',
+    'tupac@mympb.com',
   ];
 
   const html = `

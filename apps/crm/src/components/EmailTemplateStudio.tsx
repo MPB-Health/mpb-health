@@ -6,6 +6,7 @@ import {
   ChevronUp, ChevronDown, Palette, AlignLeft, AlignCenter, AlignRight,
   Bold, Italic, Underline, List, Mail, Loader2,
 } from 'lucide-react';
+import { sanitizeHtml } from '@mpbhealth/utils';
 
 const cn = (...classes: (string | boolean | undefined | null)[]) =>
   classes.filter(Boolean).join(' ');
@@ -144,7 +145,7 @@ export function EmailTemplateStudio({
           {/* Canvas */}
           <div className="flex-1 rounded-xl border border-th-border/50 bg-white dark:bg-gray-900 overflow-y-auto max-h-[380px]">
             {previewMode ? (
-              <div className="p-6" dangerouslySetInnerHTML={{ __html: generateHtml() }} />
+              <div className="p-6" dangerouslySetInnerHTML={{ __html: sanitizeHtml(generateHtml()) }} />
             ) : (
               <div className="p-3 space-y-1">
                 {blocks.map((block, idx) => (

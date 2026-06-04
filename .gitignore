@@ -24,6 +24,10 @@ out/
 *.swo
 .DS_Store
 
+# Claude Code / QA Agent Kit — local tooling, not committed (any app)
+**/.claude/
+.claude/
+
 # Testing
 coverage/
 .vitest/

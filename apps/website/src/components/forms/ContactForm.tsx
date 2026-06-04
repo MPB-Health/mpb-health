@@ -143,7 +143,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSubmit, className }) => {
   const handleCaptchaExpire = useCallback(() => setCaptchaToken(null), []);
   const handleCaptchaStatusChange = useCallback((status: CaptchaStatus) => setCaptchaStatus(status), []);
 
-  const captchaRequired = captchaStatus === 'ready' || captchaStatus === 'loading' || captchaStatus === 'verified' || captchaStatus === 'expired';
+  const captchaConfigured = !!TURNSTILE_SITE_KEY;
 
   const updateFormData = (field: keyof ContactFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -169,8 +169,12 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSubmit, className }) => {
     e.preventDefault();
     if (!validateForm()) return;
 
-    if (captchaRequired && !captchaToken) {
-      setSubmitError('Please complete the verification check below.');
+    if (captchaConfigured && !captchaToken) {
+      if (captchaStatus === 'error' || captchaStatus === 'unavailable') {
+        setSubmitError('Security verification could not load. Please refresh the page or call us at (855) 816-4650.');
+      } else {
+        setSubmitError('Please complete the verification check below.');
+      }
       return;
     }
 
@@ -189,7 +193,13 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSubmit, className }) => {
 
       if (!emailResult.success) {
         console.error('Failed to send email notification:', emailResult.error);
-        setSubmitError('We couldn\'t send your message right now. Please try again or call us at (855) 816-4650.');
+        const err = emailResult.error ?? '';
+        if (/captcha/i.test(err)) {
+          setSubmitError('Verification failed or expired. Please complete the check below and try again.');
+          setCaptchaToken(null);
+        } else {
+          setSubmitError('We couldn\'t send your message right now. Please try again or call us at (855) 816-4650.');
+        }
         return;
       }
 
@@ -323,7 +333,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSubmit, className }) => {
             {captchaStatus === 'error' && (
               <div className="flex items-center gap-1.5 text-xs text-amber-600">
                 <AlertCircle className="h-3.5 w-3.5" />
-                <span>Verification unavailable — you can still submit</span>
+                <span>Verification could not load — refresh the page to try again</span>
               </div>
             )}
 

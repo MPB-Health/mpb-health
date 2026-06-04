@@ -22,6 +22,20 @@ export interface EmailResponse {
   error?: string;
 }
 
+async function parseEdgeFunctionError(error: { message?: string; context?: Response }): Promise<string> {
+  const fallback = error.message || 'Failed to send email';
+  const response = error.context;
+  if (!response) return fallback;
+
+  try {
+    const body = await response.json() as { error?: string; success?: boolean };
+    if (body.error) return body.error;
+  } catch {
+    // ignore JSON parse failures
+  }
+  return fallback;
+}
+
 export async function sendEmail(options: EmailOptions): Promise<EmailResponse> {
   try {
     const { data, error } = await supabase.functions.invoke('send-website-email', {
@@ -38,10 +52,14 @@ export async function sendEmail(options: EmailOptions): Promise<EmailResponse> {
 
     if (error) {
       console.error('send-website-email edge function error:', error);
-      return { success: false, error: error.message || 'Failed to send email' };
+      return { success: false, error: await parseEdgeFunctionError(error) };
     }
 
-    return { success: data?.success ?? true, id: data?.id };
+    if (data?.success === false) {
+      return { success: false, error: data.error || 'Failed to send email' };
+    }
+
+    return { success: true, id: data?.id };
   } catch (error) {
     console.error('Email send error:', error);
     return {
@@ -187,6 +205,7 @@ export async function sendContactFormNotification(data: {
     html,
     replyTo: data.email,
     text: `New Contact Form Submission\n\nName: ${data.name}\nEmail: ${data.email}\n${data.phone ? `Phone: ${data.phone}\n` : ''}Source: ${data.source}\n${referralLabel ? `How they heard about us: ${referralLabel}\n` : ''}\nMessage:\n${data.message}`,
+    emailType: 'contact-form',
     captchaToken: data.captchaToken,
   });
 }

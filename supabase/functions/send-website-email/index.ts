@@ -43,6 +43,14 @@ const EXTERNAL_RECIPIENT_EMAIL_TYPES = new Set<string>([
 
 const INTERNAL_RECIPIENT_DOMAINS = ['@mympb.com', '@mpb.health'];
 
+/** Public form flows that must pass Turnstile when TURNSTILE_SECRET_KEY is set. */
+const CAPTCHA_REQUIRED_EMAIL_TYPES = new Set<string>(['contact-form']);
+
+function requiresCaptchaToken(emailType?: string): boolean {
+  if (!emailType) return true;
+  return CAPTCHA_REQUIRED_EMAIL_TYPES.has(emailType);
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return handleCorsPreflightRequest(req);
@@ -100,7 +108,7 @@ serve(async (req) => {
           { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
         );
       }
-    } else if (TURNSTILE_SECRET_KEY && !captchaToken && !emailType) {
+    } else if (TURNSTILE_SECRET_KEY && !captchaToken && requiresCaptchaToken(emailType)) {
       return new Response(
         JSON.stringify({ success: false, error: 'CAPTCHA token is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },

@@ -152,12 +152,12 @@ export function useNotifications(options: {
 
   useEffect(() => {
     if (!advisorReady || !userId) return;
-    notificationService.subscribeToNotifications(userId, (notification) => {
+    const unsubscribe = notificationService.subscribeToNotifications(userId, (notification) => {
       queryClient.setQueryData<Notification[]>(queryKey, (prev) => [notification, ...(prev ?? [])]);
     });
 
     return () => {
-      notificationService.unsubscribeFromNotifications(userId);
+      unsubscribe();
     };
   }, [advisorReady, userId, queryClient, queryKey]);
 
@@ -231,11 +231,11 @@ export function useUnreadNotificationCount() {
 
   useEffect(() => {
     if (!advisorReady || !userId) return;
-    notificationService.subscribeToNotifications(userId, () => {
+    const unsubscribe = notificationService.subscribeToNotifications(userId, () => {
       queryClient.setQueryData<number>(queryKey, (n) => (n ?? 0) + 1);
     });
     return () => {
-      notificationService.unsubscribeFromNotifications(userId);
+      unsubscribe();
     };
   }, [advisorReady, userId, queryClient, queryKey]);
 

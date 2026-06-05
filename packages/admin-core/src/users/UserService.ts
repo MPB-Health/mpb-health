@@ -21,6 +21,8 @@ export interface AdvisorProfileSummary {
   specialization: string;
   onboarding_completed: boolean;
   onboarding_completed_at: string | null;
+  training_completed: boolean;
+  training_completed_at: string | null;
   created_at: string;
 }
 
@@ -328,7 +330,7 @@ export class UserService {
   async getAdvisorProfile(userId: string): Promise<AdvisorProfileSummary | null> {
     const { data, error } = await supabase
       .from('advisor_profiles')
-      .select('id, first_name, last_name, email, agent_id, company_name, status, specialization, onboarding_completed, onboarding_completed_at, created_at')
+      .select('id, first_name, last_name, email, agent_id, company_name, status, specialization, onboarding_completed, onboarding_completed_at, training_completed, training_completed_at, created_at')
       .eq('id', userId)
       .limit(1);
 
@@ -422,6 +424,23 @@ export class UserService {
     if (error) throw error;
   }
 
+  /**
+   * Grant or revoke full advisor portal access by toggling training completion.
+   * Uses admin-update-user edge function (super_admin + service role).
+   */
+  async updateAdvisorTrainingCompleted(userId: string, trainingCompleted: boolean): Promise<void> {
+    const { data, error } = await invokeWithResolvedAuth<{
+      success?: boolean;
+      error?: string;
+    }>('admin-update-user', {
+      body: { userId, training_completed: trainingCompleted },
+    });
+    if (error) throw new Error(error.message || 'Failed to update training status');
+    if (data && data.success === false) {
+      throw new Error(data.error || 'Failed to update training status');
+    }
+  }
+
   /** Update advisor profile fields */
   async updateAdvisorProfile(
     userId: string,
@@ -431,7 +450,7 @@ export class UserService {
       .from('advisor_profiles')
       .update(updates)
       .eq('id', userId)
-      .select('id, first_name, last_name, email, agent_id, company_name, status, specialization, onboarding_completed, onboarding_completed_at, created_at')
+      .select('id, first_name, last_name, email, agent_id, company_name, status, specialization, onboarding_completed, onboarding_completed_at, training_completed, training_completed_at, created_at')
       .single();
 
     if (error) throw error;
@@ -442,7 +461,7 @@ export class UserService {
   async getAdvisorProfiles(search?: string): Promise<AdvisorProfileSummary[]> {
     let query = supabase
       .from('advisor_profiles')
-      .select('id, first_name, last_name, email, agent_id, company_name, status, specialization, onboarding_completed, onboarding_completed_at, created_at')
+      .select('id, first_name, last_name, email, agent_id, company_name, status, specialization, onboarding_completed, onboarding_completed_at, training_completed, training_completed_at, created_at')
       .order('created_at', { ascending: false });
 
     if (search) {

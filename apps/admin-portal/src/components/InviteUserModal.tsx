@@ -2,6 +2,7 @@ import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { X, Mail, Shield, Loader2, Send } from 'lucide-react';
 import { invokeWithResolvedAuth } from '@mpbhealth/database';
+import { handleAuthFailureMessage, isSessionExpiredMessage } from '../utils/authErrors';
 
 interface InviteUserModalProps {
   isOpen: boolean;
@@ -76,7 +77,11 @@ export default function InviteUserModal({
       onClose();
     } catch (err) {
       console.error('Failed to send invitation:', err);
-      toast.error(err instanceof Error ? err.message : 'Failed to send invitation');
+      const message = err instanceof Error ? err.message : 'Failed to send invitation';
+      toast.error(message);
+      if (isSessionExpiredMessage(message)) {
+        handleAuthFailureMessage(message);
+      }
     } finally {
       setSending(false);
     }

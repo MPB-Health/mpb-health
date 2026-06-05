@@ -11,6 +11,8 @@ interface UpdateUserRequest {
   first_name?: string;
   last_name?: string;
   email?: string;
+  /** Super admin only — grant or revoke full advisor portal access (bypasses training gate). */
+  training_completed?: boolean;
 }
 
 Deno.serve(async (req: Request) => {
@@ -73,7 +75,7 @@ Deno.serve(async (req: Request) => {
 
     // Parse request body
     const body: UpdateUserRequest = await req.json().catch(() => ({} as UpdateUserRequest));
-    const { userId, full_name, first_name, last_name, email } = body;
+    const { userId, full_name, first_name, last_name, email, training_completed } = body;
 
     if (!userId) {
       return new Response(
@@ -130,26 +132,28 @@ Deno.serve(async (req: Request) => {
       updatePayload.user_metadata = metadata;
     }
 
-    if (Object.keys(updatePayload).length === 0) {
+    if (Object.keys(updatePayload).length === 0 && training_completed === undefined) {
       return new Response(
         JSON.stringify({ success: false, error: "No update fields provided" }),
         { status: 400, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
       );
     }
 
-    // Update the auth user (email + metadata)
-    const { error: updateError } = await adminClient.auth.admin.updateUserById(userId, updatePayload);
+    if (Object.keys(updatePayload).length > 0) {
+      // Update the auth user (email + metadata)
+      const { error: updateError } = await adminClient.auth.admin.updateUserById(userId, updatePayload);
 
-    if (updateError) {
-      log.error("Error updating auth user:", updateError);
-      // Surface the real error message so the client can diagnose (e.g.
-      // "Email address already in use", "Invalid email", etc.).
-      const message = updateError.message || "Failed to update user";
-      const status = /not.?found/i.test(message) ? 404 : 400;
-      return new Response(
-        JSON.stringify({ success: false, error: message }),
-        { status, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
-      );
+      if (updateError) {
+        log.error("Error updating auth user:", updateError);
+        // Surface the real error message so the client can diagnose (e.g.
+        // "Email address already in use", "Invalid email", etc.).
+        const message = updateError.message || "Failed to update user";
+        const status = /not.?found/i.test(message) ? 404 : 400;
+        return new Response(
+          JSON.stringify({ success: false, error: message }),
+          { status, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
+        );
+      }
     }
 
     // Best-effort sync of name fields into admin_users and advisor_profiles so
@@ -191,6 +195,24 @@ Deno.serve(async (req: Request) => {
     }
     if (syncWarnings.length > 0) {
       log.warn("Partial sync warnings", { warnings: syncWarnings, userId });
+    }
+
+    if (training_completed !== undefined) {
+      const nowIso = new Date().toISOString();
+      const { error: trainingErr } = await adminClient
+        .from("advisor_profiles")
+        .update({
+          training_completed,
+          training_completed_at: training_completed ? nowIso : null,
+          updated_at: nowIso,
+        })
+        .eq("id", userId);
+      if (trainingErr && trainingErr.code !== "PGRST116") {
+        return new Response(
+          JSON.stringify({ success: false, error: trainingErr.message || "Failed to update advisor training status" }),
+          { status: 400, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } },
+        );
+      }
     }
 
     return new Response(

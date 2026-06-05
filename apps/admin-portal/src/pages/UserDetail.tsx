@@ -93,6 +93,7 @@ export default function UserDetail() {
   // Advisor status editing
   const [editAdvisorStatus, setEditAdvisorStatus] = useState<AdvisorProfileSummary['status'] | ''>('');
   const [savingAdvisorStatus, setSavingAdvisorStatus] = useState(false);
+  const [savingAdvisorTraining, setSavingAdvisorTraining] = useState(false);
 
   // Email management
   const [editingEmail, setEditingEmail] = useState(false);
@@ -404,6 +405,33 @@ export default function UserDetail() {
       toast.error('Failed to update advisor status');
     } finally {
       setSavingAdvisorStatus(false);
+    }
+  };
+
+  const handleAdvisorTrainingToggle = async (grantFullAccess: boolean) => {
+    if (!userId) return;
+    setSavingAdvisorTraining(true);
+    try {
+      await userService.updateAdvisorTrainingCompleted(userId, grantFullAccess);
+      const nowIso = new Date().toISOString();
+      setAdvisorProfile((prev) =>
+        prev
+          ? {
+              ...prev,
+              training_completed: grantFullAccess,
+              training_completed_at: grantFullAccess ? nowIso : null,
+            }
+          : prev
+      );
+      toast.success(
+        grantFullAccess
+          ? 'Full Advisor Portal access granted (training requirement skipped)'
+          : 'Training requirement restored — advisor must complete training for full portal access'
+      );
+    } catch {
+      toast.error('Failed to update training access');
+    } finally {
+      setSavingAdvisorTraining(false);
     }
   };
 
@@ -1214,7 +1242,38 @@ export default function UserDetail() {
             )}
           </div>
           <div>
-            <p className="text-th-text-tertiary mb-0.5">Onboarding</p>
+            <p className="text-th-text-tertiary mb-0.5">Portal training</p>
+            <div className="flex flex-wrap items-center gap-2 mt-1">
+              <span
+                className={`inline-block px-2 py-0.5 text-xs rounded-full ${
+                  advisorProfile.training_completed === true
+                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                    : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+                }`}
+              >
+                {advisorProfile.training_completed ? 'Full access' : 'Training required'}
+              </span>
+              {isSuperAdmin && (
+                <button
+                  type="button"
+                  onClick={() => handleAdvisorTrainingToggle(!advisorProfile.training_completed)}
+                  disabled={savingAdvisorTraining}
+                  className="px-2 py-1 text-xs border border-th-border rounded-lg text-th-text-secondary hover:bg-surface-secondary disabled:opacity-50 transition-colors"
+                >
+                  {savingAdvisorTraining
+                    ? 'Saving...'
+                    : advisorProfile.training_completed
+                      ? 'Require training again'
+                      : 'Skip training (grant full access)'}
+                </button>
+              )}
+            </div>
+            <p className="text-xs text-th-text-tertiary mt-1">
+              Training gates the Advisor Portal for new recruits. Existing contracted advisors should have full access.
+            </p>
+          </div>
+          <div>
+            <p className="text-th-text-tertiary mb-0.5">Profile setup</p>
             <span
               className={`inline-block px-2 py-0.5 text-xs rounded-full ${
                 advisorProfile.onboarding_completed

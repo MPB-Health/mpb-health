@@ -2,6 +2,7 @@ import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { X, User, Mail, Phone, Building2, Hash, Loader2, GraduationCap } from 'lucide-react';
 import { invokeWithResolvedAuth } from '@mpbhealth/database';
+import { handleAuthFailureMessage, isSessionExpiredMessage } from '../utils/authErrors';
 
 interface AddAdvisorModalProps {
   isOpen: boolean;
@@ -26,6 +27,7 @@ interface FormData {
   agent_id: string;
   company_name: string;
   send_invite: boolean;
+  skip_training_requirement: boolean;
 }
 
 const DEFAULT_FORM: FormData = {
@@ -37,6 +39,7 @@ const DEFAULT_FORM: FormData = {
   agent_id: '',
   company_name: '',
   send_invite: true,
+  skip_training_requirement: false,
 };
 
 const SPECIALIZATIONS = [
@@ -81,6 +84,7 @@ export default function AddAdvisorModal({ isOpen, onClose, onSuccess }: AddAdvis
           specialization: form.specialization || undefined,
           agent_id: form.agent_id || undefined,
           company_name: form.company_name || undefined,
+          skip_training_requirement: form.skip_training_requirement,
         },
       });
 
@@ -117,7 +121,11 @@ export default function AddAdvisorModal({ isOpen, onClose, onSuccess }: AddAdvis
       onClose();
     } catch (err) {
       console.error('Failed to create advisor:', err);
-      toast.error(err instanceof Error ? err.message : 'Failed to create advisor');
+      const message = err instanceof Error ? err.message : 'Failed to create advisor';
+      toast.error(message);
+      if (isSessionExpiredMessage(message)) {
+        handleAuthFailureMessage(message);
+      }
     } finally {
       setSaving(false);
     }
@@ -278,6 +286,24 @@ export default function AddAdvisorModal({ isOpen, onClose, onSuccess }: AddAdvis
           </div>
 
           {/* Send Invite Option */}
+          <div className="flex items-center gap-3 p-4 bg-surface-secondary rounded-lg">
+            <input
+              type="checkbox"
+              id="advisor_skip_training"
+              checked={form.skip_training_requirement}
+              onChange={(e) => setForm({ ...form, skip_training_requirement: e.target.checked })}
+              className="rounded border-th-border text-emerald-600 focus:ring-emerald-500"
+            />
+            <label htmlFor="advisor_skip_training" className="cursor-pointer">
+              <p className="text-sm font-medium text-th-text-primary">
+                Existing advisor — skip training requirement
+              </p>
+              <p className="text-xs text-th-text-tertiary">
+                Grants full Advisor Portal access immediately. Use for contracted advisors who already completed training elsewhere. New recruits should leave this unchecked.
+              </p>
+            </label>
+          </div>
+
           <div className="flex items-center gap-3 p-4 bg-surface-secondary rounded-lg">
             <input
               type="checkbox"

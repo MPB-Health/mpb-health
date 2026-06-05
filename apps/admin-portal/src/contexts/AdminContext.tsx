@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useRef, useMemo, useCallback, ReactNode } from 'react';
-import { supabase, isSupabaseConfigured } from '@mpbhealth/database';
+import { supabase, isSupabaseConfigured, onSessionDead } from '@mpbhealth/database';
 import { isTimeoutError, withTimeout } from '@mpbhealth/utils';
 import {
   userService,
@@ -160,6 +160,14 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       clearTimeout(timeout);
       subscription.unsubscribe();
     };
+  }, []);
+
+  // Keep UI in sync when the shared auth latch fires (stale JWT / dead refresh).
+  useEffect(() => {
+    return onSessionDead(() => {
+      setUser(null);
+      setLoading(false);
+    });
   }, []);
 
   useEffect(() => {

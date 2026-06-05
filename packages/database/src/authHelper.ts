@@ -255,7 +255,22 @@ export async function invokeWithResolvedAuth<TData = unknown>(
   functionName: string,
   options: InvokeFunctionOptions = {},
 ): Promise<{ data: TData | null; error: { message: string } | null }> {
-  const authHeaders = await getResolvedAuthHeader();
+  let authHeaders = await getResolvedAuthHeader();
+
+  // One retry after busting the session cache — covers slow refresh or a stale
+  // cached token when the admin UI still looks signed in.
+  if (!authHeaders && !isSessionDead()) {
+    invalidateCachedSession();
+    try {
+      const { data: refreshed, error } = await refreshSessionOnce();
+      if (!error && refreshed?.session?.access_token) {
+        authHeaders = { Authorization: `Bearer ${refreshed.session.access_token}` };
+      }
+    } catch {
+      // fall through to the session-expired error below
+    }
+  }
+
   if (!authHeaders) {
     throw new Error('Your session has expired. Please sign in again.');
   }

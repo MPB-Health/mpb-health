@@ -22,6 +22,8 @@ interface CreateUserRequest {
   agent_id?: string;
   company_name?: string;
   avatar_url?: string;
+  /** When true, advisor gets full portal access without completing the training quiz (existing/contracted advisors). */
+  skip_training_requirement?: boolean;
 }
 
 const ADVISOR_PROFILE_ROLES: UserRole[] = ["advisor", "admin", "super_admin"];
@@ -42,8 +44,11 @@ async function provisionAdvisorProfile(
     agentId?: string;
     companyName?: string;
     avatarUrl?: string;
+    skipTrainingRequirement?: boolean;
   },
 ): Promise<void> {
+  const nowIso = new Date().toISOString();
+  const trainingComplete = input.skipTrainingRequirement === true;
   const { error } = await supabaseAdmin
     .from("advisor_profiles")
     .upsert(
@@ -58,15 +63,16 @@ async function provisionAdvisorProfile(
         company_name: input.companyName || null,
         avatar_url: input.avatarUrl || null,
         status: "active",
-        training_completed: false,
-        training_completed_at: null,
+        training_completed: trainingComplete,
+        training_completed_at: trainingComplete ? nowIso : null,
         onboarding_completed: true,
-        onboarding_completed_at: new Date().toISOString(),
+        onboarding_completed_at: nowIso,
         metadata: {
           provisioned_by: "create-user",
           source: "edge-function",
+          ...(trainingComplete ? { training_skipped_by_admin: true } : {}),
         },
-        updated_at: new Date().toISOString(),
+        updated_at: nowIso,
       },
       { onConflict: "id" },
     );
@@ -163,6 +169,30 @@ function generateTempPassword(): string {
   return pw;
 }
 
+function formatCreateUserError(err: { message?: string; code?: string }): string {
+  const msg = (err.message ?? "").toLowerCase();
+  if (msg.includes("already been registered") || msg.includes("already exists")) {
+    return "A user with this email address already exists.";
+  }
+  if (msg.includes("invalid") && msg.includes("email")) {
+    return "Invalid email address.";
+  }
+  return err.message || "Failed to create user";
+}
+
+function formatAdvisorProfileError(err: { message?: string; code?: string }): string {
+  const msg = err.message ?? "";
+  if (err.code === "23505") {
+    if (msg.includes("agent_id")) {
+      return "This Agent ID is already assigned to another advisor.";
+    }
+    if (msg.includes("email")) {
+      return "An advisor profile with this email already exists.";
+    }
+  }
+  return "Failed to provision advisor profile";
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return handleCorsPreflightRequest(req);
@@ -228,7 +258,20 @@ Deno.serve(async (req: Request) => {
     }
 
     const body: CreateUserRequest = await req.json();
-    const { email, first_name, last_name, roles, password, send_invite, phone, specialization, agent_id, company_name, avatar_url } = body;
+    const {
+      email,
+      first_name,
+      last_name,
+      roles,
+      password,
+      send_invite,
+      phone,
+      specialization,
+      agent_id,
+      company_name,
+      avatar_url,
+      skip_training_requirement,
+    } = body;
 
     if (!email || !first_name || !last_name || !roles?.length) {
       return new Response(
@@ -257,7 +300,7 @@ Deno.serve(async (req: Request) => {
     if (createUserError) {
       log.error("Create user error:", createUserError);
       return new Response(
-        JSON.stringify({ success: false, error: "Failed to create user" }),
+        JSON.stringify({ success: false, error: formatCreateUserError(createUserError) }),
         { status: 400, headers },
       );
     }
@@ -290,6 +333,7 @@ Deno.serve(async (req: Request) => {
           agentId: agent_id,
           companyName: company_name,
           avatarUrl: avatar_url,
+          skipTrainingRequirement: skip_training_requirement === true,
         });
       } catch (profileError) {
         log.error("Advisor profile provisioning failed", profileError);
@@ -297,12 +341,13 @@ Deno.serve(async (req: Request) => {
         if (rollbackError) {
           log.error("Rollback delete user failed", rollbackError);
         }
+        const profileErr = profileError as { message?: string; code?: string };
         return new Response(
           JSON.stringify({
             success: false,
-            error: "Failed to provision advisor profile",
+            error: formatAdvisorProfileError(profileErr),
           }),
-          { status: 500, headers },
+          { status: 400, headers },
         );
       }
     }

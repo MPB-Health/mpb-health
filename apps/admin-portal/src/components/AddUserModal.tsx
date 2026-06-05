@@ -3,6 +3,7 @@ import toast from 'react-hot-toast';
 import { X, User, Mail, Shield, Loader2, Briefcase } from 'lucide-react';
 import { userService, type Permission } from '@mpbhealth/admin-core';
 import { invokeWithResolvedAuth } from '@mpbhealth/database';
+import { handleAuthFailureMessage, isSessionExpiredMessage } from '../utils/authErrors';
 
 // ---------------------------------------------------------------------------
 // User-type-driven creation modal.
@@ -50,6 +51,7 @@ interface FormData {
   agent_id: string;
   company_name: string;
   send_invite: boolean;
+  skip_training_requirement: boolean;
 }
 
 const DEFAULT_FORM: FormData = {
@@ -64,6 +66,7 @@ const DEFAULT_FORM: FormData = {
   agent_id: '',
   company_name: '',
   send_invite: true,
+  skip_training_requirement: false,
 };
 
 const USER_TYPES: { value: UserType; label: string; description: string }[] = [
@@ -168,6 +171,7 @@ export default function AddUserModal({ isOpen, onClose, onSuccess, suggestedUser
                     specialization: form.specialization || undefined,
                     agent_id: form.agent_id || undefined,
                     company_name: form.company_name || undefined,
+                    skip_training_requirement: form.skip_training_requirement,
                   }
                 : {}),
             },
@@ -197,7 +201,11 @@ export default function AddUserModal({ isOpen, onClose, onSuccess, suggestedUser
       onClose();
     } catch (err) {
       console.error('Failed to create user:', err);
-      toast.error(err instanceof Error ? err.message : 'Failed to create user');
+      const message = err instanceof Error ? err.message : 'Failed to create user';
+      toast.error(message);
+      if (isSessionExpiredMessage(message)) {
+        handleAuthFailureMessage(message);
+      }
     } finally {
       setSaving(false);
     }
@@ -419,6 +427,26 @@ export default function AddUserModal({ isOpen, onClose, onSuccess, suggestedUser
                   />
                 </div>
               </div>
+            </div>
+          )}
+
+          {isAdvisor && (
+            <div className="flex items-start gap-3 p-4 bg-surface-secondary rounded-lg">
+              <input
+                type="checkbox"
+                id="user_skip_training"
+                checked={form.skip_training_requirement}
+                onChange={(e) => setForm({ ...form, skip_training_requirement: e.target.checked })}
+                className="mt-0.5 rounded border-th-border text-th-accent-600 focus:ring-th-accent-500"
+              />
+              <label htmlFor="user_skip_training" className="cursor-pointer">
+                <p className="text-sm font-medium text-th-text-primary">
+                  Existing advisor — skip training requirement
+                </p>
+                <p className="text-xs text-th-text-tertiary">
+                  Grants full Advisor Portal access immediately. Training is only required for new advisors going through contracting.
+                </p>
+              </label>
             </div>
           )}
 

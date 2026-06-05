@@ -87,7 +87,15 @@ async function main() {
     addEventListener: () => {},
     removeEventListener: () => {},
   };
-  globalThis.navigator = globalThis.navigator || { userAgent: 'prerender' };
+  try {
+    Object.defineProperty(globalThis, 'navigator', {
+      value: { userAgent: 'prerender' },
+      configurable: true,
+      writable: true,
+    });
+  } catch {
+    // Node 22+ may expose a read-only navigator; SSR can proceed without overriding.
+  }
   globalThis.IntersectionObserver = globalThis.IntersectionObserver || class {
     observe() {}
     unobserve() {}

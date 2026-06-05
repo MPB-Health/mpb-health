@@ -28,10 +28,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
-    <!-- Non-blocking font load (replaces render-blocking CSS @import) -->
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=optional" />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=optional" media="print" onload="this.media='all'" />
-    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=optional" /></noscript>
+    <!-- Inter — standard stylesheet (no inline onload; strict CSP blocks event handlers) -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: https: http:; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://connect.facebook.net https://snap.licdn.com https://static.ads-twitter.com https://s.pinimg.com https://ct.pinterest.com https://analytics.tiktok.com https://www.redditstatic.com https://sc-static.net https://www.clarity.ms https://static.hotjar.com https://salesiq.zohopublic.com https://salesiq.zoho.com https://salesiq.zohopublic.eu https://js.zohocdn.com https://static.zohocdn.com https://chimpstatic.com https://*.mailchimp.com https://assets.calendly.com https://challenges.cloudflare.com https://vercel.live https://*.vercel.live; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://css.zohocdn.com https://static.zohocdn.com https://assets.calendly.com; font-src 'self' data: https://fonts.gstatic.com https://css.zohocdn.com https://static.zohocdn.com https://assets.calendly.com; connect-src 'self' https://challenges.cloudflare.com https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://analytics.google.com https://www.facebook.com https://px.ads.linkedin.com https://analytics.twitter.com https://ct.pinterest.com https://pixel-config.reddit.com https://analytics.tiktok.com https://www.reddit.com https://tr.snapchat.com https://www.clarity.ms https://*.hotjar.com https://*.hotjar.io wss://*.hotjar.com https://salesiq.zohopublic.com https://salesiq.zoho.com https://salesiq.zohopublic.eu wss://salesiq.zohopublic.com wss://salesiq.zoho.com wss://vts.zohopublic.com https://ipapi.co https://ipwho.is https://ip-api.com https://api.zippopotam.us https://api.bigdatacloud.net https://*.list-manage.com https://*.mailchimp.com https://calendly.com https://vercel.live https://*.vercel.live wss://vercel.live wss://*.vercel.live; frame-src 'self' https://challenges.cloudflare.com https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://www.cognitoforms.com https://salesiq.zohopublic.com https://salesiq.zoho.com https://salesiq.zohopublic.eu https://vars.hotjar.com https://www.google.com https://calendly.com https://vercel.live https://ct.pinterest.com https://drive.google.com https://docs.google.com; child-src 'self' https://www.cognitoforms.com https://salesiq.zohopublic.com https://salesiq.zoho.com https://salesiq.zohopublic.eu https://calendly.com;">
     <meta http-equiv="Permissions-Policy" content="payment=(self), geolocation=(self)">
 
@@ -239,57 +237,6 @@
 
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-
-    <!-- Zoho SalesIQ bootstrap (matches Zoho embed; widget code is passed via ?wc= on script URL) -->
-    <script>
-      window.$zoho = window.$zoho || {};
-      window.$zoho.salesiq = window.$zoho.salesiq || { ready: function () {} };
-      window.$zoho.salesiq.values = window.$zoho.salesiq.values || {};
-    </script>
-
-    <!-- Defer third-party scripts to load after main app -->
-    <script>
-      // Public site hostnames only — align with packages/config DOMAINS.website (www) + apex mpb.health
-      function isProductionHostname() {
-        var hostname = window.location.hostname;
-        return hostname === 'mpb.health' || hostname === 'www.mpb.health';
-      }
-
-      // Load third-party scripts after page interactive
-      if ('requestIdleCallback' in window) {
-        requestIdleCallback(() => {
-          loadThirdPartyScripts();
-        });
-      } else {
-        setTimeout(() => {
-          loadThirdPartyScripts();
-        }, 2000);
-      }
-
-      function loadThirdPartyScripts() {
-        if (!isProductionHostname()) {
-          return;
-        }
-
-        // Zoho SalesIQ — widget code must be on the script URL (?wc=) per current Zoho embed
-        var d=document;
-        var s=d.createElement("script");
-        s.type="text/javascript";
-        s.id="zsiqscript";
-        s.defer=true;
-        s.src="https://salesiq.zohopublic.com/widget?wc=siq341f0a21deffa52db946003babb9a87b";
-        var t=d.getElementsByTagName("script")[0];
-        t.parentNode.insertBefore(s,t);
-
-        // Mailchimp
-        !function(c,h,i,m,p){
-          m=c.createElement(h);
-          p=c.getElementsByTagName(h)[0];
-          m.async=1;
-          m.src=i;
-          p.parentNode.insertBefore(m,p);
-        }(document,"script","https://chimpstatic.com/mcjs-connected/js/users/6c93f6cc2c451ffa2accc8784/188d44b94b277adffffa6d9a3.js");
-      }
-    </script>
+    <script defer src="/scripts/deferred-third-party.js"></script>
   </body>
 </html>

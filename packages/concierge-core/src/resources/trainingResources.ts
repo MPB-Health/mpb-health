@@ -246,6 +246,28 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
     external: true,
     keywords: ['Sedera', 'direct primary care', 'DPC', 'sharing request', 'IUA', 'community', 'eligible expenses', 'network', 'PHCS', 'preventive', 'telehealth'],
   },
+  {
+    id: 'premium-hsa-handbook',
+    title: 'Premium HSA Handbook',
+    description: 'Complete handbook for the Premium HSA plan',
+    url: 'https://mpb.health/3d-flip-book/premium-hsa/',
+    category: 'mpb-plans',
+    subcategory: 'Premium HSA',
+    type: 'handbook',
+    external: true,
+    keywords: ['Premium HSA', 'HSA', 'health savings account', 'high deductible', 'HDHP', 'tax advantage', 'IUA', 'sharing request', 'eligible expenses', 'network', 'PHCS', 'preventive', 'telehealth'],
+  },
+  {
+    id: 'premium-care-handbook',
+    title: 'Premium Care Handbook',
+    description: 'Complete handbook for the Premium Care plan',
+    url: 'https://mpb.health/3d-flip-book/premium-care/',
+    category: 'mpb-plans',
+    subcategory: 'Premium Care',
+    type: 'handbook',
+    external: true,
+    keywords: ['Premium Care', 'IUA', 'sharing request', 'maternity', 'mental health', 'prescription', 'network', 'PHCS', 'preventive', 'emergency', 'specialist', 'copay', 'telehealth'],
+  },
 
   // ─── Welcome Call Scripts ────────────────────────────────────────────
   {

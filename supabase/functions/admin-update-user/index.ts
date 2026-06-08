@@ -84,23 +84,31 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Check if caller is the same user OR a super_admin
     const isSameUser = callingUser.id === userId;
-    
-    if (!isSameUser) {
-      // Check if caller is a super_admin
+
+    const callerIsSuperAdmin = async (): Promise<boolean> => {
       const { data: roles, error: rolesError } = await userClient
         .from("user_roles")
         .select("role")
         .eq("user_id", callingUser.id)
         .eq("role", "super_admin");
+      return !rolesError && !!roles && roles.length > 0;
+    };
 
-      if (rolesError || !roles || roles.length === 0) {
+    // Training gate changes always require super_admin — never self-serviceable,
+    // even when the caller is updating their own row.
+    if (training_completed !== undefined) {
+      if (!(await callerIsSuperAdmin())) {
         return new Response(
-          JSON.stringify({ error: "Only super admins can update other users" }),
-          { status: 403, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
+          JSON.stringify({ error: "Only super admins can change training status" }),
+          { status: 403, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } },
         );
       }
+    } else if (!isSameUser && !(await callerIsSuperAdmin())) {
+      return new Response(
+        JSON.stringify({ error: "Only super admins can update other users" }),
+        { status: 403, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } },
+      );
     }
 
     // Create admin client with service role to update the user

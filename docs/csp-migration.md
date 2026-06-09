@@ -31,6 +31,8 @@ For every app it adds a **`Content-Security-Policy-Report-Only`** header alongsi
 | admin-portal | theme-bootstrap + `gtag` init + chunk-reload handler |
 | website | `$zoho` init + third-party loader (+ 3 JSON-LD data blocks) |
 
+**Zoho SalesIQ caveat (website):** the widget loader chains external scripts that inject *dynamic* inline scripts (e.g. `window._STATIC_URL` / `window._CONFVARIABLES`). Those bodies change per visitor, so a fixed SHA-256 hash cannot allow-list them. The website policy therefore includes `'strict-dynamic'` so inline scripts created by the parser-inserted `deferred-third-party.js` → Zoho loader trust chain are permitted without re-opening `'unsafe-inline'`.
+
 `concierge-portal` had **no CSP at all** — its Report-Only policy is **cloned from staff-hub** as a starting baseline. Validate its `connect-src`/`frame-src` against concierge's actual needs before enforcing.
 
 ## ⚠️ Important caveat — hashes are computed from source

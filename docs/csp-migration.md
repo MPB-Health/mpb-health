@@ -31,7 +31,7 @@ For every app it adds a **`Content-Security-Policy-Report-Only`** header alongsi
 | admin-portal | theme-bootstrap + `gtag` init + chunk-reload handler |
 | website | `$zoho` init + third-party loader (+ 3 JSON-LD data blocks) |
 
-**Zoho SalesIQ caveat (website):** the widget loader chains external scripts that inject *dynamic* inline scripts (e.g. `window._STATIC_URL` / `window._CONFVARIABLES`). Those bodies change per visitor, so a fixed SHA-256 hash cannot allow-list them. The website policy therefore includes `'strict-dynamic'` so inline scripts created by the parser-inserted `deferred-third-party.js` → Zoho loader trust chain are permitted without re-opening `'unsafe-inline'`.
+**Website exception:** hash-only `script-src` was **reverted** for `apps/website/vercel.json`. Zoho SalesIQ (and several marketing widgets) inject *dynamic* inline scripts whose bodies change per visitor — a fixed SHA-256 hash cannot allow-list them. `'strict-dynamic'` was also ruled out: it disables host allowlisting and blocks the Vite bundle (`assets/js/index-*.js`) and `deferred-third-party.js`. The public website keeps `'unsafe-inline'` in `script-src`; the portal apps remain hash-only.
 
 `concierge-portal` had **no CSP at all** — its Report-Only policy is **cloned from staff-hub** as a starting baseline. Validate its `connect-src`/`frame-src` against concierge's actual needs before enforcing.
 

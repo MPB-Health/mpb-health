@@ -77,7 +77,7 @@
          into a single knowledge graph:
            • Organization      — corporate identity
            • MedicalOrganization+LocalBusiness — Local SEO + medical category
-           • WebSite           — sitelinks + sitelinks searchbox
+           • WebSite           — sitelinks
 
          Kept STATIC (not in Helmet) so non-JS SEO crawlers see them. The
          per-page Article/FAQ/HowTo schemas remain in their pages' Helmet
@@ -145,8 +145,6 @@
       "url": "https://mpb.health/",
       "telephone": "+1-855-816-4650",
       "email": "info@mympb.com",
-      "isAcceptingNewPatients": true,
-      "medicalSpecialty": "PrimaryCare",
       "address": {
         "@type": "PostalAddress",
         "streetAddress": "5301 N Federal Hwy, Suite 155",
@@ -170,11 +168,6 @@
       ],
       "priceRange": "$$",
       "areaServed": { "@type": "Country", "name": "United States" },
-      "aggregateRating": {
-        "@type": "AggregateRating",
-        "ratingValue": "4.9",
-        "reviewCount": "3500"
-      },
       "sameAs": [
         "https://www.facebook.com/mpbhealth",
         "https://twitter.com/mpbhealth",
@@ -192,12 +185,7 @@
       "url": "https://mpb.health/",
       "description": "Affordable HealthShare memberships for individuals, families, and businesses. A community-driven alternative to traditional health insurance.",
       "publisher": { "@id": "https://mpb.health/#organization" },
-      "inLanguage": "en-US",
-      "potentialAction": {
-        "@type": "SearchAction",
-        "target": { "@type": "EntryPoint", "urlTemplate": "https://mpb.health/search?q={search_term_string}" },
-        "query-input": "required name=search_term_string"
-      }
+      "inLanguage": "en-US"
     }
     </script>
   </head>

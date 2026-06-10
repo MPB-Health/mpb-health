@@ -1,5 +1,5 @@
 import React from 'react';
-import { Helmet } from 'react-helmet-async';
+import { MarketingHydrationSeo } from '../components/MarketingHydrationSeo';
 import { Smartphone, Shield, Clock, Heart, CheckCircle } from 'lucide-react';
 import { MemberExperienceSection } from '../components/blocks/MemberExperienceSection';
 import { APP_STORE_URLS, isAppAvailable } from '../config/apps';
@@ -30,14 +30,7 @@ const DownloadApp = () => {
 
   return (
     <>
-    <Helmet>
-      <title>Download the MPB Health App | Manage Your Membership</title>
-      <meta name="description" content="Download the MPB Health app and use the member portal. Submit expenses, find providers, track requests, and manage your membership with our mobile apps and web dashboard." />
-      <link rel="canonical" href="https://mpb.health/download-app" />
-      <meta property="og:title" content="MPB Health App & Member Portal" />
-      <meta property="og:description" content="Mobile apps plus the member portal for expenses, providers, tracking, and concierge support." />
-      <meta property="og:url" content="https://mpb.health/download-app" />
-    </Helmet>
+    <MarketingHydrationSeo />
     <div className="min-h-screen bg-gradient-to-b from-white to-neutral-50">
       {/* Hero Section */}
       <section className="relative py-20 lg:py-28 overflow-hidden">

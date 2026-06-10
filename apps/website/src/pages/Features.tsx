@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Helmet } from 'react-helmet-async';
+import { MarketingHydrationSeo } from '../components/MarketingHydrationSeo';
 import { ArrowRight, Phone, Search, ChevronDown, Sparkles, Award, X } from 'lucide-react';
 import { Badge } from '../components/ui/Badge';
 import { healthcareFeatures } from '../data/healthcareFeaturesData';
@@ -45,18 +45,7 @@ export const Features: React.FC = () => {
 
   return (
     <>
-      <Helmet>
-        <title>Health Sharing Features & Benefits | MPB Health</title>
-        <meta
-          name="description"
-          content="Explore MPB Health features: telemedicine, primary care, urgent care, behavioral health, maternity care, prescription savings, and more. Find the coverage you need."
-        />
-        <link rel="canonical" href="https://mpb.health/features" />
-        <meta property="og:title" content="Features & Benefits | MPB Health" />
-        <meta property="og:description" content="Telemedicine, prescriptions, dental, vision, and more." />
-        <meta property="og:url" content="https://mpb.health/features" />
-        <meta property="og:type" content="website" />
-      </Helmet>
+      <MarketingHydrationSeo />
 
       {/* Hero Section */}
       <section className="relative pt-16 pb-20 overflow-hidden bg-gradient-to-b from-slate-50 to-white">

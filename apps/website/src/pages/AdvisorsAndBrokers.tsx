@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Helmet } from 'react-helmet-async';
+import { MarketingHydrationSeo } from '../components/MarketingHydrationSeo';
 import { Phone, CheckCircle2, TrendingUp, DollarSign, Users, Target, BookOpen, Headphones, Award, ShieldCheck, BarChart3, FileText, Lightbulb, UserPlus } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { SocialProof } from '../components/blocks/SocialProof';
@@ -111,18 +111,7 @@ const AdvisorsAndBrokers = () => {
 
   return (
     <>
-      <Helmet>
-        <title>Health Sharing for Advisors & Brokers | Partner with MPB Health</title>
-        <meta
-          name="description"
-          content="Grow your practice with MPB Health. Offer clients affordable health sharing plans. Competitive commissions, training, and dedicated support for advisors and brokers."
-        />
-        <link rel="canonical" href="https://mpb.health/advisors-and-brokers" />
-        <meta property="og:title" content="Advisor & Broker Program | MPB Health" />
-        <meta property="og:description" content="Partner with MPB Health. Competitive commissions, dedicated support." />
-        <meta property="og:url" content="https://mpb.health/advisors-and-brokers" />
-        <meta property="og:type" content="website" />
-      </Helmet>
+      <MarketingHydrationSeo />
 
       <section className="relative bg-gradient-to-br from-primary/5 via-white to-primary/10 pt-20 pb-16 overflow-hidden">
         <div className="absolute inset-0 overflow-hidden">

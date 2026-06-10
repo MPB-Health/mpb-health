@@ -1,6 +1,6 @@
 import React, { lazy, Suspense } from 'react';
-import { Helmet } from 'react-helmet-async';
 import { generateFAQSchema, homepageFaqQuestions } from '../lib/schemaMarkup';
+import { MarketingHydrationSeo } from '../components/MarketingHydrationSeo';
 import { EnhancedHero } from '../components/blocks/EnhancedHero';
 import { EnhancedTrustBar } from '../components/blocks/EnhancedTrustBar';
 import { SolutionsSection } from '../components/blocks/SolutionsSection';
@@ -21,39 +21,13 @@ const Loading = () => (
 const Landing: React.FC = () => {
   const homepageFaqSchema = generateFAQSchema(homepageFaqQuestions);
 
-  // Canonical is intentionally NOT set inside <Helmet> below. The static
-  // <link rel="canonical" href="https://mpb.health/" /> in
-  // apps/website/index.html is the source of truth. Setting another canonical
-  // here would result in two <link rel="canonical"> tags in the DOM after
-  // hydration (react-helmet-async appends — it does not remove static head
-  // tags), which SEO auditors flag as duplicates.
+  // Title, description, canonical, keywords, robots, and OG/Twitter tags live in
+  // the prerendered static HTML (page-seo-data.json + prerender-seo.mjs).
   return (
     <>
-      <Helmet>
-        <title>Healthsharing Memberships & Medical Cost Sharing | MPB</title>
-        <meta
-          name="description"
-          content="Explore healthsharing memberships with medical cost sharing, no network limits, and clear monthly costs. Get a smarter alternative to traditional insurance."
-        />
-        <meta name="keywords" content="healthsharing memberships, medical cost sharing, health sharing, healthcare costs, insurance alternative, community health, affordable healthcare" />
-        <meta name="robots" content="index, follow" />
-        <meta name="googlebot" content="index, follow" />
-        <meta name="bingbot" content="index, follow" />
-
-        {/* Open Graph */}
-        <meta property="og:title" content="Healthsharing Memberships & Medical Cost Sharing | MPB" />
-        <meta property="og:description" content="Explore healthsharing memberships with medical cost sharing, no network limits, and clear monthly costs. Get a smarter alternative to traditional insurance." />
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://mpb.health/" />
-        <meta property="og:site_name" content="MPB Health" />
-        <meta property="og:image" content="https://mpb.health/assets/MPB-Health-No-background.png?v=2" />
-        <meta property="og:image:width" content="1200" />
-        <meta property="og:image:height" content="630" />
-        <meta property="og:locale" content="en_US" />
-
-        {/* PAA FAQ Schema */}
+      <MarketingHydrationSeo>
         <script type="application/ld+json">{JSON.stringify(homepageFaqSchema)}</script>
-      </Helmet>
+      </MarketingHydrationSeo>
 
       {/* Above the fold - critical render path */}
       <EnhancedHero />

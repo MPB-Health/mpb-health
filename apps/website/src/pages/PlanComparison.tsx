@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Helmet } from 'react-helmet-async';
+import { MarketingHydrationSeo } from '../components/MarketingHydrationSeo';
 import { generateFAQSchema, comparePlansFaqQuestions } from '@/lib/schemaMarkup';
 import { usePlans } from '@/hooks/usePlans';
 import { PlanComparisonTable } from '@/components/blocks/PlanComparisonTable';
@@ -65,19 +65,9 @@ export default function PlanComparison() {
 
   return (
     <>
-    <Helmet>
-      <title>Compare Health Sharing Plans vs Traditional Insurance | MPB</title>
-      <meta name="description" content="Compare health sharing plans side by side and see how they differ from traditional insurance in cost, benefits, HSA options, and provider flexibility." />
-      <meta name="robots" content="index, follow" />
-      <meta name="googlebot" content="index, follow" />
-      <meta name="bingbot" content="index, follow" />
-      <link rel="canonical" href="https://mpb.health/compare-plans" />
-      <meta property="og:title" content="Compare Health Sharing Plans vs Traditional Insurance | MPB" />
-      <meta property="og:description" content="Compare health sharing plans side by side and see how they differ from traditional insurance in cost, benefits, HSA options, and provider flexibility." />
-      <meta property="og:url" content="https://mpb.health/compare-plans" />
-      {/* PAA FAQ Schema */}
+    <MarketingHydrationSeo>
       <script type="application/ld+json">{JSON.stringify(compareFaqSchema)}</script>
-    </Helmet>
+    </MarketingHydrationSeo>
     <div className="min-h-screen bg-gradient-to-b from-primary-50 via-white to-neutral-50 py-12 relative overflow-x-hidden">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary-100/40 via-transparent to-transparent"></div>
       <div className="absolute top-20 right-10 w-96 h-96 bg-gradient-to-br from-primary-200/20 to-accent-200/20 rounded-full blur-3xl"></div>

@@ -1,18 +1,12 @@
 import React from 'react';
-import { Helmet } from 'react-helmet-async';
+import { MarketingHydrationSeo } from '../components/MarketingHydrationSeo';
 import { FlowShell } from '../components/onboarding/FlowShell';
 import { Clock, Shield, CheckCircle2 } from 'lucide-react';
 
 export function GetStarted() {
   return (
     <>
-      <Helmet>
-        <title>Get Started - Find Your Perfect Plan | MPB Health</title>
-        <meta
-          name="description"
-          content="Answer a few quick questions to find the perfect health sharing plan for you and your family. Takes less than 2 minutes."
-        />
-      </Helmet>
+      <MarketingHydrationSeo />
 
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-teal-50">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">

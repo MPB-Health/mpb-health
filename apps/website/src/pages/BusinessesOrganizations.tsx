@@ -1,5 +1,5 @@
 import React from 'react';
-import { Helmet } from 'react-helmet-async';
+import { MarketingHydrationSeo } from '../components/MarketingHydrationSeo';
 import { DollarSign, Users, TrendingUp, Shield, FileText, Heart, Brain, Clock, Stethoscope, CheckSquare, Building2, Pill, Plus, Dna, PawPrint, Headphones as HeadphonesIcon, Infinity as InfinityIcon, GitCompare } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { PlanComparisonGuide } from '../components/blocks/PlanComparisonGuide';
@@ -103,52 +103,23 @@ const BusinessesOrganizations = () => {
 
   return (
     <>
-      <Helmet>
-        <title>HSA Compatible Health Sharing Plans for Self Employed | MPB</title>
-        <meta
-          name="description"
-          content="Discover HSA compatible health sharing plans and medical cost sharing for self employed professionals, 1099 contractors, and small businesses."
-        />
-        <meta name="keywords" content="HSA compatible health sharing plans, self employed health sharing, 1099 health plan, small business health sharing, medical cost sharing" />
-        <meta name="robots" content="index, follow" />
-        <meta name="googlebot" content="index, follow" />
-        <meta name="bingbot" content="index, follow" />
-        <link rel="canonical" href="https://mpb.health/businesses-and-organizations" />
-
-        {/* Open Graph */}
-        <meta property="og:title" content="HSA Compatible Health Sharing Plans for Self Employed | MPB" />
-        <meta property="og:description" content="Discover HSA compatible health sharing plans and medical cost sharing for self employed professionals, 1099 contractors, and small businesses." />
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://mpb.health/businesses-and-organizations" />
-        <meta property="og:site_name" content="MPB Health" />
-
-        {/* Twitter */}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="HSA Compatible Health Sharing Plans for Self Employed | MPB" />
-
-        {/* Organization Schema */}
+      <MarketingHydrationSeo>
         <script type="application/ld+json">
           {JSON.stringify(orgSchema)}
         </script>
-
-        {/* Service Schema */}
         <script type="application/ld+json">
           {JSON.stringify(serviceSchema)}
         </script>
-
-        {/* Product Schemas */}
         <script type="application/ld+json">
           {JSON.stringify(mecEssentialsSchema)}
         </script>
         <script type="application/ld+json">
           {JSON.stringify(secureHSABusinessSchema)}
         </script>
-
-        {/* PAA FAQ Schema */}
         <script type="application/ld+json">
           {JSON.stringify(businessFaqSchema)}
         </script>
-      </Helmet>
+      </MarketingHydrationSeo>
 
       <BusinessesOrganizationsHero />
 

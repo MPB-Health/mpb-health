@@ -1,5 +1,5 @@
 import React from 'react';
-import { Helmet } from 'react-helmet-async';
+import { MarketingHydrationSeo } from '../components/MarketingHydrationSeo';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Shield, Clock, Phone, CheckCircle } from 'lucide-react';
 import { Button } from '../components/ui/button';
@@ -12,33 +12,11 @@ const log = createClientLogger('GetAQuote');
 const GetAQuote: React.FC = () => {
   return (
     <>
-      <Helmet>
-        <title>Get Your Free Health Sharing Quote in 2 Minutes | MPB Health</title>
-        <meta
-          name="description"
-          content="Save up to 60% on healthcare. Get a free, no-obligation health sharing quote in 2 minutes. 50,000+ families trust MPB Health. Plans from $107/mo."
-        />
-        <meta name="robots" content="index, follow" />
-        <link rel="canonical" href="https://mpb.health/get-a-quote" />
-
-        {/* Open Graph */}
-        <meta property="og:title" content="Free Health Sharing Quote | Save Up to 60% | MPB Health" />
-        <meta property="og:description" content="See how much you could save with community health sharing. Free quote, no obligation, response within 24 hours." />
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://mpb.health/get-a-quote" />
-        <meta property="og:site_name" content="MPB Health" />
-        <meta property="og:image" content="https://mpb.health/assets/MPB-Health-No-background.png?v=2" />
-
-        {/* Twitter Card */}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Free Health Sharing Quote | Save Up to 60%" />
-        <meta name="twitter:description" content="50,000+ families save on healthcare with MPB Health. Get your free quote now." />
-
-        {/* Organization Schema */}
+      <MarketingHydrationSeo>
         <script type="application/ld+json">
           {JSON.stringify(generateOrganizationSchema())}
         </script>
-      </Helmet>
+      </MarketingHydrationSeo>
 
       <div className="min-h-screen bg-gradient-to-b from-neutral-50 to-white">
         {/* Header Section */}

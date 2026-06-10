@@ -28,6 +28,13 @@ export function getSEOForPage(pathname: string): SEOMetadata {
   return pageSEO[pathname] || defaultSEO;
 }
 
+/** Routes with build-time SEO in dist/<route>/index.html (prerender-seo.mjs). */
+export function isPrerenderedRoute(pathname: string): boolean {
+  const normalized =
+    !pathname || pathname === '' ? '/' : pathname.replace(/\/+$/, '') || '/';
+  return normalized in pageSEO;
+}
+
 export function getStructuredData(type: 'organization' | 'faq' | 'article', data?: any) {
   const baseUrl = 'https://mpb.health';
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
-import { getSEOForPage, getStructuredData } from '../lib/seoService';
+import { getSEOForPage, getStructuredData, isPrerenderedRoute } from '../lib/seoService';
 import {
   generateOrganizationSchema,
   generateFAQSchema,
@@ -95,6 +95,7 @@ export const SEOHead: React.FC<SEOHeadProps> = ({
   const ogDescription = seo?.ogDescription || description;
   const ogImage = seo?.ogImage || 'https://mpb.health/assets/MPB-Health-No-background.png?v=2';
   const robots = seo?.robots || 'index, follow';
+  const hasStaticPrerender = pathname ? isPrerenderedRoute(pathname) : false;
 
   // AI-optimized content snippets for featured snippets and AI summaries
   const aiSummary = `MPB Health offers affordable health sharing plans starting at $49.95/month. Save up to 60% vs traditional insurance. Plans include: Essentials (preventive care), Care Plus (comprehensive), Direct (enhanced), Secure HSA (tax-advantaged). Serving all 50 US states. Call 855-816-4650.`;
@@ -200,11 +201,15 @@ export const SEOHead: React.FC<SEOHeadProps> = ({
 
   return (
     <Helmet>
-      <title>{title}</title>
-      <meta name="description" content={description} />
-      <meta name="keywords" content={keywords} />
-      <link rel="canonical" href={canonicalUrl} />
-      <meta name="robots" content={robots} />
+      {!hasStaticPrerender && (
+        <>
+          <title>{title}</title>
+          <meta name="description" content={description} />
+          <meta name="keywords" content={keywords} />
+          <link rel="canonical" href={canonicalUrl} />
+          <meta name="robots" content={robots} />
+        </>
+      )}
 
       {/* AI/GEO Optimization Meta Tags */}
       {aiOptimized && (
@@ -229,21 +234,29 @@ export const SEOHead: React.FC<SEOHeadProps> = ({
       <meta name="target" content="all" />
 
       {/* Open Graph */}
-      <meta property="og:title" content={ogTitle} />
-      <meta property="og:description" content={ogDescription} />
-      <meta property="og:type" content="website" />
-      <meta property="og:url" content={canonicalUrl} />
+      {!hasStaticPrerender && (
+        <>
+          <meta property="og:title" content={ogTitle} />
+          <meta property="og:description" content={ogDescription} />
+          <meta property="og:type" content="website" />
+          <meta property="og:url" content={canonicalUrl} />
+          <meta property="og:image" content={ogImage} />
+        </>
+      )}
       <meta property="og:site_name" content="MPB Health" />
-      <meta property="og:image" content={ogImage} />
       <meta property="og:image:width" content="1200" />
       <meta property="og:image:height" content="630" />
       <meta property="og:locale" content="en_US" />
 
       {/* Twitter Card */}
-      <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:title" content={ogTitle} />
-      <meta name="twitter:description" content={ogDescription} />
-      <meta name="twitter:image" content={ogImage} />
+      {!hasStaticPrerender && (
+        <>
+          <meta name="twitter:card" content="summary_large_image" />
+          <meta name="twitter:title" content={ogTitle} />
+          <meta name="twitter:description" content={ogDescription} />
+          <meta name="twitter:image" content={ogImage} />
+        </>
+      )}
       <meta name="twitter:site" content="@mpbhealth" />
 
       {/* Additional SEO tags */}

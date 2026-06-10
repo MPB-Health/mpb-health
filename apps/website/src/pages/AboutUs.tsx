@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Helmet } from 'react-helmet-async';
+import { MarketingHydrationSeo } from '../components/MarketingHydrationSeo';
 import {
   Heart,
   Shield,
@@ -117,18 +117,7 @@ const AboutUs: React.FC = () => {
 
   return (
     <>
-      <Helmet>
-        <title>About MPB Health - 14+ Years of Affordable Healthcare Solutions</title>
-        <meta
-          name="description"
-          content="MPB Health has served 50,000+ families since 2011. Learn about our mission to provide affordable, community-based healthcare alternatives with transparency and care."
-        />
-        <link rel="canonical" href="https://mpb.health/about-us" />
-        <meta property="og:title" content="About MPB Health - Our Story" />
-        <meta property="og:description" content="14+ years serving families with affordable healthcare solutions." />
-        <meta property="og:url" content="https://mpb.health/about-us" />
-        <meta property="og:type" content="website" />
-      </Helmet>
+      <MarketingHydrationSeo />
 
       <section className="relative pt-20 pb-10 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-cyan-50/50" />

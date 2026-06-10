@@ -233,11 +233,10 @@ export interface SpeakableSchema {
 export interface LocalBusinessSchema {
   '@context': 'https://schema.org';
   /**
-   * Dual @type: `MedicalOrganization` (more specific medical category that AI
-   * crawlers and Google understand for healthcare entities) combined with
-   * `LocalBusiness` (so we keep the GEO/Local SEO properties: geo,
-   * openingHoursSpecification, priceRange, aggregateRating). Schema.org and
-   * Google both support an array of types on a single node.
+   * Dual @type: `MedicalOrganization` (healthcare-adjacent category for AI
+   * crawlers) combined with `LocalBusiness` (GEO/Local SEO: geo, hours,
+   * priceRange). Schema.org and Google both support an array of types on a
+   * single node.
    */
   '@type': ['MedicalOrganization', 'LocalBusiness'];
   '@id': string;
@@ -246,10 +245,6 @@ export interface LocalBusinessSchema {
   url: string;
   telephone: string;
   email?: string;
-  /** Indicates whether the org accepts new clients (helpful for medical org SEO). */
-  isAcceptingNewPatients?: boolean;
-  /** schema.org medicalSpecialty enum value (e.g., "PrimaryCare", "Generic"). */
-  medicalSpecialty?: string;
   address: {
     '@type': 'PostalAddress';
     streetAddress: string;
@@ -273,11 +268,6 @@ export interface LocalBusinessSchema {
   areaServed?: {
     '@type': 'Country';
     name: string;
-  };
-  aggregateRating?: {
-    '@type': 'AggregateRating';
-    ratingValue: string;
-    reviewCount: string;
   };
   sameAs: string[];
 }
@@ -668,14 +658,6 @@ export const generateWebSiteSchema = (): WebSiteSchema => ({
   publisher: {
     '@id': 'https://mpb.health/#organization',
   },
-  potentialAction: {
-    '@type': 'SearchAction',
-    target: {
-      '@type': 'EntryPoint',
-      urlTemplate: 'https://mpb.health/search?q={search_term_string}',
-    },
-    'query-input': 'required name=search_term_string',
-  },
   inLanguage: 'en-US',
 });
 
@@ -701,9 +683,8 @@ export const generateSpeakableSchema = (
  * Generate the LocalBusiness / MedicalOrganization schema for local + GEO SEO.
  *
  * Uses a dual @type so the node is simultaneously a `MedicalOrganization`
- * (semantic medical category — boosts AI / Google understanding of the
- * business) and a `LocalBusiness` (unlocks geo, openingHoursSpecification,
- * priceRange, aggregateRating for Local SEO scoring).
+ * (semantic healthcare category) and a `LocalBusiness` (unlocks geo,
+ * openingHoursSpecification, priceRange for Local SEO scoring).
  */
 export const generateLocalBusinessSchema = (): LocalBusinessSchema => ({
   '@context': 'https://schema.org',
@@ -715,8 +696,6 @@ export const generateLocalBusinessSchema = (): LocalBusinessSchema => ({
   url: 'https://mpb.health/',
   telephone: '+1-855-816-4650',
   email: 'info@mympb.com',
-  isAcceptingNewPatients: true,
-  medicalSpecialty: 'PrimaryCare',
   address: {
     '@type': 'PostalAddress',
     streetAddress: '5301 N Federal Hwy, Suite 155',
@@ -742,11 +721,6 @@ export const generateLocalBusinessSchema = (): LocalBusinessSchema => ({
   areaServed: {
     '@type': 'Country',
     name: 'United States',
-  },
-  aggregateRating: {
-    '@type': 'AggregateRating',
-    ratingValue: '4.9',
-    reviewCount: '3500',
   },
   sameAs: [
     'https://www.facebook.com/mpbhealth',

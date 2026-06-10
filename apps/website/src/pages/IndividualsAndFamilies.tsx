@@ -1,5 +1,5 @@
 import React from 'react';
-import { Helmet } from 'react-helmet-async';
+import { MarketingHydrationSeo } from '../components/MarketingHydrationSeo';
 import { SocialProof } from '../components/blocks/SocialProof';
 import { RadialBenefits } from '../components/blocks/RadialBenefits';
 import { TailoredJourney } from '../components/blocks/TailoredJourney';
@@ -44,36 +44,10 @@ const IndividualsAndFamilies = () => {
 
   return (
     <>
-      <Helmet>
-        <title>Alternatives to Traditional Insurance for Families | MPB</title>
-        <meta
-          name="description"
-          content="Explore alternatives to traditional insurance for families with affordable health coverage, provider freedom, and flexible healthsharing memberships."
-        />
-        <meta name="keywords" content="alternatives to traditional insurance, family health sharing, individual health plan, affordable healthcare, healthsharing memberships" />
-        <meta name="robots" content="index, follow" />
-        <meta name="googlebot" content="index, follow" />
-        <meta name="bingbot" content="index, follow" />
-        <link rel="canonical" href="https://mpb.health/individuals-and-families" />
-
-        {/* Open Graph */}
-        <meta property="og:title" content="Alternatives to Traditional Insurance for Families | MPB" />
-        <meta property="og:description" content="Explore alternatives to traditional insurance for families with affordable health coverage, provider freedom, and flexible healthsharing memberships." />
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://mpb.health/individuals-and-families" />
-        <meta property="og:site_name" content="MPB Health" />
-
-        {/* Twitter */}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Alternatives to Traditional Insurance for Families | MPB" />
-        <meta name="twitter:description" content="Explore alternatives to traditional insurance for families with affordable health coverage and flexible healthsharing memberships." />
-
-        {/* Organization Schema */}
+      <MarketingHydrationSeo>
         <script type="application/ld+json">
           {JSON.stringify(orgSchema)}
         </script>
-
-        {/* Product Schemas */}
         <script type="application/ld+json">
           {JSON.stringify(carePlusSchema)}
         </script>
@@ -83,12 +57,10 @@ const IndividualsAndFamilies = () => {
         <script type="application/ld+json">
           {JSON.stringify(secureHSASchema)}
         </script>
-
-        {/* PAA FAQ Schema */}
         <script type="application/ld+json">
           {JSON.stringify(familiesFaqSchema)}
         </script>
-      </Helmet>
+      </MarketingHydrationSeo>
 
       <IndividualsFamiliesHero />
 

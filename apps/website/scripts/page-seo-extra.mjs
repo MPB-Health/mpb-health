@@ -6,6 +6,9 @@
 
 const SITE = 'https://mpb.health';
 
+/** Root paths with dedicated static prerender (not /forms/:slug). */
+export const STATIC_FORM_ROUTE_PATHS = new Set();
+
 /** @param {string} route @param {object} meta */
 function entry(route, meta) {
   const canonical = meta.canonicalUrl || `${SITE}${route}`;
@@ -25,6 +28,7 @@ function entry(route, meta) {
 /** @param {string} slug @param {string} label @param {string} description */
 function form(slug, label, description) {
   const path = slug.replace(/\/$/, '');
+  STATIC_FORM_ROUTE_PATHS.add(path);
   const title = `${label} | MPB Health Member Form`;
   const base = description.replace(/\s+/g, ' ').trim().replace(/\.+$/, '');
   const desc =

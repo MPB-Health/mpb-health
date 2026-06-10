@@ -60,7 +60,7 @@ Runs on `http://localhost:5173`.
 pnpm --filter @mpbhealth/website build
 ```
 
-Build pipeline: `vite build && node scripts/prerender-seo.mjs && node scripts/prerender-dynamic-seo.mjs && node scripts/generate-sitemap-pages.mjs && node scripts/generate-sitemaps.mjs && node scripts/generate-cms-redirects.mjs && node scripts/prerender-html.mjs`
+Build pipeline: `vite build && node scripts/prerender-seo.mjs && node scripts/prerender-dynamic-seo.mjs && node scripts/generate-sitemap-pages.mjs && node scripts/generate-sitemaps.mjs && node scripts/generate-cms-redirects.mjs && node scripts/prerender-html.mjs` — `prerender-dynamic-seo` also emits `/forms/:slug` HTML from `cognito_forms`.
 
 CMS URL redirects are synced from Supabase into `generated/cms-redirects.mjs` and applied by root `middleware.js` on Vercel.
 

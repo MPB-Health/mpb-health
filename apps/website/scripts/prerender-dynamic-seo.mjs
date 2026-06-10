@@ -19,6 +19,8 @@ import {
   stripHtml,
   writePrerenderedRoute,
 } from './prerender-seo-lib.mjs';
+import { buildFormSeoMeta } from './prerender-forms-lib.mjs';
+import { STATIC_FORM_ROUTE_PATHS } from './page-seo-extra.mjs';
 import { createSupabaseClient, fetchAllRows } from './prerender-supabase.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -101,10 +103,11 @@ async function main() {
 
   const template = readFileSync(TEMPLATE_PATH, 'utf8');
 
-  console.log('\n🔍 prerender-dynamic-seo: fetching blog articles and resources…\n');
+  console.log('\n🔍 prerender-dynamic-seo: fetching blog, resources, and CMS forms…\n');
 
   let blogArticles = [];
   let resources = [];
+  let cmsForms = [];
 
   try {
     blogArticles = await fetchAllRows(
@@ -138,8 +141,23 @@ async function main() {
     console.warn(`  ⚠ resource_library fetch failed: ${err?.message || err}\n`);
   }
 
+  try {
+    cmsForms = await fetchAllRows(
+      supabase,
+      'cognito_forms',
+      'slug, label, description, is_active, requires_auth, updated_at',
+      [
+        ['eq', ['is_active', true]],
+        ['order', ['sort_order', { ascending: true }]],
+      ],
+    );
+  } catch (err) {
+    console.warn(`  ⚠ cognito_forms fetch failed: ${err?.message || err}\n`);
+  }
+
   let blogCount = 0;
   let resourceCount = 0;
+  let formCount = 0;
   let failures = 0;
 
   for (const article of blogArticles) {
@@ -168,13 +186,28 @@ async function main() {
     }
   }
 
+  for (const form of cmsForms) {
+    if (!form.slug || !form.label) continue;
+    try {
+      const built = buildFormSeoMeta(form, STATIC_FORM_ROUTE_PATHS);
+      if (!built) continue;
+      const { route, meta } = built;
+      const outputPath = writePrerenderedRoute({ distDir: DIST_DIR, template, route, meta });
+      formCount += 1;
+      console.log(`  ✓ ${route} → ${path.relative(DIST_DIR, outputPath)}`);
+    } catch (err) {
+      failures += 1;
+      console.warn(`  ⚠ forms/${form.slug} skipped: ${err?.message || err}`);
+    }
+  }
+
   if (failures > 0) {
     console.error(`\n❌ prerender-dynamic-seo: ${failures} route(s) failed.`);
     process.exit(1);
   }
 
   console.log(
-    `\n✅ prerender-dynamic-seo: wrote ${blogCount} blog + ${resourceCount} resource HTML file(s).\n`,
+    `\n✅ prerender-dynamic-seo: wrote ${blogCount} blog + ${resourceCount} resource + ${formCount} CMS form HTML file(s).\n`,
   );
 }
 

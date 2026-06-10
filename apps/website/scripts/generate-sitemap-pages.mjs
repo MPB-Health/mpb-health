@@ -8,7 +8,9 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { EXTRA_PAGE_SEO } from './page-seo-extra.mjs';
+import { buildFormSeoMeta, isIndexableFormMeta } from './prerender-forms-lib.mjs';
 import { SITE_URL } from './prerender-seo-lib.mjs';
+import { createSupabaseClient, fetchAllRows } from './prerender-supabase.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const APP_ROOT = path.resolve(__dirname, '..');
@@ -69,7 +71,32 @@ ${entries}
 `;
 }
 
-function main() {
+async function fetchDynamicFormRoutes() {
+  const supabase = createSupabaseClient();
+  if (!supabase) return [];
+
+  try {
+    const forms = await fetchAllRows(
+      supabase,
+      'cognito_forms',
+      'slug, label, description, is_active, requires_auth',
+      [
+        ['eq', ['is_active', true]],
+        ['order', ['sort_order', { ascending: true }]],
+      ],
+    );
+
+    return forms
+      .map((form) => buildFormSeoMeta(form))
+      .filter((built) => built && isIndexableFormMeta(built.meta))
+      .map(({ route }) => [route, { robots: 'index, follow' }]);
+  } catch (err) {
+    console.warn(`  ⚠ cognito_forms sitemap fetch failed: ${err?.message || err}`);
+    return [];
+  }
+}
+
+async function main() {
   if (!existsSync(DATA_PATH)) {
     console.error(`❌ generate-sitemap-pages: missing ${DATA_PATH}`);
     process.exit(1);
@@ -77,9 +104,20 @@ function main() {
 
   const baseSeo = JSON.parse(readFileSync(DATA_PATH, 'utf8'));
   const pageSeo = { ...baseSeo, ...EXTRA_PAGE_SEO };
-  const indexableRoutes = Object.entries(pageSeo).filter(([, meta]) => isIndexable(meta));
+  const staticRoutes = Object.entries(pageSeo).filter(([, meta]) => isIndexable(meta));
+  const dynamicFormRoutes = await fetchDynamicFormRoutes();
 
-  const xml = buildUrlset(indexableRoutes);
+  const seen = new Set(staticRoutes.map(([route]) => route));
+  const mergedRoutes = [
+    ...staticRoutes,
+    ...dynamicFormRoutes.filter(([route]) => {
+      if (seen.has(route)) return false;
+      seen.add(route);
+      return true;
+    }),
+  ];
+
+  const xml = buildUrlset(mergedRoutes);
   const targets = [path.join(PUBLIC_DIR, 'sitemap-pages.xml')];
   if (existsSync(DIST_DIR)) {
     targets.push(path.join(DIST_DIR, 'sitemap-pages.xml'));
@@ -89,7 +127,13 @@ function main() {
     writeFileSync(target, xml, 'utf8');
   }
 
-  console.log(`\n✅ generate-sitemap-pages: wrote ${indexableRoutes.length} URL(s) to sitemap-pages.xml\n`);
+  console.log(
+    `\n✅ generate-sitemap-pages: wrote ${mergedRoutes.length} URL(s)` +
+      ` (${staticRoutes.length} static + ${dynamicFormRoutes.length} CMS /forms routes) to sitemap-pages.xml\n`,
+  );
 }
 
-main();
+main().catch((err) => {
+  console.error('❌ generate-sitemap-pages failed:', err);
+  process.exit(1);
+});

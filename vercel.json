@@ -5,8 +5,140 @@
   "outputDirectory": "apps/website/dist",
   "framework": "vite",
   "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "www.mpb.health" }],
+      "destination": "https://mpb.health/:path*",
+      "permanent": true
+    },
+    { "source": "/join-team", "destination": "/join-our-team", "permanent": true },
+    { "source": "/join-team/", "destination": "/join-our-team", "permanent": true },
+    { "source": "/download-mpbhealth-app", "destination": "/download-app", "permanent": true },
+    { "source": "/download-mpbhealth-app/", "destination": "/download-app", "permanent": true },
+    { "source": "/individuals", "destination": "/individuals-and-families", "permanent": true },
+    { "source": "/individuals/", "destination": "/individuals-and-families", "permanent": true },
+    { "source": "/freequote", "destination": "/get-started", "permanent": true },
+    { "source": "/freequote/", "destination": "/get-started", "permanent": true },
+    { "source": "/calculator", "destination": "/get-started", "permanent": true },
+    { "source": "/calculator/", "destination": "/get-started", "permanent": true },
+    { "source": "/quote", "destination": "/get-a-quote", "permanent": true },
+    { "source": "/quote/", "destination": "/get-a-quote", "permanent": true },
+    { "source": "/forms/membership-changes", "destination": "/membership-changes", "permanent": true },
+    { "source": "/forms/membership-changes/", "destination": "/membership-changes", "permanent": true },
+    { "source": "/forms/member-change-request", "destination": "/membership-changes", "permanent": true },
+    { "source": "/forms/member-change-request/", "destination": "/membership-changes", "permanent": true },
+    { "source": "/forms/welcome-call-survey", "destination": "/welcome-call-survey", "permanent": true },
+    { "source": "/forms/welcome-call-survey/", "destination": "/welcome-call-survey", "permanent": true },
+    { "source": "/resource-library", "destination": "/resources", "permanent": true },
+    { "source": "/resource-library/", "destination": "/resources", "permanent": true },
+    { "source": "/individuals-families", "destination": "/individuals-and-families", "permanent": true },
+    { "source": "/individuals-families/", "destination": "/individuals-and-families", "permanent": true },
+    { "source": "/businesses-organizations", "destination": "/businesses-and-organizations", "permanent": true },
+    { "source": "/businesses-organizations/", "destination": "/businesses-and-organizations", "permanent": true },
+    { "source": "/review-or-change-advisor", "destination": "/healthcare-advisor-review-change", "permanent": true },
+    { "source": "/review-or-change-advisor/", "destination": "/healthcare-advisor-review-change", "permanent": true },
+    { "source": "/gd-archive", "destination": "/blog", "permanent": true },
+    { "source": "/gd-archive/", "destination": "/blog", "permanent": true },
+    { "source": "/gd-archive-item", "destination": "/blog", "permanent": true },
+    { "source": "/gd-archive-item/", "destination": "/blog", "permanent": true },
     { "source": "/3d-flip-book/direct", "destination": "/3d-flip-book/direct-handbook", "permanent": true },
-    { "source": "/3d-flip-book/direct/", "destination": "/3d-flip-book/direct-handbook", "permanent": true }
+    { "source": "/3d-flip-book/direct/", "destination": "/3d-flip-book/direct-handbook", "permanent": true },
+    { "source": "/3d-flip-book/ebooktravis", "destination": "/3d-flip-book/direct-handbook", "permanent": true },
+    { "source": "/places/:path*", "destination": "/", "permanent": true },
+    { "source": "/benefits/preventive-care", "destination": "/features/preventive-care", "permanent": true },
+    { "source": "/benefits/telehealth", "destination": "/features/primary-care", "permanent": true },
+    { "source": "/benefits/maternity", "destination": "/features/maternity-care", "permanent": true },
+    { "source": "/healthshare-faq", "destination": "/faq", "permanent": true },
+    { "source": "/healthshare-faq/", "destination": "/faq", "permanent": true },
+    { "source": "/all-about-heatlh-share-programs", "destination": "/how-it-works", "permanent": true },
+    { "source": "/medical-cost-sharing", "destination": "/how-it-works", "permanent": true },
+    { "source": "/medical-cost-sharing/", "destination": "/how-it-works", "permanent": true },
+    { "source": "/affordable-health-insurance-alternatives", "destination": "/individuals-and-families", "permanent": true },
+    { "source": "/mental-health-coverage-health-plans", "destination": "/features/mental-health", "permanent": true },
+    {
+      "source": "/the-best-alternative-to-health-insurance-medical-cost-sharing",
+      "destination": "/how-it-works",
+      "permanent": true
+    },
+    {
+      "source": "/the-best-alternative-to-health-insurance-medical-cost-sharing/",
+      "destination": "/how-it-works",
+      "permanent": true
+    },
+    {
+      "source": "/health-sharing-community-groups-how-they-create-affordable-healthcare-alternatives",
+      "destination": "/how-it-works",
+      "permanent": true
+    },
+    {
+      "source": "/health-sharing-community-groups-how-they-create-affordable-healthcare-alternatives/",
+      "destination": "/how-it-works",
+      "permanent": true
+    },
+    {
+      "source": "/exploring-affordable-and-flexible-health-insurance-alternatives-for-small-businesses",
+      "destination": "/businesses-and-organizations",
+      "permanent": true
+    },
+    {
+      "source": "/exploring-affordable-and-flexible-health-insurance-alternatives-for-small-businesses/",
+      "destination": "/businesses-and-organizations",
+      "permanent": true
+    },
+    {
+      "source": "/the-importance-and-benefits-of-group-health-medical-plans",
+      "destination": "/businesses-and-organizations",
+      "permanent": true
+    },
+    {
+      "source": "/the-importance-and-benefits-of-group-health-medical-plans/",
+      "destination": "/businesses-and-organizations",
+      "permanent": true
+    },
+    { "source": "/why-choose-telehealth", "destination": "/features/primary-care", "permanent": true },
+    { "source": "/why-choose-telehealth/", "destination": "/features/primary-care", "permanent": true },
+    { "source": "/case/direct-member-handbook", "destination": "/3d-flip-book/direct-handbook", "permanent": true },
+    { "source": "/case/guideline-changes-effective-01-01-25", "destination": "/resources", "permanent": true },
+    { "source": "/case/how-to-go-shopping", "destination": "/resources", "permanent": true },
+    { "source": "/concierge-playbook", "destination": "/features/membership-concierge", "permanent": true },
+    { "source": "/member-guidelines", "destination": "/3d-flip-book/zion-guidelines", "permanent": true },
+    { "source": "/phones", "destination": "/contact", "permanent": true },
+    { "source": "/support-ticket", "destination": "/support", "permanent": true },
+    { "source": "/support-ticket/", "destination": "/support", "permanent": true },
+    { "source": "/account", "destination": "https://app.mpb.health/login", "permanent": true },
+    { "source": "/account/", "destination": "https://app.mpb.health/login", "permanent": true },
+    { "source": "/product/essentials", "destination": "/plans", "permanent": true },
+    {
+      "source": "/events/women-s-networking-event-with-sa-de-max",
+      "destination": "/events",
+      "permanent": true
+    },
+    {
+      "source": "/blog/Earth-Day-From-Environmental-Awareness-to-Personal-Wellbeing",
+      "destination": "/blog/Earth-Day",
+      "permanent": true
+    },
+    {
+      "source": "/blog/medical-cost-sharing-an-affordable-and-transparent-alternative-to-health-insurance",
+      "destination": "/blog/what-is-health-sharing",
+      "permanent": true
+    },
+    { "source": "/blog/ribbon-cutting", "destination": "/blog", "permanent": true },
+    {
+      "source": "/blog/functional-integrative-medicine-in-2025-redefining-how-americans-approach-health",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/blog/the-silent-storm-why-older-men-struggle-with-mental-health-and-how-to-help",
+      "destination": "/blog",
+      "permanent": true
+    },
+    {
+      "source": "/:year(20\\d{2})/:month(\\d{2})/:day(\\d{2})/:slug*",
+      "destination": "/blog/:slug*",
+      "permanent": true
+    }
   ],
   "rewrites": [
     {

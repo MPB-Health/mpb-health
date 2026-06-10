@@ -60,7 +60,7 @@ Runs on `http://localhost:5173`.
 pnpm --filter @mpbhealth/website build
 ```
 
-Build pipeline: `vite build && node scripts/prerender-seo.mjs && node scripts/prerender-html.mjs`
+Build pipeline: `vite build && node scripts/prerender-seo.mjs && node scripts/prerender-dynamic-seo.mjs && node scripts/prerender-html.mjs`
 
 ## Project Structure
 

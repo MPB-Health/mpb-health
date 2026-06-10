@@ -33,6 +33,11 @@ const ROUTES_TO_PRERENDER = [
   '/about-us',
   '/contact',
   '/get-a-quote',
+  '/features',
+  '/blog',
+  '/resources',
+  '/support',
+  '/get-started',
 ];
 
 async function main() {

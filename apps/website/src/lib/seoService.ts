@@ -9,6 +9,9 @@ export interface SEOMetadata {
   description: string;
   /** Visible page headline; used by build-time prerender for static <h1>. */
   h1?: string;
+  /** Extra crawler-visible copy injected before React hydrates. */
+  bodyExcerpt?: string;
+  ogType?: string;
   keywords?: string;
   ogTitle?: string;
   ogDescription?: string;

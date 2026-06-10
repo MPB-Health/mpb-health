@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "prebuild": "node scripts/optimize-images.mjs",
-    "build": "vite build && node scripts/prerender-seo.mjs && node scripts/prerender-html.mjs",
+    "build": "vite build && node scripts/prerender-seo.mjs && node scripts/prerender-dynamic-seo.mjs && node scripts/prerender-html.mjs",
     "build:prerender": "node scripts/prerender-seo.mjs",
     "optimize-images": "node scripts/optimize-images.mjs",
     "lint": "eslint .",

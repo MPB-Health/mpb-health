@@ -1,27 +1,23 @@
 #!/usr/bin/env node
 /**
- * Build-time SEO prerender.
+ * Build-time SEO prerender for static marketing routes.
  *
- * After `vite build`, this script clones `dist/index.html` for every route
- * listed in `src/lib/page-seo-data.json`, rewrites the <head> meta tags
- * (title, description, canonical, OG, Twitter, keywords, robots) to be
- * route-specific, and writes the result to `dist/<route>/index.html`.
+ * After `vite build`, clones `dist/index.html` for every route in
+ * `page-seo-data.json` + `page-seo-extra.mjs`, rewrites head/body SEO
+ * tags, and writes `dist/<route>/index.html`.
  *
- * Why: Vercel's static-file matching serves `dist/<route>/index.html` BEFORE
- * the SPA-fallback rewrite, so crawlers and social bots see the correct
- * per-route metadata. JS-enabled visitors hydrate normally; react-helmet-async
- * then re-syncs the head from the React tree, with no observable difference.
- *
- * This replaces the previous Vercel Edge middleware (`middleware.ts`) that
- * fetched SEO rows at request time and was prone to runtime failures.
- * The script has zero network dependencies — pure FS I/O on local JSON +
- * the already-bundled `dist/index.html`.
+ * Dynamic blog/resource routes are handled by prerender-dynamic-seo.mjs.
  */
 
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { EXTRA_PAGE_SEO } from './page-seo-extra.mjs';
+import {
+  applyMetadata,
+  routeToOutputPath,
+  writePrerenderedRoute,
+} from './prerender-seo-lib.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -30,190 +26,6 @@ const APP_ROOT = path.resolve(__dirname, '..');
 const DIST_DIR = path.join(APP_ROOT, 'dist');
 const TEMPLATE_PATH = path.join(DIST_DIR, 'index.html');
 const DATA_PATH = path.join(APP_ROOT, 'src', 'lib', 'page-seo-data.json');
-
-const SITE_URL = 'https://mpb.health';
-const DEFAULT_OG_IMAGE = `${SITE_URL}/assets/MPB-Health-No-background.png?v=2`;
-
-function escapeHtml(value) {
-  return String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
-/**
- * Replace the first match of `regex` with `replacement`. If no match exists,
- * the HTML is returned unchanged. Used for tags we KNOW exist in the
- * template (title/description/canonical/OG/Twitter all hard-coded in
- * apps/website/index.html).
- */
-function replaceTag(html, regex, replacement) {
-  if (!regex.test(html)) {
-    return html;
-  }
-  return html.replace(regex, replacement);
-}
-
-/**
- * Insert `tag` once before </head>. No-op if a tag with the same `name=` or
- * `property=` attribute already exists.
- */
-function insertOnce(html, identifierRegex, tag) {
-  if (identifierRegex.test(html)) {
-    return html.replace(identifierRegex, tag);
-  }
-  return html.replace('</head>', `    ${tag}\n  </head>`);
-}
-
-function deriveH1(meta) {
-  if (meta.h1) return meta.h1;
-  const title = meta.title || '';
-  const pipe = title.indexOf('|');
-  return pipe > 0 ? title.slice(0, pipe).trim() : title.trim();
-}
-
-/**
- * Inject a crawler-visible <h1> + intro paragraph into the static HTML body.
- * React removes #seo-static-fallback on mount (see src/main.tsx).
- */
-function injectStaticBody(html, meta) {
-  const h1 = escapeHtml(deriveH1(meta));
-  const description = escapeHtml(meta.description || '');
-
-  const fallback = `    <main id="seo-static-fallback" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;" aria-hidden="true">
-      <h1>${h1}</h1>
-      <p>${description}</p>
-    </main>\n`;
-
-  html = html.replace(/\s*<main id="seo-static-fallback"[^>]*>[\s\S]*?<\/main>\s*/gi, '\n');
-  html = html.replace('<div id="root"></div>', `${fallback}    <div id="root"></div>`);
-
-  html = html.replace(
-    /<h1 style="font-size:2rem;margin:0 0 \.5rem;color:#0f172a;">[^<]*<\/h1>/i,
-    `<h1 style="font-size:2rem;margin:0 0 .5rem;color:#0f172a;">${h1}</h1>`,
-  );
-  html = html.replace(
-    /<p style="font-size:1\.125rem;color:#475569;margin:0 0 1rem;">[\s\S]*?<\/p>/,
-    `<p style="font-size:1.125rem;color:#475569;margin:0 0 1rem;">${description}</p>`,
-  );
-
-  return html;
-}
-
-function applyMetadata(template, meta, route) {
-  const canonical = meta.canonicalUrl || `${SITE_URL}${route}`;
-  const ogImage = meta.ogImage || DEFAULT_OG_IMAGE;
-  const ogTitle = meta.ogTitle || meta.title;
-  const ogDescription = meta.ogDescription || meta.description;
-  const twitterTitle = meta.twitterTitle || ogTitle;
-  const twitterDescription = meta.twitterDescription || ogDescription;
-
-  const title = escapeHtml(meta.title);
-  const description = escapeHtml(meta.description);
-  const safeCanonical = escapeHtml(canonical);
-  const safeOgTitle = escapeHtml(ogTitle);
-  const safeOgDescription = escapeHtml(ogDescription);
-  const safeOgImage = escapeHtml(ogImage);
-  const safeTwitterTitle = escapeHtml(twitterTitle);
-  const safeTwitterDescription = escapeHtml(twitterDescription);
-
-  let html = template;
-
-  html = replaceTag(html, /<title>[^<]*<\/title>/i, `<title>${title}</title>`);
-
-  html = replaceTag(
-    html,
-    /<meta name="description" content="[^"]*"\s*\/?>/i,
-    `<meta name="description" content="${description}" />`,
-  );
-
-  html = replaceTag(
-    html,
-    /<link rel="canonical" href="[^"]*"\s*\/?>/i,
-    `<link rel="canonical" href="${safeCanonical}" />`,
-  );
-
-  html = replaceTag(
-    html,
-    /<meta property="og:title" content="[^"]*"\s*\/?>/i,
-    `<meta property="og:title" content="${safeOgTitle}" />`,
-  );
-
-  html = replaceTag(
-    html,
-    /<meta property="og:description" content="[^"]*"\s*\/?>/i,
-    `<meta property="og:description" content="${safeOgDescription}" />`,
-  );
-
-  html = replaceTag(
-    html,
-    /<meta property="og:url" content="[^"]*"\s*\/?>/i,
-    `<meta property="og:url" content="${safeCanonical}" />`,
-  );
-
-  html = replaceTag(
-    html,
-    /<meta property="og:image" content="[^"]*"\s*\/?>/i,
-    `<meta property="og:image" content="${safeOgImage}" />`,
-  );
-
-  html = replaceTag(
-    html,
-    /<meta name="twitter:title" content="[^"]*"\s*\/?>/i,
-    `<meta name="twitter:title" content="${safeTwitterTitle}" />`,
-  );
-
-  html = replaceTag(
-    html,
-    /<meta name="twitter:description" content="[^"]*"\s*\/?>/i,
-    `<meta name="twitter:description" content="${safeTwitterDescription}" />`,
-  );
-
-  html = replaceTag(
-    html,
-    /<meta name="twitter:image" content="[^"]*"\s*\/?>/i,
-    `<meta name="twitter:image" content="${safeOgImage}" />`,
-  );
-
-  if (meta.keywords) {
-    html = insertOnce(
-      html,
-      /<meta name="keywords" content="[^"]*"\s*\/?>/i,
-      `<meta name="keywords" content="${escapeHtml(meta.keywords)}" />`,
-    );
-  }
-
-  if (meta.robots) {
-    html = insertOnce(
-      html,
-      /<meta name="robots" content="[^"]*"\s*\/?>/i,
-      `<meta name="robots" content="${escapeHtml(meta.robots)}" />`,
-    );
-  }
-
-  // Diagnostic markers so we can verify prerender ran (visible via curl).
-  html = insertOnce(
-    html,
-    /<meta name="x-prerender-route" content="[^"]*"\s*\/?>/i,
-    `<meta name="x-prerender-route" content="${escapeHtml(route)}" />`,
-  );
-
-  html = injectStaticBody(html, meta);
-
-  return html;
-}
-
-function routeToOutputPath(distDir, route) {
-  if (!route.startsWith('/')) {
-    throw new Error(`Route must start with '/': ${route}`);
-  }
-  const trimmed = route.replace(/^\/+|\/+$/g, '');
-  if (trimmed === '') {
-    return path.join(distDir, 'index.html');
-  }
-  return path.join(distDir, trimmed, 'index.html');
-}
 
 function main() {
   if (!existsSync(TEMPLATE_PATH)) {
@@ -230,10 +42,8 @@ function main() {
 
   const template = readFileSync(TEMPLATE_PATH, 'utf8');
   const baseSeo = JSON.parse(readFileSync(DATA_PATH, 'utf8'));
-  // Extra routes fill gaps; hand-curated page-seo-data.json wins on key collision.
   const pageSeo = { ...EXTRA_PAGE_SEO, ...baseSeo };
 
-  // Sanity-check the template has the tags we expect to rewrite.
   const requiredTags = [
     /<title>[^<]*<\/title>/i,
     /<meta name="description" content="[^"]*"/i,
@@ -249,9 +59,6 @@ function main() {
     }
   }
 
-  // Also rewrite dist/index.html itself for the "/" entry — this keeps it
-  // perfectly in sync with the JSON, in case someone edits the JSON but
-  // forgets to update apps/website/index.html.
   const rootMeta = pageSeo['/'];
   if (rootMeta) {
     const rootHtml = applyMetadata(template, rootMeta, '/');
@@ -264,10 +71,7 @@ function main() {
   for (const [route, meta] of Object.entries(pageSeo)) {
     if (route === '/') continue;
     try {
-      const html = applyMetadata(template, meta, route);
-      const outputPath = routeToOutputPath(DIST_DIR, route);
-      mkdirSync(path.dirname(outputPath), { recursive: true });
-      writeFileSync(outputPath, html, 'utf8');
+      const outputPath = writePrerenderedRoute({ distDir: DIST_DIR, template, route, meta });
       count += 1;
       console.log(`  ✓ ${route} → ${path.relative(DIST_DIR, outputPath)}`);
     } catch (err) {

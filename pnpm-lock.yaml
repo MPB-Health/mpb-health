@@ -381,6 +381,9 @@ importers:
       react-dom:
         specifier: 'catalog:'
         version: 18.3.1(react@18.3.1)
+      react-helmet-async:
+        specifier: ^2.0.5
+        version: 2.0.5(react@18.3.1)
       react-hot-toast:
         specifier: ^2.6.0
         version: 2.6.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -6856,7 +6859,7 @@ snapshots:
       sirv: 3.0.2
       tinyglobby: 0.2.15
       tinyrainbow: 2.0.0
-      vitest: 3.2.4(@types/debug@4.1.12)(@types/node@25.3.2)(@vitest/ui@3.2.4)(jsdom@27.4.0)(terser@5.46.0)
+      vitest: 3.2.4(@types/debug@4.1.12)(@types/node@25.3.2)(@vitest/ui@3.2.4)(jsdom@25.0.1)(terser@5.46.0)
 
   '@vitest/utils@3.2.4':
     dependencies:

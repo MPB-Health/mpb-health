@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useCallback } from 'react';
 import { getBrandLogo, AppLayout, PortalSwitcher, Button, detectBrand, type NavItem, type PortalKey } from '@mpbhealth/ui';
 import { Outlet, NavLink, useNavigate, Navigate, useLocation } from 'react-router-dom';
+import { PortalSeo } from '../components/PortalSeo';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import type { LucideIcon } from 'lucide-react';
@@ -571,6 +572,7 @@ export default function MainLayout() {
 
   return (
     <>
+      <PortalSeo />
       {/* Command Palette (Cmd+K) */}
       <CommandPalette />
 

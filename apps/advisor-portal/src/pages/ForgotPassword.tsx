@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabaseUrl } from '@mpbhealth/database';
 import { Mail, ArrowLeft, CheckCircle2, AlertCircle } from 'lucide-react';
+import { AuthPageSeo } from '../components/AuthPageSeo';
 import { useAdvisorPageDebugLog } from '../hooks/useAdvisorPageDebugLog';
 
 /**
@@ -10,6 +11,13 @@ import { useAdvisorPageDebugLog } from '../hooks/useAdvisorPageDebugLog';
  * a default template) and instead sends a branded Resend email with a scanner-proof
  * token_hash URL that only real browsers (executing JS) can exchange for a session.
  */
+const forgotPasswordSeo = (
+  <AuthPageSeo
+    title="Forgot Password | MPB Health Advisor Portal"
+    description="Reset your MPB Health advisor account password. Enter your email to receive a secure password reset link."
+  />
+);
+
 export default function ForgotPassword() {
   useAdvisorPageDebugLog('ForgotPassword');
   const [email, setEmail] = useState('');
@@ -58,6 +66,8 @@ export default function ForgotPassword() {
 
   if (sent) {
     return (
+      <>
+      {forgotPasswordSeo}
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 px-4">
         <div className="w-full max-w-md">
           <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
@@ -87,10 +97,13 @@ export default function ForgotPassword() {
           </div>
         </div>
       </div>
+      </>
     );
   }
 
   return (
+    <>
+    {forgotPasswordSeo}
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 px-4">
       <div className="w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-xl p-8">
@@ -162,5 +175,6 @@ export default function ForgotPassword() {
         </div>
       </div>
     </div>
+    </>
   );
 }

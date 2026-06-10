@@ -3,7 +3,15 @@ import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { supabase, isSupabaseConfigured } from '@mpbhealth/database';
 import toast from 'react-hot-toast';
 import { Lock, Eye, EyeOff, CheckCircle2, AlertCircle } from 'lucide-react';
+import { AuthPageSeo } from '../components/AuthPageSeo';
 import { useAdvisorPageDebugLog } from '../hooks/useAdvisorPageDebugLog';
+
+const resetPasswordSeo = (
+  <AuthPageSeo
+    title="Reset Password | MPB Health Advisor Portal"
+    description="Create a new password for your MPB Health advisor account using your secure reset link."
+  />
+);
 
 export default function ResetPassword() {
   useAdvisorPageDebugLog('ResetPassword');
@@ -203,6 +211,8 @@ export default function ResetPassword() {
   // Verifying token state
   if (verifying) {
     return (
+      <>
+      {resetPasswordSeo}
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 px-4">
         <div className="text-center">
           <div className="animate-spin h-10 w-10 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4" />
@@ -210,11 +220,14 @@ export default function ResetPassword() {
           <p className="text-sm text-gray-500 mt-1">Please wait a moment.</p>
         </div>
       </div>
+      </>
     );
   }
 
   if (linkError) {
     return (
+      <>
+      {resetPasswordSeo}
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 px-4">
         <div className="w-full max-w-md">
           <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
@@ -240,11 +253,14 @@ export default function ResetPassword() {
           </div>
         </div>
       </div>
+      </>
     );
   }
 
   if (success) {
     return (
+      <>
+      {resetPasswordSeo}
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 px-4">
         <div className="w-full max-w-md">
           <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
@@ -259,10 +275,13 @@ export default function ResetPassword() {
           </div>
         </div>
       </div>
+      </>
     );
   }
 
   return (
+    <>
+    {resetPasswordSeo}
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 px-4">
       <div className="w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-xl p-8">
@@ -411,5 +430,6 @@ export default function ResetPassword() {
         </div>
       </div>
     </div>
+    </>
   );
 }

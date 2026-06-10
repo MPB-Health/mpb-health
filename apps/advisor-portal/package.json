@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port 5175",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && node scripts/prerender-seo.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit"
@@ -45,6 +45,7 @@
     "pdfjs-dist": "^4.10.38",
     "react": "catalog:",
     "react-dom": "catalog:",
+    "react-helmet-async": "^2.0.5",
     "react-hot-toast": "^2.6.0",
     "react-markdown": "^9.1.0",
     "react-router-dom": "catalog:"

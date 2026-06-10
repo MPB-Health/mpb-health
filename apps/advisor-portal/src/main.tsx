@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactDOM, { type Root } from 'react-dom/client';
+import { HelmetProvider } from 'react-helmet-async';
 import { BrowserRouter } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
@@ -103,6 +104,8 @@ class ErrorBoundary extends React.Component<
   }
 }
 
+document.getElementById('seo-static-fallback')?.remove();
+
 const rootEl = document.getElementById('root');
 if (!rootEl) {
   throw new Error('Advisor Portal: #root element not found');
@@ -117,13 +120,14 @@ container.__advisorReactRoot = root;
 root.render(
   <React.StrictMode>
     <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <QueryStaleRecovery />
-        <ThemeProvider>
-          {/* Omit v7_startTransition: it desynced lazy route Outlet from the URL. */}
-          <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
-            <App />
-          <Toaster
+      <HelmetProvider>
+        <QueryClientProvider client={queryClient}>
+          <QueryStaleRecovery />
+          <ThemeProvider>
+            {/* Omit v7_startTransition: it desynced lazy route Outlet from the URL. */}
+            <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
+              <App />
+            <Toaster
             position="top-right"
             toastOptions={{
               duration: 4000,
@@ -134,9 +138,10 @@ root.render(
               },
             }}
           />
-        </BrowserRouter>
-      </ThemeProvider>
-    </QueryClientProvider>
+            </BrowserRouter>
+          </ThemeProvider>
+        </QueryClientProvider>
+      </HelmetProvider>
     </ErrorBoundary>
   </React.StrictMode>
 );

@@ -1,0 +1,3 @@
+# advisor.mpb.health is an authenticated advisor workspace — not public marketing.
+User-agent: *
+Disallow: /

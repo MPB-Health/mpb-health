@@ -4,7 +4,15 @@ import { supabase, isSupabaseConfigured } from '@mpbhealth/database';
 import toast from 'react-hot-toast';
 import { Lock, Eye, EyeOff, CheckCircle2, AlertCircle, ShieldCheck } from 'lucide-react';
 import { useAdvisor } from '../contexts/AdvisorContext';
+import { AuthPageSeo } from '../components/AuthPageSeo';
 import { useAdvisorPageDebugLog } from '../hooks/useAdvisorPageDebugLog';
+
+const changePasswordSeo = (
+  <AuthPageSeo
+    title="Change Password | MPB Health Advisor Portal"
+    description="Update your MPB Health advisor account password to keep your Champion Advisor OS workspace secure."
+  />
+);
 
 const PASSWORD_UPDATE_TIMEOUT_MS = 15_000;
 const RETRY_DELAY_MS = 2000;
@@ -158,6 +166,8 @@ export default function ChangePassword() {
 
   if (success) {
     return (
+      <>
+      {changePasswordSeo}
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 px-4">
         <div className="w-full max-w-md">
           <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
@@ -172,10 +182,13 @@ export default function ChangePassword() {
           </div>
         </div>
       </div>
+      </>
     );
   }
 
   return (
+    <>
+    {changePasswordSeo}
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 px-4">
       <div className="w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-xl p-8">
@@ -318,5 +331,6 @@ export default function ChangePassword() {
         </div>
       </div>
     </div>
+    </>
   );
 }

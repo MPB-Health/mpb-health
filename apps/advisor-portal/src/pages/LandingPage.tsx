@@ -11,6 +11,7 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { detectBrand } from '@mpbhealth/ui';
+import { AuthPageSeo } from '../components/AuthPageSeo';
 import {
   ArrowRight,
   ArrowUpRight,
@@ -139,6 +140,11 @@ export default function LandingPage() {
   };
 
   return (
+    <>
+    <AuthPageSeo
+      title="Advisor Platform | ARYX"
+      description="ARYX Advisor OS — the all-in-one platform for health advisors to manage leads, training, and client relationships."
+    />
     <div style={pageStyles.root}>
       {/* Background grain + mesh overlays — persistent across all sections */}
       <div style={pageStyles.grain} aria-hidden />
@@ -157,6 +163,7 @@ export default function LandingPage() {
       <CTASection id="cta" onSignIn={goLogin} />
       <Footer />
     </div>
+    </>
   );
 }
 

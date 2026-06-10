@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase, isSupabaseConfigured } from '@mpbhealth/database';
 import toast from 'react-hot-toast';
 import { LoginLayout, AryxAuthShell, detectBrand } from '@mpbhealth/ui';
+import { AuthPageSeo } from '../components/AuthPageSeo';
 import { useAdvisor } from '../contexts/AdvisorContext';
 import { useAdvisorPageDebugLog } from '../hooks/useAdvisorPageDebugLog';
 
@@ -83,8 +84,17 @@ export default function Login() {
     navigate('/forgot-password');
   };
 
+  const authSeo = (
+    <AuthPageSeo
+      title="Advisor Login | MPB Health"
+      description="Sign in to the MPB Health Advisor Portal to manage leads, training, bulletins, and client support."
+    />
+  );
+
   if (detectBrand() === 'aryx') {
     return (
+      <>
+      {authSeo}
       <AryxAuthShell
         appName="Advisor Portal"
         appDescription="Sign in to access your dashboard"
@@ -93,10 +103,13 @@ export default function Login() {
         showForgotPassword={true}
         onForgotPassword={handleForgotPassword}
       />
+      </>
     );
   }
 
   return (
+    <>
+    {authSeo}
     <LoginLayout
       appName="Advisor Portal"
       appDescription="Sign in to access your dashboard"
@@ -116,5 +129,6 @@ export default function Login() {
         </p>
       }
     />
+    </>
   );
 }

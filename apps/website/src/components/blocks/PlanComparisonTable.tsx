@@ -208,7 +208,7 @@ export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
                                     {feature.feature_value}
                                   </p>
                                 )}
-                                {feature.notes && (
+                                {feature.notes && feature.notes !== feature.feature_value && (
                                   <p className="text-xs text-neutral-500 italic leading-relaxed">
                                     {feature.notes}
                                   </p>

@@ -14,6 +14,18 @@ function isLocalPdf(pdfPath: string): boolean {
   return pdfPath.startsWith('/docs/') || pdfPath.startsWith('/assets/');
 }
 
+/** Encode path segments so +, spaces, and parentheses resolve correctly in embeds. */
+function encodeLocalPdfPath(pdfPath: string): string {
+  if (!pdfPath.startsWith('/')) {
+    return pdfPath;
+  }
+
+  return pdfPath
+    .split('/')
+    .map((segment, index) => (index === 0 ? segment : encodeURIComponent(segment)))
+    .join('/');
+}
+
 /**
  * Convert various PDF URL formats to embeddable iframe URLs.
  * Local /docs/ PDFs are served as-is (native browser PDF viewer).
@@ -21,7 +33,7 @@ function isLocalPdf(pdfPath: string): boolean {
  */
 function getEmbedUrl(pdfPath: string): string {
   if (isLocalPdf(pdfPath)) {
-    return pdfPath;
+    return encodeLocalPdfPath(pdfPath);
   }
 
   const driveShareMatch = pdfPath.match(/drive\.google\.com\/file\/d\/([^/]+)/);
@@ -58,6 +70,10 @@ function getViewUrl(pdfPath: string): string {
     return `https://drive.google.com/file/d/${fileId}/view`;
   }
 
+  if (isLocalPdf(pdfPath)) {
+    return encodeLocalPdfPath(pdfPath);
+  }
+
   return pdfPath;
 }
 
@@ -75,7 +91,7 @@ const HandbookViewer: React.FC<HandbookViewerProps> = ({ title, pdfPath, descrip
     }
     
     const link = document.createElement('a');
-    link.href = pdfPath;
+    link.href = isLocal ? encodeLocalPdfPath(pdfPath) : pdfPath;
     link.download = pdfPath.split('/').pop() || 'handbook.pdf';
     document.body.appendChild(link);
     link.click();

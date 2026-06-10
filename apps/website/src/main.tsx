@@ -43,6 +43,9 @@ if (import.meta.env.DEV) {
   };
 }
 
+// Build-time SEO fallback is for crawlers only; remove before React paints.
+document.getElementById('seo-static-fallback')?.remove();
+
 // Get the root container
 const container = document.getElementById('root');
 

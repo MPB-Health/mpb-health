@@ -21,6 +21,7 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { EXTRA_PAGE_SEO } from './page-seo-extra.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -63,6 +64,41 @@ function insertOnce(html, identifierRegex, tag) {
     return html.replace(identifierRegex, tag);
   }
   return html.replace('</head>', `    ${tag}\n  </head>`);
+}
+
+function deriveH1(meta) {
+  if (meta.h1) return meta.h1;
+  const title = meta.title || '';
+  const pipe = title.indexOf('|');
+  return pipe > 0 ? title.slice(0, pipe).trim() : title.trim();
+}
+
+/**
+ * Inject a crawler-visible <h1> + intro paragraph into the static HTML body.
+ * React removes #seo-static-fallback on mount (see src/main.tsx).
+ */
+function injectStaticBody(html, meta) {
+  const h1 = escapeHtml(deriveH1(meta));
+  const description = escapeHtml(meta.description || '');
+
+  const fallback = `    <main id="seo-static-fallback" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;" aria-hidden="true">
+      <h1>${h1}</h1>
+      <p>${description}</p>
+    </main>\n`;
+
+  html = html.replace(/\s*<main id="seo-static-fallback"[^>]*>[\s\S]*?<\/main>\s*/gi, '\n');
+  html = html.replace('<div id="root"></div>', `${fallback}    <div id="root"></div>`);
+
+  html = html.replace(
+    /<h1 style="font-size:2rem;margin:0 0 \.5rem;color:#0f172a;">[^<]*<\/h1>/i,
+    `<h1 style="font-size:2rem;margin:0 0 .5rem;color:#0f172a;">${h1}</h1>`,
+  );
+  html = html.replace(
+    /<p style="font-size:1\.125rem;color:#475569;margin:0 0 1rem;">[\s\S]*?<\/p>/,
+    `<p style="font-size:1.125rem;color:#475569;margin:0 0 1rem;">${description}</p>`,
+  );
+
+  return html;
 }
 
 function applyMetadata(template, meta, route) {
@@ -163,6 +199,8 @@ function applyMetadata(template, meta, route) {
     `<meta name="x-prerender-route" content="${escapeHtml(route)}" />`,
   );
 
+  html = injectStaticBody(html, meta);
+
   return html;
 }
 
@@ -191,7 +229,9 @@ function main() {
   }
 
   const template = readFileSync(TEMPLATE_PATH, 'utf8');
-  const pageSeo = JSON.parse(readFileSync(DATA_PATH, 'utf8'));
+  const baseSeo = JSON.parse(readFileSync(DATA_PATH, 'utf8'));
+  // Extra routes fill gaps; hand-curated page-seo-data.json wins on key collision.
+  const pageSeo = { ...EXTRA_PAGE_SEO, ...baseSeo };
 
   // Sanity-check the template has the tags we expect to rewrite.
   const requiredTags = [

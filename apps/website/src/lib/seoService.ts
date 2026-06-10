@@ -7,6 +7,8 @@ import pageSeoData from './page-seo-data.json';
 export interface SEOMetadata {
   title: string;
   description: string;
+  /** Visible page headline; used by build-time prerender for static <h1>. */
+  h1?: string;
   keywords?: string;
   ogTitle?: string;
   ogDescription?: string;

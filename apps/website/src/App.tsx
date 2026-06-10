@@ -107,6 +107,7 @@ const ScheduleWelcomeCall = lazyAuto(() => import('./pages/ScheduleWelcomeCall')
 const UpdateFormOfPaymentForm = lazyAuto(() => import('./pages/forms/UpdateFormOfPaymentForm'));
 const WelcomeCallSurveyForm = lazyAuto(() => import('./pages/forms/WelcomeCallSurveyForm'));
 const DependentOver18InformationForm = lazyAuto(() => import('./pages/forms/DependentOver18InformationForm'));
+const ReviewOrChangeAdvisor = lazyAuto(() => import('./pages/ReviewOrChangeAdvisor'));
 
 // Auth
 const AuthConfirm = lazyAuto(() => import('./pages/AuthConfirm'));
@@ -393,6 +394,7 @@ const App = () => {
                   <Route path="/update-form-of-payment" element={<UpdateFormOfPaymentForm />} />
                   <Route path="/welcome-call-survey" element={<WelcomeCallSurveyForm />} />
                   <Route path="/dependent-over-18-information" element={<DependentOver18InformationForm />} />
+                  <Route path="/healthcare-advisor-review-change" element={<ReviewOrChangeAdvisor />} />
 
                   {/* Login Routes */}
                   <Route path="/login" element={<Login />} />
@@ -424,7 +426,7 @@ const App = () => {
                   {/* Legacy redirects — point old URLs to canonical member portal paths */}
                   <Route path="/member-portal" element={<Navigate to="/member" replace />} />
                   <Route path="/member-portal/account" element={<MemberPortal />} />
-                  <Route path="/review-or-change-advisor" element={<Navigate to="/member/forms/change-advisor" replace />} />
+                  <Route path="/review-or-change-advisor" element={<Navigate to="/healthcare-advisor-review-change" replace />} />
                   <Route path="/schedule-welcome-call" element={<Navigate to="/member/forms/welcome-call" replace />} />
 
                   {/* Protected Admin Routes */}

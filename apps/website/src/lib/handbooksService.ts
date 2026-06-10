@@ -267,6 +267,16 @@ export const PLAN_TYPES: { value: PlanType; label: string }[] = [
   { value: 'general', label: 'General' },
 ];
 
+/** Legacy handbook URLs that differ from CMS slugs. */
+const HANDBOOK_SLUG_ALIASES: Record<string, string> = {
+  direct: 'direct-handbook',
+};
+
+function resolveHandbookSlug(slug: string): string {
+  const normalized = slug.replace(/^\/+|\/+$/g, '');
+  return HANDBOOK_SLUG_ALIASES[normalized] ?? normalized;
+}
+
 // ============================================================================
 // Read Operations
 // ============================================================================
@@ -336,8 +346,9 @@ export async function getActiveHandbooks(): Promise<HandbookRecord[]> {
  * Get a single handbook by slug
  */
 export async function getHandbookBySlug(slug: string): Promise<HandbookRecord | null> {
+  const resolvedSlug = resolveHandbookSlug(slug);
   const allHandbooks = await getAllHandbooks();
-  return allHandbooks.find((h) => h.slug === slug) || null;
+  return allHandbooks.find((h) => h.slug === resolvedSlug) || null;
 }
 
 /**

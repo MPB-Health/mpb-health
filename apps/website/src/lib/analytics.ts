@@ -277,7 +277,7 @@ function ensureClarity(projectId: string): void {
   } as typeof window.clarity & { q?: unknown[][] };
 
   window.clarity = clarity;
-  appendExternalScript(`https://www.clarity.ms/tag/${projectId}`);
+  appendExternalScript(`https://www.clarity.ms/tag/${projectId}?ref=bwt`);
 }
 
 function ensureHotjar(siteId: string, version: string): void {

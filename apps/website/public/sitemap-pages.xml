@@ -630,7 +630,43 @@
     <loc>https://mpb.health/support</loc>
     <lastmod>2026-06-10</lastmod>
     <changefreq>monthly</changefreq>
+<<<<<<< Updated upstream
     <priority>0.7</priority>
+=======
+    <priority>0.6</priority>
+  </url>
+
+  <!-- Education -->
+  <url>
+    <loc>https://mpb.health/education-enrollment</loc>
+    <lastmod>2026-02-25</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- Careers -->
+  <url>
+    <loc>https://mpb.health/join-our-team</loc>
+    <lastmod>2026-02-25</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+
+  <!-- Mobile App -->
+  <url>
+    <loc>https://mpb.health/download-app</loc>
+    <lastmod>2026-03-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- Legal Pages -->
+  <url>
+    <loc>https://mpb.health/privacy-policy</loc>
+    <lastmod>2026-02-25</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+>>>>>>> Stashed changes
   </url>
 
   <url>

@@ -90,7 +90,7 @@ export default function PlanComparison() {
               Compare Memberships
             </h1>
             <p className="mt-4 text-xl text-neutral-600 max-w-3xl mx-auto">
-              Select memberships to compare features, benefits, and coverage options side by side
+              Select memberships to compare features side by side
             </p>
           </div>
 
@@ -242,7 +242,7 @@ export default function PlanComparison() {
                   Select at least one membership above to start comparing
                 </p>
                 <p className="text-sm text-neutral-500">
-                  Choose multiple memberships to see a detailed side-by-side comparison of features and benefits
+                  Choose multiple memberships to see a detailed side-by-side comparison of features
                 </p>
               </div>
             </Card>

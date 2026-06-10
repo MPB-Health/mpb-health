@@ -32,7 +32,6 @@ const SITE_PAGE_COMPONENTS: Record<string, React.LazyExoticComponent<ComponentTy
   '/state-notices': lazyPage(() => import('../pages/StateNotices')),
   '/washington-statement': lazyPage(() => import('../pages/WashingtonStatement')),
   '/education-enrollment': lazyPage(() => import('../pages/EducationEnrollment')),
-  '/care-support-hub': lazyPage(() => import('../pages/CareSupportHub')),
   '/insights-analytics': lazyPage(() => import('../pages/InsightsAnalytics')),
   '/resources': lazyPage(() => import('../pages/ResourceLibrary')),
   '/features': lazyPage(() => import('../pages/Features')),

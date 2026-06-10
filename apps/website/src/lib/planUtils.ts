@@ -93,48 +93,6 @@ export function getFeatureForPlan(
   ) || null;
 }
 
-function getFeatureForPlanLenient(
-  plan: PlanWithDetails,
-  category: string,
-  featureName: string,
-): PlanFeature | null {
-  const exact = getFeatureForPlan(plan, category, featureName);
-  if (exact) return exact;
-  const want = featureName.trim().toLowerCase();
-  return (
-    plan.features.find(
-      (f) => f.category === category && f.feature_name.trim().toLowerCase() === want,
-    ) ?? null
-  );
-}
-
-/**
- * Preventive Care rows are often missing for some plans in CMS while the left column plan has full data.
- * For any empty cell, reuse the **leftmost plan column**’s row first, then any other selected plan (lenient name match).
- */
-export function getFeatureForPlanOrPreventivePeerMirror(
-  plansInComparison: PlanWithDetails[],
-  plan: PlanWithDetails,
-  category: string,
-  featureName: string,
-): PlanFeature | null {
-  const own = getFeatureForPlanLenient(plan, category, featureName);
-  if (own) return own;
-  if (category !== 'Preventive Care') return null;
-
-  const leftCol = plansInComparison[0];
-  if (leftCol && leftCol.id !== plan.id) {
-    const fromLeft = getFeatureForPlanLenient(leftCol, category, featureName);
-    if (fromLeft) return fromLeft;
-  }
-  for (const peer of plansInComparison) {
-    if (peer.id === plan.id) continue;
-    const mirrored = getFeatureForPlanLenient(peer, category, featureName);
-    if (mirrored) return mirrored;
-  }
-  return null;
-}
-
 export function formatSharingDetails(plan: PlanWithDetails): string[] {
   const details: string[] = [];
   const sharing = plan.sharing_details;

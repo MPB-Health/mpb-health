@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { GraduationCap, HeartPulse, BarChart3, ArrowRight } from 'lucide-react';
+import { GraduationCap, BarChart3, ArrowRight } from 'lucide-react';
 import { Card } from '../ui/Card';
 
 interface SpecializedSolution {
@@ -24,16 +24,6 @@ const solutions: SpecializedSolution[] = [
     gradient: 'from-blue-600 to-cyan-500',
     iconBg: 'bg-blue-100',
     iconColor: 'text-blue-700'
-  },
-  {
-    id: 'care-support-hub',
-    icon: HeartPulse,
-    title: 'Care & Support Hub',
-    description: '24/7 telehealth, nurse hotline, care navigation, and wellness resources.',
-    link: '/care-support-hub',
-    gradient: 'from-blue-600 to-cyan-500',
-    iconBg: 'bg-teal-100',
-    iconColor: 'text-teal-700'
   },
   {
     id: 'insights-analytics',

@@ -201,7 +201,6 @@ const DynamicFormPage = lazyAuto(() => import('./pages/forms/DynamicFormPage'));
 
 // Additional Features
 const EducationEnrollment = lazyAuto(() => import('./pages/EducationEnrollment'));
-const CareSupportHub = lazyAuto(() => import('./pages/CareSupportHub'));
 const InsightsAnalytics = lazyAuto(() => import('./pages/InsightsAnalytics'));
 const DownloadApp = lazyAuto(() => import('./pages/DownloadApp'));
 
@@ -348,6 +347,8 @@ const App = () => {
                   <Route path="/individuals-families" element={<Navigate to="/individuals-and-families" replace />} />
                   <Route path="/businesses-organizations" element={<Navigate to="/businesses-and-organizations" replace />} />
                   <Route path="/resource-library" element={<Navigate to="/resources" replace />} />
+                  <Route path="/resources/how-to-submit-a-sharing-need" element={<Navigate to="/resources/how-to-submit-a-sharing-request" replace />} />
+                  <Route path="/care-support-hub" element={<Navigate to="/support" replace />} />
                   {/* Marketing pages: CMS block editor overrides when published */}
                   {MANAGED_SITE_PATHS.map((sitePath) => (
                     <Route

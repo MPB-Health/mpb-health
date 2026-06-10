@@ -46,7 +46,6 @@ export const SITE_PAGES_CATALOG: SitePageCatalogEntry[] = [
   { path: '/contact', slug: 'contact', title: 'Contact', group: 'info' },
   { path: '/join-our-team', slug: 'join-our-team', title: 'Join Our Team', group: 'info' },
   { path: '/member-stories', slug: 'member-stories', title: 'Member Stories', group: 'info' },
-  { path: '/care-support-hub', slug: 'care-support-hub', title: 'Care & Support Hub', group: 'info' },
   {
     path: '/education-enrollment',
     slug: 'education-enrollment',

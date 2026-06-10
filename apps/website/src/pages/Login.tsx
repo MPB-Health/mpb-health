@@ -17,7 +17,7 @@ export default function Login() {
     <>
     <AuthPageSeo
       title="Member Login | MPB Health"
-      description="Sign in to your MPB Health member account or get started with a personalized health sharing plan."
+      description="Sign in to your MPB Health member account or get started with personalized health sharing options."
     />
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-cyan-50/40">
       {/* Background Pattern */}
@@ -38,7 +38,7 @@ export default function Login() {
             Welcome to MPB Health
           </h1>
           <p className="text-lg text-gray-600 leading-relaxed">
-            Access your member benefits or get started with a personalized health sharing plan
+            Access your member benefits or get started with personalized health sharing options
           </p>
         </div>
 
@@ -109,7 +109,7 @@ export default function Login() {
               </h2>
               
               <p className="text-gray-600 mb-6 leading-relaxed">
-                Discover affordable health sharing plans tailored to your needs. Get a personalized quote in just 60 seconds.
+                Discover affordable health sharing options tailored to your needs. Get a personalized quote in just 60 seconds.
               </p>
 
               <ul className="space-y-3 mb-8">

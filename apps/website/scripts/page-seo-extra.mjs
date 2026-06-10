@@ -254,7 +254,7 @@ const entries = [
     title: 'Member Login | MPB Health',
     h1: 'Welcome to MPB Health',
     description:
-      'Sign in to your MPB Health member account or get started with a personalized health sharing plan. Member portal access for existing members.',
+      'Sign in to your MPB Health member account or get started with personalized health sharing options. Member portal access for existing members.',
     robots: 'noindex, follow',
   }),
   entry('/forgot-password', {

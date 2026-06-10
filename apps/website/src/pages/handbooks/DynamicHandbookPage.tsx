@@ -86,7 +86,13 @@ const DynamicHandbookPage: React.FC = () => {
     <>
       <Helmet>
         <title>{handbook.name} | MPB Health</title>
-        <meta name="description" content={handbook.description || `View the ${handbook.name}`} />
+        <meta
+          name="description"
+          content={
+            handbook.description ||
+            `Download the ${handbook.name} from MPB Health. View plan benefits, member guidelines, provider resources, and enrollment details in this member handbook.`
+          }
+        />
       </Helmet>
       <HandbookViewer
         title={handbook.name}

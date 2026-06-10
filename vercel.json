@@ -1,5 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "pnpm install && node apps/website/scripts/generate-cms-redirects.mjs",
   "buildCommand": "pnpm turbo build --filter=@mpbhealth/website",
   "outputDirectory": "apps/website/dist",
   "framework": "vite",

@@ -7,6 +7,14 @@ import { Label } from '../components/ui/Label';
 import { Card } from '../components/ui/Card';
 import { PasswordStrengthMeter } from '../components/ui/PasswordStrengthMeter';
 import { AlertCircle, CheckCircle, Eye, EyeOff, RefreshCw } from 'lucide-react';
+import { AuthPageSeo } from '../components/AuthPageSeo';
+
+const resetPageSeo = (
+  <AuthPageSeo
+    title="Reset Password | MPB Health"
+    description="Create a new password for your MPB Health member account using your secure reset link."
+  />
+);
 
 const ResetPassword = () => {
   const navigate = useNavigate();
@@ -154,15 +162,20 @@ const ResetPassword = () => {
 
   if (isValidToken === null) {
     return (
+      <>
+      {resetPageSeo}
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-neutral-100 flex items-center justify-center p-4">
         <div className="animate-pulse text-neutral-600">Verifying reset link...</div>
       </div>
+      </>
     );
   }
 
   if (isValidToken === false) {
     const isConfigError = error.includes('not configured');
     return (
+      <>
+      {resetPageSeo}
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-neutral-100 flex items-center justify-center p-4">
         <Card className="w-full max-w-md p-8">
           <div className="flex flex-col items-center text-center space-y-4">
@@ -200,11 +213,14 @@ const ResetPassword = () => {
           </div>
         </Card>
       </div>
+      </>
     );
   }
 
   if (success) {
     return (
+      <>
+      {resetPageSeo}
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-neutral-100 flex items-center justify-center p-4">
         <Card className="w-full max-w-md p-8">
           <div className="flex flex-col items-center text-center space-y-4">
@@ -218,10 +234,13 @@ const ResetPassword = () => {
           </div>
         </Card>
       </div>
+      </>
     );
   }
 
   return (
+    <>
+    {resetPageSeo}
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-neutral-100 flex items-center justify-center p-4">
       <Card className="w-full max-w-md p-8">
         <div className="text-center mb-8">
@@ -306,6 +325,7 @@ const ResetPassword = () => {
         </form>
       </Card>
     </div>
+    </>
   );
 };
 

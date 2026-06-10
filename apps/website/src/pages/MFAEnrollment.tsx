@@ -6,6 +6,7 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
 import { mfaService } from '../lib/mfaService';
+import { AuthPageSeo } from '../components/AuthPageSeo';
 
 export default function MFAEnrollment() {
   const navigate = useNavigate();
@@ -114,6 +115,11 @@ export default function MFAEnrollment() {
   };
 
   return (
+    <>
+    <AuthPageSeo
+      title="MFA Enrollment | MPB Health"
+      description="Set up multi-factor authentication for your MPB Health member account to add an extra layer of sign-in security."
+    />
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-slate-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-2xl w-full">
         <div className="text-center mb-8">
@@ -346,5 +352,6 @@ export default function MFAEnrollment() {
         </div>
       </div>
     </div>
+    </>
   );
 }

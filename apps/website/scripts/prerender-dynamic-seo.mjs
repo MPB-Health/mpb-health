@@ -12,8 +12,6 @@
 import { readFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadEnv } from 'vite';
-import { createClient } from '@supabase/supabase-js';
 import {
   SITE_URL,
   DEFAULT_OG_IMAGE,
@@ -21,6 +19,7 @@ import {
   stripHtml,
   writePrerenderedRoute,
 } from './prerender-seo-lib.mjs';
+import { createSupabaseClient, fetchAllRows } from './prerender-supabase.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -28,41 +27,6 @@ const __dirname = path.dirname(__filename);
 const APP_ROOT = path.resolve(__dirname, '..');
 const DIST_DIR = path.join(APP_ROOT, 'dist');
 const TEMPLATE_PATH = path.join(DIST_DIR, 'index.html');
-
-const PAGE_SIZE = 100;
-
-function loadSupabaseConfig() {
-  const repoRoot = path.resolve(APP_ROOT, '../..');
-  const env = {
-    ...loadEnv('production', repoRoot, ''),
-    ...loadEnv('production', APP_ROOT, ''),
-  };
-  const url = env.VITE_SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-  const key = env.VITE_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
-  return { url, key };
-}
-
-async function fetchAllRows(supabase, table, select, filters) {
-  const rows = [];
-  let from = 0;
-
-  while (true) {
-    let query = supabase.from(table).select(select).range(from, from + PAGE_SIZE - 1);
-    for (const [method, args] of filters) {
-      query = query[method](...args);
-    }
-
-    const { data, error } = await query;
-    if (error) throw error;
-    if (!data?.length) break;
-
-    rows.push(...data);
-    if (data.length < PAGE_SIZE) break;
-    from += PAGE_SIZE;
-  }
-
-  return rows;
-}
 
 function blogArticleToMeta(article) {
   const route = `/blog/${article.slug}`;
@@ -126,18 +90,14 @@ async function main() {
     process.exit(1);
   }
 
-  const { url, key } = loadSupabaseConfig();
-  if (!url || !key) {
+  const supabase = createSupabaseClient();
+  if (!supabase) {
     console.warn(
       '\n⚠️  prerender-dynamic-seo: Supabase env not configured — skipping blog/resource prerender.',
       '\n   Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY for full SEO coverage.\n',
     );
     return;
   }
-
-  const supabase = createClient(url, key, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
 
   const template = readFileSync(TEMPLATE_PATH, 'utf8');
 

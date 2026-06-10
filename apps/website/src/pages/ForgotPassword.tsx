@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Helmet } from 'react-helmet-async';
+import { AuthPageSeo } from '../components/AuthPageSeo';
 import { supabase } from '../lib/supabase';
 import { AUTH_URLS } from '@mpbhealth/config';
 import { Button } from '../components/ui/button';
@@ -49,9 +49,7 @@ const ForgotPassword: React.FC = () => {
   if (success) {
     return (
       <>
-        <Helmet>
-          <title>Check Your Email - MPB Health</title>
-        </Helmet>
+        <AuthPageSeo title="Check Your Email | MPB Health" />
         <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4">
           <Card className="w-full max-w-md p-8 shadow-xl">
             <div className="flex flex-col items-center text-center space-y-4">
@@ -90,10 +88,10 @@ const ForgotPassword: React.FC = () => {
 
   return (
     <>
-      <Helmet>
-        <title>Forgot Password - MPB Health</title>
-        <meta name="description" content="Reset your MPB Health account password" />
-      </Helmet>
+      <AuthPageSeo
+        title="Forgot Password | MPB Health"
+        description="Reset your MPB Health member account password. Enter your email to receive a secure password reset link."
+      />
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4">
         <Card className="w-full max-w-md p-8 shadow-xl">
           {/* Logo/Header */}

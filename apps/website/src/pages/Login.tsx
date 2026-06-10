@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { AuthPageSeo } from '../components/AuthPageSeo';
 import { 
   UserCircle, 
   ExternalLink, 
@@ -13,6 +14,11 @@ import {
 
 export default function Login() {
   return (
+    <>
+    <AuthPageSeo
+      title="Member Login | MPB Health"
+      description="Sign in to your MPB Health member account or get started with a personalized health sharing plan."
+    />
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-cyan-50/40">
       {/* Background Pattern */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -165,5 +171,6 @@ export default function Login() {
         </div>
       </div>
     </div>
+    </>
   );
 }

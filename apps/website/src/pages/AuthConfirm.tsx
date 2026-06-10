@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { AuthPageSeo } from '../components/AuthPageSeo';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { AUTH_SAFE_REDIRECT_DESTINATIONS } from '@mpbhealth/config';
 
@@ -184,6 +185,11 @@ const AuthConfirm = () => {
   }, [navigate, searchParams]);
 
   return (
+    <>
+    <AuthPageSeo
+      title="Confirm Account | MPB Health"
+      description="Confirm your MPB Health account or complete a secure password reset from your email link."
+    />
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-neutral-100 flex items-center justify-center p-4">
       <div className="text-center">
         <div className="inline-block w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4" />
@@ -191,6 +197,7 @@ const AuthConfirm = () => {
         <p className="text-sm text-neutral-500 mt-2">Please wait a moment.</p>
       </div>
     </div>
+    </>
   );
 };
 

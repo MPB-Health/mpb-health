@@ -246,6 +246,41 @@ const entries = [
       'Secure administrator login for MPB Health internal staff. Authorized personnel only — not a public member or enrollment page.',
     robots: 'noindex, follow',
   }),
+  entry('/login', {
+    title: 'Member Login | MPB Health',
+    h1: 'Welcome to MPB Health',
+    description:
+      'Sign in to your MPB Health member account or get started with a personalized health sharing plan. Member portal access for existing members.',
+    robots: 'noindex, follow',
+  }),
+  entry('/forgot-password', {
+    title: 'Forgot Password | MPB Health',
+    h1: 'Forgot Password',
+    description:
+      'Reset your MPB Health member account password. Enter your email to receive a secure password reset link.',
+    robots: 'noindex, follow',
+  }),
+  entry('/reset-password', {
+    title: 'Reset Password | MPB Health',
+    h1: 'Reset Password',
+    description:
+      'Create a new password for your MPB Health member account using your secure reset link.',
+    robots: 'noindex, follow',
+  }),
+  entry('/auth/confirm', {
+    title: 'Confirm Account | MPB Health',
+    h1: 'Confirm Account',
+    description:
+      'Confirm your MPB Health account or complete a secure password reset from your email link.',
+    robots: 'noindex, follow',
+  }),
+  entry('/mfa-enrollment', {
+    title: 'MFA Enrollment | MPB Health',
+    h1: 'Multi-Factor Authentication',
+    description:
+      'Set up multi-factor authentication for your MPB Health member account to add an extra layer of sign-in security.',
+    robots: 'noindex, follow',
+  }),
 ];
 
 export const EXTRA_PAGE_SEO = Object.fromEntries(entries);

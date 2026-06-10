@@ -7,7 +7,7 @@ const StateNotices = () => {
     <>
       <Helmet>
         <title>State Notices | MPB Health</title>
-        <meta name="description" content="State-specific notices regarding medical cost sharing and health care sharing ministries." />
+        <meta name="description" content="View state-specific notices for MPB Health medical cost sharing and health care sharing ministries. Important regulatory disclosures and availability by state of residence." />
       </Helmet>
 
       <div className="min-h-screen bg-white">

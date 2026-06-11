@@ -186,7 +186,7 @@ const HeaderWithAuth = () => {
 
   // Static form labels that are already in the menu - used to prevent duplicates
   const staticFormLabels = new Set([
-    'Member Updates', 'Update Payment', 'Dependent Over 18 Info', 'Refer a Friend',
+    'Membership Changes', 'Update Payment', 'Dependent Over 18 Info', 'Refer a Friend',
     'Review Us', 'Member Feedback', 'HIPAA Authorization', 'RX, Labs, Imaging',
     'Dr. Appt. Scheduling', 'Schedule a Welcome Call', 'Cancel Membership',
     'Welcome Call Webinar Questionnaire', 'Schedule Welcome Call', 'Welcome Call Survey',
@@ -334,7 +334,7 @@ const HeaderWithAuth = () => {
           children: [
             {
               id: 'membership-changes-public',
-              label: 'Member Updates',
+              label: 'Membership Changes',
               description: 'Update your membership information',
               icon: 'Edit3',
               href: '/membership-changes',
@@ -1166,7 +1166,7 @@ const HeaderWithAuth = () => {
                     >
                       <div className="flex items-center space-x-2">
                         <Edit3 className="h-4 w-4 text-primary" />
-                        <span>Member Updates</span>
+                        <span>Membership Changes</span>
                       </div>
                     </Link>
                     <Link

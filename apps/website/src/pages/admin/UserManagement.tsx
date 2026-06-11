@@ -48,6 +48,8 @@ import {
 } from '../../lib/userRolesService';
 import { toast } from 'sonner';
 import { createClientLogger } from '@mpbhealth/utils';
+import { passwordSecurityService } from '../../lib/passwordSecurityService';
+import { PasswordStrengthMeter } from '../../components/ui/PasswordStrengthMeter';
 import { cn } from '../../lib/utils';
 import AddUserModal from '../../components/admin/AddUserModal';
 
@@ -135,6 +137,8 @@ const UserManagement: React.FC = () => {
   // Password management state
   const [passwordModal, setPasswordModal] = useState<{ userId: string; email: string } | null>(null);
   const [newPassword, setNewPassword] = useState('');
+  const passwordValidation = passwordSecurityService.validatePassword(newPassword);
+  const passwordPolicyValid = passwordValidation.valid;
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [passwordSaving, setPasswordSaving] = useState(false);
@@ -249,8 +253,9 @@ const UserManagement: React.FC = () => {
   const handleChangePassword = async () => {
     if (!passwordModal) return;
 
-    if (newPassword.length < 8) {
-      toast.error('Password must be at least 8 characters');
+    const passwordValidation = passwordSecurityService.validatePassword(newPassword);
+    if (!passwordValidation.valid) {
+      toast.error(passwordValidation.errors[0] || 'Password does not meet security requirements');
       return;
     }
 
@@ -1111,7 +1116,7 @@ const UserManagement: React.FC = () => {
                     type={showPassword ? 'text' : 'password'}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Enter new password"
+                    placeholder="At least 12 characters with upper, lower, number, symbol"
                     className="pr-10"
                   />
                   <button
@@ -1122,6 +1127,7 @@ const UserManagement: React.FC = () => {
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
+                <PasswordStrengthMeter password={newPassword} />
               </div>
 
               <div>
@@ -1136,8 +1142,10 @@ const UserManagement: React.FC = () => {
                 />
               </div>
 
-              {newPassword && newPassword.length < 8 && (
-                <p className="text-sm text-amber-600">Password must be at least 8 characters</p>
+              {newPassword && !passwordPolicyValid && (
+                <p className="text-sm text-amber-600">
+                  {passwordValidation.errors[0] || 'Password must meet all security requirements'}
+                </p>
               )}
 
               {confirmPassword && newPassword !== confirmPassword && (
@@ -1158,7 +1166,11 @@ const UserManagement: React.FC = () => {
               </Button>
               <Button
                 onClick={handleChangePassword}
-                disabled={passwordSaving || newPassword.length < 8 || newPassword !== confirmPassword}
+                disabled={
+                  passwordSaving ||
+                  !passwordPolicyValid ||
+                  newPassword !== confirmPassword
+                }
               >
                 {passwordSaving ? (
                   <>

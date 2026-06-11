@@ -11,6 +11,18 @@ interface UpdatePasswordRequest {
   password: string;
 }
 
+function validateAdminPassword(password: string): string | null {
+  if (!password) return "Missing password";
+  if (password.length < 12) return "Password must be at least 12 characters";
+  if (!/[A-Z]/.test(password)) return "Password must contain at least one uppercase letter";
+  if (!/[a-z]/.test(password)) return "Password must contain at least one lowercase letter";
+  if (!/\d/.test(password)) return "Password must contain at least one number";
+  if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)) {
+    return "Password must contain at least one special character";
+  }
+  return null;
+}
+
 Deno.serve(async (req: Request) => {
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
@@ -101,9 +113,10 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    if (password.length < 8) {
+    const policyError = validateAdminPassword(password);
+    if (policyError) {
       return new Response(
-        JSON.stringify({ error: "Password must be at least 8 characters" }),
+        JSON.stringify({ error: policyError }),
         { status: 400, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
       );
     }
@@ -135,8 +148,13 @@ Deno.serve(async (req: Request) => {
 
     if (updateError) {
       log.error('Error updating password:', updateError);
+      const message =
+        updateError.message ||
+        (typeof updateError === "object" && updateError !== null && "msg" in updateError
+          ? String((updateError as { msg?: string }).msg)
+          : "Failed to update password");
       return new Response(
-        JSON.stringify({ error: "Failed to update password" }),
+        JSON.stringify({ error: message }),
         { status: 400, headers: { ...getCorsHeaders(req), "Content-Type": "application/json" } }
       );
     }

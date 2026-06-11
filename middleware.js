@@ -1,4 +1,9 @@
 import { CMS_REDIRECTS } from './apps/website/generated/cms-redirects.mjs';
+import {
+  isKnownRoute,
+  NOT_FOUND_HTML,
+  normalizeKnownPath,
+} from './apps/website/generated/known-routes.mjs';
 import { LEGACY_REDIRECTS, WP_DATE_PATH } from './apps/website/scripts/legacy-redirects.mjs';
 
 const SKIP_PREFIXES = ['/assets/', '/favicon', '/BingSiteAuth.xml', '/google'];
@@ -76,6 +81,16 @@ export default function middleware(request) {
 
     const targetPath = resolveDestination(pathname, rule);
     return redirectTo(url, targetPath, rule.status);
+  }
+
+  if (!isKnownRoute(normalizeKnownPath(pathname))) {
+    return new Response(NOT_FOUND_HTML, {
+      status: 404,
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'public, max-age=0, must-revalidate',
+      },
+    });
   }
 }
 

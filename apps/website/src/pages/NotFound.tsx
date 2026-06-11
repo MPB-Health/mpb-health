@@ -1,10 +1,16 @@
 import { Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { FileQuestion } from 'lucide-react';
 import { Button } from '../components/ui/button';
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <>
+      <Helmet>
+        <title>404 — Page Not Found | MPB Health</title>
+        <meta name="robots" content="noindex, nofollow" />
+      </Helmet>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="text-center max-w-md">
         <div className="mb-6 flex justify-center">
           <div className="rounded-full bg-blue-100 p-4">
@@ -24,5 +30,6 @@ export default function NotFound() {
         </Link>
       </div>
     </div>
+    </>
   );
 }

@@ -412,6 +412,7 @@ export class UserService {
       body: { userId, password },
     });
     if (error) throw new Error(error.message || 'Failed to update password');
+    if (data?.error) throw new Error(data.error);
     if (data && data.success === false) throw new Error(data.error || 'Failed to update password');
   }
 

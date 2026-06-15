@@ -54,6 +54,21 @@ const Footer = () => {
               alt="MPB Health"
               className="h-16 w-auto"
             />
+            <a
+              href="https://www.bbb.org/us/fl/boca-raton/profile/health-insurance/mpowering-benefits-inc-0633-92042549/#sealclick"
+              target="_blank"
+              rel="nofollow noopener noreferrer"
+              className="inline-block mt-6"
+            >
+              <img
+                src="https://seal-seflorida.bbb.org/seals/blue-seal-200-42-bbb-92042549.png"
+                className="border-0"
+                alt="MPowering Benefits Inc. BBB Business Review"
+                width={200}
+                height={42}
+                loading="lazy"
+              />
+            </a>
           </div>
           <div className="md:col-span-3">
             <p className="text-neutral-300 italic text-sm leading-relaxed">

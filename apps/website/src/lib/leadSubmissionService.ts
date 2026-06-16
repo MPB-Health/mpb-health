@@ -177,15 +177,7 @@ class LeadSubmissionService {
   }
 
   private async sendStaffNotification(formData: LeadFormData): Promise<void> {
-    await sendLeadNotification({
-      name: `${formData.firstName} ${formData.lastName}`,
-      email: formData.email,
-      phone: formData.phone,
-      householdType: formData.householdSize
-        ? `${formData.householdSize} ${formData.householdSize === 1 ? 'person' : 'people'}`
-        : undefined,
-      source: formData.sourcePage || 'Get a Quote Form',
-    });
+    await sendLeadNotification(formData);
   }
 
   private async sendLegacyWelcomeFallback(formData: LeadFormData): Promise<void> {

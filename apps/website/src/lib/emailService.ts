@@ -210,14 +210,16 @@ export async function sendContactFormNotification(data: {
   });
 }
 
-export async function sendLeadNotification(data: {
-  name?: string;
-  email: string;
-  phone?: string;
-  householdType?: string;
-  estimatedCost?: number;
-  source: string;
-}): Promise<EmailResponse> {
+import {
+  buildLeadNotificationDetails,
+  renderLeadNotificationHtmlRows,
+  renderLeadNotificationText,
+  type LeadNotificationInput,
+} from './leadNotificationFormat';
+
+export async function sendLeadNotification(
+  lead: LeadNotificationInput,
+): Promise<EmailResponse> {
   const LEAD_NOTIFICATION_RECIPIENTS = [
     'info@mympb.com',
     'catherine@mympb.com',
@@ -226,6 +228,10 @@ export async function sendLeadNotification(data: {
     'adam@mympb.com',
     'tupac@mympb.com',
   ];
+
+  const detailRows = buildLeadNotificationDetails(lead);
+  const name = `${lead.firstName} ${lead.lastName}`.trim();
+  const source = lead.sourcePage || 'Get a Quote Form';
 
   const html = `
     <!DOCTYPE html>
@@ -237,35 +243,9 @@ export async function sendLeadNotification(data: {
       <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #f5f5f5;">
         <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 30px; border-radius: 8px;">
           <h2 style="color: #059669; margin-bottom: 20px;">🎯 New Lead Generated</h2>
+          <p style="color: #666; margin-top: 0; margin-bottom: 20px;">Source: ${source}</p>
           <table style="width: 100%; border-collapse: collapse;">
-            ${data.name ? `
-            <tr style="border-bottom: 1px solid #e5e7eb;">
-              <td style="padding: 12px 0; font-weight: bold; color: #333;">Name:</td>
-              <td style="padding: 12px 0; color: #666;">${data.name}</td>
-            </tr>` : ''}
-            <tr style="border-bottom: 1px solid #e5e7eb;">
-              <td style="padding: 12px 0; font-weight: bold; color: #333;">Email:</td>
-              <td style="padding: 12px 0; color: #666;"><a href="mailto:${data.email}" style="color: #2563eb;">${data.email}</a></td>
-            </tr>
-            ${data.phone ? `
-            <tr style="border-bottom: 1px solid #e5e7eb;">
-              <td style="padding: 12px 0; font-weight: bold; color: #333;">Phone:</td>
-              <td style="padding: 12px 0; color: #666;"><a href="tel:${data.phone}" style="color: #2563eb;">${data.phone}</a></td>
-            </tr>` : ''}
-            ${data.householdType ? `
-            <tr style="border-bottom: 1px solid #e5e7eb;">
-              <td style="padding: 12px 0; font-weight: bold; color: #333;">Household:</td>
-              <td style="padding: 12px 0; color: #666;">${data.householdType}</td>
-            </tr>` : ''}
-            ${data.estimatedCost ? `
-            <tr style="border-bottom: 1px solid #e5e7eb;">
-              <td style="padding: 12px 0; font-weight: bold; color: #333;">Estimated Cost:</td>
-              <td style="padding: 12px 0; color: #666;">$${data.estimatedCost}/month</td>
-            </tr>` : ''}
-            <tr>
-              <td style="padding: 12px 0; font-weight: bold; color: #333;">Source:</td>
-              <td style="padding: 12px 0; color: #666;">${data.source}</td>
-            </tr>
+            ${renderLeadNotificationHtmlRows(detailRows)}
           </table>
           <div style="margin-top: 30px; padding: 20px; background-color: #f0fdf4; border-left: 4px solid #059669; border-radius: 4px;">
             <p style="margin: 0; color: #065f46; font-weight: bold;">Follow up promptly for best conversion!</p>
@@ -277,10 +257,10 @@ export async function sendLeadNotification(data: {
 
   return sendEmail({
     to: LEAD_NOTIFICATION_RECIPIENTS,
-    subject: `🎯 New Lead: ${data.name || data.email}`,
+    subject: `🎯 New Lead: ${name || lead.email}`,
     html,
-    replyTo: data.email,
-    text: `New Lead Generated\n\n${data.name ? `Name: ${data.name}\n` : ''}Email: ${data.email}\n${data.phone ? `Phone: ${data.phone}\n` : ''}${data.householdType ? `Household: ${data.householdType}\n` : ''}${data.estimatedCost ? `Estimated Cost: $${data.estimatedCost}/month\n` : ''}Source: ${data.source}`,
+    replyTo: lead.email,
+    text: `New Lead Generated\n\nSource: ${source}\n\n${renderLeadNotificationText(detailRows)}`,
     emailType: 'staff-lead-notification',
   });
 }

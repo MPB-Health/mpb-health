@@ -217,18 +217,12 @@ import {
   type LeadNotificationInput,
 } from './leadNotificationFormat';
 
+/** Staff inbox for quote/lead form submissions (replaces notifications@mympb.com). */
+export const LEAD_NOTIFICATION_EMAIL = 'sales@mympb.com';
+
 export async function sendLeadNotification(
   lead: LeadNotificationInput,
 ): Promise<EmailResponse> {
-  const LEAD_NOTIFICATION_RECIPIENTS = [
-    'info@mympb.com',
-    'catherine@mympb.com',
-    'julia@mympb.com',
-    'sales@mympb.com',
-    'adam@mympb.com',
-    'tupac@mympb.com',
-  ];
-
   const detailRows = buildLeadNotificationDetails(lead);
   const name = `${lead.firstName} ${lead.lastName}`.trim();
   const source = lead.sourcePage || 'Get a Quote Form';
@@ -256,7 +250,7 @@ export async function sendLeadNotification(
   `;
 
   return sendEmail({
-    to: LEAD_NOTIFICATION_RECIPIENTS,
+    to: LEAD_NOTIFICATION_EMAIL,
     subject: `🎯 New Lead: ${name || lead.email}`,
     html,
     replyTo: lead.email,
@@ -266,7 +260,7 @@ export async function sendLeadNotification(
 }
 
 // Central sales contact info so every template stays in sync.
-const SALES_EMAIL = 'sales@mympb.com';
+const SALES_EMAIL = LEAD_NOTIFICATION_EMAIL;
 const SALES_PHONE_DISPLAY = '(855) 816-4650 ext 1';
 const SALES_PHONE_TEL = '+18558164650,1';
 

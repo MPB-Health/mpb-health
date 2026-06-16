@@ -1,10 +1,10 @@
-import { ExternalLink } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import {
   getPlanEnrollLabel,
   getPlanEnrollUrl,
   PLAN_ENROLL_OPTIONS,
-  PLAN_ENROLL_URLS,
 } from '../../lib/planEnrollUrls';
+import { getPlanEnrollmentConfig } from '../../lib/planEnrollmentConfig';
 
 interface EnrollNowPromptProps {
   /** When set (and not "unsure"), highlights that plan with a primary CTA. */
@@ -16,7 +16,7 @@ export function EnrollNowPrompt({ preferredPlanId, className = '' }: EnrollNowPr
   const hasPreferred =
     preferredPlanId &&
     preferredPlanId !== 'unsure' &&
-    preferredPlanId in PLAN_ENROLL_URLS;
+    !!getPlanEnrollmentConfig(preferredPlanId);
 
   const otherPlans = hasPreferred
     ? PLAN_ENROLL_OPTIONS.filter((p) => p.id !== preferredPlanId)
@@ -34,12 +34,10 @@ export function EnrollNowPrompt({ preferredPlanId, className = '' }: EnrollNowPr
       {hasPreferred && (
         <a
           href={getPlanEnrollUrl(preferredPlanId!)}
-          target="_blank"
-          rel="noopener noreferrer"
           className="mb-4 w-full inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-cyan-700 transition-all shadow-lg hover:shadow-xl"
         >
           Enroll Now — {getPlanEnrollLabel(preferredPlanId!)}
-          <ExternalLink className="h-4 w-4" />
+          <ArrowRight className="h-4 w-4" />
         </a>
       )}
 
@@ -54,12 +52,10 @@ export function EnrollNowPrompt({ preferredPlanId, className = '' }: EnrollNowPr
           <a
             key={plan.id}
             href={getPlanEnrollUrl(plan.id)}
-            target="_blank"
-            rel="noopener noreferrer"
             className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-white border border-blue-200 text-blue-700 text-sm font-semibold rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-colors"
           >
             {plan.label}
-            <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+            <ArrowRight className="h-3.5 w-3.5 shrink-0" />
           </a>
         ))}
       </div>

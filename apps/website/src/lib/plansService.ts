@@ -32,6 +32,21 @@ export interface PlanWithFeatures extends Plan {
 }
 
 import { getPlanEnrollUrl } from './planEnrollUrls';
+import {
+  getPlanEnrollmentPagePath,
+  PLAN_ENROLLMENT_CONFIGS,
+} from './planEnrollmentConfig';
+
+function resolveEnrollPageUrl(storedUrl: string | null | undefined, slug: string): string {
+  if (!storedUrl) return getPlanEnrollUrl(slug);
+  for (const config of PLAN_ENROLLMENT_CONFIGS) {
+    if (storedUrl === config.embedUrl || storedUrl.startsWith(config.embedUrl)) {
+      return getPlanEnrollmentPagePath(config.id);
+    }
+  }
+  if (storedUrl.startsWith('/enroll/')) return storedUrl;
+  return getPlanEnrollUrl(slug);
+}
 
 export async function getActivePlans(): Promise<PlanWithFeatures[]> {
   const { data: plans, error: plansError } = await supabase
@@ -75,7 +90,7 @@ export async function getActivePlans(): Promise<PlanWithFeatures[]> {
         features: features || [],
         price_display: priceDisplay,
         // Use DB enroll_url if available, fallback to hardcoded map
-        enroll_url: plan.enroll_url || getPlanEnrollUrl(plan.slug),
+        enroll_url: resolveEnrollPageUrl(plan.enroll_url, plan.slug),
       };
     })
   );
@@ -119,6 +134,6 @@ export async function getPlanBySlug(slug: string): Promise<PlanWithFeatures | nu
     ...plan,
     features: features || [],
     price_display: priceDisplay,
-    enroll_url: plan.enroll_url || getPlanEnrollUrl(plan.slug),
+    enroll_url: resolveEnrollPageUrl(plan.enroll_url, plan.slug),
   };
 }

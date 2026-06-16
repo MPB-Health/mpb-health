@@ -93,8 +93,6 @@ const PricingGrid: React.FC = () => {
                 </h4>
                 <a
                   href={plan.ctaHref}
-                  target="_blank"
-                  rel="noopener noreferrer"
                   className="w-full inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-cyan-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
                 >
                   Enroll Now

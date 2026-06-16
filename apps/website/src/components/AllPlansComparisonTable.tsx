@@ -405,8 +405,6 @@ export const AllPlansComparisonTable: React.FC<AllPlansComparisonTableProps> = (
                 ) : plan.enrollUrl ? (
                   <a
                     href={plan.enrollUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
                     className={cn(
                       'flex items-center justify-center gap-2 w-full py-5 rounded-xl text-base font-bold transition-all',
                       isBestMatch

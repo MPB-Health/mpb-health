@@ -204,8 +204,6 @@ function PlanCard({
         <div className="mt-6 pt-4 border-t border-gray-100">
           <a
             href={plan.enrollUrl || getPlanEnrollUrl(plan.planId)}
-            target="_blank"
-            rel="noopener noreferrer"
             className={`w-full h-11 inline-flex items-center justify-center font-semibold rounded-md transition-all duration-200 ${
               plan.popular
                 ? 'bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 text-white shadow-md hover:shadow-lg'

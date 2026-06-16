@@ -71,8 +71,6 @@ export function PlanResult({ recommendations, answers: _answers }: PlanResultPro
                 {primary.enrollUrl ? (
                   <a
                     href={primary.enrollUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
                     className="w-full inline-flex items-center justify-center px-4 py-2 bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 text-white font-semibold rounded-md transition-all"
                   >
                     Enroll Now — {primary.planName}
@@ -116,8 +114,6 @@ export function PlanResult({ recommendations, answers: _answers }: PlanResultPro
               {alternate.enrollUrl ? (
                 <a
                   href={alternate.enrollUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
                   className="w-full inline-flex items-center justify-center px-4 py-2 border-2 border-blue-600 text-blue-600 hover:bg-gradient-to-r hover:from-blue-600 hover:to-green-600 hover:text-white font-semibold rounded-md transition-all"
                 >
                   Enroll Now — {alternate.planName}

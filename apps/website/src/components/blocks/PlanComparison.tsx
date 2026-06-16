@@ -78,8 +78,6 @@ export const PlanComparison: React.FC<PlanComparisonProps> = ({
                           </div>
                           <a
                             href={planDetails[planName]?.enrollUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
                             onClick={onClose}
                             className="inline-flex items-center justify-center w-full px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-cyan-700 transition-all duration-300 text-sm"
                           >

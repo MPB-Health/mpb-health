@@ -40,6 +40,7 @@ const GetStarted = lazyAuto(() => import('./pages/GetStarted'));
 const GetAQuote = lazyAuto(() => import('./pages/GetAQuote'));
 const HowItWorksPage = lazyAuto(() => import('./pages/HowItWorks'));
 const Enrollment = lazyAuto(() => import('./pages/Enrollment'));
+const PlanEnrollmentPage = lazyAuto(() => import('./pages/enroll/PlanEnrollmentPage'));
 const PlanComparison = lazyAuto(() => import('./pages/PlanComparison'));
 const Support = lazyAuto(() => import('./pages/Support'));
 const Welcome = lazyAuto(() => import('./pages/Welcome'));
@@ -349,6 +350,7 @@ const App = () => {
                   <Route path="/resource-library" element={<Navigate to="/resources" replace />} />
                   <Route path="/resources/how-to-submit-a-sharing-need" element={<Navigate to="/resources/how-to-submit-a-sharing-request" replace />} />
                   <Route path="/care-support-hub" element={<Navigate to="/support" replace />} />
+                  <Route path="/enroll/:planSlug" element={<PlanEnrollmentPage />} />
                   {/* Marketing pages: CMS block editor overrides when published */}
                   {MANAGED_SITE_PATHS.map((sitePath) => (
                     <Route

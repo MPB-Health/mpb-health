@@ -285,6 +285,41 @@ const entries = [
       'Set up multi-factor authentication for your MPB Health member account to add an extra layer of sign-in security.',
     robots: 'noindex, follow',
   }),
+  entry('/enroll/essentials', {
+    title: 'Enroll in Essentials | MPB Health',
+    h1: 'Enroll in Essentials',
+    description:
+      'Start your Essentials membership online on MPB Health. Hospital debt relief and virtual care — secure enrollment with our trusted team available if you need help.',
+    robots: 'noindex, follow',
+  }),
+  entry('/enroll/care-plus', {
+    title: 'Enroll in Care+ | MPB Health',
+    h1: 'Enroll in Care+',
+    description:
+      'Complete your Care+ medical cost sharing enrollment on MPB Health. Unexpected expense protection with a secure, guided online application.',
+    robots: 'noindex, follow',
+  }),
+  entry('/enroll/direct', {
+    title: 'Enroll in Direct | MPB Health',
+    h1: 'Enroll in Direct',
+    description:
+      'Enroll in Direct membership on MPB Health. Preventive sharing and comprehensive medical cost protection — start your secure application today.',
+    robots: 'noindex, follow',
+  }),
+  entry('/enroll/mec-essentials', {
+    title: 'Enroll in MEC+ Essentials | MPB Health',
+    h1: 'Enroll in MEC+ Essentials',
+    description:
+      'Enroll your business or 1099 team in MEC+ Essentials on MPB Health. ACA MEC coverage with debt dismissal and HSA options.',
+    robots: 'noindex, follow',
+  }),
+  entry('/enroll/secure-hsa', {
+    title: 'Enroll in Secure HSA | MPB Health',
+    h1: 'Enroll in Secure HSA',
+    description:
+      'Start Secure HSA enrollment on MPB Health. HSA-compatible membership with tax advantages and medical cost sharing for self-employed and business owners.',
+    robots: 'noindex, follow',
+  }),
 ];
 
 export const EXTRA_PAGE_SEO = Object.fromEntries(entries);

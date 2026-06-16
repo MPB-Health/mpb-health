@@ -1,6 +1,7 @@
 import React from 'react';
 import { CheckCircle2 } from 'lucide-react';
 import { Card } from '../ui/Card';
+import { getPlanEnrollUrl } from '../../lib/planEnrollUrls';
 
 const PricingGrid: React.FC = () => {
   const plans = [
@@ -21,7 +22,7 @@ const PricingGrid: React.FC = () => {
       ],
       popular: false,
       color: 'border-neutral-200',
-      ctaHref: 'https://essentials.enrollmpb.com/',
+      ctaHref: getPlanEnrollUrl('essentials'),
       hasFootnote: true,
     },
     {
@@ -41,7 +42,7 @@ const PricingGrid: React.FC = () => {
       ],
       popular: false,
       color: 'border-neutral-200',
-      ctaHref: 'https://careplus.enrollmpb.com/',
+      ctaHref: getPlanEnrollUrl('care-plus'),
       hasFootnote: false,
     },
     {
@@ -63,7 +64,7 @@ const PricingGrid: React.FC = () => {
       ],
       popular: true,
       color: 'border-primary ring-2 ring-primary/20',
-      ctaHref: 'https://direct.enrollmpb.com/',
+      ctaHref: getPlanEnrollUrl('direct'),
       hasFootnote: false,
     },
   ];
@@ -96,7 +97,7 @@ const PricingGrid: React.FC = () => {
                   rel="noopener noreferrer"
                   className="w-full inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-cyan-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
                 >
-                  Enroll Today
+                  Enroll Now
                 </a>
               </div>
 

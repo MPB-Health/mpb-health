@@ -8,9 +8,9 @@ import {
   Shield,
   Heart,
   Users,
-  ArrowRight,
   Sparkles,
-  Building2
+  Building2,
+  ExternalLink,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '../ui/Card';
 import { Button } from '../ui/button';
@@ -18,7 +18,7 @@ import { Badge } from '../ui/Badge';
 import { Select } from '../ui/Select';
 import { PlanEstimate, AllMembershipsEstimate } from '../../lib/newRateEngine';
 import { fmtMoney } from '../../lib/utils';
-import { trackAndNavigateToQuote } from '../../lib/leadRoutingTracker';
+import { getPlanEnrollUrl } from '../../lib/planEnrollUrls';
 
 interface MembershipComparisonGridProps {
   estimates: AllMembershipsEstimate;
@@ -72,12 +72,10 @@ const PLAN_ICONS: Record<string, React.ElementType> = {
 function PlanCard({
   plan,
   currentMonthly,
-  onSelect,
   householdSize: _householdSize
 }: { 
   plan: PlanEstimate; 
   currentMonthly?: number;
-  onSelect: (planId: string, tierId?: string) => void;
   householdSize: number;
 }) {
   const [selectedTierId, setSelectedTierId] = useState<string>(
@@ -204,17 +202,19 @@ function PlanCard({
 
         {/* CTA Button */}
         <div className="mt-6 pt-4 border-t border-gray-100">
-          <Button
-            onClick={() => onSelect(plan.planId, selectedTierId || undefined)}
-            className={`w-full h-11 font-semibold transition-all duration-200 ${
+          <a
+            href={plan.enrollUrl || getPlanEnrollUrl(plan.planId)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`w-full h-11 inline-flex items-center justify-center font-semibold rounded-md transition-all duration-200 ${
               plan.popular
                 ? 'bg-gradient-to-r from-blue-600 to-teal-600 hover:from-blue-700 hover:to-teal-700 text-white shadow-md hover:shadow-lg'
                 : 'bg-white border-2 border-gray-900 text-gray-900 hover:bg-gray-900 hover:text-white'
             }`}
           >
-            Select This Membership
-            <ArrowRight className="w-4 h-4 ml-2" />
-          </Button>
+            Enroll Now
+            <ExternalLink className="w-4 h-4 ml-2" />
+          </a>
         </div>
       </CardContent>
     </Card>
@@ -224,7 +224,6 @@ function PlanCard({
 export default function MembershipComparisonGrid({
   estimates,
   currentMonthly,
-  onSelectPlan
 }: MembershipComparisonGridProps) {
   const ht = estimates.inputSummary.householdType;
   const householdSize =
@@ -237,26 +236,6 @@ export default function MembershipComparisonGrid({
           : ht === 'member-family' || ht === 'family'
             ? 2 + (estimates.inputSummary.dependentsCount || 0)
             : 1;
-
-  const handleSelectPlan = (planId: string, tierId?: string) => {
-    if (onSelectPlan) {
-      onSelectPlan(planId, tierId);
-    } else {
-      // Default behavior: navigate to quote with selected plan
-      const plan = estimates.plans.find(p => p.planId === planId);
-      const selectedTier = tierId ? plan?.tiers.find(t => t.tierId === tierId) : null;
-      const price = selectedTier?.monthly ?? plan?.flatRate ?? plan?.lowestPrice ?? 0;
-      
-      trackAndNavigateToQuote({
-        ctaType: 'comparison_grid_select',
-        ctaText: 'Select This Membership',
-        ctaLocation: 'membership_comparison_grid',
-        planType: planId,
-        householdSize,
-        estimatedPremium: price
-      });
-    }
-  };
 
   // Sort plans: popular first, then by lowest price
   const sortedPlans = [...estimates.plans].sort((a, b) => {
@@ -291,7 +270,6 @@ export default function MembershipComparisonGrid({
             key={plan.planId}
             plan={plan}
             currentMonthly={currentMonthly}
-            onSelect={handleSelectPlan}
             householdSize={householdSize}
           />
         ))}

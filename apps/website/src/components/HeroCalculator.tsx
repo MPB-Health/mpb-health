@@ -20,6 +20,7 @@ import {
   Shield,
   Users,
   Lock,
+  ExternalLink,
 } from 'lucide-react';
 import { estimateAllMemberships } from '../lib/newRateEngine';
 import { useAnalytics, AnalyticsEvents } from '../lib/analytics';
@@ -29,6 +30,7 @@ import { leadSubmissionService } from '../lib/leadSubmissionService';
 import { getQuoteCalculatorSessionId, recordQuoteCalculatorEvent } from '../lib/quoteCalculatorTracking';
 import { getHouseholdPricingAge } from '../lib/householdPricingAge';
 import { cn, fmtMoney } from '../lib/utils';
+import { getPlanEnrollUrl } from '../lib/planEnrollUrls';
 
 const log = createClientLogger('HeroCalculator');
 
@@ -583,9 +585,21 @@ export default function HeroCalculator() {
                       <Shield className="h-6 w-6 text-emerald-600 mx-auto mb-2" />
                       <p className="text-sm font-bold text-emerald-800">You&apos;re all set!</p>
                       <p className="text-xs text-emerald-700 mt-1">
-                        An advisor will reach out shortly to help you enroll. Check your email for your full comparison.
+                        Check your email for your full comparison. You can also enroll online now.
                       </p>
                     </div>
+                  )}
+
+                  {leadSubmitted && inlineResults.recommendations[0] && (
+                    <a
+                      href={getPlanEnrollUrl(inlineResults.recommendations[0].planId)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-cyan-700 transition-all shadow-lg hover:shadow-xl"
+                    >
+                      Enroll Now — {inlineResults.estimates.plans.find(p => p.planId === inlineResults.recommendations[0].planId)?.planLabel ?? 'Best Match'}
+                      <ExternalLink className="h-4 w-4" />
+                    </a>
                   )}
 
                   <div>
@@ -682,6 +696,21 @@ export default function HeroCalculator() {
                                 ))}
                               </div>
                             )}
+
+                            <div className="mt-2.5 pt-2 border-t border-gray-100">
+                              <a
+                                href={getPlanEnrollUrl(plan.planId)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className={cn(
+                                  'inline-flex items-center gap-1 text-xs font-semibold transition-colors',
+                                  isBestMatch ? 'text-blue-700 hover:text-blue-800' : 'text-gray-600 hover:text-blue-700',
+                                )}
+                              >
+                                Enroll Now
+                                <ExternalLink className="h-3 w-3" />
+                              </a>
+                            </div>
                           </div>
                         );
                       })}

@@ -125,13 +125,25 @@ export function SimpleComparisonView({ plans, onClose }: SimpleComparisonViewPro
               <div className="grid gap-4" style={{ gridTemplateColumns: `200px repeat(${plans.length}, 1fr)` }}>
                 <div></div>
                 {plans.map((plan) => (
-                  <Button
-                    key={plan.id}
-                    className="w-full"
-                    onClick={() => window.location.href = plan.enroll_url || '/get-started'}
-                  >
-                    Choose {plan.name}
-                  </Button>
+                  plan.enroll_url ? (
+                    <a
+                      key={plan.id}
+                      href={plan.enroll_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full inline-flex items-center justify-center px-4 py-2 bg-primary text-primary-foreground font-semibold rounded-md hover:bg-primary/90 transition-colors"
+                    >
+                      Enroll Now
+                    </a>
+                  ) : (
+                    <Button
+                      key={plan.id}
+                      className="w-full"
+                      onClick={() => { window.location.href = '/get-started'; }}
+                    >
+                      Enroll Now
+                    </Button>
+                  )
                 ))}
               </div>
             </div>

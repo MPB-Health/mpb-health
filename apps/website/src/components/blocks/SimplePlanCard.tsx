@@ -184,19 +184,25 @@ export function SimplePlanCard({
         </div>
 
         <div className="space-y-2 mb-4">
-          <Button
-            className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700"
-            onClick={() => {
-              const calculator = document.getElementById('calculator');
-              if (calculator) {
-                calculator.scrollIntoView({ behavior: 'smooth', block: 'start' });
-              } else {
-                window.location.href = '/individuals-and-families#calculator';
-              }
-            }}
-          >
-            Get Your Quote
-          </Button>
+          {plan.enroll_url ? (
+            <a
+              href={plan.enroll_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-cyan-700 transition-all duration-300 shadow-lg hover:shadow-xl"
+            >
+              Enroll Now
+            </a>
+          ) : (
+            <Button
+              className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700"
+              onClick={() => {
+                window.location.href = '/get-started';
+              }}
+            >
+              Enroll Now
+            </Button>
+          )}
         </div>
 
         <div className="text-xs text-center text-neutral-600 mb-4">

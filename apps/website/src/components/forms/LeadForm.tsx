@@ -7,6 +7,7 @@ import { Select } from '../ui/Select';
 import { trackFormStep } from '../../lib/analytics';
 import { typography } from '../../lib/typography';
 import { leadSubmissionService } from '../../lib/leadSubmissionService';
+import { EnrollNowPrompt } from '../lead-capture/EnrollNowPrompt';
 
 interface FormData {
   // Step 1: Contact Info
@@ -305,7 +306,7 @@ const LeadForm: React.FC<LeadFormProps> = ({ onSubmit, className }) => {
       <p className="text-neutral-600 mb-6">
         We've received your information and a member specialist will contact you within 24 hours to discuss your personalized health sharing options.
       </p>
-      <div className="bg-neutral-50 rounded-lg p-6 text-left">
+      <div className="bg-neutral-50 rounded-lg p-6 text-left mb-6">
         <h4 className="font-semibold text-neutral-900 mb-3">What happens next:</h4>
         <ul className="space-y-2 text-sm text-neutral-600">
           <li>• A specialist will call you at {formData.phone}</li>
@@ -314,6 +315,7 @@ const LeadForm: React.FC<LeadFormProps> = ({ onSubmit, className }) => {
           <li>• No obligation - take time to decide what's right for you</li>
         </ul>
       </div>
+      <EnrollNowPrompt preferredPlanId={formData.membershipLevel} />
     </div>
   );
 

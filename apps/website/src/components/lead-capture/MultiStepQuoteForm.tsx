@@ -3,6 +3,7 @@ import { ArrowRight, ArrowLeft, Check, User, Users, DollarSign, MapPin } from 'l
 import { cn } from '../../lib/utils';
 import { trackFormInteraction, trackQuoteRequest } from '../../lib/conversionTracking';
 import { leadSubmissionService } from '../../lib/leadSubmissionService';
+import { EnrollNowPrompt } from '../lead-capture/EnrollNowPrompt';
 
 interface FormData {
   // Step 1: Household
@@ -455,7 +456,7 @@ export const MultiStepQuoteForm: React.FC = () => {
           <p className="text-neutral-600 mb-6">
             We've received your information and a member specialist will contact you within 24 hours to discuss your personalized health sharing options.
           </p>
-          <div className="bg-neutral-50 rounded-lg p-6 text-left">
+          <div className="bg-neutral-50 rounded-lg p-6 text-left mb-6">
             <h4 className="font-semibold text-neutral-900 mb-3">What happens next:</h4>
             <ul className="space-y-2 text-sm text-neutral-600">
               <li>A specialist will call you at {formData.phone}</li>
@@ -464,6 +465,7 @@ export const MultiStepQuoteForm: React.FC = () => {
               <li>No obligation - take time to decide what's right for you</li>
             </ul>
           </div>
+          <EnrollNowPrompt />
         </div>
       </div>
     );

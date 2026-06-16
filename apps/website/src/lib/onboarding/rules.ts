@@ -1,5 +1,6 @@
 import { OnboardingAnswers, PlanRecommendation } from './types';
 import plansData from '../../../content/plans.json';
+import { getPlanEnrollUrl } from '../planEnrollUrls';
 
 interface ScoredPlan {
   planId: string;
@@ -26,7 +27,7 @@ export function recommendPlans(answers: OnboardingAnswers): PlanRecommendation[]
     return {
       ...plan,
       detailsAnchor: planData?.anchor,
-      enrollUrl: getEnrollUrl(plan.planId),
+      enrollUrl: getPlanEnrollUrl(plan.planId),
     };
   });
 }
@@ -196,15 +197,3 @@ function scoreSecureHSA(answers: OnboardingAnswers): ScoredPlan {
   };
 }
 
-function getEnrollUrl(planId: string): string {
-  const enrollUrls: Record<string, string> = {
-    'essentials': 'https://essentials.enrollmpb.com/',
-    'mec-essentials': 'https://mec.enrollmpb.com/',
-    'care-plus': 'https://careplus.enrollmpb.com/',
-    'careplus': 'https://careplus.enrollmpb.com/',
-    'direct': 'https://direct.enrollmpb.com/',
-    'secure-hsa': 'https://securehsa.enrollmpb.com/',
-  };
-
-  return enrollUrls[planId] || '/quote';
-}

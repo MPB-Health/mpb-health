@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { EnhancedPricingCard } from './EnhancedPricingCard';
+import { getPlanEnrollUrl } from '../../lib/planEnrollUrls';
 import { PlanComparison } from './PlanComparison';
 import { MobilePricingCarousel } from './MobilePricingCarousel';
 import { StickyComparisonBar } from './StickyComparisonBar';
@@ -32,7 +33,7 @@ const plansData: PlanData[] = [
     description: 'Hospital debt relief + basic protection. No medical cost sharing.',
     whoIsThisFor: 'Best for: Young, healthy individuals',
     tier: 'basic',
-    enrollUrl: 'https://essentials.enrollmpb.com/',
+    enrollUrl: getPlanEnrollUrl('essentials'),
     enrolledThisMonth: 127,
     footnote: '*Eligibility requirements apply; speak to a healthcare advisor for details.',
     features: [
@@ -54,7 +55,7 @@ const plansData: PlanData[] = [
     whoIsThisFor: 'Best for: Families seeking balanced coverage',
     tier: 'standard',
     popular: true,
-    enrollUrl: 'https://careplus.enrollmpb.com/',
+    enrollUrl: getPlanEnrollUrl('care-plus'),
     enrolledThisMonth: 243,
     features: [
       { name: 'Medical Cost Sharing', category: 'sharing', tooltip: 'Share eligible medical expenses after Initial Unshareable Amount (IUA)' },
@@ -76,7 +77,7 @@ const plansData: PlanData[] = [
     whoIsThisFor: 'Best for: Families who value preventive care',
     tier: 'premium',
     popular: false,
-    enrollUrl: 'https://direct.enrollmpb.com/',
+    enrollUrl: getPlanEnrollUrl('direct'),
     enrolledThisMonth: 389,
     features: [
       { name: 'Preventive Sharing', category: 'sharing', tooltip: 'Annual wellness visits and preventive screenings shared' },

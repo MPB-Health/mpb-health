@@ -31,15 +31,7 @@ export interface PlanWithFeatures extends Plan {
   price_display?: string;
 }
 
-// Fallback enroll URLs for backward compatibility (used if DB field is null)
-const FALLBACK_ENROLL_URLS: Record<string, string> = {
-  'essentials': 'https://essentials.enrollmpb.com/',
-  'mec-essentials': 'https://mec.enrollmpb.com/',
-  'care-plus': 'https://careplus.enrollmpb.com/',
-  'careplus': 'https://careplus.enrollmpb.com/',
-  'direct': 'https://direct.enrollmpb.com/',
-  'secure-hsa': 'https://securehsa.enrollmpb.com/',
-};
+import { getPlanEnrollUrl } from './planEnrollUrls';
 
 export async function getActivePlans(): Promise<PlanWithFeatures[]> {
   const { data: plans, error: plansError } = await supabase
@@ -83,7 +75,7 @@ export async function getActivePlans(): Promise<PlanWithFeatures[]> {
         features: features || [],
         price_display: priceDisplay,
         // Use DB enroll_url if available, fallback to hardcoded map
-        enroll_url: plan.enroll_url || FALLBACK_ENROLL_URLS[plan.slug] || '/get-started',
+        enroll_url: plan.enroll_url || getPlanEnrollUrl(plan.slug),
       };
     })
   );
@@ -127,6 +119,6 @@ export async function getPlanBySlug(slug: string): Promise<PlanWithFeatures | nu
     ...plan,
     features: features || [],
     price_display: priceDisplay,
-    enroll_url: plan.enroll_url || FALLBACK_ENROLL_URLS[plan.slug] || '/get-started',
+    enroll_url: plan.enroll_url || getPlanEnrollUrl(plan.slug),
   };
 }

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { SimplePlanCard } from './SimplePlanCard';
 import { SimpleComparisonView } from './SimpleComparisonView';
 import { getActivePlans, type PlanWithFeatures } from '../../lib/plansService';
+import { getPlanEnrollUrl } from '../../lib/planEnrollUrls';
 import { AlertCircle } from 'lucide-react';
 
 const fallbackPlans: PlanWithFeatures[] = [
@@ -21,7 +22,7 @@ const fallbackPlans: PlanWithFeatures[] = [
     annual_membership_fee: 0,
     tobacco_surcharge_pct: 0,
     price_display: '$50',
-    enroll_url: 'https://essentials.enrollmpb.com/',
+    enroll_url: getPlanEnrollUrl('essentials'),
     features: [
       { id: '1', feature_name: 'Virtual Care Access', category: 'Core Benefits', notes: '24/7 urgent, primary, and virtual behavioral health care' },
       { id: '2', feature_name: 'MPB Concierge', category: 'Member Support', notes: 'Personal healthcare navigation' },
@@ -45,7 +46,7 @@ const fallbackPlans: PlanWithFeatures[] = [
     annual_membership_fee: 0,
     tobacco_surcharge_pct: 0,
     price_display: '$125',
-    enroll_url: 'https://mec.enrollmpb.com/',
+    enroll_url: getPlanEnrollUrl('mec-essentials'),
     features: [
       { id: '1', feature_name: 'ACA-Mandated Preventive Care', category: 'Core Benefits', notes: 'No-cost preventive screenings' },
       { id: '2', feature_name: 'Virtual Care Access', category: 'Core Benefits', notes: '24/7 urgent, primary, virtual behavioral health' },
@@ -69,7 +70,7 @@ const fallbackPlans: PlanWithFeatures[] = [
     annual_membership_fee: 0,
     tobacco_surcharge_pct: 0,
     price_display: '$166',
-    enroll_url: 'https://careplus.enrollmpb.com/',
+    enroll_url: getPlanEnrollUrl('care-plus'),
     features: [
       { id: '1', feature_name: 'Medical Cost Sharing', category: 'Core Benefits', notes: 'Share eligible expenses after IUA' },
       { id: '2', feature_name: 'Virtual Care Access', category: 'Core Benefits', notes: '24/7 urgent, primary, virtual behavioral health' },
@@ -94,7 +95,7 @@ const fallbackPlans: PlanWithFeatures[] = [
     annual_membership_fee: 0,
     tobacco_surcharge_pct: 0,
     price_display: '$201',
-    enroll_url: 'https://direct.enrollmpb.com/',
+    enroll_url: getPlanEnrollUrl('direct'),
     features: [
       { id: '1', feature_name: 'Preventive Care Sharing', category: 'Core Benefits', notes: 'Wellness visits and screenings shared' },
       { id: '1b', feature_name: 'Screening mammography & colonoscopy', category: 'Core Benefits', notes: '6-month waiting period on Direct' },
@@ -120,7 +121,7 @@ const fallbackPlans: PlanWithFeatures[] = [
     annual_membership_fee: 0,
     tobacco_surcharge_pct: 0,
     price_display: '$239',
-    enroll_url: 'https://securehsa.enrollmpb.com/',
+    enroll_url: getPlanEnrollUrl('secure-hsa'),
     features: [
       { id: '1', feature_name: 'HSA Compatibility', category: 'Core Benefits', notes: 'Triple tax advantages' },
       { id: '2', feature_name: 'Medical Cost Sharing', category: 'Core Benefits', notes: 'Share eligible expenses after IUA' },

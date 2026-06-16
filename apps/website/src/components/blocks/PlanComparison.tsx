@@ -76,20 +76,15 @@ export const PlanComparison: React.FC<PlanComparisonProps> = ({
                             {planDetails[planName]?.price}
                             <span className="text-sm font-normal text-neutral-600">/mo</span>
                           </div>
-                          <button
-                            onClick={() => {
-                              onClose();
-                              setTimeout(() => {
-                                const calculator = document.getElementById('calculator');
-                                if (calculator) {
-                                  calculator.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                                }
-                              }, 100);
-                            }}
+                          <a
+                            href={planDetails[planName]?.enrollUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={onClose}
                             className="inline-flex items-center justify-center w-full px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-cyan-700 transition-all duration-300 text-sm"
                           >
-                            Get Your Quote
-                          </button>
+                            Enroll Now
+                          </a>
                         </div>
                       </th>
                     ))}

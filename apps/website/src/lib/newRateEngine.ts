@@ -5,6 +5,7 @@ import {
   getBenefitTiersForPlan as getBenefitTiersV2,
   getConfigurationVersion as getConfigurationVersionV2
 } from './newRateEngine.v2';
+import { getPlanEnrollUrl } from './planEnrollUrls';
 import { lookupPrice } from './pricingService';
 import { createClientLogger } from '@mpbhealth/utils';
 
@@ -170,33 +171,33 @@ export function getConfigurationVersion(): string {
 
 // Plan metadata — from Membership Overview (Agent Resource) PDF
 const PLAN_METADATA: Record<string, { label: string; description: string; popular?: boolean; hsaCompatible?: boolean; enrollUrl?: string }> = {
-  'essentials': {
+  essentials: {
     label: 'Essentials',
     description: 'Hospital debt relief + $0 virtual care. No medical cost sharing.',
-    enrollUrl: 'https://essentials.enrollmpb.com/'
+    enrollUrl: getPlanEnrollUrl('essentials'),
   },
   'mec-essentials': {
     label: 'MEC+ Essentials',
     description: 'ACA MEC + Debt Dismissal + HSA. No medical cost sharing.',
-    enrollUrl: 'https://mecplus.enrollmpb.com/'
+    enrollUrl: getPlanEnrollUrl('mec-essentials'),
   },
   'care-plus': {
     label: 'Care+',
     description: 'Medical cost sharing + virtual care + MPB Concierge',
-    enrollUrl: 'https://careplus.enrollmpb.com/'
+    enrollUrl: getPlanEnrollUrl('care-plus'),
   },
-  'direct': {
+  direct: {
     label: 'Direct',
     description: 'Limited preventive sharing + medical cost sharing + virtual care',
-    enrollUrl: 'https://direct.enrollmpb.com/'
+    enrollUrl: getPlanEnrollUrl('direct'),
   },
   'secure-hsa': {
     label: 'Secure HSA',
     description: 'Medical cost sharing + MEC + HSA + RX Valet',
     hsaCompatible: true,
-    popular: true, // Best seller
-    enrollUrl: 'https://securehsa.enrollmpb.com/'
-  }
+    popular: true,
+    enrollUrl: getPlanEnrollUrl('secure-hsa'),
+  },
 };
 
 /**

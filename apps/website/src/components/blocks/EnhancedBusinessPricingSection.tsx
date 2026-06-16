@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { EnhancedPricingCard } from './EnhancedPricingCard';
+import { getPlanEnrollUrl } from '../../lib/planEnrollUrls';
 import { PlanComparison } from './PlanComparison';
 import { MobilePricingCarousel } from './MobilePricingCarousel';
 import { StickyComparisonBar } from './StickyComparisonBar';
@@ -32,7 +33,7 @@ const businessPlansData: PlanData[] = [
     description: 'ACA MEC + Debt Dismissal + HSA for small businesses (2–50 employees).',
     whoIsThisFor: 'Best for: Cost-conscious businesses & 1099 professionals',
     tier: 'basic',
-    enrollUrl: 'https://mec.enrollmpb.com/',
+    enrollUrl: getPlanEnrollUrl('mec-essentials'),
     footnote: '*Eligibility requirements apply; speak to a healthcare advisor for details.',
     features: [
       { name: 'HSA Compatible', category: 'financial', tooltip: 'Contribute pre-tax dollars to a Health Savings Account' },
@@ -57,7 +58,7 @@ const businessPlansData: PlanData[] = [
     whoIsThisFor: 'Best for: Self-employed & business owners seeking tax advantages',
     tier: 'elite',
     popular: true,
-    enrollUrl: 'https://securehsa.enrollmpb.com/',
+    enrollUrl: getPlanEnrollUrl('secure-hsa'),
     footnote: '*1099 or business ID requirement',
     features: [
       { name: 'HSA Compatible', category: 'financial', tooltip: 'Contribute pre-tax dollars to a Health Savings Account' },

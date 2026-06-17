@@ -299,6 +299,15 @@ function RequirePermission({ permission, children }: { permission: string; child
   return <>{children}</>;
 }
 
+function RequireAnyPermission({ permissions, children }: { permissions: string[]; children: React.ReactNode }) {
+  const { hasPermission, loading } = useAdmin();
+  if (loading) return <LoadingSpinner />;
+  if (!permissions.some((permission) => hasPermission(permission))) {
+    return <Navigate to="/" replace />;
+  }
+  return <>{children}</>;
+}
+
 export default function App() {
   return (
     <AdminProvider>
@@ -314,7 +323,7 @@ export default function App() {
             <Route path="/" element={<MainLayout />}>
               <Route index element={<Dashboard />} />
               <Route path="users" element={<RequirePermission permission="users.manage"><Users /></RequirePermission>} />
-              <Route path="advisor-access" element={<RequirePermission permission="users.manage"><AdvisorAccess /></RequirePermission>} />
+              <Route path="advisor-access" element={<RequireAnyPermission permissions={['users.manage', 'advisors.impersonate']}><AdvisorAccess /></RequireAnyPermission>} />
               <Route path="users/:userId" element={<RequirePermission permission="users.manage"><UserDetail /></RequirePermission>} />
               <Route path="enrollments" element={<RequirePermission permission="enrollments.manage"><Enrollments /></RequirePermission>} />
               <Route path="enrollments/:enrollmentId" element={<RequirePermission permission="enrollments.manage"><EnrollmentDetail /></RequirePermission>} />

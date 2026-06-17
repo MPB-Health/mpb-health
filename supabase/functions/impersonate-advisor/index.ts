@@ -97,22 +97,28 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Verify caller has super_admin or admin role
-    const { data: callerRoles, error: rolesError } = await supabaseAdmin
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", caller.id);
+    // Verify caller may impersonate advisors (super_admin or advisors.impersonate permission)
+    const { data: adminProfile, error: adminError } = await supabaseAdmin
+      .from("admin_users")
+      .select("role, permissions")
+      .eq("id", caller.id)
+      .maybeSingle();
 
-    if (rolesError) {
-      log.error("Failed to check caller roles", rolesError);
+    if (adminError) {
+      log.error("Failed to check caller admin profile", adminError);
       return new Response(
         JSON.stringify({ success: false, error: "Failed to verify permissions" }),
         { status: 500, headers },
       );
     }
 
-    const roleSet = new Set((callerRoles ?? []).map((r: { role: string }) => r.role));
-    if (!roleSet.has("super_admin") && !roleSet.has("admin")) {
+    const isSuperAdmin = adminProfile?.role === "super_admin";
+    const permissions = Array.isArray(adminProfile?.permissions)
+      ? (adminProfile.permissions as string[])
+      : [];
+    const hasImpersonatePermission = permissions.includes("advisors.impersonate");
+
+    if (!isSuperAdmin && !hasImpersonatePermission) {
       return new Response(
         JSON.stringify({ success: false, error: "Insufficient permissions" }),
         { status: 403, headers },
@@ -224,11 +230,12 @@ Deno.serve(async (req: Request) => {
     // ── Mode: Magic Link ──────────────────────────────────────────────────────
 
     if (mode === "magiclink") {
+      const redirectTo = `${ADVISOR_PORTAL_URL.replace(/\/$/, "")}/auth/confirm?impersonation=1`;
       const { data: linkData, error: linkError } =
         await supabaseAdmin.auth.admin.generateLink({
           type: "magiclink",
           email: advisorEmail!,
-          options: { redirectTo: ADVISOR_PORTAL_URL },
+          options: { redirectTo },
         });
 
       if (linkError) {

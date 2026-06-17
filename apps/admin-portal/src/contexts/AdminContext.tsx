@@ -28,6 +28,7 @@ interface AdminContextType {
   hasPermission: (permission: string) => boolean;
   isAdmin: boolean;
   isSuperAdmin: boolean;
+  canImpersonateAdvisors: boolean;
 }
 
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
@@ -124,6 +125,8 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
   const isSuperAdmin = user?.role === 'super_admin';
+  const canImpersonateAdvisors =
+    isSuperAdmin || (user?.permissions?.includes('advisors.impersonate') ?? false);
 
   // Initial load — onAuthStateChange handles INITIAL_SESSION + SIGNED_IN
   // to avoid the race condition of calling loadUser() twice simultaneously.
@@ -206,6 +209,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       hasPermission,
       isAdmin,
       isSuperAdmin,
+      canImpersonateAdvisors,
     }),
     [
       user,
@@ -219,6 +223,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       hasPermission,
       isAdmin,
       isSuperAdmin,
+      canImpersonateAdvisors,
     ]
   );
 

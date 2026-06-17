@@ -66,7 +66,7 @@ const ADVISOR_STATUS_OPTIONS: AdvisorProfileSummary['status'][] = [
 export default function UserDetail() {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
-  const { isSuperAdmin } = useAdmin();
+  const { isSuperAdmin, canImpersonateAdvisors } = useAdmin();
 
   // Admin user (from admin_users table — may be null for portal-only users)
   const [user, setUser] = useState<AdminUser | null>(null);
@@ -539,7 +539,7 @@ export default function UserDetail() {
   };
 
   const renderImpersonateButton = () => {
-    if (!isSuperAdmin || !isAdvisor) return null;
+    if (!canImpersonateAdvisors || !isAdvisor) return null;
     return (
       <button
         type="button"

@@ -499,7 +499,7 @@ export class UserService {
 
   /**
    * Impersonate an advisor by generating a magic link or setting a temporary password.
-   * Restricted to super_admin / admin roles (enforced server-side by the edge function).
+   * Restricted to super_admin or advisors.impersonate (enforced server-side by the edge function).
    */
   async impersonateAdvisor(
     advisorId: string,

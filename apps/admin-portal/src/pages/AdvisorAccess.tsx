@@ -52,7 +52,7 @@ function generateTempPassword(): string {
 
 export default function AdvisorAccess() {
   const navigate = useNavigate();
-  const { isSuperAdmin } = useAdmin();
+  const { isSuperAdmin, canImpersonateAdvisors } = useAdmin();
 
   const queryClient = useQueryClient();
 
@@ -540,7 +540,7 @@ export default function AdvisorAccess() {
                           )}
 
                           {/* Login as advisor */}
-                          {isSuperAdmin && (
+                          {canImpersonateAdvisors && (
                             <button
                               type="button"
                               onClick={() => {

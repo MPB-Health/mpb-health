@@ -39,6 +39,7 @@ const routeModules = {
   ForgotPassword: () => import('./pages/ForgotPassword'),
   ResetPassword: () => import('./pages/ResetPassword'),
   ChangePassword: () => import('./pages/ChangePassword'),
+  AuthConfirm: () => import('./pages/AuthConfirm'),
   SettingsHub: () => import('./pages/settings/SettingsHub'),
   OrganizationSettings: () => import('./pages/settings/OrganizationSettings'),
   TeamManagement: () => import('./pages/settings/TeamManagement'),
@@ -121,6 +122,7 @@ const Login = React.lazy(routeModules.Login);
 const ForgotPassword = React.lazy(routeModules.ForgotPassword);
 const ResetPassword = React.lazy(routeModules.ResetPassword);
 const ChangePassword = React.lazy(routeModules.ChangePassword);
+const AuthConfirm = React.lazy(routeModules.AuthConfirm);
 const SettingsHub = React.lazy(routeModules.SettingsHub);
 const OrganizationSettings = React.lazy(routeModules.OrganizationSettings);
 const TeamManagement = React.lazy(routeModules.TeamManagement);
@@ -270,6 +272,7 @@ export default function App() {
             <Route path="/forgot-password" element={<Suspense fallback={routeFallback('Loading…', 'Preparing password reset.')}><ForgotPassword /></Suspense>} />
             <Route path="/reset-password" element={<Suspense fallback={routeFallback('Loading…', 'Preparing reset form.')}><ResetPassword /></Suspense>} />
             <Route path="/change-password" element={<Suspense fallback={routeFallback('Loading…', 'Preparing password change.')}><ChangePassword /></Suspense>} />
+            <Route path="/auth/confirm" element={<Suspense fallback={routeFallback('Signing in…', 'Completing secure sign-in.')}><AuthConfirm /></Suspense>} />
 
             {/* Authenticated routes — Suspense renders inside the layout shell */}
             <Route path="/" element={<MainLayout />}>

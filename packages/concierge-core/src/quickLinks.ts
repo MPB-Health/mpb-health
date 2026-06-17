@@ -66,6 +66,7 @@ export const QUICK_LINKS: QuickLink[] = [
     name: 'Imaging & More',
     children: [
       { name: 'RadiologyAssist', url: 'https://radiologyassist.com/' },
+      { name: 'SumHealth', url: 'https://search.sumhealth.org/' },
       { name: 'Healthcare Bluebook', url: 'https://www.healthcarebluebook.com/ui/signinpublic' },
       { name: 'MD Save', url: 'https://www.mdsave.com/' },
       { name: 'Colonoscopy Assist', url: 'https://colonoscopyassist.com/' },

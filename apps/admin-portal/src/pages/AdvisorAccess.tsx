@@ -30,6 +30,7 @@ import {
 } from '@mpbhealth/admin-core';
 import { useAdmin } from '../contexts/AdminContext';
 import AddAdvisorModal from '../components/AddAdvisorModal';
+import { openUrlInNewTab } from '../utils/openUrlInNewTab';
 
 type SortField = 'name' | 'email' | 'status' | 'created_at';
 type SortDir = 'asc' | 'desc';
@@ -84,6 +85,7 @@ export default function AdvisorAccess() {
   const [impersonateMode, setImpersonateMode] = useState<'magiclink' | 'temp_password'>('magiclink');
   const [impersonating, setImpersonating] = useState(false);
   const [impersonateTempPw, setImpersonateTempPw] = useState('');
+  const [impersonateMagicUrl, setImpersonateMagicUrl] = useState('');
 
   // Debounce search
   useEffect(() => {
@@ -238,19 +240,32 @@ export default function AdvisorAccess() {
 
   const handleImpersonate = async () => {
     if (!impersonateTarget) return;
+    const popup =
+      impersonateMode === 'magiclink' ? window.open('about:blank', '_blank') : null;
     setImpersonating(true);
     setImpersonateTempPw('');
+    setImpersonateMagicUrl('');
     try {
       const result = await userService.impersonateAdvisor(impersonateTarget.id, impersonateMode);
       if (impersonateMode === 'magiclink' && result.url) {
-        window.open(result.url, '_blank');
-        toast.success(`Opening advisor portal as ${impersonateTarget.first_name} ${impersonateTarget.last_name}`);
-        setImpersonateTarget(null);
+        const opened = openUrlInNewTab(result.url, popup);
+        if (opened) {
+          toast.success(`Opening advisor portal as ${impersonateTarget.first_name} ${impersonateTarget.last_name}`);
+          setImpersonateTarget(null);
+        } else {
+          setImpersonateMagicUrl(result.url);
+          popup?.close();
+          toast.error('Popup blocked — copy the link below and open it in a new tab.');
+        }
       } else if (impersonateMode === 'temp_password' && result.temp_password) {
+        popup?.close();
         setImpersonateTempPw(result.temp_password);
         toast.success('Temporary password set');
+      } else {
+        popup?.close();
       }
     } catch (err) {
+      popup?.close();
       toast.error(err instanceof Error ? err.message : 'Impersonation failed');
     } finally {
       setImpersonating(false);
@@ -675,7 +690,7 @@ export default function AdvisorAccess() {
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div
             className="absolute inset-0 bg-black/50"
-            onClick={() => { setImpersonateTarget(null); setImpersonateTempPw(''); }}
+            onClick={() => { setImpersonateTarget(null); setImpersonateTempPw(''); setImpersonateMagicUrl(''); }}
           />
           <div className="relative bg-surface-primary rounded-2xl border border-th-border shadow-xl w-full max-w-md mx-4 p-6 space-y-5">
             <div className="flex items-start justify-between">
@@ -690,7 +705,7 @@ export default function AdvisorAccess() {
               </div>
               <button
                 type="button"
-                onClick={() => { setImpersonateTarget(null); setImpersonateTempPw(''); }}
+                onClick={() => { setImpersonateTarget(null); setImpersonateTempPw(''); setImpersonateMagicUrl(''); }}
                 aria-label="Close dialog"
                 className="p-1 text-th-text-tertiary hover:text-th-text-primary rounded"
               >
@@ -708,7 +723,7 @@ export default function AdvisorAccess() {
               )}
             </div>
 
-            {!impersonateTempPw && (
+            {!impersonateTempPw && !impersonateMagicUrl && (
               <>
                 <div>
                   <label className="block text-sm font-medium text-th-text-secondary mb-2">Method</label>
@@ -756,7 +771,7 @@ export default function AdvisorAccess() {
                 <div className="flex items-center justify-end gap-2 pt-1">
                   <button
                     type="button"
-                    onClick={() => { setImpersonateTarget(null); setImpersonateTempPw(''); }}
+                    onClick={() => { setImpersonateTarget(null); setImpersonateTempPw(''); setImpersonateMagicUrl(''); }}
                     className="px-4 py-2 text-sm border border-th-border rounded-lg text-th-text-secondary hover:bg-surface-tertiary transition-colors"
                   >
                     Cancel
@@ -776,6 +791,49 @@ export default function AdvisorAccess() {
                   </button>
                 </div>
               </>
+            )}
+
+            {impersonateMagicUrl && (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-medium text-th-text-secondary mb-1.5">
+                    Advisor Portal Login Link
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      readOnly
+                      value={impersonateMagicUrl}
+                      aria-label="Advisor portal login link"
+                      className="flex-1 px-3 py-2 text-sm font-mono bg-surface-secondary border border-th-border rounded-lg text-th-text-primary"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard(impersonateMagicUrl)}
+                      title="Copy link"
+                      className="p-2 text-th-text-tertiary hover:text-th-text-secondary rounded-lg hover:bg-surface-tertiary transition-colors"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+                <a
+                  href={impersonateMagicUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 w-full px-4 py-2 text-sm bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  Open Advisor Portal
+                </a>
+                <button
+                  type="button"
+                  onClick={() => { setImpersonateTarget(null); setImpersonateTempPw(''); setImpersonateMagicUrl(''); }}
+                  className="w-full px-4 py-2 text-sm border border-th-border rounded-lg text-th-text-secondary hover:bg-surface-tertiary transition-colors"
+                >
+                  Done
+                </button>
+              </div>
             )}
 
             {impersonateTempPw && (
@@ -810,7 +868,7 @@ export default function AdvisorAccess() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => { setImpersonateTarget(null); setImpersonateTempPw(''); }}
+                  onClick={() => { setImpersonateTarget(null); setImpersonateTempPw(''); setImpersonateMagicUrl(''); }}
                   className="w-full px-4 py-2 text-sm border border-th-border rounded-lg text-th-text-secondary hover:bg-surface-tertiary transition-colors"
                 >
                   Done

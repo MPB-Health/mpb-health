@@ -14,6 +14,35 @@ interface ImpersonateRequest {
   mode: "magiclink" | "temp_password";
 }
 
+async function buildAdvisorMagicLinkUrl(
+  linkData: {
+    properties?: { action_link?: string; hashed_token?: string };
+  },
+): Promise<string | null> {
+  const confirmBase = `${ADVISOR_PORTAL_URL.replace(/\/$/, "")}/auth/confirm`;
+  const hashedToken = linkData.properties?.hashed_token;
+
+  if (hashedToken) {
+    return `${confirmBase}?token_hash=${encodeURIComponent(hashedToken)}&type=magiclink&impersonation=1`;
+  }
+
+  const actionLink = linkData.properties?.action_link;
+  if (!actionLink) return null;
+
+  const actionUrl = new URL(actionLink);
+  const rawToken = actionUrl.searchParams.get("token");
+  if (rawToken) {
+    const hashInput = new TextEncoder().encode(rawToken + "magiclink");
+    const hashBuf = await crypto.subtle.digest("SHA-256", hashInput);
+    const computedHash = Array.from(new Uint8Array(hashBuf))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+    return `${confirmBase}?token_hash=${encodeURIComponent(computedHash)}&type=magiclink&impersonation=1`;
+  }
+
+  return null;
+}
+
 function generateSecurePassword(): string {
   const upper = "ABCDEFGHJKLMNPQRSTUVWXYZ";
   const lower = "abcdefghjkmnpqrstuvwxyz";
@@ -112,11 +141,20 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const isSuperAdmin = adminProfile?.role === "super_admin";
+    const isSuperAdminRole = adminProfile?.role === "super_admin";
     const permissions = Array.isArray(adminProfile?.permissions)
       ? (adminProfile.permissions as string[])
       : [];
     const hasImpersonatePermission = permissions.includes("advisors.impersonate");
+
+    let isSuperAdmin = isSuperAdminRole;
+    if (!isSuperAdmin && !hasImpersonatePermission) {
+      const { data: roleRows } = await supabaseAdmin
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", caller.id);
+      isSuperAdmin = (roleRows ?? []).some((r: { role: string }) => r.role === "super_admin");
+    }
 
     if (!isSuperAdmin && !hasImpersonatePermission) {
       return new Response(
@@ -246,10 +284,10 @@ Deno.serve(async (req: Request) => {
         );
       }
 
-      const verificationUrl = linkData.properties?.action_link;
+      const verificationUrl = await buildAdvisorMagicLinkUrl(linkData);
       if (!verificationUrl) {
         return new Response(
-          JSON.stringify({ success: false, error: "No action link generated" }),
+          JSON.stringify({ success: false, error: "No login link generated" }),
           { status: 500, headers },
         );
       }

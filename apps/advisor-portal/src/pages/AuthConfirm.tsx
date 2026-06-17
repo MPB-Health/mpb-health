@@ -56,10 +56,31 @@ export default function AuthConfirm() {
     const confirmAuth = async () => {
       const tokenHash = searchParams.get('token_hash');
       const type = searchParams.get('type');
+      const email = searchParams.get('email');
+      const otpToken = searchParams.get('token');
 
       if (tokenHash && (type === 'magiclink' || type === 'email')) {
         const { error } = await supabase.auth.verifyOtp({
           token_hash: tokenHash,
+          type: 'magiclink',
+        });
+        if (cancelled) return;
+        if (error) {
+          fail(
+            error.message.includes('expired')
+              ? 'This sign-in link has expired. Request a new one from Admin Portal.'
+              : 'This sign-in link is invalid. Request a new one from Admin Portal.',
+          );
+          return;
+        }
+        finish();
+        return;
+      }
+
+      if (email && otpToken && (type === 'magiclink' || type === 'email')) {
+        const { error } = await supabase.auth.verifyOtp({
+          email,
+          token: otpToken,
           type: 'magiclink',
         });
         if (cancelled) return;

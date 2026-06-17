@@ -35,6 +35,7 @@ import {
   type CrossPortalUser,
 } from '@mpbhealth/admin-core';
 import { useAdmin } from '../contexts/AdminContext';
+import { openUrlInNewTab } from '../utils/openUrlInNewTab';
 
 const ALL_PORTAL_ROLES: PortalRole[] = ['super_admin', 'admin', 'advisor', 'member', 'crm_user', 'concierge'];
 
@@ -114,6 +115,7 @@ export default function UserDetail() {
   const [impersonateMode, setImpersonateMode] = useState<'magiclink' | 'temp_password'>('magiclink');
   const [impersonating, setImpersonating] = useState(false);
   const [impersonateTempPw, setImpersonateTempPw] = useState('');
+  const [impersonateMagicUrl, setImpersonateMagicUrl] = useState('');
 
   // Profile name editing (for cross-portal users without an admin_users row)
   const [editingProfile, setEditingProfile] = useState(false);
@@ -514,19 +516,32 @@ export default function UserDetail() {
 
   const handleImpersonate = async () => {
     if (!userId) return;
+    const popup =
+      impersonateMode === 'magiclink' ? window.open('about:blank', '_blank') : null;
     setImpersonating(true);
     setImpersonateTempPw('');
+    setImpersonateMagicUrl('');
     try {
       const result = await userService.impersonateAdvisor(userId, impersonateMode);
       if (impersonateMode === 'magiclink' && result.url) {
-        window.open(result.url, '_blank');
-        toast.success(`Opening advisor portal as ${result.advisor_name ?? 'advisor'}`);
-        setShowImpersonateDialog(false);
+        const opened = openUrlInNewTab(result.url, popup);
+        if (opened) {
+          toast.success(`Opening advisor portal as ${result.advisor_name ?? 'advisor'}`);
+          setShowImpersonateDialog(false);
+        } else {
+          setImpersonateMagicUrl(result.url);
+          popup?.close();
+          toast.error('Popup blocked — copy the link below and open it in a new tab.');
+        }
       } else if (impersonateMode === 'temp_password' && result.temp_password) {
+        popup?.close();
         setImpersonateTempPw(result.temp_password);
         toast.success('Temporary password set');
+      } else {
+        popup?.close();
       }
     } catch (err) {
+      popup?.close();
       toast.error(err instanceof Error ? err.message : 'Impersonation failed');
     } finally {
       setImpersonating(false);
@@ -547,6 +562,7 @@ export default function UserDetail() {
           setShowImpersonateDialog(true);
           setImpersonateMode('magiclink');
           setImpersonateTempPw('');
+          setImpersonateMagicUrl('');
         }}
         className="flex items-center space-x-2 px-4 py-2 border border-violet-200 dark:border-violet-800 text-violet-600 dark:text-violet-400 rounded-lg hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors"
       >
@@ -567,7 +583,7 @@ export default function UserDetail() {
       <div className="fixed inset-0 z-50 flex items-center justify-center">
         <div
           className="absolute inset-0 bg-black/50"
-          onClick={() => { setShowImpersonateDialog(false); setImpersonateTempPw(''); }}
+          onClick={() => { setShowImpersonateDialog(false); setImpersonateTempPw(''); setImpersonateMagicUrl(''); }}
         />
         <div className="relative bg-surface-primary rounded-2xl border border-th-border shadow-xl w-full max-w-md mx-4 p-6 space-y-5">
           <div className="flex items-start justify-between">
@@ -582,7 +598,7 @@ export default function UserDetail() {
             </div>
             <button
               type="button"
-              onClick={() => { setShowImpersonateDialog(false); setImpersonateTempPw(''); }}
+              onClick={() => { setShowImpersonateDialog(false); setImpersonateTempPw(''); setImpersonateMagicUrl(''); }}
               aria-label="Close dialog"
               className="p-1 text-th-text-tertiary hover:text-th-text-primary rounded"
             >
@@ -595,7 +611,7 @@ export default function UserDetail() {
             <p className="text-sm text-th-text-tertiary">{targetEmail}</p>
           </div>
 
-          {!impersonateTempPw && (
+          {!impersonateTempPw && !impersonateMagicUrl && (
             <>
               <div>
                 <label className="block text-sm font-medium text-th-text-secondary mb-2">Method</label>
@@ -643,7 +659,7 @@ export default function UserDetail() {
               <div className="flex items-center justify-end gap-2 pt-1">
                 <button
                   type="button"
-                  onClick={() => { setShowImpersonateDialog(false); setImpersonateTempPw(''); }}
+                  onClick={() => { setShowImpersonateDialog(false); setImpersonateTempPw(''); setImpersonateMagicUrl(''); }}
                   className="px-4 py-2 text-sm border border-th-border rounded-lg text-th-text-secondary hover:bg-surface-tertiary transition-colors"
                 >
                   Cancel
@@ -663,6 +679,49 @@ export default function UserDetail() {
                 </button>
               </div>
             </>
+          )}
+
+          {impersonateMagicUrl && (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-th-text-secondary mb-1.5">
+                  Advisor Portal Login Link
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={impersonateMagicUrl}
+                    aria-label="Advisor portal login link"
+                    className="flex-1 px-3 py-2 text-sm font-mono bg-surface-secondary border border-th-border rounded-lg text-th-text-primary"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => copyToClipboard(impersonateMagicUrl)}
+                    title="Copy link"
+                    className="p-2 text-th-text-tertiary hover:text-th-text-secondary rounded-lg hover:bg-surface-tertiary transition-colors"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+              <a
+                href={impersonateMagicUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 w-full px-4 py-2 text-sm bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Open Advisor Portal
+              </a>
+              <button
+                type="button"
+                onClick={() => { setShowImpersonateDialog(false); setImpersonateTempPw(''); setImpersonateMagicUrl(''); }}
+                className="w-full px-4 py-2 text-sm border border-th-border rounded-lg text-th-text-secondary hover:bg-surface-tertiary transition-colors"
+              >
+                Done
+              </button>
+            </div>
           )}
 
           {impersonateTempPw && (
@@ -697,7 +756,7 @@ export default function UserDetail() {
               </div>
               <button
                 type="button"
-                onClick={() => { setShowImpersonateDialog(false); setImpersonateTempPw(''); }}
+                onClick={() => { setShowImpersonateDialog(false); setImpersonateTempPw(''); setImpersonateMagicUrl(''); }}
                 className="w-full px-4 py-2 text-sm border border-th-border rounded-lg text-th-text-secondary hover:bg-surface-tertiary transition-colors"
               >
                 Done

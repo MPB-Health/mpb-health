@@ -31,6 +31,7 @@ import {
   ticketService,
   type TicketDetail,
   type TicketComment,
+  type TicketFileRow,
 } from '@mpbhealth/advisor-core';
 import { useTicketAuth } from '../components/TicketAuthWrapper';
 import { formatStatusLabel } from '../components/tickets/advisorTicketUi';
@@ -224,9 +225,20 @@ export default function TicketDetailPage() {
   /** Bumped to force the signing effect to re-run when the user clicks Retry. */
   const [openingAttachmentsResignNonce, setOpeningAttachmentsResignNonce] = useState(0);
 
+  /** Opening attachments plus files linked to any thread comment (e.g. support replies). */
+  const allTicketFiles = useMemo((): TicketFileRow[] => {
+    if (!detail) return [];
+    const byId = new Map<string, TicketFileRow>();
+    for (const f of detail.ticket_files ?? []) byId.set(f.id, f);
+    for (const c of detail.comments) {
+      for (const f of c.ticket_files ?? []) byId.set(f.id, f);
+    }
+    return Array.from(byId.values()).sort((a, b) => a.created_at.localeCompare(b.created_at));
+  }, [detail]);
+
   useEffect(() => {
-    const files = detail?.ticket_files;
-    if (!files?.length) {
+    const files = allTicketFiles;
+    if (!files.length) {
       setOpeningAttachmentUrls({});
       setOpeningAttachmentErrors({});
       setOpeningAttachmentsSigning(false);
@@ -278,7 +290,7 @@ export default function TicketDetailPage() {
     return () => {
       cancelled = true;
     };
-  }, [detail?.ticket_files, detail?.ticket.id, executeWithAuth, openingAttachmentsResignNonce]);
+  }, [allTicketFiles, detail?.ticket.id, executeWithAuth, openingAttachmentsResignNonce]);
 
   const retryOpeningAttachments = useCallback(() => {
     setOpeningAttachmentsResignNonce((n) => n + 1);
@@ -541,7 +553,7 @@ export default function TicketDetailPage() {
     );
   }
 
-  const { ticket, comments, ticket_files: openingAttachments = [] } = detail;
+  const { ticket, comments } = detail;
 
   const requesterId = ticket.requester_id ?? null;
   const profileAuthorIds = [profile?.user_id, profile?.id].filter((x): x is string => Boolean(x));
@@ -775,13 +787,16 @@ export default function TicketDetailPage() {
             ) : null}
 
             <section className="mb-6">
-              <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-white">
+              <h2 className="mb-1 flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-white">
                 <Paperclip size={16} className="shrink-0 text-slate-500" aria-hidden />
-                Submitted attachments
+                Attachments
               </h2>
-              {openingAttachments.length > 0 ? (
+              <p className="mb-3 text-xs text-slate-500 dark:text-slate-400">
+                Files on this ticket, including support replies in the thread below.
+              </p>
+              {allTicketFiles.length > 0 ? (
                 <ul className="divide-y divide-slate-200 rounded-lg border border-slate-200 bg-white dark:divide-slate-700 dark:border-slate-700 dark:bg-slate-900/40">
-                  {openingAttachments.map((f) => {
+                  {allTicketFiles.map((f) => {
                     const href = openingAttachmentUrls[f.id];
                     const signErr = openingAttachmentErrors[f.id];
                     const sizeLabel = formatAttachmentSize(f.file_size);
@@ -854,7 +869,7 @@ export default function TicketDetailPage() {
                 </ul>
               ) : (
                 <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50/50 px-4 py-6 text-center text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800/20 dark:text-slate-400">
-                  No files were attached when this ticket was opened.
+                  No attachments on this ticket yet.
                 </p>
               )}
             </section>

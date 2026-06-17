@@ -109,10 +109,12 @@ function getItstsClient(): ReturnType<typeof createClient> | null {
 }
 
 async function getItstsUserId(itstsAdmin: ReturnType<typeof createClient>, email: string): Promise<string | null> {
+  const normalized = email.trim();
+  if (!normalized) return null;
   const { data } = await itstsAdmin
     .from("profiles")
     .select("id")
-    .eq("email", email)
+    .ilike("email", normalized)
     .maybeSingle();
   return data?.id || null;
 }

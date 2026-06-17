@@ -1,0 +1,17 @@
+{
+  "name": "MPB Health Staff Hub",
+  "short_name": "Staff Hub",
+  "description": "Internal SSO launcher for MPB Health staff portals",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0A4E8E",
+  "theme_color": "#0A4E8E",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

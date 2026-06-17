@@ -30,7 +30,6 @@ const ADMIN_ACTIONS: ProxyAction[] = ["list_all", "detail_admin", "stats_all", "
 /** Actions that only need MPB JWT + ITSTS connectivity (no ITSTS profile row lookup). */
 const NO_USER_LOOKUP_ACTIONS: ProxyAction[] = [
   "get_categories",
-  "resign_attachments",
   "delete_ticket_attachment_paths",
 ];
 
@@ -1747,18 +1746,31 @@ Deno.serve(async (req: Request) => {
         }
         const isAdmin = await checkAdminRole(supabaseAdmin, user.id);
 
+        // Staff reply attachments use `{ticketId}/…` paths — ownership requires ITSTS requester id.
+        let resignItstsUserId = itstsUserId;
+        if (!resignItstsUserId) {
+          try {
+            resignItstsUserId = await getItstsUserId(itstsAdmin, user.email);
+          } catch (lookupErr) {
+            log.error("resign_attachments ITSTS user lookup failed", {
+              correlationId,
+              error: String(lookupErr),
+            });
+          }
+        }
+
         // Per-ticket ownership cache so a batch of attachments from the same
         // ticket only hits ITSTS once.
         const ticketOwnershipCache = new Map<string, boolean>();
         const checkTicketOwnership = async (ticketIdFromPath: string): Promise<boolean> => {
-          if (!UUID_RE.test(ticketIdFromPath) || !itstsUserId) return false;
+          if (!UUID_RE.test(ticketIdFromPath) || !resignItstsUserId) return false;
           const cached = ticketOwnershipCache.get(ticketIdFromPath);
           if (cached !== undefined) return cached;
           const { data: ticketRow } = await itstsAdmin
             .from("tickets")
             .select("id")
             .eq("id", ticketIdFromPath)
-            .eq("requester_id", itstsUserId)
+            .eq("requester_id", resignItstsUserId)
             .maybeSingle();
           const owned = !!ticketRow;
           ticketOwnershipCache.set(ticketIdFromPath, owned);
@@ -1808,7 +1820,7 @@ Deno.serve(async (req: Request) => {
               correlationId,
               user_id: user.id,
               path: p,
-              has_itsts_id: !!itstsUserId,
+              has_itsts_id: !!resignItstsUserId,
             });
             signed.push({ path: p, url: null, error: "Access denied" });
             continue;

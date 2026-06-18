@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useCallback } from 'react';
 import { getBrandLogo, AppLayout, PortalSwitcher, Button, detectBrand, type NavItem, type PortalKey } from '@mpbhealth/ui';
-import { Outlet, NavLink, useNavigate, Navigate, useLocation } from 'react-router-dom';
+import { Outlet, NavLink, Navigate, useLocation } from 'react-router-dom';
 import { PortalSeo } from '../components/PortalSeo';
 import { ImpersonationBanner } from '../components/ImpersonationBanner';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -74,7 +74,8 @@ import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { useUserPreferences } from '../hooks/useSettings';
 import { GlobalSearch } from '../components/GlobalSearch';
 import { setClearQueryCache } from '../utils/navCache';
-import { prefetchRouteByPath } from '../App';
+import { prefetchRouteByPath } from '../routing/lazyPages';
+import { useAdvisorNavigate } from '../hooks/useAdvisorNavigate';
 import { AdvisorPageLoader } from '../components/loading';
 
 // Icon mapping for dynamic icons from CMS
@@ -211,7 +212,7 @@ function mapMenuItemsToNavItems(items: NavMenuItem[]): NavItem[] {
 }
 
 export default function MainLayout() {
-  const navigate = useNavigate();
+  const navigate = useAdvisorNavigate();
   const location = useLocation();
   const {
     profile,

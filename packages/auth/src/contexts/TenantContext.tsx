@@ -10,9 +10,12 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
+  isAosPlatformHost,
+  parsePathTenantSlug,
   resolvePortalSlugFromHost,
-  resolveTenantFromHostname,
+  resolveTenantForPortal,
   type PortalSlug,
   type ResolvedTenant,
 } from '../services/tenantService';
@@ -21,7 +24,13 @@ export interface TenantContextValue {
   tenant: ResolvedTenant | null;
   orgId: string | null;
   orgName: string | null;
+  /** Org slug from resolved tenant or URL segment on AOS. */
+  orgSlug: string | null;
   portalSlug: PortalSlug;
+  /** First URL segment on AOS (/mpb-health/…); null on MPB Health hosts. */
+  pathTenantSlug: string | null;
+  /** True only on ARYX AOS platform hosts — never on advisor.mpb.health. */
+  isAosPlatform: boolean;
   loading: boolean;
   error: string | null;
 }
@@ -35,15 +44,20 @@ export interface TenantProviderProps {
 }
 
 export function TenantProvider({ children, portalSlug: portalSlugProp }: TenantProviderProps) {
+  const { pathname } = useLocation();
   const [tenant, setTenant] = useState<ResolvedTenant | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+  const isAosPlatform = isAosPlatformHost(hostname);
+  const pathTenantSlug = isAosPlatform ? parsePathTenantSlug(pathname) : null;
+
   const portalSlug = useMemo((): PortalSlug => {
     if (portalSlugProp) return portalSlugProp;
     if (typeof window === 'undefined') return 'advisor';
-    return resolvePortalSlugFromHost(window.location.hostname, window.location.port);
-  }, [portalSlugProp]);
+    return resolvePortalSlugFromHost(hostname, window.location.port);
+  }, [portalSlugProp, hostname]);
 
   useEffect(() => {
     let cancelled = false;
@@ -52,14 +66,33 @@ export function TenantProvider({ children, portalSlug: portalSlugProp }: TenantP
 
     void (async () => {
       try {
-        const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
-        const resolved = await resolveTenantFromHostname(hostname, portalSlug);
+        // AOS global pages (/landing) intentionally have no tenant segment.
+        if (isAosPlatform && !pathTenantSlug) {
+          if (cancelled) return;
+          setTenant(null);
+          setError(null);
+          setLoading(false);
+          return;
+        }
+
+        const resolved = await resolveTenantForPortal({
+          hostname,
+          portalSlug,
+          pathTenantSlug,
+        });
+
         if (cancelled) return;
+
         if (!resolved) {
-          setError('Organization not found for this domain.');
+          setError(
+            isAosPlatform && pathTenantSlug
+              ? `Organization "${pathTenantSlug}" not found or advisor portal is disabled.`
+              : 'Organization not found for this domain.',
+          );
           setTenant(null);
         } else {
           setTenant(resolved);
+          setError(null);
         }
       } catch (err) {
         if (cancelled) return;
@@ -73,18 +106,21 @@ export function TenantProvider({ children, portalSlug: portalSlugProp }: TenantP
     return () => {
       cancelled = true;
     };
-  }, [portalSlug]);
+  }, [hostname, portalSlug, pathTenantSlug, isAosPlatform]);
 
   const value = useMemo<TenantContextValue>(
     () => ({
       tenant,
       orgId: tenant?.orgId ?? null,
       orgName: tenant?.orgName ?? null,
+      orgSlug: tenant?.orgSlug ?? pathTenantSlug ?? null,
       portalSlug,
+      pathTenantSlug,
+      isAosPlatform,
       loading,
       error,
     }),
-    [tenant, portalSlug, loading, error],
+    [tenant, portalSlug, pathTenantSlug, isAosPlatform, loading, error],
   );
 
   return <TenantContext.Provider value={value}>{children}</TenantContext.Provider>;

@@ -217,6 +217,10 @@ export {
   tenantService,
   resolvePortalSlugFromHost,
   resolveTenantFromHostname,
+  resolveTenantForPortal,
+  isAosPlatformHost,
+  parsePathTenantSlug,
+  prefixTenantPath,
   listOrgPortalAccess,
   upsertOrgPortalAccess,
   type PortalSlug,
@@ -231,6 +235,8 @@ export {
   type TenantContextValue,
   type TenantProviderProps,
 } from './contexts/TenantContext';
+
+export { useTenantPath, tenantPathForHost } from './hooks/useTenantPath';
 
 // Types (re-exported for convenience)
 export type { AuthUser, AuthState } from './types';

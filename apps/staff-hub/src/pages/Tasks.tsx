@@ -16,6 +16,8 @@ import {
   Filter,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useTenant } from '@mpbhealth/auth';
+import { getStaffHubOrgId } from '../components/StaffHubOrgSync';
 
 interface Task {
   id: string;
@@ -38,6 +40,7 @@ const PRIORITY_CONFIG = {
 type FilterStatus = 'all' | 'active' | 'done';
 
 export default function Tasks() {
+  const { orgId, loading: tenantLoading } = useTenant();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('active');
@@ -49,9 +52,11 @@ export default function Tasks() {
   const [creating, setCreating] = useState(false);
 
   const loadTasks = async () => {
+    const org_id = getStaffHubOrgId();
     const { data } = await supabase
       .from('staff_tasks')
       .select('id, title, description, due_date, priority, status, completed_at, created_at')
+      .eq('org_id', org_id)
       .order('status', { ascending: true })
       .order('due_date', { ascending: true, nullsFirst: false })
       .order('created_at', { ascending: false });
@@ -60,8 +65,8 @@ export default function Tasks() {
   };
 
   useEffect(() => {
-    loadTasks();
-  }, []);
+    if (!tenantLoading && orgId) void loadTasks();
+  }, [tenantLoading, orgId]);
 
   const createTask = async () => {
     if (!newTitle.trim()) {
@@ -69,6 +74,12 @@ export default function Tasks() {
       return;
     }
     setCreating(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast.error('Sign in required');
+      setCreating(false);
+      return;
+    }
     const { data, error } = await supabase
       .from('staff_tasks')
       .insert({
@@ -76,6 +87,8 @@ export default function Tasks() {
         description: newDescription.trim() || null,
         priority: newPriority,
         due_date: newDueDate || null,
+        user_id: user.id,
+        org_id: getStaffHubOrgId(),
       })
       .select()
       .single();

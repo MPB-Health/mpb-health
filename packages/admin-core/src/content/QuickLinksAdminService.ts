@@ -1,5 +1,6 @@
 import { supabase } from '@mpbhealth/database';
 import type { QuickLink } from '@mpbhealth/advisor-core';
+import { getAdminOrgId } from '../operations/adminOrgScope';
 
 export type { QuickLink } from '@mpbhealth/advisor-core';
 
@@ -20,6 +21,7 @@ export class QuickLinksAdminService {
     let query = supabase
       .from('advisor_quick_links')
       .select('id, label, url, icon, description, order_index, is_external, is_active, requires_auth, category, image_url, is_popup, created_at, updated_at')
+      .eq('org_id', getAdminOrgId())
       .order('order_index', { ascending: true });
 
     if (category) query = query.eq('category', category);
@@ -34,6 +36,7 @@ export class QuickLinksAdminService {
       .from('advisor_quick_links')
       .select('id, label, url, icon, description, order_index, is_external, is_active, requires_auth, category, image_url, is_popup, created_at, updated_at')
       .eq('id', id)
+      .eq('org_id', getAdminOrgId())
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
@@ -43,7 +46,7 @@ export class QuickLinksAdminService {
   async createLink(input: QuickLinkCreateInput): Promise<QuickLink> {
     const { data, error } = await supabase
       .from('advisor_quick_links')
-      .insert(input)
+      .insert({ ...input, org_id: getAdminOrgId() })
       .select('id, label, url, icon, description, order_index, is_external, is_active, requires_auth, category, image_url, is_popup, created_at, updated_at')
       .single();
 
@@ -56,6 +59,7 @@ export class QuickLinksAdminService {
       .from('advisor_quick_links')
       .update({ ...input, updated_at: new Date().toISOString() })
       .eq('id', id)
+      .eq('org_id', getAdminOrgId())
       .select('id, label, url, icon, description, order_index, is_external, is_active, requires_auth, category, image_url, is_popup, created_at, updated_at')
       .single();
 
@@ -67,7 +71,8 @@ export class QuickLinksAdminService {
     const { error } = await supabase
       .from('advisor_quick_links')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('org_id', getAdminOrgId());
 
     if (error) throw error;
   }
@@ -79,8 +84,9 @@ export class QuickLinksAdminService {
   }
 
   async reorderLinks(linkIds: string[]): Promise<void> {
+    const orgId = getAdminOrgId();
     const updates = linkIds.map((id, index) =>
-      supabase.from('advisor_quick_links').update({ order_index: index }).eq('id', id),
+      supabase.from('advisor_quick_links').update({ order_index: index }).eq('id', id).eq('org_id', orgId),
     );
     await Promise.all(updates);
   }
@@ -88,7 +94,8 @@ export class QuickLinksAdminService {
   async getStats(): Promise<{ total: number; active: number }> {
     const { data, error } = await supabase
       .from('advisor_quick_links')
-      .select('is_active');
+      .select('is_active')
+      .eq('org_id', getAdminOrgId());
 
     if (error) throw error;
     const links = data || [];

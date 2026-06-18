@@ -212,5 +212,25 @@ export {
 // Org Switcher Component
 export { OrgSwitcher, type OrgSwitcherProps } from './components/OrgSwitcher';
 
+// Tenant / multi-org portal resolution
+export {
+  tenantService,
+  resolvePortalSlugFromHost,
+  resolveTenantFromHostname,
+  listOrgPortalAccess,
+  upsertOrgPortalAccess,
+  type PortalSlug,
+  type OrgPortalAccess,
+  type ResolvedTenant,
+} from './services/tenantService';
+
+export {
+  TenantProvider,
+  useTenant,
+  useTenantOptional,
+  type TenantContextValue,
+  type TenantProviderProps,
+} from './contexts/TenantContext';
+
 // Types (re-exported for convenience)
 export type { AuthUser, AuthState } from './types';

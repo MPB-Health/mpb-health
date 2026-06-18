@@ -1,4 +1,5 @@
 import { supabase } from '@mpbhealth/database';
+import { getAdminOrgId } from '../operations/adminOrgScope';
 
 export interface PortalSetting {
   key: string;
@@ -12,6 +13,7 @@ export class PortalSettingsAdminService {
     const { data, error } = await supabase
       .from('advisor_portal_settings')
       .select('key, value, updated_at, description')
+      .eq('org_id', getAdminOrgId())
       .order('key', { ascending: true });
     if (error) throw error;
     return (data || []) as unknown as PortalSetting[];
@@ -22,6 +24,7 @@ export class PortalSettingsAdminService {
       .from('advisor_portal_settings')
       .select('value')
       .eq('key', key)
+      .eq('org_id', getAdminOrgId())
       .maybeSingle();
     if (error) throw error;
     return data?.value ?? null;
@@ -30,7 +33,10 @@ export class PortalSettingsAdminService {
   async set(key: string, value: string): Promise<void> {
     const { error } = await supabase
       .from('advisor_portal_settings')
-      .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+      .upsert(
+        { key, value, org_id: getAdminOrgId(), updated_at: new Date().toISOString() },
+        { onConflict: 'key' },
+      );
     if (error) throw error;
   }
 
@@ -38,7 +44,8 @@ export class PortalSettingsAdminService {
     const { error } = await supabase
       .from('advisor_portal_settings')
       .delete()
-      .eq('key', key);
+      .eq('key', key)
+      .eq('org_id', getAdminOrgId());
     if (error) throw error;
   }
 
@@ -46,6 +53,7 @@ export class PortalSettingsAdminService {
     const rows = Object.entries(pairs).map(([key, value]) => ({
       key,
       value,
+      org_id: getAdminOrgId(),
       updated_at: new Date().toISOString(),
     }));
     const { error } = await supabase

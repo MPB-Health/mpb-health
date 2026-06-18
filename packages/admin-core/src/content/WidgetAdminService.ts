@@ -1,4 +1,5 @@
 import { supabase } from '@mpbhealth/database';
+import { getAdminOrgId } from '../operations/adminOrgScope';
 
 export interface DashboardWidget {
   id: string;
@@ -37,6 +38,7 @@ export class WidgetAdminService {
     const { data, error } = await supabase
       .from('advisor_dashboard_widgets')
       .select('id, widget_key, label, description, order_index, is_visible, grid_column, config, created_at, updated_at')
+      .eq('org_id', getAdminOrgId())
       .order('order_index', { ascending: true });
     if (error) throw error;
     return (data || []) as unknown as DashboardWidget[];
@@ -47,6 +49,7 @@ export class WidgetAdminService {
       .from('advisor_dashboard_widgets')
       .update({ ...input, updated_at: new Date().toISOString() })
       .eq('id', id)
+      .eq('org_id', getAdminOrgId())
       .select('id, widget_key, label, description, order_index, is_visible, grid_column, config, created_at, updated_at')
       .single();
     if (error) throw error;
@@ -64,6 +67,7 @@ export class WidgetAdminService {
         is_visible: input.is_visible ?? true,
         grid_column: input.grid_column || 'full',
         config: input.config || null,
+        org_id: getAdminOrgId(),
       })
       .select('id, widget_key, label, description, order_index, is_visible, grid_column, config, created_at, updated_at')
       .single();
@@ -75,7 +79,8 @@ export class WidgetAdminService {
     const { error } = await supabase
       .from('advisor_dashboard_widgets')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('org_id', getAdminOrgId());
     if (error) throw error;
   }
 
@@ -84,17 +89,20 @@ export class WidgetAdminService {
       .from('advisor_dashboard_widgets')
       .select('is_visible')
       .eq('id', id)
+      .eq('org_id', getAdminOrgId())
       .single();
     if (!data) throw new Error('Widget not found');
     await this.update(id, { is_visible: !data.is_visible });
   }
 
   async reorder(widgetIds: string[]): Promise<void> {
+    const orgId = getAdminOrgId();
     const updates = widgetIds.map((id, index) =>
       supabase
         .from('advisor_dashboard_widgets')
         .update({ order_index: index + 1, updated_at: new Date().toISOString() })
         .eq('id', id)
+        .eq('org_id', orgId)
     );
     await Promise.all(updates);
   }
@@ -102,7 +110,8 @@ export class WidgetAdminService {
   async getStats(): Promise<{ total: number; visible: number; hidden: number }> {
     const { data, error } = await supabase
       .from('advisor_dashboard_widgets')
-      .select('id, is_visible');
+      .select('id, is_visible')
+      .eq('org_id', getAdminOrgId());
     if (error) throw error;
     const items = data || [];
     return {

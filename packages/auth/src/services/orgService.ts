@@ -61,6 +61,8 @@ export interface OrgWithMembership extends Org {
 // The `orgs` table (phase0 migration) uses one ID, `organizations` table (champion) uses another
 export const DEFAULT_ORG_ID = '00000000-0000-4000-a000-000000000001';
 export const DEFAULT_ORG_ID_ALT = 'a0000000-0000-0000-0000-000000000001';
+/** SaudeMAX tenant (seeded by portal_multi_tenant migration). */
+export const SAUDEMAX_ORG_ID = '00000000-0000-4000-a000-000000000002';
 
 export const ORG_ROLE_LABELS: Record<OrgRole, string> = {
   owner: 'Owner',

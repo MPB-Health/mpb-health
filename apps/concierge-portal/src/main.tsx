@@ -5,7 +5,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 import { installAuthRefreshGuard } from '@mpbhealth/database';
 import { ThemeProvider } from '@mpbhealth/ui';
+import { TenantProvider } from '@mpbhealth/auth';
 import App from './App';
+import { ConciergeOrgSync } from './components/ConciergeOrgSync';
 import '@mpbhealth/ui/theme-tokens.css';
 import './index.css';
 import '@mpbhealth/ui/login-animations.css';
@@ -85,7 +87,11 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       <QueryClientProvider client={queryClient}>
         <ThemeProvider defaultTheme="light">
           <BrowserRouter>
-            <App />
+            <TenantProvider portalSlug="concierge">
+              <ConciergeOrgSync>
+                <App />
+              </ConciergeOrgSync>
+            </TenantProvider>
             <Toaster
               position="top-right"
               toastOptions={{

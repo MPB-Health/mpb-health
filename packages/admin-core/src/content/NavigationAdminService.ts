@@ -1,5 +1,6 @@
 import { supabase } from '@mpbhealth/database';
 import type { NavMenuItem } from '@mpbhealth/advisor-core';
+import { getAdminOrgId } from '../operations/adminOrgScope';
 
 export type { NavMenuItem } from '@mpbhealth/advisor-core';
 
@@ -12,6 +13,7 @@ export class NavigationAdminService {
     const { data, error } = await supabase
       .from('advisor_nav_menu')
       .select('id, label, url, icon, parent_id, order_index, is_active, is_external, requires_auth, badge_text, badge_color, created_at, updated_at')
+      .eq('org_id', getAdminOrgId())
       .order('order_index', { ascending: true });
 
     if (error) throw error;
@@ -23,6 +25,7 @@ export class NavigationAdminService {
       .from('advisor_nav_menu')
       .select('id, label, url, icon, parent_id, order_index, is_active, is_external, requires_auth, badge_text, badge_color, created_at, updated_at')
       .eq('id', id)
+      .eq('org_id', getAdminOrgId())
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
@@ -32,7 +35,7 @@ export class NavigationAdminService {
   async createItem(input: NavItemCreateInput): Promise<NavMenuItem> {
     const { data, error } = await supabase
       .from('advisor_nav_menu')
-      .insert(input)
+      .insert({ ...input, org_id: getAdminOrgId() })
       .select('id, label, url, icon, parent_id, order_index, is_active, is_external, requires_auth, badge_text, badge_color, created_at, updated_at')
       .single();
 
@@ -45,6 +48,7 @@ export class NavigationAdminService {
       .from('advisor_nav_menu')
       .update({ ...input, updated_at: new Date().toISOString() })
       .eq('id', id)
+      .eq('org_id', getAdminOrgId())
       .select('id, label, url, icon, parent_id, order_index, is_active, is_external, requires_auth, badge_text, badge_color, created_at, updated_at')
       .single();
 
@@ -56,7 +60,8 @@ export class NavigationAdminService {
     const { error } = await supabase
       .from('advisor_nav_menu')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('org_id', getAdminOrgId());
 
     if (error) throw error;
   }
@@ -68,8 +73,9 @@ export class NavigationAdminService {
   }
 
   async reorderItems(itemIds: string[]): Promise<void> {
+    const orgId = getAdminOrgId();
     const updates = itemIds.map((id, index) =>
-      supabase.from('advisor_nav_menu').update({ order_index: index }).eq('id', id),
+      supabase.from('advisor_nav_menu').update({ order_index: index }).eq('id', id).eq('org_id', orgId),
     );
     await Promise.all(updates);
   }
@@ -77,7 +83,8 @@ export class NavigationAdminService {
   async getStats(): Promise<{ total: number; active: number; topLevel: number }> {
     const { data, error } = await supabase
       .from('advisor_nav_menu')
-      .select('is_active, parent_id');
+      .select('is_active, parent_id')
+      .eq('org_id', getAdminOrgId());
 
     if (error) throw error;
     const items = data || [];

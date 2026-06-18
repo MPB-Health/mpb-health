@@ -150,6 +150,8 @@ const navigation: NavItem[] = [
       { name: 'E-Signature', href: '/settings/esignature' },
       { name: 'Ticket Categories', href: '/settings/ticket-categories' },
       { name: 'Notifications', href: '/settings/notifications' },
+      { name: 'Organizations & Tenants', href: '/settings/tenants' },
+      { name: 'Module Licensing', href: '/settings/modules' },
     ],
   },
 ];

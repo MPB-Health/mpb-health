@@ -1,4 +1,5 @@
 import { supabase } from '@mpbhealth/database';
+import { getAdminOrgId } from '../operations/adminOrgScope';
 
 export interface AdminHandbook {
   id: string;
@@ -25,6 +26,7 @@ export class HandbookAdminService {
     const { data, error } = await supabase
       .from('handbooks')
       .select('id, slug, name, description, pdf_path, flipbook_url, plan_type, color, icon, features, is_active, sort_order, created_at, updated_at')
+      .eq('org_id', getAdminOrgId())
       .order('sort_order', { ascending: true });
 
     if (error) throw error;
@@ -36,6 +38,7 @@ export class HandbookAdminService {
       .from('handbooks')
       .select('id, slug, name, description, pdf_path, flipbook_url, plan_type, color, icon, features, is_active, sort_order, created_at, updated_at')
       .eq('id', id)
+      .eq('org_id', getAdminOrgId())
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
@@ -45,7 +48,7 @@ export class HandbookAdminService {
   async create(input: HandbookCreateInput): Promise<AdminHandbook> {
     const { data, error } = await supabase
       .from('handbooks')
-      .insert(input)
+      .insert({ ...input, org_id: getAdminOrgId() })
       .select('id, slug, name, description, pdf_path, flipbook_url, plan_type, color, icon, features, is_active, sort_order, created_at, updated_at')
       .single();
 
@@ -58,6 +61,7 @@ export class HandbookAdminService {
       .from('handbooks')
       .update({ ...input, updated_at: new Date().toISOString() })
       .eq('id', id)
+      .eq('org_id', getAdminOrgId())
       .select('id, slug, name, description, pdf_path, flipbook_url, plan_type, color, icon, features, is_active, sort_order, created_at, updated_at')
       .single();
 
@@ -69,7 +73,8 @@ export class HandbookAdminService {
     const { error } = await supabase
       .from('handbooks')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('org_id', getAdminOrgId());
 
     if (error) throw error;
   }
@@ -81,8 +86,9 @@ export class HandbookAdminService {
   }
 
   async reorder(ids: string[]): Promise<void> {
+    const orgId = getAdminOrgId();
     const updates = ids.map((id, index) =>
-      supabase.from('handbooks').update({ sort_order: index }).eq('id', id),
+      supabase.from('handbooks').update({ sort_order: index }).eq('id', id).eq('org_id', orgId),
     );
     await Promise.all(updates);
   }
@@ -90,7 +96,8 @@ export class HandbookAdminService {
   async getStats(): Promise<{ total: number; active: number }> {
     const { data, error } = await supabase
       .from('handbooks')
-      .select('is_active');
+      .select('is_active')
+      .eq('org_id', getAdminOrgId());
 
     if (error) throw error;
     const items = data || [];

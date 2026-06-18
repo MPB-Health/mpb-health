@@ -12,7 +12,7 @@ import {
   X,
   Save,
 } from 'lucide-react';
-import { videoService, type AdvisorVideo } from '@mpbhealth/admin-core';
+import { getAdminOrgId, type AdvisorVideo } from '@mpbhealth/admin-core';
 import { supabase } from '@mpbhealth/database';
 
 type VideoFormData = Omit<AdvisorVideo, 'id' | 'created_at' | 'updated_at'>;
@@ -51,6 +51,7 @@ export default function VideoLibraryList() {
       const { data, error } = await supabase
         .from('advisor_videos')
         .select('id, title, vimeo_id, vimeo_hash, thumbnail_url, description, order_index, is_active, category, tags, duration')
+        .eq('org_id', getAdminOrgId())
         .order('order_index', { ascending: true });
       if (error) throw error;
       setVideos((data || []) as unknown as AdvisorVideo[]);
@@ -62,9 +63,16 @@ export default function VideoLibraryList() {
     }
   };
 
+  const orgId = getAdminOrgId();
+
   const handleToggleActive = async (video: AdvisorVideo) => {
     try {
-      await videoService.updateVideo(video.id, { is_active: !video.is_active });
+      const { error } = await supabase
+        .from('advisor_videos')
+        .update({ is_active: !video.is_active })
+        .eq('id', video.id)
+        .eq('org_id', orgId);
+      if (error) throw error;
       toast.success(video.is_active ? 'Video hidden' : 'Video activated');
       loadData();
     } catch (error) {
@@ -76,7 +84,12 @@ export default function VideoLibraryList() {
     if (!confirm('Delete this video?')) return;
     setDeleting(id);
     try {
-      await videoService.deleteVideo(id);
+      const { error } = await supabase
+        .from('advisor_videos')
+        .delete()
+        .eq('id', id)
+        .eq('org_id', orgId);
+      if (error) throw error;
       toast.success('Video deleted');
       loadData();
     } catch (error) {
@@ -124,10 +137,18 @@ export default function VideoLibraryList() {
       };
 
       if (editingVideo) {
-        await videoService.updateVideo(editingVideo.id, payload);
+        const { error } = await supabase
+          .from('advisor_videos')
+          .update(payload)
+          .eq('id', editingVideo.id)
+          .eq('org_id', orgId);
+        if (error) throw error;
         toast.success('Video updated!');
       } else {
-        await videoService.createVideo(payload);
+        const { error } = await supabase
+          .from('advisor_videos')
+          .insert({ ...payload, org_id: orgId });
+        if (error) throw error;
         toast.success('Video added!');
       }
       setShowModal(false);

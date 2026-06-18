@@ -10,6 +10,8 @@ import {
   StickyNote,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useTenant } from '@mpbhealth/auth';
+import { getStaffHubOrgId } from '../components/StaffHubOrgSync';
 
 interface Note {
   id: string;
@@ -35,6 +37,7 @@ function getColorClasses(key: string) {
 }
 
 export default function Notes() {
+  const { orgId, loading: tenantLoading } = useTenant();
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -44,9 +47,11 @@ export default function Notes() {
   const [editColor, setEditColor] = useState('default');
 
   const loadNotes = async () => {
+    const org_id = getStaffHubOrgId();
     const { data } = await supabase
       .from('staff_notes')
       .select('id, title, content, color, pinned, created_at, updated_at')
+      .eq('org_id', org_id)
       .order('pinned', { ascending: false })
       .order('updated_at', { ascending: false });
     setNotes(data ?? []);
@@ -54,13 +59,24 @@ export default function Notes() {
   };
 
   useEffect(() => {
-    loadNotes();
-  }, []);
+    if (!tenantLoading && orgId) void loadNotes();
+  }, [tenantLoading, orgId]);
 
   const createNote = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      toast.error('Sign in required');
+      return;
+    }
     const { data, error } = await supabase
       .from('staff_notes')
-      .insert({ title: '', content: '', color: 'default' })
+      .insert({
+        title: '',
+        content: '',
+        color: 'default',
+        user_id: user.id,
+        org_id: getStaffHubOrgId(),
+      })
       .select()
       .single();
 

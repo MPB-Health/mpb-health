@@ -487,3 +487,20 @@ export {
   type TicketAttachmentUploadResult,
   type TicketFileRow,
 } from './support/AdminTicketService';
+
+export {
+  TenantAdminService,
+  tenantAdminService,
+  type AdminOrganization,
+  type OrgPortalAccessRow,
+  type CreateOrganizationInput,
+  type UpdateOrganizationInput,
+  type PortalSlug,
+} from './operations/TenantAdminService';
+
+export {
+  getAdminOrgId,
+  setAdminOrgContext,
+  MPB_ORG_ID,
+  MPB_ORG_ID_ALT,
+} from './operations/adminOrgScope';

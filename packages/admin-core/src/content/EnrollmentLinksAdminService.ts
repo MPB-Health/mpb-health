@@ -1,4 +1,5 @@
 import { supabase } from '@mpbhealth/database';
+import { getAdminOrgId } from '../operations/adminOrgScope';
 
 export interface EnrollmentLink {
   id: string;
@@ -20,6 +21,7 @@ export class EnrollmentLinksAdminService {
     const { data, error } = await supabase
       .from('advisor_enrollment_links')
       .select('id, label, url, description, order_index, is_active, created_at, updated_at')
+      .eq('org_id', getAdminOrgId())
       .order('order_index', { ascending: true });
     if (error) throw error;
     return (data || []) as unknown as EnrollmentLink[];
@@ -28,7 +30,7 @@ export class EnrollmentLinksAdminService {
   async create(input: EnrollmentLinkCreateInput): Promise<EnrollmentLink> {
     const { data, error } = await supabase
       .from('advisor_enrollment_links')
-      .insert(input)
+      .insert({ ...input, org_id: getAdminOrgId() })
       .select('id, label, url, description, order_index, is_active, created_at, updated_at')
       .single();
     if (error) throw error;
@@ -40,6 +42,7 @@ export class EnrollmentLinksAdminService {
       .from('advisor_enrollment_links')
       .update({ ...input, updated_at: new Date().toISOString() })
       .eq('id', id)
+      .eq('org_id', getAdminOrgId())
       .select('id, label, url, description, order_index, is_active, created_at, updated_at')
       .single();
     if (error) throw error;
@@ -50,7 +53,8 @@ export class EnrollmentLinksAdminService {
     const { error } = await supabase
       .from('advisor_enrollment_links')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('org_id', getAdminOrgId());
     if (error) throw error;
   }
 
@@ -59,6 +63,7 @@ export class EnrollmentLinksAdminService {
       .from('advisor_enrollment_links')
       .select('is_active')
       .eq('id', id)
+      .eq('org_id', getAdminOrgId())
       .single();
     if (fetchErr) throw fetchErr;
     return this.update(id, { is_active: !current.is_active });
@@ -66,12 +71,14 @@ export class EnrollmentLinksAdminService {
 
   /** Persist a new order by updating order_index on each row. */
   async reorder(orderedIds: string[]): Promise<void> {
+    const orgId = getAdminOrgId();
     await Promise.all(
       orderedIds.map((id, index) =>
         supabase
           .from('advisor_enrollment_links')
           .update({ order_index: index })
-          .eq('id', id),
+          .eq('id', id)
+          .eq('org_id', orgId),
       ),
     );
   }

@@ -5,6 +5,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 import { ThemeProvider, initBrand } from '@mpbhealth/ui';
+import { TenantProvider } from '@mpbhealth/auth';
 import App from './App';
 import { QueryStaleRecovery } from './components/QueryStaleRecovery';
 import { getAdvisorQueryClient } from './query/advisorQueryClient';
@@ -126,7 +127,9 @@ root.render(
           <ThemeProvider>
             {/* Omit v7_startTransition: it desynced lazy route Outlet from the URL. */}
             <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
-              <App />
+              <TenantProvider portalSlug="advisor">
+                <App />
+              </TenantProvider>
             <Toaster
             position="top-right"
             toastOptions={{

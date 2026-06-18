@@ -1,4 +1,5 @@
 import { supabase } from '@mpbhealth/database';
+import { getAdminOrgId } from '../operations/adminOrgScope';
 
 export interface AdminTrainingModule {
   id: string;
@@ -32,6 +33,7 @@ export class TrainingAdminService {
     let query = supabase
       .from('training_modules')
       .select('id, title, description, category, content_type, content_url, content_html, thumbnail_url, duration_minutes, order_index, is_required, is_active, created_at, updated_at')
+      .eq('org_id', getAdminOrgId())
       .order('order_index', { ascending: true })
       .order('title', { ascending: true });
 
@@ -48,6 +50,7 @@ export class TrainingAdminService {
       .from('training_modules')
       .select('id, title, description, category, content_type, content_url, content_html, thumbnail_url, duration_minutes, order_index, is_required, is_active, created_at, updated_at')
       .eq('id', id)
+      .eq('org_id', getAdminOrgId())
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
@@ -57,7 +60,7 @@ export class TrainingAdminService {
   async createModule(input: TrainingModuleCreateInput): Promise<AdminTrainingModule> {
     const { data, error } = await supabase
       .from('training_modules')
-      .insert(input)
+      .insert({ ...input, org_id: getAdminOrgId() })
       .select('id, title, description, category, content_type, content_url, content_html, thumbnail_url, duration_minutes, order_index, is_required, is_active, created_at, updated_at')
       .single();
 
@@ -70,6 +73,7 @@ export class TrainingAdminService {
       .from('training_modules')
       .update({ ...input, updated_at: new Date().toISOString() })
       .eq('id', id)
+      .eq('org_id', getAdminOrgId())
       .select('id, title, description, category, content_type, content_url, content_html, thumbnail_url, duration_minutes, order_index, is_required, is_active, created_at, updated_at')
       .single();
 
@@ -81,7 +85,8 @@ export class TrainingAdminService {
     const { error } = await supabase
       .from('training_modules')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('org_id', getAdminOrgId());
 
     if (error) throw error;
   }
@@ -93,8 +98,9 @@ export class TrainingAdminService {
   }
 
   async reorderModules(moduleIds: string[]): Promise<void> {
+    const orgId = getAdminOrgId();
     const updates = moduleIds.map((id, index) =>
-      supabase.from('training_modules').update({ order_index: index }).eq('id', id),
+      supabase.from('training_modules').update({ order_index: index }).eq('id', id).eq('org_id', orgId),
     );
     await Promise.all(updates);
   }
@@ -102,7 +108,8 @@ export class TrainingAdminService {
   async getStats(): Promise<TrainingAdminStats> {
     const { data, error } = await supabase
       .from('training_modules')
-      .select('is_active, is_required');
+      .select('is_active, is_required')
+      .eq('org_id', getAdminOrgId());
 
     if (error) throw error;
 
@@ -119,6 +126,7 @@ export class TrainingAdminService {
     const { data, error } = await supabase
       .from('training_modules')
       .select('category')
+      .eq('org_id', getAdminOrgId())
       .not('category', 'is', null);
 
     if (error) throw error;

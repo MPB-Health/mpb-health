@@ -1,17 +1,14 @@
 import { Navigate, useLocation } from 'react-router-dom';
+import { useTenantPath } from '@mpbhealth/auth';
 import { isAdvisorExemptFromTrainingGate } from '@mpbhealth/advisor-core';
 import { useAdvisor } from '../contexts/AdvisorContext';
 import { ADVISOR_TRAINING_GATE_CUTOFF_MS } from '../config/advisorTrainingGate';
 
-const TRAINING_ALLOWED_PATHS = [
-  '/training',
-  '/profile',
-  '/change-password',
-];
+const TRAINING_ALLOWED_SUFFIXES = ['/training', '/profile', '/change-password'];
 
 function isTrainingAllowedPath(pathname: string): boolean {
-  return TRAINING_ALLOWED_PATHS.some(
-    (allowed) => pathname === allowed || pathname.startsWith(allowed + '/')
+  return TRAINING_ALLOWED_SUFFIXES.some(
+    (allowed) => pathname === allowed || pathname.endsWith(allowed) || pathname.includes(`${allowed}/`),
   );
 }
 
@@ -31,6 +28,7 @@ export function TrainingGate({
 }) {
   const { profile, sessionUserCreatedAt } = useAdvisor();
   const location = useLocation();
+  const toPath = useTenantPath();
 
   if (!profile) return <>{children}</>;
 
@@ -48,5 +46,5 @@ export function TrainingGate({
   if (isTrainingAllowedPath(location.pathname)) return <>{children}</>;
 
   // Redirect to training
-  return <Navigate to="/training" replace />;
+  return <Navigate to={toPath('/training')} replace />;
 }

@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
+import { useAdvisorNavigate } from '../hooks/useAdvisorNavigate';
 import { supabase, isSupabaseConfigured } from '@mpbhealth/database';
 import { AuthPageSeo } from '../components/AuthPageSeo';
 
@@ -30,7 +31,7 @@ export function isAdvisorImpersonationSession(): boolean {
  * Used by admin impersonation and email auth links.
  */
 export default function AuthConfirm() {
-  const navigate = useNavigate();
+  const navigate = useAdvisorNavigate();
   const [searchParams] = useSearchParams();
   const isImpersonation = searchParams.get('impersonation') === '1';
 

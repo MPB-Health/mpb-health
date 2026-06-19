@@ -1,17 +1,16 @@
 import { useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { supabase, isSupabaseConfigured } from '@mpbhealth/database';
 import toast from 'react-hot-toast';
 import { LoginLayout, AryxAuthShell, detectBrand } from '@mpbhealth/ui';
 import { AuthPageSeo } from '../components/AuthPageSeo';
 import { useAdvisor } from '../contexts/AdvisorContext';
-import { useAosPath } from '../hooks/useAosPath';
 import { useAdvisorPageDebugLog } from '../hooks/useAdvisorPageDebugLog';
+import { useAdvisorNavigate } from '../hooks/useAdvisorNavigate';
 
 export default function Login() {
   useAdvisorPageDebugLog('Login');
-  const navigate = useNavigate();
-  const aosPath = useAosPath();
+  const navigate = useAdvisorNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { loading: authLoading, hasSession, profile, profileLoading } = useAdvisor();
 
@@ -21,15 +20,15 @@ export default function Login() {
     if (!hasSession) return;
     if (profileLoading) return;
     if (profile?.must_change_password) {
-      navigate(aosPath('/change-password'), { replace: true });
+      navigate('/change-password', { replace: true });
       return;
     }
     if (profile) {
-      navigate(aosPath('/'), { replace: true });
+      navigate('/', { replace: true });
       return;
     }
-    navigate(aosPath('/'), { replace: true });
-  }, [authLoading, hasSession, profile, profileLoading, navigate, aosPath]);
+    navigate('/', { replace: true });
+  }, [authLoading, hasSession, profile, profileLoading, navigate]);
 
   // Show success toast when redirected after a successful password reset
   useEffect(() => {
@@ -76,14 +75,14 @@ export default function Login() {
         throw new Error(error.message || 'Invalid email or password');
       }
       toast.success('Welcome back!');
-      navigate(aosPath('/'));
+      navigate('/');
     } catch (err) {
       throw err instanceof Error ? err : new Error('Login failed. Please try again.');
     }
   };
 
   const handleForgotPassword = () => {
-    navigate(aosPath('/forgot-password'));
+    navigate('/forgot-password');
   };
 
   const authSeo = (

@@ -125,8 +125,8 @@ root.render(
         <QueryClientProvider client={queryClient}>
           <QueryStaleRecovery />
           <ThemeProvider>
-            {/* Omit v7_startTransition: it desynced lazy route Outlet from the URL. */}
-            <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
+            {/* Omit v7_startTransition — it desyncs lazy route Outlet from the URL. */}
+            <BrowserRouter future={{ v7_relativeSplatPath: true }}>
               <TenantProvider portalSlug="advisor">
                 <App />
               </TenantProvider>

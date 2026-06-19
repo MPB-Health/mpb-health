@@ -524,7 +524,7 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!isSupabaseConfigured) return;
 
-    let debounce: ReturnType<typeof setTimeout> | undefined;
+    let debounce: number | undefined;
 
     const recover = () => {
       void (async () => {

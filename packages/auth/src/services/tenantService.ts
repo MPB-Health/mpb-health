@@ -3,10 +3,27 @@
 // ============================================================================
 
 import { supabase } from '@mpbhealth/database';
-import { isAosPlatformHost } from '../platform/aosPlatform';
 import { DEFAULT_ORG_ID, DEFAULT_ORG_ID_ALT } from './orgService';
 
 export type PortalSlug = 'admin' | 'advisor' | 'concierge' | 'staff_hub' | 'crm' | 'member';
+
+/** Hostnames that use /{tenantSlug}/… URL prefixes (ARYX Advisor OS). */
+const AOS_PLATFORM_HOSTS = new Set(['aos.aryxcloud.com']);
+
+/** First path segments that are never tenant slugs on AOS hosts. */
+const RESERVED_PATH_SEGMENTS = new Set([
+  'login',
+  'landing',
+  'forgot-password',
+  'reset-password',
+  'change-password',
+  'auth',
+  'api',
+  'assets',
+  'favicon.ico',
+]);
+
+const TENANT_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 export interface OrgPortalAccess {
   id: string;
@@ -23,6 +40,46 @@ export interface ResolvedTenant {
   orgSlug: string;
   portalSlug: PortalSlug;
   portalAccess: OrgPortalAccess | null;
+}
+
+function aosPlatformEnvEnabled(): boolean {
+  if (typeof import.meta === 'undefined') return false;
+  const env = (import.meta as ImportMeta & { env?: Record<string, string> }).env;
+  const flag = env?.VITE_AOS_PLATFORM?.trim();
+  return flag === '1' || flag === 'true';
+}
+
+/** True on ARYX AOS hosts (or localhost when VITE_AOS_PLATFORM=1). Never true on advisor.mpb.health. */
+export function isAosPlatformHost(hostname?: string): boolean {
+  const host = (hostname ?? (typeof window !== 'undefined' ? window.location.hostname : '')).toLowerCase();
+  if (AOS_PLATFORM_HOSTS.has(host)) return true;
+  if (host === 'localhost' || host === '127.0.0.1') return aosPlatformEnvEnabled();
+  return false;
+}
+
+/** Parse /{tenantSlug}/… from the pathname on AOS hosts; null for reserved/global paths. */
+export function parsePathTenantSlug(pathname: string): string | null {
+  const segment = pathname.split('/').filter(Boolean)[0]?.toLowerCase();
+  if (!segment || RESERVED_PATH_SEGMENTS.has(segment) || !TENANT_SLUG_PATTERN.test(segment)) {
+    return null;
+  }
+  return segment;
+}
+
+/** Prefix an in-app path with /{tenantSlug} on AOS; no-op on MPB Health hosts. */
+export function prefixTenantPath(
+  path: string,
+  tenantSlug: string,
+  hostname?: string,
+): string {
+  if (!tenantSlug || !isAosPlatformHost(hostname)) return path;
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+
+  const normalized = path.startsWith('/') ? path : `/${path}`;
+  if (normalized === `/${tenantSlug}` || normalized.startsWith(`/${tenantSlug}/`)) {
+    return normalized;
+  }
+  return normalized === '/' ? `/${tenantSlug}` : `/${tenantSlug}${normalized}`;
 }
 
 /** Dev override via Vite env (e.g. VITE_TENANT_ORG_ID) */
@@ -56,10 +113,8 @@ export function resolvePortalSlugFromHost(hostname: string, port?: string): Port
   return 'advisor';
 }
 
-/**
- * Resolve tenant by org slug (AOS path routing: /saudemax/...).
- */
-export async function resolveTenantByOrgSlug(
+/** Resolve org by URL slug on AOS (/{tenantSlug}/…). */
+async function resolveTenantByOrgSlug(
   orgSlug: string,
   portalSlug: PortalSlug,
 ): Promise<ResolvedTenant | null> {
@@ -99,24 +154,19 @@ export async function resolveTenantByOrgSlug(
   };
 }
 
-export interface ResolveAdvisorTenantInput {
+/**
+ * Unified tenant resolution: AOS path slug on ARYX hosts, hostname mapping elsewhere (MPB default).
+ */
+export async function resolveTenantForPortal(input: {
   hostname: string;
   portalSlug: PortalSlug;
-  /** First path segment on AOS platform (e.g. saudemax). */
   pathTenantSlug?: string | null;
-}
-
-/**
- * Unified tenant resolution: AOS path slug on aos.aryxcloud.com, else hostname map (MPB).
- */
-export async function resolveAdvisorTenant(input: ResolveAdvisorTenantInput): Promise<ResolvedTenant | null> {
+}): Promise<ResolvedTenant | null> {
   const { hostname, portalSlug, pathTenantSlug } = input;
 
   if (isAosPlatformHost(hostname)) {
-    if (pathTenantSlug) {
-      return resolveTenantByOrgSlug(pathTenantSlug, portalSlug);
-    }
-    return null;
+    if (!pathTenantSlug) return null;
+    return resolveTenantByOrgSlug(pathTenantSlug, portalSlug);
   }
 
   return resolveTenantFromHostname(hostname, portalSlug);
@@ -258,8 +308,10 @@ export async function upsertOrgPortalAccess(input: {
 export const tenantService = {
   resolvePortalSlugFromHost,
   resolveTenantFromHostname,
-  resolveTenantByOrgSlug,
-  resolveAdvisorTenant,
+  resolveTenantForPortal,
+  isAosPlatformHost,
+  parsePathTenantSlug,
+  prefixTenantPath,
   listOrgPortalAccess,
   upsertOrgPortalAccess,
   DEFAULT_ORG_ID,

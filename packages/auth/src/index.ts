@@ -214,25 +214,18 @@ export { OrgSwitcher, type OrgSwitcherProps } from './components/OrgSwitcher';
 
 // Tenant / multi-org portal resolution
 export {
-  isAosPlatformHost,
-  parseAosTenantSlugFromPath,
-  withAosTenantPath,
-  AOS_PLATFORM_HOSTS,
-  AOS_RESERVED_PATH_SEGMENTS,
-} from './platform/aosPlatform';
-
-export {
   tenantService,
   resolvePortalSlugFromHost,
   resolveTenantFromHostname,
-  resolveTenantByOrgSlug,
-  resolveAdvisorTenant,
+  resolveTenantForPortal,
+  isAosPlatformHost,
+  parsePathTenantSlug,
+  prefixTenantPath,
   listOrgPortalAccess,
   upsertOrgPortalAccess,
   type PortalSlug,
   type OrgPortalAccess,
   type ResolvedTenant,
-  type ResolveAdvisorTenantInput,
 } from './services/tenantService';
 
 export {
@@ -242,6 +235,8 @@ export {
   type TenantContextValue,
   type TenantProviderProps,
 } from './contexts/TenantContext';
+
+export { useTenantPath, tenantPathForHost } from './hooks/useTenantPath';
 
 // Types (re-exported for convenience)
 export type { AuthUser, AuthState } from './types';

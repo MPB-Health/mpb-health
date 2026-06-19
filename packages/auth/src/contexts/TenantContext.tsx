@@ -1,5 +1,5 @@
 // ============================================================================
-// TenantContext — resolves org from hostname or AOS path slug
+// TenantContext — resolves org from hostname for multi-tenant portals
 // ============================================================================
 
 import {
@@ -11,10 +11,11 @@ import {
   type ReactNode,
 } from 'react';
 import { useLocation } from 'react-router-dom';
-import { isAosPlatformHost, parseAosTenantSlugFromPath } from '../platform/aosPlatform';
 import {
+  isAosPlatformHost,
+  parsePathTenantSlug,
   resolvePortalSlugFromHost,
-  resolveAdvisorTenant,
+  resolveTenantForPortal,
   type PortalSlug,
   type ResolvedTenant,
 } from '../services/tenantService';
@@ -23,10 +24,12 @@ export interface TenantContextValue {
   tenant: ResolvedTenant | null;
   orgId: string | null;
   orgName: string | null;
+  /** Org slug from resolved tenant or URL segment on AOS. */
   orgSlug: string | null;
   portalSlug: PortalSlug;
-  /** AOS path tenant slug (e.g. saudemax), null on MPB hosts. */
+  /** First URL segment on AOS (/mpb-health/…); null on MPB Health hosts. */
   pathTenantSlug: string | null;
+  /** True only on ARYX AOS platform hosts — never on advisor.mpb.health. */
   isAosPlatform: boolean;
   loading: boolean;
   error: string | null;
@@ -41,14 +44,14 @@ export interface TenantProviderProps {
 }
 
 export function TenantProvider({ children, portalSlug: portalSlugProp }: TenantProviderProps) {
-  const location = useLocation();
+  const { pathname } = useLocation();
   const [tenant, setTenant] = useState<ResolvedTenant | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
   const isAosPlatform = isAosPlatformHost(hostname);
-  const pathTenantSlug = isAosPlatform ? parseAosTenantSlugFromPath(location.pathname) : null;
+  const pathTenantSlug = isAosPlatform ? parsePathTenantSlug(pathname) : null;
 
   const portalSlug = useMemo((): PortalSlug => {
     if (portalSlugProp) return portalSlugProp;
@@ -63,6 +66,7 @@ export function TenantProvider({ children, portalSlug: portalSlugProp }: TenantP
 
     void (async () => {
       try {
+        // AOS global pages (/landing) intentionally have no tenant segment.
         if (isAosPlatform && !pathTenantSlug) {
           if (cancelled) return;
           setTenant(null);
@@ -71,12 +75,14 @@ export function TenantProvider({ children, portalSlug: portalSlugProp }: TenantP
           return;
         }
 
-        const resolved = await resolveAdvisorTenant({
+        const resolved = await resolveTenantForPortal({
           hostname,
           portalSlug,
           pathTenantSlug,
         });
+
         if (cancelled) return;
+
         if (!resolved) {
           setError(
             isAosPlatform && pathTenantSlug
@@ -86,6 +92,7 @@ export function TenantProvider({ children, portalSlug: portalSlugProp }: TenantP
           setTenant(null);
         } else {
           setTenant(resolved);
+          setError(null);
         }
       } catch (err) {
         if (cancelled) return;

@@ -5,28 +5,16 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 import { installAuthRefreshGuard } from '@mpbhealth/database';
 import { ThemeProvider } from '@mpbhealth/ui';
-import {
-  TenantProvider,
-  isPathTenantPlatformHost,
-  parsePathTenantSlug,
-  tenantPathForHost,
-} from '@mpbhealth/auth';
+import { TenantProvider } from '@mpbhealth/auth';
 import App from './App';
 import { ConciergeOrgSync } from './components/ConciergeOrgSync';
 import '@mpbhealth/ui/theme-tokens.css';
 import './index.css';
 import '@mpbhealth/ui/login-animations.css';
 
-const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
-const pathSlug =
-  typeof window !== 'undefined' && isPathTenantPlatformHost(hostname, 'concierge')
-    ? parsePathTenantSlug(window.location.pathname)
-    : null;
-const loginPath = tenantPathForHost('/login', pathSlug, hostname, 'concierge');
-const authExcludePaths = ['/login', '/forgot-password', '/reset-password'];
-const excludePaths = pathSlug
-  ? authExcludePaths.map((p) => tenantPathForHost(p, pathSlug, hostname, 'concierge'))
-  : authExcludePaths;
+// Concierge is MPB-only with flat routes (concierge.mpb.health/login, …).
+const loginPath = '/login';
+const excludePaths = ['/login', '/forgot-password', '/reset-password'];
 
 // Detect dead refresh tokens at the network level and redirect to login.
 // Must run before React renders to catch early Supabase auto-refresh failures.

@@ -131,8 +131,8 @@ export default function TenantManagement() {
             Organizations & Tenants
           </h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Command and control for MPB Health, SaudeMAX, and other tenants across advisor, concierge,
-            staff hub, and admin portals.
+            Command and control for MPB Health across advisor, concierge, staff hub, and admin
+            portals.
           </p>
         </div>
         <button
@@ -158,7 +158,7 @@ export default function TenantManagement() {
                   if (!newSlug) setNewSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
                 }}
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
-                placeholder="SaudeMAX"
+                placeholder="Acme Health"
               />
             </label>
             <label className="block text-sm">
@@ -167,7 +167,7 @@ export default function TenantManagement() {
                 value={newSlug}
                 onChange={(e) => setNewSlug(e.target.value)}
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 dark:border-gray-600 dark:bg-gray-800"
-                placeholder="saudemax"
+                placeholder="acme-health"
               />
             </label>
           </div>

@@ -18,7 +18,7 @@ import {
 import toast from 'react-hot-toast';
 import { QUICK_LINKS } from '@mpbhealth/concierge-core';
 
-const NAV_ITEMS = [
+const MPB_NAV_ITEMS = [
   { name: 'Daily Logs', href: '/daily-logs', icon: ClipboardList },
   { name: 'Reports', href: '/reports', icon: BarChart3 },
   { name: 'Resources', href: '/', icon: LayoutDashboard },
@@ -30,6 +30,10 @@ const NAV_ITEMS = [
 export default function MainLayout() {
   const location = useLocation();
   const toPath = useTenantPath();
+
+  const navItems = MPB_NAV_ITEMS;
+  const quickLinks = QUICK_LINKS;
+  const branding = { appName: 'Concierge Portal', logoText: 'MPB' };
   const [user, setUser] = useState<{ email: string } | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -75,14 +79,14 @@ export default function MainLayout() {
             </button>
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-forest to-brand-teal flex items-center justify-center">
-                <span className="text-white font-bold text-xs">MPB</span>
+                <span className="text-white font-bold text-xs">{branding.logoText}</span>
               </div>
-              <span className="font-semibold text-brand-forest">Concierge Portal</span>
+              <span className="font-semibold text-brand-forest">{branding.appName}</span>
             </div>
           </div>
 
           <nav className="hidden lg:flex items-center gap-1">
-            {NAV_ITEMS.map((item) => {
+            {navItems.map((item) => {
               const Icon = item.icon;
               if (item.external) {
                 return (
@@ -133,10 +137,11 @@ export default function MainLayout() {
       </header>
 
       {/* Quick Links Bar */}
+      {quickLinks.length > 0 && (
       <div className="bg-gradient-to-r from-brand-forest to-brand-forest/90 border-b border-brand-chartreuse/20 relative z-40" ref={dropdownRef}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-[68px]">
-            {QUICK_LINKS.map((link) =>
+            {quickLinks.length > 0 && quickLinks.map((link) =>
               link.children ? (
                 <div key={link.name} className="relative flex-1 flex justify-center">
                   <button
@@ -180,6 +185,7 @@ export default function MainLayout() {
           </div>
         </div>
       </div>
+      )}
 
       {mobileOpen && (
         <div className="lg:hidden fixed inset-0 z-20 bg-black/20" onClick={() => setMobileOpen(false)}>
@@ -187,7 +193,7 @@ export default function MainLayout() {
             className="absolute top-14 left-0 right-0 bg-white border-b border-brand-sage/30 shadow-lg p-3 space-y-1"
             onClick={(e) => e.stopPropagation()}
           >
-            {NAV_ITEMS.map((item) => {
+            {navItems.map((item) => {
               const Icon = item.icon;
               if (item.external) {
                 return (

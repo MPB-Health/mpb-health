@@ -61,8 +61,6 @@ export interface OrgWithMembership extends Org {
 // The `orgs` table (phase0 migration) uses one ID, `organizations` table (champion) uses another
 export const DEFAULT_ORG_ID = '00000000-0000-4000-a000-000000000001';
 export const DEFAULT_ORG_ID_ALT = 'a0000000-0000-0000-0000-000000000001';
-/** SaudeMAX tenant (seeded by portal_multi_tenant migration). */
-export const SAUDEMAX_ORG_ID = '00000000-0000-4000-a000-000000000002';
 
 export const ORG_ROLE_LABELS: Record<OrgRole, string> = {
   owner: 'Owner',
@@ -213,7 +211,29 @@ export async function getUserOrgs(): Promise<OrgWithMembership[]> {
   return results;
 }
 
-/** Get a single org by ID */
+/** Normalize a legacy `orgs` row to the Org shape. */
+function normalizeLegacyOrgRow(row: {
+  id: string;
+  name: string;
+  slug: string;
+  logo_url?: string | null;
+  settings?: Org['settings'];
+  created_at: string;
+  updated_at: string;
+}): Org {
+  return {
+    ...row,
+    brand_config: { primaryColor: '#0D9488', accentColor: '#14B8A6' },
+    settings: row.settings ?? {},
+    subscription_tier: 'enterprise',
+    subscription_status: 'active',
+    max_users: 1000,
+    max_contacts: 100000,
+    max_sequences: 1000,
+  };
+}
+
+/** Get a single org by ID (organizations first, then legacy orgs table). */
 export async function getOrg(orgId: string): Promise<Org | null> {
   const cached = getCached(orgCache, orgId);
   if (cached) return cached;
@@ -222,15 +242,28 @@ export async function getOrg(orgId: string): Promise<Org | null> {
     .from('organizations')
     .select('id, name, slug, logo_url, brand_config, settings, subscription_tier, subscription_status, max_users, max_contacts, max_sequences, created_at, updated_at')
     .eq('id', orgId)
-    .single();
+    .maybeSingle();
 
-  if (error) {
-    console.error('[OrgService] Failed to get org:', error);
+  if (!error && data) {
+    setCache(orgCache, orgId, data);
+    return data;
+  }
+
+  const { data: legacy, error: legacyError } = await supabase
+    .from('orgs')
+    .select('id, name, slug, logo_url, settings, created_at, updated_at')
+    .eq('id', orgId)
+    .maybeSingle();
+
+  if (legacyError || !legacy) {
+    if (error) console.error('[OrgService] Failed to get org:', error);
+    else if (legacyError) console.error('[OrgService] Failed to get legacy org:', legacyError);
     return null;
   }
 
-  setCache(orgCache, orgId, data);
-  return data;
+  const normalized = normalizeLegacyOrgRow(legacy);
+  setCache(orgCache, orgId, normalized);
+  return normalized;
 }
 
 /** Get current user's role in a given org */

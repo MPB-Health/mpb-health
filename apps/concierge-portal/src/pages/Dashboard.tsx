@@ -177,6 +177,11 @@ function CategorySection({ category, resources, defaultOpen, query }: { category
 export default function Dashboard() {
   const [search, setSearch] = useState('');
 
+  const trainingResources = TRAINING_RESOURCES;
+  const quickLinksSource = QUICK_LINKS;
+  const hubTitle = 'Information and Training Hub';
+  const hubSubtitle = 'Access all concierge training materials, SOPs, handbooks, and scripts';
+
   const query = search.toLowerCase().trim();
 
   const filteredByCategory = useMemo(() => {
@@ -189,7 +194,7 @@ export default function Dashboard() {
       'customer-service': [],
     };
 
-    for (const resource of TRAINING_RESOURCES) {
+    for (const resource of trainingResources) {
       if (
         !query ||
         resource.title.toLowerCase().includes(query) ||
@@ -210,12 +215,12 @@ export default function Dashboard() {
     }
 
     return result;
-  }, [query]);
+  }, [query, trainingResources]);
 
   const filteredQuickLinks = useMemo(() => {
     if (!query) return [];
     const results: { name: string; url: string; group: string }[] = [];
-    for (const group of QUICK_LINKS) {
+    for (const group of quickLinksSource) {
       if (group.children) {
         for (const child of group.children) {
           if (
@@ -236,7 +241,7 @@ export default function Dashboard() {
       }
     }
     return results;
-  }, [query]);
+  }, [query, quickLinksSource]);
 
   const resourceCount = useMemo(
     () => Object.values(filteredByCategory).reduce((sum, arr) => sum + arr.length, 0),
@@ -249,10 +254,8 @@ export default function Dashboard() {
     <div className="space-y-6 animate-fade-up">
       {/* Header */}
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-[#2F3E2F]">Information and Training Hub</h1>
-        <p className="mt-1 text-[#5B6B2E]">
-          Access all concierge training materials, SOPs, handbooks, and scripts
-        </p>
+        <h1 className="text-2xl sm:text-3xl font-bold text-[#2F3E2F]">{hubTitle}</h1>
+        <p className="mt-1 text-[#5B6B2E]">{hubSubtitle}</p>
       </div>
 
       {/* Search */}

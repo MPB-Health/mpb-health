@@ -1,6 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import MainLayout from '../layouts/MainLayout';
-import { TenantSlugGate } from './TenantSlugGate';
 import {
   AuthGuard,
   appRouteElements,

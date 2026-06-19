@@ -9,11 +9,10 @@ export type PortalSlug = 'admin' | 'advisor' | 'concierge' | 'staff_hub' | 'crm'
 
 /**
  * Hostnames that use /{tenantSlug}/… URL prefixes per portal.
- * Advisor AOS: aos.aryxcloud.com — Concierge ARYX: concierge.aryxcloud.com
+ * Advisor AOS: aos.aryxcloud.com. Concierge is MPB-only — no path-tenant host.
  */
 const PATH_TENANT_PLATFORM_HOSTS: Partial<Record<PortalSlug, ReadonlySet<string>>> = {
   advisor: new Set(['aos.aryxcloud.com']),
-  concierge: new Set(['concierge.aryxcloud.com']),
 };
 
 /** First path segments that are never tenant slugs on AOS hosts. */
@@ -53,10 +52,6 @@ function pathTenantPlatformEnvEnabled(portalSlug: PortalSlug): boolean {
   const env = (import.meta as ImportMeta & { env?: Record<string, string> }).env;
   if (portalSlug === 'advisor') {
     const flag = env?.VITE_AOS_PLATFORM?.trim();
-    return flag === '1' || flag === 'true';
-  }
-  if (portalSlug === 'concierge') {
-    const flag = env?.VITE_CONCIERGE_PATH_PLATFORM?.trim();
     return flag === '1' || flag === 'true';
   }
   return false;

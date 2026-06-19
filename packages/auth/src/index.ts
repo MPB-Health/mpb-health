@@ -133,6 +133,15 @@ export {
 
 // Org & Permission Services
 export {
+  resolveOrgId,
+  resolveOrgIdFromMap,
+  translateOrgId,
+  isUnifiedOrgSlug,
+  MPB_HEALTH_SLUG,
+  type OrgIdPurpose,
+} from './services/orgIdResolver';
+
+export {
   orgService,
   getUserOrgs,
   getOrg,

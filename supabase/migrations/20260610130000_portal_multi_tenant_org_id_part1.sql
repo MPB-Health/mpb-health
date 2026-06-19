@@ -1,5 +1,4 @@
 -- Fix: resolve MPB org by slug (prod uses a0000000-… not 00000000-4000-…)
--- SaudeMAX: 00000000-0000-4000-a000-000000000002
 
 DO $$
 DECLARE
@@ -12,16 +11,6 @@ BEGIN
     VALUES (mpb_org_id, 'MPB Health', 'mpb-health', 'enterprise', 'active')
     ON CONFLICT (id) DO NOTHING;
   END IF;
-
-  INSERT INTO public.organizations (id, name, slug, subscription_tier, subscription_status)
-  VALUES (
-    '00000000-0000-4000-a000-000000000002',
-    'SaudeMAX',
-    'saudemax',
-    'enterprise',
-    'active'
-  )
-  ON CONFLICT (slug) DO NOTHING;
 
   -- org_portal_access table + policies (idempotent)
   CREATE TABLE IF NOT EXISTS public.org_portal_access (
@@ -80,17 +69,6 @@ BEGIN
   ON CONFLICT (org_id, portal_slug) DO UPDATE SET
     enabled = EXCLUDED.enabled,
     custom_domain = COALESCE(org_portal_access.custom_domain, EXCLUDED.custom_domain);
-
-  INSERT INTO public.org_portal_access (org_id, portal_slug, enabled, custom_domain)
-  SELECT o.id, v.portal_slug, v.enabled, v.custom_domain
-  FROM public.organizations o
-  CROSS JOIN (VALUES
-    ('advisor', true, NULL::text),
-    ('concierge', true, NULL::text),
-    ('staff_hub', true, NULL::text)
-  ) AS v(portal_slug, enabled, custom_domain)
-  WHERE o.slug = 'saudemax'
-  ON CONFLICT (org_id, portal_slug) DO NOTHING;
 END $$;
 
 CREATE OR REPLACE FUNCTION public.user_has_concierge_access_for_org(p_org_id uuid)

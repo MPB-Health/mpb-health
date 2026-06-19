@@ -28,7 +28,7 @@ export interface TenantContextValue {
   /** Org slug from resolved tenant or URL segment on AOS. */
   orgSlug: string | null;
   portalSlug: PortalSlug;
-  /** First URL segment on path-tenant hosts (/saudemax/…); null on MPB Health hosts. */
+  /** First URL segment on path-tenant hosts (e.g. /{org}/… on advisor AOS); null on MPB Health hosts. */
   pathTenantSlug: string | null;
   /** True on advisor AOS (aos.aryxcloud.com) — legacy alias for advisor path-tenant hosts. */
   isAosPlatform: boolean;

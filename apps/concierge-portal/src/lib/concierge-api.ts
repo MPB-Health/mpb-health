@@ -21,18 +21,22 @@ const T_OFF = 'concierge_member_off_days';
 const T_ESC = 'concierge_escalations';
 const T_WEEK = 'concierge_weekly_report_extras';
 
-/** Active tenant org — set by ConciergeOrgSync from TenantProvider. */
-let activeOrgId: string | null = null;
+/**
+ * Concierge is MPB-only — all data is scoped to the MPB Health organization
+ * (organizations.id used by org_portal_access + the concierge RLS policies).
+ * We default this synchronously at module load so reads never race the async
+ * TenantProvider resolution on a cold page load / refresh.
+ */
+export const MPB_CONCIERGE_ORG_ID = 'a0000000-0000-0000-0000-000000000001';
+
+let activeOrgId: string | null = MPB_CONCIERGE_ORG_ID;
 
 export function setConciergeOrgId(orgId: string | null): void {
-  activeOrgId = orgId;
+  activeOrgId = orgId ?? MPB_CONCIERGE_ORG_ID;
 }
 
 export function getConciergeOrgId(): string {
-  if (!activeOrgId) {
-    throw new Error('Concierge org context is not set');
-  }
-  return activeOrgId;
+  return activeOrgId ?? MPB_CONCIERGE_ORG_ID;
 }
 
 function orgScope() {

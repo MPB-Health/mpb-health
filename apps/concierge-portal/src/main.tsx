@@ -5,16 +5,32 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 import { installAuthRefreshGuard } from '@mpbhealth/database';
 import { ThemeProvider } from '@mpbhealth/ui';
-import { TenantProvider } from '@mpbhealth/auth';
+import {
+  TenantProvider,
+  isPathTenantPlatformHost,
+  parsePathTenantSlug,
+  tenantPathForHost,
+} from '@mpbhealth/auth';
 import App from './App';
 import { ConciergeOrgSync } from './components/ConciergeOrgSync';
 import '@mpbhealth/ui/theme-tokens.css';
 import './index.css';
 import '@mpbhealth/ui/login-animations.css';
 
-// Detect dead refresh tokens at the network level and redirect to /login.
+const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
+const pathSlug =
+  typeof window !== 'undefined' && isPathTenantPlatformHost(hostname, 'concierge')
+    ? parsePathTenantSlug(window.location.pathname)
+    : null;
+const loginPath = tenantPathForHost('/login', pathSlug, hostname, 'concierge');
+const authExcludePaths = ['/login', '/forgot-password', '/reset-password'];
+const excludePaths = pathSlug
+  ? authExcludePaths.map((p) => tenantPathForHost(p, pathSlug, hostname, 'concierge'))
+  : authExcludePaths;
+
+// Detect dead refresh tokens at the network level and redirect to login.
 // Must run before React renders to catch early Supabase auto-refresh failures.
-installAuthRefreshGuard({ loginPath: '/login' });
+installAuthRefreshGuard({ loginPath, excludePaths });
 
 function isAuthError(error: unknown): boolean {
   if (error && typeof error === 'object') {

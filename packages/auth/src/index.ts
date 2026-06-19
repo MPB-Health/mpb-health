@@ -219,6 +219,7 @@ export {
   resolveTenantFromHostname,
   resolveTenantForPortal,
   isAosPlatformHost,
+  isPathTenantPlatformHost,
   parsePathTenantSlug,
   prefixTenantPath,
   listOrgPortalAccess,

@@ -7,8 +7,14 @@ import { DEFAULT_ORG_ID, DEFAULT_ORG_ID_ALT } from './orgService';
 
 export type PortalSlug = 'admin' | 'advisor' | 'concierge' | 'staff_hub' | 'crm' | 'member';
 
-/** Hostnames that use /{tenantSlug}/… URL prefixes (ARYX Advisor OS). */
-const AOS_PLATFORM_HOSTS = new Set(['aos.aryxcloud.com']);
+/**
+ * Hostnames that use /{tenantSlug}/… URL prefixes per portal.
+ * Advisor AOS: aos.aryxcloud.com — Concierge ARYX: concierge.aryxcloud.com
+ */
+const PATH_TENANT_PLATFORM_HOSTS: Partial<Record<PortalSlug, ReadonlySet<string>>> = {
+  advisor: new Set(['aos.aryxcloud.com']),
+  concierge: new Set(['concierge.aryxcloud.com']),
+};
 
 /** First path segments that are never tenant slugs on AOS hosts. */
 const RESERVED_PATH_SEGMENTS = new Set([
@@ -42,19 +48,35 @@ export interface ResolvedTenant {
   portalAccess: OrgPortalAccess | null;
 }
 
-function aosPlatformEnvEnabled(): boolean {
+function pathTenantPlatformEnvEnabled(portalSlug: PortalSlug): boolean {
   if (typeof import.meta === 'undefined') return false;
   const env = (import.meta as ImportMeta & { env?: Record<string, string> }).env;
-  const flag = env?.VITE_AOS_PLATFORM?.trim();
-  return flag === '1' || flag === 'true';
+  if (portalSlug === 'advisor') {
+    const flag = env?.VITE_AOS_PLATFORM?.trim();
+    return flag === '1' || flag === 'true';
+  }
+  if (portalSlug === 'concierge') {
+    const flag = env?.VITE_CONCIERGE_PATH_PLATFORM?.trim();
+    return flag === '1' || flag === 'true';
+  }
+  return false;
 }
 
-/** True on ARYX AOS hosts (or localhost when VITE_AOS_PLATFORM=1). Never true on advisor.mpb.health. */
-export function isAosPlatformHost(hostname?: string): boolean {
+/** True when this portal uses /{tenantSlug}/… on its ARYX platform host. */
+export function isPathTenantPlatformHost(
+  hostname?: string,
+  portalSlug: PortalSlug = 'advisor',
+): boolean {
   const host = (hostname ?? (typeof window !== 'undefined' ? window.location.hostname : '')).toLowerCase();
-  if (AOS_PLATFORM_HOSTS.has(host)) return true;
-  if (host === 'localhost' || host === '127.0.0.1') return aosPlatformEnvEnabled();
+  const hosts = PATH_TENANT_PLATFORM_HOSTS[portalSlug];
+  if (hosts?.has(host)) return true;
+  if (host === 'localhost' || host === '127.0.0.1') return pathTenantPlatformEnvEnabled(portalSlug);
   return false;
+}
+
+/** Advisor AOS only (aos.aryxcloud.com). Never true on advisor.mpb.health. */
+export function isAosPlatformHost(hostname?: string): boolean {
+  return isPathTenantPlatformHost(hostname, 'advisor');
 }
 
 /** Parse /{tenantSlug}/… from the pathname on AOS hosts; null for reserved/global paths. */
@@ -66,13 +88,14 @@ export function parsePathTenantSlug(pathname: string): string | null {
   return segment;
 }
 
-/** Prefix an in-app path with /{tenantSlug} on AOS; no-op on MPB Health hosts. */
+/** Prefix an in-app path with /{tenantSlug} on path-tenant platform hosts; no-op on MPB hosts. */
 export function prefixTenantPath(
   path: string,
   tenantSlug: string,
   hostname?: string,
+  portalSlug: PortalSlug = 'advisor',
 ): string {
-  if (!tenantSlug || !isAosPlatformHost(hostname)) return path;
+  if (!tenantSlug || !isPathTenantPlatformHost(hostname, portalSlug)) return path;
   if (path.startsWith('http://') || path.startsWith('https://')) return path;
 
   const normalized = path.startsWith('/') ? path : `/${path}`;
@@ -164,7 +187,7 @@ export async function resolveTenantForPortal(input: {
 }): Promise<ResolvedTenant | null> {
   const { hostname, portalSlug, pathTenantSlug } = input;
 
-  if (isAosPlatformHost(hostname)) {
+  if (isPathTenantPlatformHost(hostname, portalSlug)) {
     if (!pathTenantSlug) return null;
     return resolveTenantByOrgSlug(pathTenantSlug, portalSlug);
   }
@@ -310,6 +333,7 @@ export const tenantService = {
   resolveTenantFromHostname,
   resolveTenantForPortal,
   isAosPlatformHost,
+  isPathTenantPlatformHost,
   parsePathTenantSlug,
   prefixTenantPath,
   listOrgPortalAccess,

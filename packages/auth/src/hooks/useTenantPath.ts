@@ -1,22 +1,26 @@
 import { useCallback } from 'react';
-import { isAosPlatformHost, prefixTenantPath } from '../services/tenantService';
+import {
+  isPathTenantPlatformHost,
+  prefixTenantPath,
+  type PortalSlug,
+} from '../services/tenantService';
 import { useTenant } from '../contexts/TenantContext';
 
 /**
- * Returns a function that prefixes in-app paths with /{tenantSlug} on AOS hosts only.
- * On advisor.mpb.health (and all non-AOS hosts) paths pass through unchanged.
+ * Returns a function that prefixes in-app paths with /{tenantSlug} on path-tenant ARYX hosts.
+ * On MPB Health hosts (advisor.mpb.health, concierge.mpb.health) paths pass through unchanged.
  */
 export function useTenantPath(): (path: string) => string {
-  const { pathTenantSlug, isAosPlatform } = useTenant();
+  const { pathTenantSlug, isPathTenantPlatform, portalSlug } = useTenant();
 
   return useCallback(
     (path: string) => {
-      if (!isAosPlatform || !pathTenantSlug) return path;
+      if (!isPathTenantPlatform || !pathTenantSlug) return path;
       const hostname =
         typeof window !== 'undefined' ? window.location.hostname : undefined;
-      return prefixTenantPath(path, pathTenantSlug, hostname);
+      return prefixTenantPath(path, pathTenantSlug, hostname, portalSlug);
     },
-    [isAosPlatform, pathTenantSlug],
+    [isPathTenantPlatform, pathTenantSlug, portalSlug],
   );
 }
 
@@ -25,7 +29,8 @@ export function tenantPathForHost(
   path: string,
   tenantSlug: string | null,
   hostname?: string,
+  portalSlug: PortalSlug = 'advisor',
 ): string {
-  if (!tenantSlug || !isAosPlatformHost(hostname)) return path;
-  return prefixTenantPath(path, tenantSlug, hostname);
+  if (!tenantSlug || !isPathTenantPlatformHost(hostname, portalSlug)) return path;
+  return prefixTenantPath(path, tenantSlug, hostname, portalSlug);
 }

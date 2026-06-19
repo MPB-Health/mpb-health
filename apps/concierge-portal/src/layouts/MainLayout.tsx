@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { NavLink, useLocation, Outlet } from 'react-router-dom';
+import { useTenantPath } from '@mpbhealth/auth';
 import { supabase } from '@mpbhealth/database';
 import {
   ClipboardList,
@@ -28,6 +29,7 @@ const NAV_ITEMS = [
 
 export default function MainLayout() {
   const location = useLocation();
+  const toPath = useTenantPath();
   const [user, setUser] = useState<{ email: string } | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -44,7 +46,7 @@ export default function MainLayout() {
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     toast.success('Signed out');
-    window.location.href = '/login';
+    window.location.href = toPath('/login');
   };
 
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
@@ -100,7 +102,7 @@ export default function MainLayout() {
               return (
                 <NavLink
                   key={item.href}
-                  to={item.href}
+                  to={toPath(item.href)}
                   end={item.href === '/'}
                   className={({ isActive }) =>
                     `flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
@@ -205,7 +207,7 @@ export default function MainLayout() {
               return (
                 <NavLink
                   key={item.href}
-                  to={item.href}
+                  to={toPath(item.href)}
                   end={item.href === '/'}
                   className={({ isActive }) =>
                     `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${

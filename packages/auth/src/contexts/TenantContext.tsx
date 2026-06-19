@@ -13,6 +13,7 @@ import {
 import { useLocation } from 'react-router-dom';
 import {
   isAosPlatformHost,
+  isPathTenantPlatformHost,
   parsePathTenantSlug,
   resolvePortalSlugFromHost,
   resolveTenantForPortal,
@@ -27,10 +28,12 @@ export interface TenantContextValue {
   /** Org slug from resolved tenant or URL segment on AOS. */
   orgSlug: string | null;
   portalSlug: PortalSlug;
-  /** First URL segment on AOS (/mpb-health/…); null on MPB Health hosts. */
+  /** First URL segment on path-tenant hosts (/saudemax/…); null on MPB Health hosts. */
   pathTenantSlug: string | null;
-  /** True only on ARYX AOS platform hosts — never on advisor.mpb.health. */
+  /** True on advisor AOS (aos.aryxcloud.com) — legacy alias for advisor path-tenant hosts. */
   isAosPlatform: boolean;
+  /** True when this portal uses /{tenantSlug}/… on its ARYX platform host. */
+  isPathTenantPlatform: boolean;
   loading: boolean;
   error: string | null;
 }
@@ -50,14 +53,15 @@ export function TenantProvider({ children, portalSlug: portalSlugProp }: TenantP
   const [error, setError] = useState<string | null>(null);
 
   const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
-  const isAosPlatform = isAosPlatformHost(hostname);
-  const pathTenantSlug = isAosPlatform ? parsePathTenantSlug(pathname) : null;
-
   const portalSlug = useMemo((): PortalSlug => {
     if (portalSlugProp) return portalSlugProp;
     if (typeof window === 'undefined') return 'advisor';
     return resolvePortalSlugFromHost(hostname, window.location.port);
   }, [portalSlugProp, hostname]);
+
+  const isPathTenantPlatform = isPathTenantPlatformHost(hostname, portalSlug);
+  const isAosPlatform = isAosPlatformHost(hostname);
+  const pathTenantSlug = isPathTenantPlatform ? parsePathTenantSlug(pathname) : null;
 
   useEffect(() => {
     let cancelled = false;
@@ -66,8 +70,8 @@ export function TenantProvider({ children, portalSlug: portalSlugProp }: TenantP
 
     void (async () => {
       try {
-        // AOS global pages (/landing) intentionally have no tenant segment.
-        if (isAosPlatform && !pathTenantSlug) {
+        // Advisor /landing and other global paths have no tenant segment.
+        if (isPathTenantPlatform && !pathTenantSlug) {
           if (cancelled) return;
           setTenant(null);
           setError(null);
@@ -85,8 +89,8 @@ export function TenantProvider({ children, portalSlug: portalSlugProp }: TenantP
 
         if (!resolved) {
           setError(
-            isAosPlatform && pathTenantSlug
-              ? `Organization "${pathTenantSlug}" not found or advisor portal is disabled.`
+            isPathTenantPlatform && pathTenantSlug
+              ? `Organization "${pathTenantSlug}" not found or ${portalSlug.replace('_', ' ')} portal is disabled.`
               : 'Organization not found for this domain.',
           );
           setTenant(null);
@@ -106,7 +110,7 @@ export function TenantProvider({ children, portalSlug: portalSlugProp }: TenantP
     return () => {
       cancelled = true;
     };
-  }, [hostname, portalSlug, pathTenantSlug, isAosPlatform]);
+  }, [hostname, portalSlug, pathTenantSlug, isPathTenantPlatform]);
 
   const value = useMemo<TenantContextValue>(
     () => ({
@@ -117,10 +121,11 @@ export function TenantProvider({ children, portalSlug: portalSlugProp }: TenantP
       portalSlug,
       pathTenantSlug,
       isAosPlatform,
+      isPathTenantPlatform,
       loading,
       error,
     }),
-    [tenant, portalSlug, pathTenantSlug, isAosPlatform, loading, error],
+    [tenant, portalSlug, pathTenantSlug, isAosPlatform, isPathTenantPlatform, loading, error],
   );
 
   return <TenantContext.Provider value={value}>{children}</TenantContext.Provider>;

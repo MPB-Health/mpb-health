@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTenantPath } from '@mpbhealth/auth';
 import { supabaseUrl } from '@mpbhealth/database';
 import { Mail, ArrowLeft, CheckCircle2, AlertCircle } from 'lucide-react';
 
 export default function ForgotPassword() {
+  const toPath = useTenantPath();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
@@ -50,7 +52,7 @@ export default function ForgotPassword() {
             Check your inbox (and spam folder).
           </p>
           <Link
-            to="/login"
+            to={toPath('/login')}
             className="inline-flex items-center gap-2 text-sm font-medium text-[#4A7C8A] hover:text-[#3D6773]"
           >
             <ArrowLeft className="w-4 h-4" /> Back to sign in
@@ -108,7 +110,7 @@ export default function ForgotPassword() {
 
         <div className="text-center">
           <Link
-            to="/login"
+            to={toPath('/login')}
             className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-800"
           >
             <ArrowLeft className="w-4 h-4" /> Back to sign in

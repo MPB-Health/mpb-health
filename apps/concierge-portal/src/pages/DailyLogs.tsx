@@ -34,7 +34,8 @@ import {
   Upload,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
+import { useConciergeNavigate } from '../hooks/useConciergeNavigate';
 import { safeRemoveChannel } from '@mpbhealth/database';
 import {
   loadConciergeWorkspace,
@@ -3347,7 +3348,7 @@ function TeamTab({
 // ── Main Page ──────────────────────────────────────────────────────────
 
 export default function DailyLogs() {
-  const navigate = useNavigate();
+  const navigate = useConciergeNavigate();
   const location = useLocation();
   const activeTab = useMemo(
     () => tabIdFromLocation(location.pathname, location.search),

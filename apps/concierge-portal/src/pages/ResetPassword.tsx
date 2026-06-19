@@ -1,11 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
+import { useTenantPath } from '@mpbhealth/auth';
 import { supabase, isSupabaseConfigured } from '@mpbhealth/database';
 import toast from 'react-hot-toast';
 import { Lock, Eye, EyeOff, CheckCircle2, AlertCircle, ArrowLeft } from 'lucide-react';
+import { useConciergeNavigate } from '../hooks/useConciergeNavigate';
 
 export default function ResetPassword() {
-  const navigate = useNavigate();
+  const navigate = useConciergeNavigate();
+  const toPath = useTenantPath();
   const [searchParams] = useSearchParams();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -89,7 +92,7 @@ export default function ResetPassword() {
 
       setSuccess(true);
       toast.success('Password reset successfully!');
-      setTimeout(() => navigate('/login?reset=1'), 2000);
+      setTimeout(() => navigate(`${toPath('/login')}?reset=1`), 2000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to reset password');
     } finally {
@@ -118,7 +121,7 @@ export default function ResetPassword() {
           <h1 className="text-2xl font-bold text-[#2F3E2F]">Link expired</h1>
           <p className="text-slate-600">{linkError}</p>
           <Link
-            to="/forgot-password"
+            to={toPath('/forgot-password')}
             className="inline-block px-6 py-2.5 rounded-lg bg-[#4A7C8A] text-white font-medium text-sm hover:bg-[#3D6773] transition-colors"
           >
             Request a new link
@@ -206,7 +209,7 @@ export default function ResetPassword() {
         </form>
 
         <div className="text-center">
-          <Link to="/login" className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-800">
+          <Link to={toPath('/login')} className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-800">
             <ArrowLeft className="w-4 h-4" /> Back to sign in
           </Link>
         </div>

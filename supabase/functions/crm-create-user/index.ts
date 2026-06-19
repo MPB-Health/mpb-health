@@ -24,6 +24,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
 import { createLogger } from "../_shared/logger.ts";
 import { checkRateLimit, getClientIdentifier } from "../_shared/security.ts";
+import { translateOrgId } from "../_shared/orgIdResolver.ts";
 import { wrapEmailLayout, emailCta, emailInfoCard, emailInfoRow, emailCallout } from "../_shared/emailLayout.ts";
 
 const log = createLogger("crm-create-user");
@@ -215,12 +216,15 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    // Normalize portal UUID → membership UUID (org_memberships FK target).
+    const membershipOrgId = await translateOrgId(supabaseAdmin, org_id, "membership");
+
     // ----- 3. Authorize: caller must be owner/admin in the target org ----
     const { data: callerMembership, error: membershipError } = await supabaseAdmin
       .from("org_memberships")
       .select("role")
       .eq("user_id", caller.id)
-      .eq("org_id", org_id)
+      .eq("org_id", membershipOrgId)
       .eq("status", "active")
       .maybeSingle();
 
@@ -266,7 +270,7 @@ Deno.serve(async (req: Request) => {
       const { data: orgsRow } = await supabaseAdmin
         .from("orgs")
         .select("name")
-        .eq("id", org_id)
+        .eq("id", membershipOrgId)
         .maybeSingle();
       if (orgsRow?.name) {
         orgName = orgsRow.name;
@@ -274,7 +278,7 @@ Deno.serve(async (req: Request) => {
         const { data: legacyRow } = await supabaseAdmin
           .from("organizations")
           .select("name")
-          .eq("id", org_id)
+          .eq("id", membershipOrgId)
           .maybeSingle();
         if (legacyRow?.name) orgName = legacyRow.name;
       }
@@ -292,7 +296,7 @@ Deno.serve(async (req: Request) => {
       const { data: dupeMembership } = await supabaseAdmin
         .from("org_memberships")
         .select("id")
-        .eq("org_id", org_id)
+        .eq("org_id", membershipOrgId)
         .eq("user_id", existingByEmail.id)
         .maybeSingle();
       if (dupeMembership) {
@@ -357,7 +361,7 @@ Deno.serve(async (req: Request) => {
     const { error: membershipInsertError } = await supabaseAdmin
       .from("org_memberships")
       .insert({
-        org_id,
+        org_id: membershipOrgId,
         user_id: newUserId,
         role: targetMembershipRole,
         status: "active",

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useCallback } from 'react';
-import { getBrandLogo, AppLayout, PortalSwitcher, Button, detectBrand, type NavItem, type PortalKey } from '@mpbhealth/ui';
+import { getBrandLogo, AppLayout, Button, detectBrand, type NavItem } from '@mpbhealth/ui';
 import { Outlet, NavLink, Navigate, useLocation } from 'react-router-dom';
 import { PortalSeo } from '../components/PortalSeo';
 import { ImpersonationBanner } from '../components/ImpersonationBanner';
@@ -55,11 +55,8 @@ import {
   Pill,
   Compass,
 } from 'lucide-react';
-import { getPortalUrl } from '@mpbhealth/config';
 import {
   isAdmin as checkIsAdmin,
-  usePortalAccess,
-  buildPortalSSOUrl,
   useSSONavigation,
   useTenant,
   useTenantPath,
@@ -260,24 +257,6 @@ export default function MainLayout() {
     staleTime: 5 * 60 * 1000,
   });
   const isAdminRolePending = advisorReady && isAdminQueryPending;
-
-  // Portal access from global user_roles table
-  const { canAccessAdmin, canAccessAdvisor, canAccessCrm } = usePortalAccess(profile?.user_id);
-
-  const safeGetPortalUrl = useCallback((portal: PortalKey): string => {
-    try {
-      return getPortalUrl(portal as Parameters<typeof getPortalUrl>[0]);
-    } catch {
-      return '#';
-    }
-  }, []);
-
-  // SSO-aware portal navigation (client-side session transfer)
-  const getPortalUrlWithSSO = useCallback(async (portal: PortalKey): Promise<string | null> => {
-    const baseUrl = safeGetPortalUrl(portal);
-    if (!baseUrl || baseUrl === '#') return null;
-    return buildPortalSSOUrl(baseUrl, supabase);
-  }, [safeGetPortalUrl]);
 
   // CMS navigation via React Query — automatic dedup, caching, and stale-while-revalidate
   const { data: cmsNavItems = [] } = useQuery<NavItem[]>({
@@ -613,16 +592,6 @@ export default function MainLayout() {
         logoSrc={getBrandLogo()}
         navigation={navWithBadges}
         initialCollapsed={userPreferences?.sidebar_collapsed ?? false}
-        portalSwitcher={
-          <PortalSwitcher
-            currentPortal="advisors"
-            canAccessAdmin={canAccessAdmin}
-            canAccessCRM={canAccessCrm}
-            canAccessAdvisor={canAccessAdvisor}
-            getPortalUrl={safeGetPortalUrl}
-            getPortalUrlWithSSO={getPortalUrlWithSSO}
-          />
-        }
         userSection={userSection}
         topBarCenter={<GlobalSearch />}
         topBarActions={topBarActions}

@@ -1,10 +1,8 @@
 import { useCallback, useState, useEffect } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { AppLayout, PortalSwitcher } from '@mpbhealth/ui';
-import type { NavItem, NavLinkRenderProps, PortalKey } from '@mpbhealth/ui';
-import { getPortalUrl } from '@mpbhealth/config';
-import { buildPortalSSOUrl } from '@mpbhealth/auth';
+import { AppLayout } from '@mpbhealth/ui';
+import type { NavItem, NavLinkRenderProps } from '@mpbhealth/ui';
 import { supabase } from '../lib/supabase';
 import { getBrandLogo } from '@mpbhealth/ui';
 import {
@@ -30,7 +28,7 @@ import {
   Briefcase,
   FileInput,
 } from 'lucide-react';
-import { OrgSwitcher, usePortalAccess } from '@mpbhealth/auth';
+import { OrgSwitcher } from '@mpbhealth/auth';
 import { useAuth } from '../contexts/AuthContext';
 import { useOrg } from '../contexts/OrgContext';
 import { useCRM } from '../contexts/CRMContext';
@@ -295,8 +293,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const { user, signOut } = useAuth();
   const { orgs, activeOrg, orgRole, can, switchOrg } = useOrg();
   const { dashboardStats, tasksDueToday, overdueTasks } = useCRM();
-  const { canAccessAdmin, canAccessAdvisor, canAccessCrm, canAccessWebsite, canAccessSupport } = usePortalAccess(user?.id);
-
   // Footer command bar modal state
   const [showAddLead, setShowAddLead] = useState(false);
   const [showAddTask, setShowAddTask] = useState(false);
@@ -517,20 +513,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     );
   };
 
-  const safeGetPortalUrl = useCallback((portal: PortalKey): string => {
-    try {
-      return getPortalUrl(portal as Parameters<typeof getPortalUrl>[0]);
-    } catch {
-      return '#';
-    }
-  }, []);
-
-  const getPortalUrlWithSSO = useCallback(async (portal: PortalKey): Promise<string | null> => {
-    const baseUrl = safeGetPortalUrl(portal);
-    if (!baseUrl || baseUrl === '#') return null;
-    return buildPortalSSOUrl(baseUrl, supabase);
-  }, [safeGetPortalUrl]);
-
   const userSection = (
     <div className="space-y-3">
       {/* Org Switcher */}
@@ -652,18 +634,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         appName="CRM"
         logoSrc={getBrandLogo()}
         navigation={visibleNav}
-        portalSwitcher={
-          <PortalSwitcher
-            currentPortal="crm"
-            canAccessAdmin={canAccessAdmin}
-            canAccessCRM={canAccessCrm}
-            canAccessAdvisor={canAccessAdvisor}
-            canAccessWebsite={canAccessWebsite}
-            canAccessSupport={canAccessSupport}
-            getPortalUrl={safeGetPortalUrl}
-            getPortalUrlWithSSO={getPortalUrlWithSSO}
-          />
-        }
         userSection={userSection}
         topBarCenter={
           <div className="flex items-center gap-4 w-full">

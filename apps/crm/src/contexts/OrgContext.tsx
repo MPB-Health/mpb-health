@@ -10,6 +10,7 @@ import {
   invalidateCache as invalidateOrgCache,
   DEFAULT_ORG_ID,
   DEFAULT_ORG_ID_ALT,
+  MPB_HEALTH_SLUG,
   type OrgWithMembership,
   type OrgRole,
   type UserPermissionSet,
@@ -85,7 +86,10 @@ export function OrgProvider({ children }: { children: ReactNode }) {
         const storedOrgValid = storedId && userOrgs.some((o) => o.id === storedId);
 
         if (!storedOrgValid) {
-          const defaultOrg = userOrgs.find((o) => o.id === DEFAULT_ORG_ID || o.id === DEFAULT_ORG_ID_ALT) || userOrgs[0];
+          const defaultOrg =
+            userOrgs.find((o) => o.slug === MPB_HEALTH_SLUG) ||
+            userOrgs.find((o) => o.id === DEFAULT_ORG_ID || o.id === DEFAULT_ORG_ID_ALT) ||
+            userOrgs[0];
           setActiveOrgId(defaultOrg.id);
           localStorage.setItem(ACTIVE_ORG_KEY, defaultOrg.id);
         }

@@ -2,7 +2,7 @@
  * usePortalAccess - Hook to load user roles and compute portal access
  *
  * Queries the global `user_roles` table and computes which portals the
- * current user can access. Used by PortalSwitcher and app-level guards.
+ * current user can access. Used by app-level guards.
  *
  * Role → Portal mapping:
  *   super_admin → ALL portals

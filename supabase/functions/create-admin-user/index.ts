@@ -3,6 +3,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
 import { createLogger } from '../_shared/logger.ts';
 import { syncUserToItsts } from '../_shared/itsts-sync.ts';
+import { MPB_MEMBERSHIP_ORG_ID } from "../_shared/orgIdResolver.ts";
 import { checkRateLimit, getClientIdentifier } from '../_shared/security.ts';
 import { wrapEmailLayout, emailCta, emailInfoCard, emailInfoRow, emailCallout } from "../_shared/emailLayout.ts";
 const log = createLogger('create-admin-user');
@@ -189,7 +190,6 @@ Deno.serve(async (req: Request) => {
     }
 
     const userId = authUser.user.id;
-    const DEFAULT_ORG_ID = "00000000-0000-4000-a000-000000000001";
 
     if (role === "concierge") {
       // Concierge Portal access: user_roles.concierge only (admin_users forbids concierge)
@@ -213,7 +213,7 @@ Deno.serve(async (req: Request) => {
       const { error: orgError } = await supabaseAdmin.from("org_memberships").upsert(
         {
           user_id: userId,
-          org_id: DEFAULT_ORG_ID,
+          org_id: MPB_MEMBERSHIP_ORG_ID,
           role: "member",
           status: "active",
           joined_at: new Date().toISOString(),
@@ -303,7 +303,7 @@ Deno.serve(async (req: Request) => {
       .from("org_memberships")
       .upsert({
         user_id: userId,
-        org_id: DEFAULT_ORG_ID,
+        org_id: MPB_MEMBERSHIP_ORG_ID,
         role: orgRole,
         status: "active",
         joined_at: new Date().toISOString(),

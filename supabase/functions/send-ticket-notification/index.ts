@@ -20,6 +20,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 import { createLogger } from "../_shared/logger.ts";
 import { escapeHtml } from "../_shared/security.ts";
 import { wrapEmailLayout, emailCta } from "../_shared/emailLayout.ts";
+import { MPB_MEMBERSHIP_ORG_ID } from "../_shared/orgIdResolver.ts";
 
 const log = createLogger("send-ticket-notification");
 
@@ -338,8 +339,8 @@ async function sendEmail(
 
 // ── In-app + Push notification helpers ────────────────────────────────────────
 
-// Default org_id for notification_events (single-org setup)
-const DEFAULT_ORG_ID = "00000000-0000-4000-a000-000000000001";
+// Default org_id for notification_events (membership UUID for MPB Health)
+const DEFAULT_ORG_ID = MPB_MEMBERSHIP_ORG_ID;
 
 interface PushTarget {
   user_id: string;

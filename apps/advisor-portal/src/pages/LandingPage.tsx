@@ -11,7 +11,7 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import { Navigate } from 'react-router-dom';
 import { detectBrand } from '@mpbhealth/ui';
-import { useTenantPath } from '@mpbhealth/auth';
+import { useTenantPath, isAosPlatformHost } from '@mpbhealth/auth';
 import { AuthPageSeo } from '../components/AuthPageSeo';
 import { useAdvisorNavigate } from '../hooks/useAdvisorNavigate';
 import {
@@ -137,7 +137,13 @@ export default function LandingPage() {
     return <Navigate to={toPath('/login')} replace />;
   }
 
-  const goLogin = () => navigate('/login');
+  const goLogin = () => {
+    if (isAosPlatformHost()) {
+      navigate('/saudemax/login');
+      return;
+    }
+    navigate('/login');
+  };
   const scrollTo = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };

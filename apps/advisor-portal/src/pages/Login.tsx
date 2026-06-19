@@ -5,11 +5,13 @@ import toast from 'react-hot-toast';
 import { LoginLayout, AryxAuthShell, detectBrand } from '@mpbhealth/ui';
 import { AuthPageSeo } from '../components/AuthPageSeo';
 import { useAdvisor } from '../contexts/AdvisorContext';
+import { useAosPath } from '../hooks/useAosPath';
 import { useAdvisorPageDebugLog } from '../hooks/useAdvisorPageDebugLog';
 
 export default function Login() {
   useAdvisorPageDebugLog('Login');
   const navigate = useNavigate();
+  const aosPath = useAosPath();
   const [searchParams, setSearchParams] = useSearchParams();
   const { loading: authLoading, hasSession, profile, profileLoading } = useAdvisor();
 
@@ -19,15 +21,15 @@ export default function Login() {
     if (!hasSession) return;
     if (profileLoading) return;
     if (profile?.must_change_password) {
-      navigate('/change-password', { replace: true });
+      navigate(aosPath('/change-password'), { replace: true });
       return;
     }
     if (profile) {
-      navigate('/', { replace: true });
+      navigate(aosPath('/'), { replace: true });
       return;
     }
-    navigate('/', { replace: true });
-  }, [authLoading, hasSession, profile, profileLoading, navigate]);
+    navigate(aosPath('/'), { replace: true });
+  }, [authLoading, hasSession, profile, profileLoading, navigate, aosPath]);
 
   // Show success toast when redirected after a successful password reset
   useEffect(() => {
@@ -74,14 +76,14 @@ export default function Login() {
         throw new Error(error.message || 'Invalid email or password');
       }
       toast.success('Welcome back!');
-      navigate('/');
+      navigate(aosPath('/'));
     } catch (err) {
       throw err instanceof Error ? err : new Error('Login failed. Please try again.');
     }
   };
 
   const handleForgotPassword = () => {
-    navigate('/forgot-password');
+    navigate(aosPath('/forgot-password'));
   };
 
   const authSeo = (

@@ -1,8 +1,10 @@
 import React, { Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { isAosPlatformHost } from '@mpbhealth/auth';
 import { AdvisorProvider } from './contexts/AdvisorContext';
 import { TourProvider } from './contexts/TourContext';
 import MainLayout from './layouts/MainLayout';
+import { AosPlatformHome, AosTenantGate } from './components/AosTenantGate';
 import { AdvisorPageLoader } from './components/loading';
 
 // Route module factories for lazy loading + prefetching
@@ -257,91 +259,114 @@ if (typeof window !== 'undefined') {
   );
 }
 
+function AdvisorAuthRoutes({ nested = false }: { nested?: boolean }) {
+  const p = (path: string) => (nested ? path : `/${path}`);
+  return (
+    <>
+      <Route path={p('login')} element={<Suspense fallback={routeFallback('Loading…', 'Preparing sign-in.')}><Login /></Suspense>} />
+      <Route path={p('forgot-password')} element={<Suspense fallback={routeFallback('Loading…', 'Preparing password reset.')}><ForgotPassword /></Suspense>} />
+      <Route path={p('reset-password')} element={<Suspense fallback={routeFallback('Loading…', 'Preparing reset form.')}><ResetPassword /></Suspense>} />
+      <Route path={p('change-password')} element={<Suspense fallback={routeFallback('Loading…', 'Preparing password change.')}><ChangePassword /></Suspense>} />
+      <Route path={nested ? 'auth/confirm' : '/auth/confirm'} element={<Suspense fallback={routeFallback('Signing in…', 'Completing secure sign-in.')}><AuthConfirm /></Suspense>} />
+    </>
+  );
+}
+
+function AuthenticatedAppRoutes() {
+  return (
+    <>
+      <Route index element={<Suspense fallback={routeFallback('Loading page…')}><Dashboard /></Suspense>} />
+      <Route path="overview" element={<Suspense fallback={routeFallback('Loading page…')}><Overview /></Suspense>} />
+      <Route path="training" element={<Suspense fallback={routeFallback('Loading page…')}><Training /></Suspense>} />
+      <Route path="training/mpb" element={<Suspense fallback={routeFallback('Loading page…')}><Training section="mpb" /></Suspense>} />
+      <Route path="training/sedera" element={<Suspense fallback={routeFallback('Loading page…')}><Training section="sedera" /></Suspense>} />
+      <Route path="training/zion" element={<Suspense fallback={routeFallback('Loading page…')}><Training section="zion" /></Suspense>} />
+      <Route path="training/mpb-cards" element={<Suspense fallback={routeFallback('Loading page…')}><Training section="mpb-cards" /></Suspense>} />
+      <Route path="training/secure-hsa" element={<Suspense fallback={routeFallback('Loading page…')}><Training section="secure-hsa" /></Suspense>} />
+      <Route path="training/care-plus" element={<Suspense fallback={routeFallback('Loading page…')}><Training section="care-plus" /></Suspense>} />
+      <Route path="training/:moduleId" element={<Suspense fallback={routeFallback('Loading page…')}><TrainingModule /></Suspense>} />
+      <Route path="forms" element={<Suspense fallback={routeFallback('Loading page…')}><Forms /></Suspense>} />
+      <Route path="forms/advisor" element={<Suspense fallback={routeFallback('Loading page…')}><Forms section="advisor" /></Suspense>} />
+      <Route path="forms/employer" element={<Suspense fallback={routeFallback('Loading page…')}><Forms section="employer" /></Suspense>} />
+      <Route path="forms/member" element={<Suspense fallback={routeFallback('Loading page…')}><Forms section="member" /></Suspense>} />
+      <Route path="quick-links" element={<Suspense fallback={routeFallback('Loading page…')}><QuickLinks /></Suspense>} />
+      <Route path="sops" element={<Suspense fallback={routeFallback('Loading page…')}><SOPLibrary /></Suspense>} />
+      <Route path="sops/advisor-toolkit" element={<Suspense fallback={routeFallback('Loading page…')}><SOPLibrary section="advisor-toolkit" /></Suspense>} />
+      <Route path="sops/pricing-charts" element={<Suspense fallback={routeFallback('Loading page…')}><SOPLibrary section="pricing-charts" /></Suspense>} />
+      <Route path="sops/reference-materials" element={<Suspense fallback={routeFallback('Loading page…')}><SOPLibrary section="reference-materials" /></Suspense>} />
+      <Route path="sops/quick-reference" element={<Suspense fallback={routeFallback('Loading page…')}><SOPLibrary section="quick-reference" /></Suspense>} />
+      <Route path="sops/flyers-sedera" element={<Suspense fallback={routeFallback('Loading page…')}><SOPLibrary section="flyers-sedera" /></Suspense>} />
+      <Route path="sops/flyers" element={<Suspense fallback={routeFallback('Loading page…')}><SOPLibrary section="flyers" /></Suspense>} />
+      <Route path="sops/sharing-guidelines" element={<Suspense fallback={routeFallback('Loading page…')}><SOPLibrary section="sharing-guidelines" /></Suspense>} />
+      <Route path="sops/healthsharing-zion" element={<Suspense fallback={routeFallback('Loading page…')}><SOPLibrary section="healthsharing-zion" /></Suspense>} />
+      <Route path="sops/zion" element={<Suspense fallback={routeFallback('Loading page…')}><SOPLibrary section="zion" /></Suspense>} />
+      <Route path="sops/arm" element={<Suspense fallback={routeFallback('Loading page…')}><SOPLibrary section="arm" /></Suspense>} />
+      <Route path="sops/rx" element={<Suspense fallback={routeFallback('Loading page…')}><SOPLibrary section="rx" /></Suspense>} />
+      <Route path="sops/handbooks" element={<Suspense fallback={routeFallback('Loading page…')}><SOPLibrary section="handbooks" /></Suspense>} />
+      <Route path="sops/:documentId" element={<Suspense fallback={routeFallback('Loading page…')}><SOPDocument /></Suspense>} />
+      <Route path="bulletins" element={<Suspense fallback={routeFallback('Loading page…')}><Bulletins /></Suspense>} />
+      <Route path="bulletins/:slug" element={<Suspense fallback={routeFallback('Loading page…')}><BulletinDetail /></Suspense>} />
+      <Route path="videos" element={<Suspense fallback={routeFallback('Loading page…')}><VideoLibrary /></Suspense>} />
+      <Route path="submit-group" element={<Suspense fallback={routeFallback('Loading page…')}><SubmitGroup /></Suspense>} />
+      <Route path="contact" element={<Suspense fallback={routeFallback('Loading page…')}><Contact /></Suspense>} />
+      <Route path="tickets/new" element={<Suspense fallback={routeFallback('Loading page…')}><NewTicket /></Suspense>} />
+      <Route path="tickets/:ticketId" element={<Suspense fallback={routeFallback('Loading page…')}><TicketDetailPage /></Suspense>} />
+      <Route path="tickets" element={<Suspense fallback={routeFallback('Loading page…')}><Tickets /></Suspense>} />
+      <Route path="admin/tickets" element={<Suspense fallback={routeFallback('Loading page…')}><AdminTickets /></Suspense>} />
+      <Route path="add-advisor" element={<Suspense fallback={routeFallback('Loading page…')}><AddAdvisor /></Suspense>} />
+      <Route path="chat" element={<Suspense fallback={routeFallback('Loading page…')}><ChatPage /></Suspense>} />
+      <Route path="chat/:conversationId" element={<Suspense fallback={routeFallback('Loading page…')}><ChatPage /></Suspense>} />
+      <Route path="inbox" element={<Suspense fallback={routeFallback('Loading page…')}><Inbox /></Suspense>} />
+      <Route path="inbox/:conversationId" element={<Suspense fallback={routeFallback('Loading page…')}><ConversationThread /></Suspense>} />
+      <Route path="leads" element={<Suspense fallback={routeFallback('Loading page…')}><LeadsList /></Suspense>} />
+      <Route path="leads/:leadId" element={<Suspense fallback={routeFallback('Loading page…')}><AssignedLeadDetail /></Suspense>} />
+      <Route path="audit-log" element={<Suspense fallback={routeFallback('Loading page…')}><AuditLog /></Suspense>} />
+      <Route path="events/manage/new" element={<Suspense fallback={routeFallback('Loading page…')}><EventForm /></Suspense>} />
+      <Route path="events/manage/:eventId/edit" element={<Suspense fallback={routeFallback('Loading page…')}><EventForm /></Suspense>} />
+      <Route path="events/manage" element={<Suspense fallback={routeFallback('Loading page…')}><EventsManager /></Suspense>} />
+      <Route path="profile" element={<Suspense fallback={routeFallback('Loading page…')}><Profile /></Suspense>} />
+      <Route path="settings" element={<Suspense fallback={routeFallback('Loading page…')}><SettingsHub /></Suspense>} />
+      <Route path="settings/organization" element={<Suspense fallback={routeFallback('Loading page…')}><OrganizationSettings /></Suspense>} />
+      <Route path="settings/team" element={<Suspense fallback={routeFallback('Loading page…')}><TeamManagement /></Suspense>} />
+      <Route path="settings/notifications" element={<Suspense fallback={routeFallback('Loading page…')}><NotificationPreferences /></Suspense>} />
+      <Route path="settings/preferences" element={<Suspense fallback={routeFallback('Loading page…')}><UserPreferences /></Suspense>} />
+      <Route path="settings/api-keys" element={<Suspense fallback={routeFallback('Loading page…')}><ApiKeys /></Suspense>} />
+      <Route path="settings/integrations" element={<Suspense fallback={routeFallback('Loading page…')}><Integrations /></Suspense>} />
+    </>
+  );
+}
+
 export default function App() {
+  const isAosPlatform =
+    typeof window !== 'undefined' && isAosPlatformHost(window.location.hostname);
+
   return (
     <AdvisorProvider>
       <TourProvider>
         <RouteErrorBoundary>
           <Routes>
-            {/* Public marketing landing — rendered for unauthenticated visitors
-                hitting any non-app URL (MainLayout redirects here when there's no session). */}
-            <Route path="/landing" element={<Suspense fallback={routeFallback('Loading…', 'Preparing the platform.')}><LandingPage /></Suspense>} />
-
-            {/* Auth routes — own Suspense so they don't depend on MainLayout */}
-            <Route path="/login" element={<Suspense fallback={routeFallback('Loading…', 'Preparing sign-in.')}><Login /></Suspense>} />
-            <Route path="/forgot-password" element={<Suspense fallback={routeFallback('Loading…', 'Preparing password reset.')}><ForgotPassword /></Suspense>} />
-            <Route path="/reset-password" element={<Suspense fallback={routeFallback('Loading…', 'Preparing reset form.')}><ResetPassword /></Suspense>} />
-            <Route path="/change-password" element={<Suspense fallback={routeFallback('Loading…', 'Preparing password change.')}><ChangePassword /></Suspense>} />
-            <Route path="/auth/confirm" element={<Suspense fallback={routeFallback('Signing in…', 'Completing secure sign-in.')}><AuthConfirm /></Suspense>} />
-
-            {/* Authenticated routes — Suspense renders inside the layout shell */}
-            <Route path="/" element={<MainLayout />}>
-              <Route index element={<Suspense fallback={routeFallback('Loading page…')}><Dashboard /></Suspense>} />
-              <Route path="overview" element={<Suspense fallback={routeFallback('Loading page…')}><Overview /></Suspense>} />
-              <Route path="training" element={<Suspense fallback={routeFallback('Loading page…')}><Training /></Suspense>} />
-              <Route path="training/mpb" element={<Suspense fallback={routeFallback('Loading page…')}><Training section="mpb" /></Suspense>} />
-              <Route path="training/sedera" element={<Suspense fallback={routeFallback('Loading page…')}><Training section="sedera" /></Suspense>} />
-              <Route path="training/zion" element={<Suspense fallback={routeFallback('Loading page…')}><Training section="zion" /></Suspense>} />
-              <Route path="training/mpb-cards" element={<Suspense fallback={routeFallback('Loading page…')}><Training section="mpb-cards" /></Suspense>} />
-              <Route path="training/secure-hsa" element={<Suspense fallback={routeFallback('Loading page…')}><Training section="secure-hsa" /></Suspense>} />
-              <Route path="training/care-plus" element={<Suspense fallback={routeFallback('Loading page…')}><Training section="care-plus" /></Suspense>} />
-              <Route path="training/:moduleId" element={<Suspense fallback={routeFallback('Loading page…')}><TrainingModule /></Suspense>} />
-              <Route path="forms" element={<Suspense fallback={routeFallback('Loading page…')}><Forms /></Suspense>} />
-              <Route path="forms/advisor" element={<Suspense fallback={routeFallback('Loading page…')}><Forms section="advisor" /></Suspense>} />
-              <Route path="forms/employer" element={<Suspense fallback={routeFallback('Loading page…')}><Forms section="employer" /></Suspense>} />
-              <Route path="forms/member" element={<Suspense fallback={routeFallback('Loading page…')}><Forms section="member" /></Suspense>} />
-              <Route path="quick-links" element={<Suspense fallback={routeFallback('Loading page…')}><QuickLinks /></Suspense>} />
-              <Route path="sops" element={<Suspense fallback={routeFallback('Loading page…')}><SOPLibrary /></Suspense>} />
-              <Route path="sops/advisor-toolkit" element={<Suspense fallback={routeFallback('Loading page…')}><SOPLibrary section="advisor-toolkit" /></Suspense>} />
-              <Route path="sops/pricing-charts" element={<Suspense fallback={routeFallback('Loading page…')}><SOPLibrary section="pricing-charts" /></Suspense>} />
-              <Route path="sops/reference-materials" element={<Suspense fallback={routeFallback('Loading page…')}><SOPLibrary section="reference-materials" /></Suspense>} />
-              <Route path="sops/quick-reference" element={<Suspense fallback={routeFallback('Loading page…')}><SOPLibrary section="quick-reference" /></Suspense>} />
-              <Route path="sops/flyers-sedera" element={<Suspense fallback={routeFallback('Loading page…')}><SOPLibrary section="flyers-sedera" /></Suspense>} />
-              <Route path="sops/flyers" element={<Suspense fallback={routeFallback('Loading page…')}><SOPLibrary section="flyers" /></Suspense>} />
-              <Route path="sops/sharing-guidelines" element={<Suspense fallback={routeFallback('Loading page…')}><SOPLibrary section="sharing-guidelines" /></Suspense>} />
-              <Route path="sops/healthsharing-zion" element={<Suspense fallback={routeFallback('Loading page…')}><SOPLibrary section="healthsharing-zion" /></Suspense>} />
-              <Route path="sops/zion" element={<Suspense fallback={routeFallback('Loading page…')}><SOPLibrary section="zion" /></Suspense>} />
-              <Route path="sops/arm" element={<Suspense fallback={routeFallback('Loading page…')}><SOPLibrary section="arm" /></Suspense>} />
-              <Route path="sops/rx" element={<Suspense fallback={routeFallback('Loading page…')}><SOPLibrary section="rx" /></Suspense>} />
-              <Route path="sops/handbooks" element={<Suspense fallback={routeFallback('Loading page…')}><SOPLibrary section="handbooks" /></Suspense>} />
-              <Route path="sops/:documentId" element={<Suspense fallback={routeFallback('Loading page…')}><SOPDocument /></Suspense>} />
-              <Route path="bulletins" element={<Suspense fallback={routeFallback('Loading page…')}><Bulletins /></Suspense>} />
-              <Route path="bulletins/:slug" element={<Suspense fallback={routeFallback('Loading page…')}><BulletinDetail /></Suspense>} />
-              <Route path="videos" element={<Suspense fallback={routeFallback('Loading page…')}><VideoLibrary /></Suspense>} />
-              <Route path="submit-group" element={<Suspense fallback={routeFallback('Loading page…')}><SubmitGroup /></Suspense>} />
-              <Route path="contact" element={<Suspense fallback={routeFallback('Loading page…')}><Contact /></Suspense>} />
-              <Route path="tickets/new" element={<Suspense fallback={routeFallback('Loading page…')}><NewTicket /></Suspense>} />
-              <Route
-                path="tickets/:ticketId"
-                element={<Suspense fallback={routeFallback('Loading page…')}><TicketDetailPage /></Suspense>}
-              />
-              <Route path="tickets" element={<Suspense fallback={routeFallback('Loading page…')}><Tickets /></Suspense>} />
-              <Route path="admin/tickets" element={<Suspense fallback={routeFallback('Loading page…')}><AdminTickets /></Suspense>} />
-              <Route path="add-advisor" element={<Suspense fallback={routeFallback('Loading page…')}><AddAdvisor /></Suspense>} />
-              <Route path="chat" element={<Suspense fallback={routeFallback('Loading page…')}><ChatPage /></Suspense>} />
-              <Route path="chat/:conversationId" element={<Suspense fallback={routeFallback('Loading page…')}><ChatPage /></Suspense>} />
-              <Route path="inbox" element={<Suspense fallback={routeFallback('Loading page…')}><Inbox /></Suspense>} />
-              <Route path="inbox/:conversationId" element={<Suspense fallback={routeFallback('Loading page…')}><ConversationThread /></Suspense>} />
-              <Route path="leads" element={<Suspense fallback={routeFallback('Loading page…')}><LeadsList /></Suspense>} />
-              <Route path="leads/:leadId" element={<Suspense fallback={routeFallback('Loading page…')}><AssignedLeadDetail /></Suspense>} />
-              <Route path="audit-log" element={<Suspense fallback={routeFallback('Loading page…')}><AuditLog /></Suspense>} />
-              <Route path="events/manage/new" element={<Suspense fallback={routeFallback('Loading page…')}><EventForm /></Suspense>} />
-              <Route
-                path="events/manage/:eventId/edit"
-                element={<Suspense fallback={routeFallback('Loading page…')}><EventForm /></Suspense>}
-              />
-              <Route path="events/manage" element={<Suspense fallback={routeFallback('Loading page…')}><EventsManager /></Suspense>} />
-              <Route path="profile" element={<Suspense fallback={routeFallback('Loading page…')}><Profile /></Suspense>} />
-              {/* Settings Routes */}
-              <Route path="settings" element={<Suspense fallback={routeFallback('Loading page…')}><SettingsHub /></Suspense>} />
-              <Route path="settings/organization" element={<Suspense fallback={routeFallback('Loading page…')}><OrganizationSettings /></Suspense>} />
-              <Route path="settings/team" element={<Suspense fallback={routeFallback('Loading page…')}><TeamManagement /></Suspense>} />
-              <Route path="settings/notifications" element={<Suspense fallback={routeFallback('Loading page…')}><NotificationPreferences /></Suspense>} />
-              <Route path="settings/preferences" element={<Suspense fallback={routeFallback('Loading page…')}><UserPreferences /></Suspense>} />
-              <Route path="settings/api-keys" element={<Suspense fallback={routeFallback('Loading page…')}><ApiKeys /></Suspense>} />
-              <Route path="settings/integrations" element={<Suspense fallback={routeFallback('Loading page…')}><Integrations /></Suspense>} />
-            </Route>
-            <Route path="*" element={<Navigate to="/" replace />} />
+            {isAosPlatform ? (
+              <>
+                <Route path="/" element={<AosPlatformHome />} />
+                <Route path="/landing" element={<Suspense fallback={routeFallback('Loading…', 'Preparing the platform.')}><LandingPage /></Suspense>} />
+                <Route path="/:tenantSlug">
+                  <AdvisorAuthRoutes nested />
+                  <Route element={<AosTenantGate><MainLayout /></AosTenantGate>}>
+                    <AuthenticatedAppRoutes />
+                  </Route>
+                </Route>
+                <Route path="*" element={<Navigate to="/landing" replace />} />
+              </>
+            ) : (
+              <>
+                <Route path="/landing" element={<Suspense fallback={routeFallback('Loading…', 'Preparing the platform.')}><LandingPage /></Suspense>} />
+                <AdvisorAuthRoutes />
+                <Route path="/" element={<MainLayout />}>
+                  <AuthenticatedAppRoutes />
+                </Route>
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </>
+            )}
           </Routes>
         </RouteErrorBoundary>
       </TourProvider>

@@ -5,6 +5,18 @@
   "outputDirectory": "dist",
   "framework": "vite",
   "redirects": [
+    {
+      "source": "/",
+      "has": [{ "type": "host", "value": "saudemax.aryxcloud.com" }],
+      "destination": "https://aos.aryxcloud.com/saudemax",
+      "permanent": true
+    },
+    {
+      "source": "/:path+",
+      "has": [{ "type": "host", "value": "saudemax.aryxcloud.com" }],
+      "destination": "https://aos.aryxcloud.com/saudemax/:path*",
+      "permanent": true
+    },
     { "source": "/advisor-agreement", "destination": "/login", "permanent": true },
     { "source": "/advisor-agreement/", "destination": "/login", "permanent": true },
     { "source": "/advisor-playbook", "destination": "/login", "permanent": true },

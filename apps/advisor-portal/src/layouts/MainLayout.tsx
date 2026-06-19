@@ -56,7 +56,7 @@ import {
   Compass,
 } from 'lucide-react';
 import { getPortalUrl } from '@mpbhealth/config';
-import { isAdmin as checkIsAdmin, usePortalAccess, buildPortalSSOUrl, useSSONavigation } from '@mpbhealth/auth';
+import { isAdmin as checkIsAdmin, usePortalAccess, buildPortalSSOUrl, useSSONavigation, useTenant } from '@mpbhealth/auth';
 import { supabase } from '@mpbhealth/database';
 import { navigationService, type NavMenuItem, isAdvisorExemptFromTrainingGate } from '@mpbhealth/advisor-core';
 import { useAdvisor } from '../contexts/AdvisorContext';
@@ -76,6 +76,7 @@ import { GlobalSearch } from '../components/GlobalSearch';
 import { setClearQueryCache } from '../utils/navCache';
 import { prefetchRouteByPath } from '../App';
 import { AdvisorPageLoader } from '../components/loading';
+import { useAosPath } from '../hooks/useAosPath';
 
 // Icon mapping for dynamic icons from CMS
 // NOTE: Keep this as named imports only — never use `import * as LucideIcons`
@@ -210,6 +211,17 @@ function mapMenuItemsToNavItems(items: NavMenuItem[]): NavItem[] {
     }));
 }
 
+function prefixNavItemHrefs(items: NavItem[], prefix: (path: string) => string): NavItem[] {
+  return items.map((item) => ({
+    ...item,
+    href: item.href?.startsWith('http') ? item.href : prefix(item.href || '/'),
+    children: item.children?.map((child) => ({
+      ...child,
+      href: child.href?.startsWith('http') ? child.href : prefix(child.href || '/'),
+    })),
+  }));
+}
+
 export default function MainLayout() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -232,6 +244,8 @@ export default function MainLayout() {
   const ssoLoading = loadingPortal === 'support';
   const openSupport = useCallback(() => navigateToPortal('support', { newTab: true }), [navigateToPortal]);
   const queryClient = useQueryClient();
+  const aosPath = useAosPath();
+  const { isAosPlatform, pathTenantSlug } = useTenant();
 
   // Register the query-cache clear function so logout can purge nav cache
   const clearQuery = useCallback(() => {
@@ -351,13 +365,14 @@ export default function MainLayout() {
       !isAdminUser &&
       !isAdvisorExemptFromTrainingGate(profile, ADVISOR_TRAINING_GATE_CUTOFF_MS, sessionUserCreatedAt);
     if (trainingRequired) {
-      return base.filter(
+      const filtered = base.filter(
         (item) => item.name === 'Training' || item.href === '/training'
       );
+      return isAosPlatform && pathTenantSlug ? prefixNavItemHrefs(filtered, aosPath) : filtered;
     }
 
-    return base;
-  }, [cmsNavItems, isAdminUser, profile, sessionUserCreatedAt]);
+    return isAosPlatform && pathTenantSlug ? prefixNavItemHrefs(base, aosPath) : base;
+  }, [cmsNavItems, isAdminUser, profile, sessionUserCreatedAt, isAosPlatform, pathTenantSlug, aosPath]);
 
   // Determine if today is a meeting day (2nd or 4th Tuesday)
   // NOTE: This useMemo MUST be above the early returns to satisfy React's Rules of Hooks.
@@ -417,6 +432,9 @@ export default function MainLayout() {
   // We avoid kicking users who DO have a session but suffered a transient
   // profile-fetch failure (they get the recovery UI below instead).
   if (!loading && !hasSession) {
+    if (isAosPlatform && pathTenantSlug) {
+      return <Navigate to={aosPath('/login')} replace />;
+    }
     const target = detectBrand() === 'aryx' ? '/landing' : '/login';
     return <Navigate to={target} replace />;
   }
@@ -447,7 +465,7 @@ export default function MainLayout() {
 
   // Force password change for newly imported accounts
   if (!loading && profile?.must_change_password) {
-    return <Navigate to="/change-password" replace />;
+    return <Navigate to={aosPath('/change-password')} replace />;
   }
 
   const isShellLoading = loading || (!profile && profileLoading);
@@ -480,7 +498,7 @@ export default function MainLayout() {
         </div>
       ) : (
       <NavLink
-        to="/profile"
+        to={aosPath('/profile')}
         className={({ isActive }) =>
           `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 ${
             isActive

@@ -3,6 +3,7 @@
 // ============================================================================
 
 import { supabase } from '@mpbhealth/database';
+import { isAosPlatformHost } from '../platform/aosPlatform';
 import { DEFAULT_ORG_ID, DEFAULT_ORG_ID_ALT } from './orgService';
 
 export type PortalSlug = 'admin' | 'advisor' | 'concierge' | 'staff_hub' | 'crm' | 'member';
@@ -53,6 +54,72 @@ export function resolvePortalSlugFromHost(hostname: string, port?: string): Port
   if (host.includes('portal.') || host.includes('staff')) return 'staff_hub';
   if (port && DEV_PORT_PORTAL[port]) return DEV_PORT_PORTAL[port];
   return 'advisor';
+}
+
+/**
+ * Resolve tenant by org slug (AOS path routing: /saudemax/...).
+ */
+export async function resolveTenantByOrgSlug(
+  orgSlug: string,
+  portalSlug: PortalSlug,
+): Promise<ResolvedTenant | null> {
+  const slug = orgSlug.trim().toLowerCase();
+  if (!slug) return null;
+
+  const { data: org, error: orgError } = await supabase
+    .from('organizations')
+    .select('id, name, slug')
+    .eq('slug', slug)
+    .maybeSingle();
+
+  if (orgError) {
+    console.error('[TenantService] organizations slug lookup failed:', orgError);
+    return null;
+  }
+  if (!org) return null;
+
+  const { data: access, error: accessError } = await supabase
+    .from('org_portal_access')
+    .select('id, org_id, portal_slug, enabled, custom_domain, settings')
+    .eq('org_id', org.id)
+    .eq('portal_slug', portalSlug)
+    .eq('enabled', true)
+    .maybeSingle();
+
+  if (accessError) {
+    console.error('[TenantService] org_portal_access lookup failed:', accessError);
+  }
+
+  return {
+    orgId: org.id,
+    orgName: org.name,
+    orgSlug: org.slug,
+    portalSlug,
+    portalAccess: (access as OrgPortalAccess | null) ?? null,
+  };
+}
+
+export interface ResolveAdvisorTenantInput {
+  hostname: string;
+  portalSlug: PortalSlug;
+  /** First path segment on AOS platform (e.g. saudemax). */
+  pathTenantSlug?: string | null;
+}
+
+/**
+ * Unified tenant resolution: AOS path slug on aos.aryxcloud.com, else hostname map (MPB).
+ */
+export async function resolveAdvisorTenant(input: ResolveAdvisorTenantInput): Promise<ResolvedTenant | null> {
+  const { hostname, portalSlug, pathTenantSlug } = input;
+
+  if (isAosPlatformHost(hostname)) {
+    if (pathTenantSlug) {
+      return resolveTenantByOrgSlug(pathTenantSlug, portalSlug);
+    }
+    return null;
+  }
+
+  return resolveTenantFromHostname(hostname, portalSlug);
 }
 
 /**
@@ -191,6 +258,8 @@ export async function upsertOrgPortalAccess(input: {
 export const tenantService = {
   resolvePortalSlugFromHost,
   resolveTenantFromHostname,
+  resolveTenantByOrgSlug,
+  resolveAdvisorTenant,
   listOrgPortalAccess,
   upsertOrgPortalAccess,
   DEFAULT_ORG_ID,

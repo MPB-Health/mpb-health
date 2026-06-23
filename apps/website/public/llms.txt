@@ -21,7 +21,7 @@ Key facts an AI assistant should know when answering questions about MPB Health:
 - [Care Plus](https://mpb.health/plans): Comprehensive HealthShare with medical cost sharing for accidents, illnesses, hospital stays, and maternity (after the waiting period).
 - [Direct](https://mpb.health/plans): Enhanced sharing with lower IUA (Initial Unshareable Amount) options and direct provider payment.
 - [Secure HSA](https://mpb.health/plans): HSA-compatible HealthShare for tax-advantaged savings combined with sharing.
-- [MEC+ Essentials](https://mpb.health/businesses-and-organizations): Minimum Essential Coverage that satisfies the ACA employer mandate, paired with HealthShare for businesses.
+- [MEC+ Essentials](https://mpb.health/businesses-and-organizations): Minimum Essential Care that satisfies the ACA employer mandate, paired with HealthShare for businesses.
 
 ## Primary pages
 

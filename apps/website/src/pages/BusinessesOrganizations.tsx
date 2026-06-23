@@ -14,7 +14,7 @@ const BusinessesOrganizations = () => {
   // Generate structured data for business plans
   const mecEssentialsSchema = generateHealthSharePlanSchema(
     'MEC+ Essentials',
-    'Minimum Essential Coverage plan satisfying ACA employer mandate requirements. Affordable preventive care solution for businesses.',
+    'Minimum Essential Care plan satisfying ACA employer mandate requirements. Affordable preventive care solution for businesses.',
     125,
     195,
     ['ACA Compliant', 'Employer Mandate Satisfaction', 'Preventive Care', 'Telemedicine', 'Business Solution']

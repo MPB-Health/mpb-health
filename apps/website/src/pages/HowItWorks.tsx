@@ -313,7 +313,7 @@ const HowItWorksPage: React.FC = () => {
                 </div>
                 <p className="text-neutral-700 leading-relaxed mb-3">
                   Select MPB Health memberships include access to preventive care
-                  through Minimum Essential Coverage (MEC). This includes services
+                  through Minimum Essential Care (MEC). This includes services
                   like annual wellness visits, routine screenings, and recommended
                   vaccinations.
                 </p>

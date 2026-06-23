@@ -30,7 +30,7 @@ const businessPlansData: PlanData[] = [
     name: 'MEC+Essentials',
     planId: 'mec-essentials',
     price: '$125',
-    description: 'ACA MEC + Debt Dismissal + HSA for small businesses (2–50 employees).',
+    description: 'MEC + Debt Dismissal + HSA for small businesses (2–50 employees).',
     whoIsThisFor: 'Best for: Cost-conscious businesses & 1099 professionals',
     tier: 'basic',
     enrollUrl: getPlanEnrollUrl('mec-essentials'),

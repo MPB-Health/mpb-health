@@ -4,17 +4,20 @@
 // Wraps the existing `submit_public_lead` RPC so a website Get-a-Quote
 // submission flows end-to-end:
 //
-//   1. Inserts the lead via the anon-safe RPC (security guarantees preserved).
-//   2. Enrolls the lead in the org's "Quote Response" cadence.
-//   3. Sends Email #1 (preliminary quote) from sales@mympb.com using the
-//      master template the cadence references. Display name "MPB.Health
-//      Sales" (Round 7 Addendum locked).
-//   4. On send success, advances stage `new → quoted` and tags the lead
-//      with `lead_source_attribution = 'website_auto_response'`.
+//   1. Inserts the lead via submit_public_lead (stamps lead_source=website).
+//   2. Sends Email #1 (preliminary quote) from sales@mympb.com using the
+//      master template the Quote Response cadence references. Display name
+//      "MPB.Health Sales" (Round 7 Addendum locked).
+//   3. On send success, advances stage `new → quoted` and tags the lead with
+//      `website_auto_response`. The DB quote-cadence trigger enrolls the lead
+//      once (no double cadence with insert-time default).
+//   4. Notifies staff of the new lead (server-side, tenant-isolated). Recipients
+//      are configured per-org in system_settings('crm.lead_notification_recipients').
 //
 // If the master template / cadence is not yet configured (placeholder content
 // from migration 20260620110000), the function still creates the lead and
-// returns a partial result — Email #1 is gated on admin-supplied content.
+// returns a partial result — Email #1 is gated on admin-supplied content. The
+// staff notification still fires so the team never misses a lead.
 //
 // Deploy: supabase functions deploy crm-website-lead-intake
 // ============================================================================
@@ -50,9 +53,15 @@ interface IntakePayload {
 const FROM_ADDRESS = 'sales@mympb.com';
 const FROM_NAME = 'MPB.Health Sales'; // Round 7 Addendum locked
 const REPLY_TO = 'sales@mympb.com';
-const CADENCE_NAME = 'Quote Response';
+const CADENCE_NAMES = ['Quote Response — 5-touch (Email)', 'Quote Response'] as const;
 const QUOTE_TEMPLATE_NAME = 'Email #1';
 const SOURCE_TAG = 'website_auto_response';
+
+// Per-org staff "new lead" notification recipients live in system_settings so
+// each tenant only ever notifies its own people (see migration
+// 20260624160000_aryx_lead_notification_recipients).
+const LEAD_NOTIFY_SETTINGS_KEY = 'crm.lead_notification_recipients';
+const CRM_BASE_URL = 'https://crm.mpb.health';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -124,15 +133,19 @@ serve(async (req) => {
   let emailBody: string | null = null;
 
   if (orgId) {
-    const { data: cadenceRow } = await supabase
+    const { data: cadenceRows } = await supabase
       .from('crm_follow_up_cadences')
-      .select('id, steps')
+      .select('id, steps, name')
       .eq('org_id', orgId)
-      .eq('name', CADENCE_NAME)
+      .in('name', [...CADENCE_NAMES])
       .eq('is_active', true)
-      .order('created_at', { ascending: true })
-      .limit(1)
-      .maybeSingle();
+      .order('created_at', { ascending: true });
+
+    const cadenceRow = (cadenceRows ?? []).sort((a, b) => {
+      const aIdx = CADENCE_NAMES.indexOf(a.name as (typeof CADENCE_NAMES)[number]);
+      const bIdx = CADENCE_NAMES.indexOf(b.name as (typeof CADENCE_NAMES)[number]);
+      return (aIdx < 0 ? 99 : aIdx) - (bIdx < 0 ? 99 : bIdx);
+    })[0];
 
     if (cadenceRow) {
       cadenceId = cadenceRow.id as string;
@@ -179,16 +192,7 @@ serve(async (req) => {
     }
   }
 
-  // 3. Enroll the lead in Quote Response (idempotent RPC). Skipped if the
-  //    cadence is not yet configured for this org.
-  if (cadenceId) {
-    await supabase.rpc('crm_enroll_lead_in_cadence', {
-      p_lead_id: lead.id,
-      p_cadence_id: cadenceId,
-    });
-  }
-
-  // 4. Send Email #1 via send-crm-email-v2 (existing transactional sender).
+  // 3. Send Email #1 via send-crm-email-v2 (existing transactional sender).
   //    Skipped if the template body is missing (admin must fill it in).
   let emailSent = false;
   let emailError: string | null = null;
@@ -221,10 +225,16 @@ serve(async (req) => {
           tags: ['quote-response', 'website', 'auto-response'],
           org_id: orgId,
           lead_id: lead.id,
-          template_id: masterTemplateId,
+          // crm_email_log.template_id FKs to crm_templates; the auto-response
+          // uses a *master* template, so it must go in master_template_id
+          // (FK -> crm_master_templates). Stamping it into template_id caused
+          // the log insert to fail the FK silently (email still sent, but no
+          // crm_email_log row / no timeline entry). Route it correctly here.
+          master_template_id: masterTemplateId,
+          template_id: null,
           metadata: {
             source: 'crm-website-lead-intake',
-            cadence: CADENCE_NAME,
+            cadence: cadenceId ? 'quote-response' : null,
             from_address: FROM_ADDRESS,
             attribution: SOURCE_TAG,
           },
@@ -239,7 +249,8 @@ serve(async (req) => {
     }
   }
 
-  // 5. On send success, advance stage new → quoted and tag attribution.
+  // 4. On send success, advance stage new → quoted and tag attribution.
+  //    trg_lead_start_quote_cadence enrolls Quote Response once on this transition.
   if (emailSent) {
     await supabase
       .from('lead_submissions')
@@ -255,14 +266,68 @@ serve(async (req) => {
       .eq('id', lead.id);
   }
 
+  // 5. Notify staff of the new lead — server-side so it is reliable and
+  //    tenant-isolated. Recipients are configured per-org in
+  //    system_settings('crm.lead_notification_recipients'); we only ever
+  //    notify the recipients mapped to THIS lead's org. This fires for every
+  //    lead regardless of whether Email #1 sent, so the team never misses one.
+  //    Best-effort: a failure here must never fail the intake — the lead row
+  //    already exists and was returned to the caller.
+  let staffNotified = false;
+  let staffNotifyError: string | null = null;
+  try {
+    const recipients = await resolveStaffRecipients(supabase, orgId);
+    if (recipients.length > 0) {
+      const leadName =
+        [lead.first_name, lead.last_name].filter(Boolean).join(' ').trim() ||
+        String(lead.email ?? 'New lead');
+      const notifyResp = await fetch(`${supabaseUrl}/functions/v1/send-crm-email-v2`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${serviceRoleKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          to: recipients,
+          subject: `New lead: ${leadName}`,
+          html: buildStaffNotificationHtml(lead),
+          from_email: FROM_ADDRESS,
+          from_name: FROM_NAME,
+          // Reps can reply straight to the prospect from the alert.
+          reply_to: (lead.email as string | null) ?? REPLY_TO,
+          track_opens: false,
+          track_clicks: false,
+          tags: ['lead-notification', 'website', 'internal'],
+          org_id: orgId,
+          // Intentionally NO lead_id: this internal alert is audited in
+          // crm_email_log (org-scoped) but must NOT appear on the lead's own
+          // email timeline, which filters by lead_id.
+          metadata: {
+            source: 'crm-website-lead-intake',
+            kind: 'staff_lead_notification',
+            lead_id: lead.id,
+          },
+        }),
+      });
+      staffNotified = notifyResp.ok;
+      if (!notifyResp.ok) {
+        staffNotifyError = `send-crm-email-v2 returned ${notifyResp.status}`;
+      }
+    }
+  } catch (err) {
+    staffNotifyError = err instanceof Error ? err.message : String(err);
+  }
+
   return new Response(
     JSON.stringify({
       success: true,
       lead_id: lead.id,
       email_sent: emailSent,
       email_error: emailError,
-      cadence_enrolled: !!cadenceId,
+      cadence_enrolled: emailSent && !!cadenceId,
       auto_response_pending: !emailSent,
+      staff_notified: staffNotified,
+      staff_notify_error: staffNotifyError,
     }),
     { status: 200, headers: jsonHeaders },
   );
@@ -299,4 +364,123 @@ function mergeTokens(input: string, lead: Record<string, unknown>): string {
     }
   }
   return out;
+}
+
+// ----------------------------------------------------------------------------
+// Staff "new lead" notification helpers.
+// ----------------------------------------------------------------------------
+
+/**
+ * Resolve the staff notification recipients for a lead's org from
+ * system_settings('crm.lead_notification_recipients'). The setting is a JSON
+ * object keyed by org_id -> string[] of emails, with an optional "*" default.
+ * Tenant isolation: we only ever return the list mapped to THIS org (falling
+ * back to "*" only if the org has no explicit entry). Read with the service
+ * role (RLS bypassed). Never throws — returns [] on any problem.
+ */
+async function resolveStaffRecipients(
+  supabase: ReturnType<typeof createClient>,
+  orgId: string | null,
+): Promise<string[]> {
+  if (!orgId) return [];
+  try {
+    const { data } = await supabase
+      .from('system_settings')
+      .select('value')
+      .eq('key', LEAD_NOTIFY_SETTINGS_KEY)
+      .maybeSingle();
+
+    let map: Record<string, unknown> = {};
+    const raw: unknown = data?.value ?? null;
+    if (raw && typeof raw === 'object') {
+      map = raw as Record<string, unknown>;
+    } else if (typeof raw === 'string') {
+      try {
+        map = JSON.parse(raw) as Record<string, unknown>;
+      } catch {
+        map = {};
+      }
+    }
+
+    const pick = (map[orgId] ?? map['*']) as unknown;
+    const list = Array.isArray(pick) ? pick : [];
+    return Array.from(
+      new Set(
+        list
+          .map((e) => (typeof e === 'string' ? e.trim() : ''))
+          .filter((e) => e.includes('@')),
+      ),
+    );
+  } catch {
+    return [];
+  }
+}
+
+/** Build the internal "new lead" alert email body. */
+function buildStaffNotificationHtml(lead: Record<string, unknown>): string {
+  const val = (v: unknown) => (v == null ? '' : esc(String(v)));
+  const name =
+    [lead.first_name, lead.last_name].filter(Boolean).map(String).join(' ').trim() ||
+    '(no name provided)';
+  const leadUrl = `${CRM_BASE_URL}/leads/${esc(String(lead.id ?? ''))}`;
+
+  const fields: Array<[string, unknown]> = [
+    ['Email', lead.email],
+    ['Phone', lead.phone],
+    ['ZIP', lead.zip_code],
+    ['Household size', lead.household_size],
+    ['Current insurance', lead.current_insurance],
+    ['Budget (monthly)', lead.monthly_premium],
+    ['Coverage preference', lead.coverage_preference],
+    ['Primary concern', lead.primary_concern],
+    ['Contact preference', lead.contact_preference],
+    ['Source page', lead.source_page],
+    ['Source CTA', lead.source_cta],
+    ['Campaign', lead.utm_campaign],
+  ];
+
+  const rows = fields
+    .filter(([, v]) => v != null && String(v).trim() !== '')
+    .map(
+      ([label, v]) =>
+        `<tr><td style="padding:6px 14px;color:#64748b;font-size:13px;white-space:nowrap;vertical-align:top;">${esc(label)}</td>` +
+        `<td style="padding:6px 14px;color:#0f172a;font-size:14px;font-weight:600;">${val(v)}</td></tr>`,
+    )
+    .join('');
+
+  return `<!DOCTYPE html>
+<html>
+  <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+  <body style="margin:0;padding:0;font-family:Arial,sans-serif;background-color:#f1f5f9;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f1f5f9;padding:32px 0;">
+      <tr><td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.08);">
+          <tr><td style="background:linear-gradient(to right,#2563eb,#06b6d4);padding:22px 28px;">
+            <p style="margin:0;color:#e0f2fe;font-size:13px;letter-spacing:.5px;text-transform:uppercase;">New website lead</p>
+            <h1 style="margin:4px 0 0 0;color:#ffffff;font-size:22px;">${esc(name)}</h1>
+          </td></tr>
+          <tr><td style="padding:24px 14px;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">${rows}</table>
+          </td></tr>
+          <tr><td style="padding:0 28px 28px 28px;" align="center">
+            <a href="${leadUrl}" style="display:inline-block;background:linear-gradient(to right,#2563eb,#06b6d4);color:#ffffff;text-decoration:none;padding:14px 28px;border-radius:8px;font-weight:bold;font-size:15px;">Open lead in CRM</a>
+          </td></tr>
+          <tr><td style="padding:16px 28px;background-color:#f8fafc;border-top:1px solid #e5e7eb;">
+            <p style="margin:0;color:#94a3b8;font-size:12px;">Automated alert from crm-website-lead-intake · reply to this email to reach the prospect.</p>
+          </td></tr>
+        </table>
+      </td></tr>
+    </table>
+  </body>
+</html>`;
+}
+
+/** HTML-entity-escape user-supplied values before interpolating into markup. */
+function esc(input: string): string {
+  return input
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }

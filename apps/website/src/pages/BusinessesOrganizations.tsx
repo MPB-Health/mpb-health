@@ -1,6 +1,6 @@
 import React from 'react';
 import { MarketingHydrationSeo } from '../components/MarketingHydrationSeo';
-import { DollarSign, Users, TrendingUp, Shield, FileText, Heart, Brain, Clock, Stethoscope, CheckSquare, Building2, Pill, Plus, Dna, PawPrint, Headphones as HeadphonesIcon, Infinity as InfinityIcon, GitCompare, Briefcase, RefreshCw, Edit, UserMinus } from 'lucide-react';
+import { DollarSign, Users, TrendingUp, Shield, FileText, Heart, Brain, Clock, Stethoscope, CheckSquare, Building2, Pill, Plus, Dna, PawPrint, Headphones as HeadphonesIcon, Infinity as InfinityIcon, GitCompare, Briefcase, Edit, UserMinus, CreditCard } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { PlanComparisonGuide } from '../components/blocks/PlanComparisonGuide';
 import { Card } from '../components/ui/Card';
@@ -33,9 +33,8 @@ const BusinessesOrganizations = () => {
   const businessFaqSchema = generateFAQSchema(businessesFaqQuestions);
 
   const employerGroupForms = [
-    { to: '/list-bill-setup', label: 'List-Bill Setup', icon: Briefcase },
-    { to: '/list-bill-conversion', label: 'List-Bill Conversion', icon: RefreshCw },
-    { to: '/list-bill-update', label: 'List-Bill Update', icon: Edit },
+    { to: '/list-bill-update', label: 'Employee Updates', icon: Edit },
+    { to: 'https://www.cognitoforms.com/MPoweringBenefits1/UpdateFormOfPayment', label: 'Update Form of Payment', icon: CreditCard, external: true },
     { to: '/employee-removal', label: 'Employee Removal', icon: UserMinus },
   ];
 
@@ -139,16 +138,27 @@ const BusinessesOrganizations = () => {
               </span>
             </div>
             <nav className="flex flex-wrap items-center gap-2" aria-label="Employer Group Forms">
-              {employerGroupForms.map(({ to, label, icon: Icon }) => (
-                <Link
-                  key={to}
-                  to={to}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white border border-primary-200 text-sm font-medium text-primary-700 shadow-sm transition-colors hover:bg-primary-600 hover:text-white hover:border-primary-600"
-                >
-                  <Icon className="w-4 h-4" />
-                  {label}
-                </Link>
-              ))}
+              {employerGroupForms.map(({ to, label, icon: Icon, external }) => {
+                const className =
+                  'inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white border border-primary-200 text-sm font-medium text-primary-700 shadow-sm transition-colors hover:bg-primary-600 hover:text-white hover:border-primary-600';
+                return external ? (
+                  <a
+                    key={to}
+                    href={to}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={className}
+                  >
+                    <Icon className="w-4 h-4" />
+                    {label}
+                  </a>
+                ) : (
+                  <Link key={to} to={to} className={className}>
+                    <Icon className="w-4 h-4" />
+                    {label}
+                  </Link>
+                );
+              })}
             </nav>
           </div>
         </div>

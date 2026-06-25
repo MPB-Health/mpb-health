@@ -424,11 +424,30 @@ function buildStaffNotificationHtml(lead: Record<string, unknown>): string {
     '(no name provided)';
   const leadUrl = `${CRM_BASE_URL}/leads/${esc(String(lead.id ?? ''))}`;
 
+  // Quote-calculator / multi-step form details are persisted in the lead's
+  // form_data JSON by submit_public_lead. Surface them so reps see age,
+  // household makeup, priorities and the rate comparison without opening the
+  // CRM. Every row is value-gated below, so leads without these fields render
+  // exactly as before.
+  const fd = parseFormData(lead.form_data);
+
   const fields: Array<[string, unknown]> = [
     ['Email', lead.email],
     ['Phone', lead.phone],
     ['ZIP', lead.zip_code],
-    ['Household size', lead.household_size],
+    ['Household size', formatHouseholdSize(lead.household_size)],
+    ['Lead type', fd.lead_type],
+    ['Household type', formatHouseholdType(fd.household_type)],
+    ['State', fd.state],
+    ['Primary age', fd.primary_age],
+    ['Spouse age', fd.spouse_age],
+    ['Number of dependents', fd.dependents_count],
+    ['Oldest dependent age', fd.oldest_dependent_age],
+    ['Membership priorities', formatList(fd.membership_priorities)],
+    ['Priorities matched', formatList(fd.priorities_matched)],
+    ['Traditional insurance estimate', formatCurrency(fd.traditional_cost_estimate)],
+    ['Best match plan', fd.best_match_plan],
+    ['Best match score', formatPercent(fd.best_match_percentage)],
     ['Current insurance', lead.current_insurance],
     ['Budget (monthly)', lead.monthly_premium],
     ['Coverage preference', lead.coverage_preference],
@@ -437,6 +456,7 @@ function buildStaffNotificationHtml(lead: Record<string, unknown>): string {
     ['Source page', lead.source_page],
     ['Source CTA', lead.source_cta],
     ['Campaign', lead.utm_campaign],
+    ['Plan rate comparison', formatPlanRates(fd.all_plan_rates)],
   ];
 
   const rows = fields
@@ -444,7 +464,7 @@ function buildStaffNotificationHtml(lead: Record<string, unknown>): string {
     .map(
       ([label, v]) =>
         `<tr><td style="padding:6px 14px;color:#64748b;font-size:13px;white-space:nowrap;vertical-align:top;">${esc(label)}</td>` +
-        `<td style="padding:6px 14px;color:#0f172a;font-size:14px;font-weight:600;">${val(v)}</td></tr>`,
+        `<td style="padding:6px 14px;color:#0f172a;font-size:14px;font-weight:600;">${val(v).replace(/\n/g, '<br>')}</td></tr>`,
     )
     .join('');
 
@@ -483,4 +503,105 @@ function esc(input: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+// ----------------------------------------------------------------------------
+// form_data formatting helpers for the staff "new lead" notification.
+// Mirror apps/website/src/lib/leadNotificationFormat.ts so the server-side
+// alert matches the website's own notification. All return '' when empty so
+// the caller's value-gate skips the row.
+// ----------------------------------------------------------------------------
+
+const HOUSEHOLD_TYPE_LABELS: Record<string, string> = {
+  'member-only': 'Just Me (Individual)',
+  'member-spouse': 'Member + Spouse',
+  'member-child': 'Member + Child(ren)',
+  'member-family': 'Member + Family',
+  individual: 'Individual',
+  couple: 'Couple',
+  family: 'Family',
+};
+
+/** Coerce a jsonb form_data column (object or JSON string) into a plain map. */
+function parseFormData(raw: unknown): Record<string, unknown> {
+  if (!raw) return {};
+  if (typeof raw === 'string') {
+    try {
+      const parsed = JSON.parse(raw);
+      return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+        ? (parsed as Record<string, unknown>)
+        : {};
+    } catch {
+      return {};
+    }
+  }
+  if (typeof raw === 'object' && !Array.isArray(raw)) {
+    return raw as Record<string, unknown>;
+  }
+  return {};
+}
+
+function formatHouseholdSize(v: unknown): string {
+  if (v == null || String(v).trim() === '') return '';
+  const n = Number(v);
+  if (!Number.isFinite(n)) return String(v);
+  return `${n} ${n === 1 ? 'person' : 'people'}`;
+}
+
+function formatHouseholdType(v: unknown): string {
+  if (v == null || String(v).trim() === '') return '';
+  const s = String(v);
+  return HOUSEHOLD_TYPE_LABELS[s] ?? s;
+}
+
+function formatList(v: unknown): string {
+  if (Array.isArray(v)) return v.map((x) => String(x)).filter((x) => x.trim() !== '').join(', ');
+  if (v == null) return '';
+  return String(v);
+}
+
+function formatCurrency(v: unknown): string {
+  if (v == null || String(v).trim() === '') return '';
+  const n = Number(v);
+  if (!Number.isFinite(n) || n <= 0) return '';
+  return `$${n.toLocaleString('en-US')}/month`;
+}
+
+function formatPercent(v: unknown): string {
+  if (v == null || String(v).trim() === '') return '';
+  const n = Number(v);
+  if (!Number.isFinite(n) || n <= 0) return '';
+  return `${n}%`;
+}
+
+interface PlanRateEntry {
+  planLabel?: string;
+  lowestPrice?: number;
+  highestPrice?: number;
+  flatRate?: number | null;
+}
+
+/** Render all_plan_rates into one "Label: $low–$high/month" line per plan. */
+function formatPlanRates(raw: unknown): string {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return '';
+  const entries = Object.entries(raw as Record<string, PlanRateEntry>);
+  if (entries.length === 0) return '';
+  return entries
+    .map(([planId, plan]) => {
+      const label = (plan && plan.planLabel) || planId;
+      if (typeof plan?.flatRate === 'number') {
+        return `${label}: $${plan.flatRate.toLocaleString('en-US')}/month (flat rate)`;
+      }
+      if (typeof plan?.lowestPrice === 'number' && typeof plan?.highestPrice === 'number') {
+        if (plan.lowestPrice === plan.highestPrice) {
+          return `${label}: $${plan.lowestPrice.toLocaleString('en-US')}/month`;
+        }
+        return `${label}: $${plan.lowestPrice.toLocaleString('en-US')}–$${plan.highestPrice.toLocaleString('en-US')}/month`;
+      }
+      if (typeof plan?.lowestPrice === 'number') {
+        return `${label}: from $${plan.lowestPrice.toLocaleString('en-US')}/month`;
+      }
+      return `${label}: rates unavailable`;
+    })
+    .join('\n');
 }

@@ -24,6 +24,9 @@ out/
 *.swo
 .DS_Store
 
+# Cursor MCP config (local, may contain project-specific refs)
+.cursor/rules/mcp.json
+
 # Claude Code / QA Agent Kit — local tooling, not committed (any app)
 **/.claude/
 .claude/

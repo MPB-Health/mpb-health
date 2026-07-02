@@ -32,6 +32,14 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
         label: 'Zion vs Sedera',
         url: 'https://netorg6712533-my.sharepoint.com/:x:/g/personal/julia_mympb_com/IQD4GvNM8LwXQKzAX6zyyT-jAdAVEGVRvYXfohBdzTCvAyY?rtime=ye2RGwim3kg',
       },
+      {
+        label: 'HSA HealthShare vs Secure HSA',
+        url: '/docs/HSA%20HealthShare%20Vs%20Secure%20HSA%20(2)%201.pdf',
+      },
+      {
+        label: 'HSA HealthShare Member Guidelines',
+        url: '/docs/HSA%20HealthShare%20Member%20Guidelines%20(1)%201.pdf',
+      },
     ],
     keywords: [
       'eligibility',
@@ -51,6 +59,9 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
       'comparison',
       'guidelines comparison',
       'Sedera',
+      'HSA HealthShare',
+      'Secure HSA',
+      'HSA member guidelines',
     ],
   },
   {

@@ -1,4 +1,4 @@
-import { sendLeadNotification, sendLeadWelcomeEmail } from './emailService';
+import { sendLeadWelcomeEmail } from './emailService';
 import { createClientLogger } from '@mpbhealth/utils';
 
 const log = createClientLogger('LeadSubmission');
@@ -150,12 +150,14 @@ class LeadSubmissionService {
         warnings.push('auto_response_pending');
       }
 
-      // Staff notification + transitional welcome fallback run async so they
-      // do not block the form's success state. Failures here are non-fatal.
-      this.sendStaffNotification(formData).catch((err) =>
-        console.error('Staff email notification error:', err),
-      );
-
+      // Staff "new lead" notifications are now sent server-side by the ARYX
+      // intake (crm-website-lead-intake → send-crm-email-v2), tenant-isolated
+      // with recipients configured per-org in system_settings. The website no
+      // longer fires its own client-side staff email — doing so would duplicate
+      // the reliable server-side one. See migration 20260624160000.
+      //
+      // The transitional welcome fallback still runs async (non-blocking) only
+      // when ARYX could not send Email #1, so the prospect always gets a reply.
       if (intake.auto_response_pending) {
         this.sendLegacyWelcomeFallback(formData).catch((err) =>
           console.error('Legacy welcome fallback error:', err),
@@ -174,10 +176,6 @@ class LeadSubmissionService {
         error: error instanceof Error ? error.message : 'Failed to submit lead',
       };
     }
-  }
-
-  private async sendStaffNotification(formData: LeadFormData): Promise<void> {
-    await sendLeadNotification(formData);
   }
 
   private async sendLegacyWelcomeFallback(formData: LeadFormData): Promise<void> {

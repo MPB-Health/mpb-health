@@ -10,6 +10,7 @@ import {
   sanitizeInput,
   safeErrorResponse,
 } from "../_shared/security.ts";
+import { MPB_MEMBERSHIP_ORG_ID } from "../_shared/orgIdResolver.ts";
 
 const log = createLogger("chat-service");
 
@@ -27,7 +28,7 @@ type ChatAction =
   | "ping";
 
 const RATE_LIMIT = { maxRequests: 120, windowSeconds: 60, keyPrefix: "chat" };
-const ORG_ID = "00000000-0000-4000-a000-000000000001"; // MPB Health org
+const ORG_ID = MPB_MEMBERSHIP_ORG_ID;
 
 Deno.serve(async (req: Request) => {
   const corsHeaders = getCorsHeaders(req);

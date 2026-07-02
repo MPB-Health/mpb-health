@@ -777,6 +777,8 @@ export default function Dashboard() {
 
 async function loadContentStats(): Promise<ContentStats> {
   const { supabase } = await import('@mpbhealth/database');
+  const { getAdminOrgId } = await import('@mpbhealth/admin-core');
+  const orgId = getAdminOrgId();
 
   const [bulletins, videos, sops, handbooks] = await Promise.all([
     supabase
@@ -784,21 +786,25 @@ async function loadContentStats(): Promise<ContentStats> {
       .select('id', { count: 'exact', head: true })
       .eq('content_type', 'bulletin')
       .eq('is_published', true)
+      .eq('org_id', orgId)
       .then((r) => r.count || 0),
     supabase
       .from('advisor_videos')
       .select('id', { count: 'exact', head: true })
       .eq('is_active', true)
+      .eq('org_id', orgId)
       .then((r) => r.count || 0),
     supabase
       .from('sop_documents')
       .select('id', { count: 'exact', head: true })
       .eq('is_published', true)
+      .eq('org_id', orgId)
       .then((r) => r.count || 0),
     supabase
       .from('handbooks')
       .select('id', { count: 'exact', head: true })
       .eq('is_active', true)
+      .eq('org_id', orgId)
       .then((r) => r.count || 0),
   ]);
 

@@ -1,4 +1,5 @@
 import { supabase } from '@mpbhealth/database';
+import { getAdminOrgId } from '../operations/adminOrgScope';
 
 export interface AdminBulletin {
   id: string;
@@ -69,6 +70,7 @@ export class BulletinService {
         category:advisor_content_categories(id, name, slug, description, display_order)
       `)
       .eq('content_type', 'bulletin')
+      .eq('org_id', getAdminOrgId())
       .order('created_at', { ascending: false });
 
     if (filters?.status === 'published') {
@@ -102,6 +104,7 @@ export class BulletinService {
       `)
       .eq('id', id)
       .eq('content_type', 'bulletin')
+      .eq('org_id', getAdminOrgId())
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
@@ -126,6 +129,7 @@ export class BulletinService {
         is_featured: input.is_featured ?? false,
         published_date: input.is_published ? new Date().toISOString() : null,
         metadata: input.metadata || {},
+        org_id: getAdminOrgId(),
       })
       .select(`
         id, title, slug, excerpt, content, content_type, category_id, published_date, featured_image_url, is_published, is_featured, view_count, notification_sent_at, notification_count, metadata, created_at, updated_at,
@@ -158,6 +162,7 @@ export class BulletinService {
       .from('advisor_content')
       .update(updateData)
       .eq('id', id)
+      .eq('org_id', getAdminOrgId())
       .select(`
         id, title, slug, excerpt, content, content_type, category_id, published_date, featured_image_url, is_published, is_featured, view_count, notification_sent_at, notification_count, metadata, created_at, updated_at,
         category:advisor_content_categories(id, name, slug, description, display_order)
@@ -173,7 +178,8 @@ export class BulletinService {
     const { error } = await supabase
       .from('advisor_content')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('org_id', getAdminOrgId());
 
     if (error) throw error;
   }
@@ -204,6 +210,7 @@ export class BulletinService {
     const { data, error } = await supabase
       .from('advisor_content_categories')
       .select('id, name, slug, description, display_order')
+      .eq('org_id', getAdminOrgId())
       .order('display_order', { ascending: true });
 
     if (error) throw error;
@@ -242,7 +249,8 @@ export class BulletinService {
     const { data, error } = await supabase
       .from('advisor_content')
       .select('id, is_published, view_count')
-      .eq('content_type', 'bulletin');
+      .eq('content_type', 'bulletin')
+      .eq('org_id', getAdminOrgId());
 
     if (error) throw error;
 

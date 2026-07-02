@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useAdvisorNavigate } from '../hooks/useAdvisorNavigate';
 import { supabase, isSupabaseConfigured } from '@mpbhealth/database';
 import toast from 'react-hot-toast';
 import { Lock, Eye, EyeOff, CheckCircle2, AlertCircle, ShieldCheck } from 'lucide-react';
@@ -34,7 +34,7 @@ function isRetryableError(err: unknown): boolean {
 
 export default function ChangePassword() {
   useAdvisorPageDebugLog('ChangePassword');
-  const navigate = useNavigate();
+  const navigate = useAdvisorNavigate();
   const { profile, refreshProfile } = useAdvisor();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');

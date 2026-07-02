@@ -5,14 +5,20 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 import { installAuthRefreshGuard } from '@mpbhealth/database';
 import { ThemeProvider } from '@mpbhealth/ui';
+import { TenantProvider } from '@mpbhealth/auth';
 import App from './App';
+import { ConciergeOrgSync } from './components/ConciergeOrgSync';
 import '@mpbhealth/ui/theme-tokens.css';
 import './index.css';
 import '@mpbhealth/ui/login-animations.css';
 
-// Detect dead refresh tokens at the network level and redirect to /login.
+// Concierge is MPB-only with flat routes (concierge.mpb.health/login, …).
+const loginPath = '/login';
+const excludePaths = ['/login', '/forgot-password', '/reset-password'];
+
+// Detect dead refresh tokens at the network level and redirect to login.
 // Must run before React renders to catch early Supabase auto-refresh failures.
-installAuthRefreshGuard({ loginPath: '/login' });
+installAuthRefreshGuard({ loginPath, excludePaths });
 
 function isAuthError(error: unknown): boolean {
   if (error && typeof error === 'object') {
@@ -85,7 +91,11 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       <QueryClientProvider client={queryClient}>
         <ThemeProvider defaultTheme="light">
           <BrowserRouter>
-            <App />
+            <TenantProvider portalSlug="concierge">
+              <ConciergeOrgSync>
+                <App />
+              </ConciergeOrgSync>
+            </TenantProvider>
             <Toaster
               position="top-right"
               toastOptions={{

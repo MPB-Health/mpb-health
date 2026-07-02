@@ -1,6 +1,6 @@
 import React from 'react';
 import { MarketingHydrationSeo } from '../components/MarketingHydrationSeo';
-import { DollarSign, Users, TrendingUp, Shield, FileText, Heart, Brain, Clock, Stethoscope, CheckSquare, Building2, Pill, Plus, Dna, PawPrint, Headphones as HeadphonesIcon, Infinity as InfinityIcon, GitCompare } from 'lucide-react';
+import { DollarSign, Users, TrendingUp, Shield, FileText, Heart, Brain, Clock, Stethoscope, CheckSquare, Building2, Pill, Plus, Dna, PawPrint, Headphones as HeadphonesIcon, Infinity as InfinityIcon, GitCompare, Briefcase, Edit, UserMinus, CreditCard } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { PlanComparisonGuide } from '../components/blocks/PlanComparisonGuide';
 import { Card } from '../components/ui/Card';
@@ -14,7 +14,7 @@ const BusinessesOrganizations = () => {
   // Generate structured data for business plans
   const mecEssentialsSchema = generateHealthSharePlanSchema(
     'MEC+ Essentials',
-    'Minimum Essential Coverage plan satisfying ACA employer mandate requirements. Affordable preventive care solution for businesses.',
+    'Minimum Essential Care plan satisfying ACA employer mandate requirements. Affordable preventive care solution for businesses.',
     125,
     195,
     ['ACA Compliant', 'Employer Mandate Satisfaction', 'Preventive Care', 'Telemedicine', 'Business Solution']
@@ -31,6 +31,12 @@ const BusinessesOrganizations = () => {
   const orgSchema = generateOrganizationSchema();
   const serviceSchema = generateServiceSchema();
   const businessFaqSchema = generateFAQSchema(businessesFaqQuestions);
+
+  const employerGroupForms = [
+    { to: '/list-bill-update', label: 'Employee Updates', icon: Edit },
+    { to: 'https://www.cognitoforms.com/MPoweringBenefits1/UpdateFormOfPayment', label: 'Update Form of Payment', icon: CreditCard, external: true },
+    { to: '/employee-removal', label: 'Employee Removal', icon: UserMinus },
+  ];
 
   const whyChooseItems = [
     {
@@ -120,6 +126,43 @@ const BusinessesOrganizations = () => {
           {JSON.stringify(businessFaqSchema)}
         </script>
       </MarketingHydrationSeo>
+
+      {/* Employer Group Forms — sub-navigation directly below the site header */}
+      <section className="bg-primary-50 border-b border-primary-100">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+            <div className="flex items-center gap-2 shrink-0">
+              <Briefcase className="w-5 h-5 text-primary-600" />
+              <span className="text-sm font-bold uppercase tracking-wide text-primary-900">
+                Employer Group Forms
+              </span>
+            </div>
+            <nav className="flex flex-wrap items-center gap-2" aria-label="Employer Group Forms">
+              {employerGroupForms.map(({ to, label, icon: Icon, external }) => {
+                const className =
+                  'inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white border border-primary-200 text-sm font-medium text-primary-700 shadow-sm transition-colors hover:bg-primary-600 hover:text-white hover:border-primary-600';
+                return external ? (
+                  <a
+                    key={to}
+                    href={to}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={className}
+                  >
+                    <Icon className="w-4 h-4" />
+                    {label}
+                  </a>
+                ) : (
+                  <Link key={to} to={to} className={className}>
+                    <Icon className="w-4 h-4" />
+                    {label}
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
+        </div>
+      </section>
 
       <BusinessesOrganizationsHero />
 

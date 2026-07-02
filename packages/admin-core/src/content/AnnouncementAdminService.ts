@@ -1,4 +1,5 @@
 import { supabase } from '@mpbhealth/database';
+import { getAdminOrgId } from '../operations/adminOrgScope';
 
 export interface AdminAnnouncement {
   id: string;
@@ -39,6 +40,7 @@ export class AnnouncementAdminService {
     const { data, error } = await supabase
       .from('advisor_announcements')
       .select('id, title, content, content_html, type, start_date, end_date, is_dismissible, is_active, target_audience, link_url, link_text, created_by, created_at, updated_at')
+      .eq('org_id', getAdminOrgId())
       .order('created_at', { ascending: false });
     if (error) throw error;
     return (data || []) as unknown as AdminAnnouncement[];
@@ -49,6 +51,7 @@ export class AnnouncementAdminService {
       .from('advisor_announcements')
       .select('id, title, content, content_html, type, start_date, end_date, is_dismissible, is_active, target_audience, link_url, link_text, created_by, created_at, updated_at')
       .eq('id', id)
+      .eq('org_id', getAdminOrgId())
       .single();
     if (error && error.code !== 'PGRST116') throw error;
     return data as unknown as AdminAnnouncement | null;
@@ -71,6 +74,7 @@ export class AnnouncementAdminService {
         link_url: input.link_url || null,
         link_text: input.link_text || null,
         created_by: user?.id || null,
+        org_id: getAdminOrgId(),
       })
       .select('id, title, content, content_html, type, start_date, end_date, is_dismissible, is_active, target_audience, link_url, link_text, created_by, created_at, updated_at')
       .single();
@@ -83,6 +87,7 @@ export class AnnouncementAdminService {
       .from('advisor_announcements')
       .update({ ...input, updated_at: new Date().toISOString() })
       .eq('id', id)
+      .eq('org_id', getAdminOrgId())
       .select('id, title, content, content_html, type, start_date, end_date, is_dismissible, is_active, target_audience, link_url, link_text, created_by, created_at, updated_at')
       .single();
     if (error) throw error;
@@ -93,7 +98,8 @@ export class AnnouncementAdminService {
     const { error } = await supabase
       .from('advisor_announcements')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('org_id', getAdminOrgId());
     if (error) throw error;
   }
 
@@ -106,7 +112,8 @@ export class AnnouncementAdminService {
   async getStats(): Promise<{ total: number; active: number; scheduled: number }> {
     const { data, error } = await supabase
       .from('advisor_announcements')
-      .select('id, is_active, start_date, end_date');
+      .select('id, is_active, start_date, end_date')
+      .eq('org_id', getAdminOrgId());
     if (error) throw error;
     const items = data || [];
     const now = new Date().toISOString();

@@ -9,9 +9,11 @@
 // theming can lift this verbatim into a white-label landing template.
 
 import { useEffect, useState, type CSSProperties } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { detectBrand } from '@mpbhealth/ui';
+import { useTenantPath } from '@mpbhealth/auth';
 import { AuthPageSeo } from '../components/AuthPageSeo';
+import { useAdvisorNavigate } from '../hooks/useAdvisorNavigate';
 import {
   ArrowRight,
   ArrowUpRight,
@@ -122,7 +124,8 @@ function CountUp({ to, suffix = '', duration = 1.4 }: { to: number; suffix?: str
 // ===========================================================================
 export default function LandingPage() {
   useInterTight();
-  const navigate = useNavigate();
+  const navigate = useAdvisorNavigate();
+  const toPath = useTenantPath();
   const { scrollY } = useScroll();
   const heroParallax = useTransform(scrollY, [0, 500], [0, -120]);
 
@@ -131,10 +134,12 @@ export default function LandingPage() {
   // NEVER see it — bounce them straight to /login so we don't leak the
   // white-label parent brand to MPB users.
   if (detectBrand() !== 'aryx') {
-    return <Navigate to="/login" replace />;
+    return <Navigate to={toPath('/login')} replace />;
   }
 
-  const goLogin = () => navigate('/login');
+  const goLogin = () => {
+    navigate('/login');
+  };
   const scrollTo = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };

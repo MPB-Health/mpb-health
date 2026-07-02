@@ -21,6 +21,28 @@ const T_OFF = 'concierge_member_off_days';
 const T_ESC = 'concierge_escalations';
 const T_WEEK = 'concierge_weekly_report_extras';
 
+/**
+ * Concierge is MPB-only — all data is scoped to the MPB Health organization
+ * (organizations.id used by org_portal_access + the concierge RLS policies).
+ * We default this synchronously at module load so reads never race the async
+ * TenantProvider resolution on a cold page load / refresh.
+ */
+export const MPB_CONCIERGE_ORG_ID = 'a0000000-0000-0000-0000-000000000001';
+
+let activeOrgId: string | null = MPB_CONCIERGE_ORG_ID;
+
+export function setConciergeOrgId(orgId: string | null): void {
+  activeOrgId = orgId ?? MPB_CONCIERGE_ORG_ID;
+}
+
+export function getConciergeOrgId(): string {
+  return activeOrgId ?? MPB_CONCIERGE_ORG_ID;
+}
+
+function orgScope() {
+  return getConciergeOrgId();
+}
+
 // —— App shapes (mirror DailyLogs.tsx) —————————————————————————————————
 
 export interface TeamMember {
@@ -213,6 +235,7 @@ async function resolveTeamMemberIdByName(name: string): Promise<string | null> {
   const { data } = await db
     .from(T_TEAM)
     .select('id')
+    .eq('org_id', orgScope())
     .eq('name', trimmed)
     .maybeSingle();
   return data?.id ? String(data.id) : null;
@@ -255,7 +278,11 @@ function escRowToItem(r: Record<string, unknown>): EscalationItem {
 // —— Fetch —————————————————————————————————————————————————————————————
 
 export async function fetchTeamMembers(): Promise<TeamMember[]> {
-  const { data, error } = await db.from(T_TEAM).select('*').order('display_order', { ascending: true });
+  const { data, error } = await db
+    .from(T_TEAM)
+    .select('*')
+    .eq('org_id', orgScope())
+    .order('display_order', { ascending: true });
   if (error) throw error;
   return (data ?? []).map(teamRowToMember);
 }
@@ -264,6 +291,7 @@ export async function fetchLogEntries(): Promise<LogEntry[]> {
   const { data, error } = await db
     .from(T_LOGS)
     .select('*')
+    .eq('org_id', orgScope())
     .order('created_at', { ascending: false })
     .order('id', { ascending: false });
   if (error) throw error;
@@ -273,7 +301,10 @@ export async function fetchLogEntries(): Promise<LogEntry[]> {
 }
 
 export async function fetchMemberOffDays(): Promise<Record<string, string[]>> {
-  const { data, error } = await db.from(T_OFF).select('team_member_id, off_date');
+  const { data, error } = await db
+    .from(T_OFF)
+    .select('team_member_id, off_date')
+    .eq('org_id', orgScope());
   if (error) throw error;
   const out: Record<string, string[]> = {};
   for (const row of data ?? []) {
@@ -287,13 +318,17 @@ export async function fetchMemberOffDays(): Promise<Record<string, string[]>> {
 }
 
 export async function fetchEscalations(): Promise<EscalationItem[]> {
-  const { data, error } = await db.from(T_ESC).select('*').order('created_at', { ascending: false });
+  const { data, error } = await db
+    .from(T_ESC)
+    .select('*')
+    .eq('org_id', orgScope())
+    .order('created_at', { ascending: false });
   if (error) throw error;
   return (data ?? []).map(escRowToItem);
 }
 
 export async function fetchWeeklyReportExtrasMap(): Promise<Record<string, WeeklyReportExtras>> {
-  const { data, error } = await db.from(T_WEEK).select('*');
+  const { data, error } = await db.from(T_WEEK).select('*').eq('org_id', orgScope());
   if (error) throw error;
   const map: Record<string, WeeklyReportExtras> = {};
   for (const row of data ?? []) {
@@ -322,6 +357,7 @@ export async function insertTeamMember(
     .from(T_TEAM)
     .insert({
       ...(m.id && /^[0-9a-f-]{36}$/i.test(m.id) ? { id: m.id } : {}),
+      org_id: orgScope(),
       name: m.name,
       status: m.status,
       role: m.role,
@@ -344,18 +380,22 @@ export async function updateTeamMember(m: TeamMember, displayOrder?: number): Pr
       part_time: m.partTime === true,
       ...(typeof displayOrder === 'number' ? { display_order: displayOrder } : {}),
     })
-    .eq('id', m.id);
+    .eq('id', m.id)
+    .eq('org_id', orgScope());
   if (error) throw error;
 }
 
 export async function deleteTeamMember(id: string): Promise<void> {
-  const { error } = await db.from(T_TEAM).delete().eq('id', id);
+  const { error } = await db.from(T_TEAM).delete().eq('id', id).eq('org_id', orgScope());
   if (error) throw error;
 }
 
 /** Upsert full roster: insert/update by id, delete DB rows not present in `team`. */
 export async function syncTeamRoster(team: TeamMember[]): Promise<void> {
-  const { data: existing, error: selErr } = await db.from(T_TEAM).select('id');
+  const { data: existing, error: selErr } = await db
+    .from(T_TEAM)
+    .select('id')
+    .eq('org_id', orgScope());
   if (selErr) throw selErr;
   const nextIds = new Set(team.map((t) => t.id));
   for (const row of existing ?? []) {
@@ -383,7 +423,7 @@ export async function insertLogEntry(entry: LogEntry): Promise<LogEntry> {
     data: { user },
   } = await supabase.auth.getUser();
   const base = await logEntryToInsert({ ...entry, id }, id);
-  const payload = { ...base, created_by: user?.id ?? null };
+  const payload = { ...base, org_id: orgScope(), created_by: user?.id ?? null };
   const { data, error } = await db.from(T_LOGS).insert(payload).select('*').single();
   if (error) throw error;
   return patchMissingConciergeTimestamps(logRowToEntry(data));
@@ -393,26 +433,37 @@ export async function updateLogEntry(entry: LogEntry): Promise<LogEntry> {
   const id = entry.id;
   const payload = await logEntryToInsert(entry, id);
   delete (payload as { id?: string }).id;
-  const { data, error } = await db.from(T_LOGS).update(payload).eq('id', id).select('*').single();
+  const { data, error } = await db
+    .from(T_LOGS)
+    .update(payload)
+    .eq('id', id)
+    .eq('org_id', orgScope())
+    .select('*')
+    .single();
   if (error) throw error;
   return patchMissingConciergeTimestamps(logRowToEntry(data));
 }
 
 export async function deleteLogEntry(id: string): Promise<void> {
-  const { error } = await db.from(T_LOGS).delete().eq('id', id);
+  const { error } = await db.from(T_LOGS).delete().eq('id', id).eq('org_id', orgScope());
   if (error) throw error;
 }
 
 // —— Off days ————————————————————————————————————————————————————————————
 
 export async function replaceMemberOffDays(map: Record<string, string[]>): Promise<void> {
-  const { error: delErr } = await db.from(T_OFF).delete().gte('off_date', '1900-01-01');
+  const { error: delErr } = await db
+    .from(T_OFF)
+    .delete()
+    .eq('org_id', orgScope())
+    .gte('off_date', '1900-01-01');
   if (delErr) throw delErr;
 
-  const rows: { team_member_id: string; off_date: string }[] = [];
+  const rows: { team_member_id: string; off_date: string; org_id: string }[] = [];
+  const oid = orgScope();
   for (const [memberId, dates] of Object.entries(map)) {
     for (const off_date of dates) {
-      rows.push({ team_member_id: memberId, off_date: off_date.slice(0, 10) });
+      rows.push({ team_member_id: memberId, off_date: off_date.slice(0, 10), org_id: oid });
     }
   }
   if (rows.length === 0) return;
@@ -428,6 +479,7 @@ export async function insertEscalation(item: EscalationItem): Promise<Escalation
     .from(T_ESC)
     .insert({
       id,
+      org_id: orgScope(),
       member_name: item.memberName,
       summary: item.summary,
       opened_at: item.openedAt.slice(0, 10),
@@ -452,7 +504,8 @@ export async function updateEscalation(item: EscalationItem): Promise<void> {
       status: item.status,
       completed_at: item.completedAt ? item.completedAt.slice(0, 10) : null,
     })
-    .eq('id', item.id);
+    .eq('id', item.id)
+    .eq('org_id', orgScope());
   if (error) throw error;
 }
 
@@ -461,12 +514,13 @@ export async function updateEscalation(item: EscalationItem): Promise<void> {
 export async function upsertWeeklyReportExtras(reportKey: string, extras: WeeklyReportExtras): Promise<void> {
   const { error } = await db.from(T_WEEK).upsert(
     {
+      org_id: orgScope(),
       report_key: reportKey,
       call_times_by_member_id: extras.callTimesByMemberId ?? {},
       sales_hours_by_member_id: extras.salesHoursByMemberId ?? {},
       team_members_helped: extras.teamMembersHelped ?? '',
     },
-    { onConflict: 'report_key' },
+    { onConflict: 'org_id,report_key' },
   );
   if (error) throw error;
 }

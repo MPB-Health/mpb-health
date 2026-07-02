@@ -1,5 +1,6 @@
 import { supabase, invokeWithResolvedAuth } from '@mpbhealth/database';
 import type { AdminUser, Role, Permission } from '../types';
+import { MPB_ORG_ID_ALT } from '../operations/adminOrgScope';
 
 export interface CrossPortalUser {
   id: string;
@@ -66,7 +67,21 @@ export class UserService {
       .maybeSingle();
 
     if (error) throw error;
-    return data as any;
+    if (!data) return null;
+
+    const { data: membership } = await supabase
+      .from('org_memberships')
+      .select('org_id')
+      .eq('user_id', userId)
+      .eq('status', 'active')
+      .order('joined_at', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    return {
+      ...(data as any),
+      org_id: membership?.org_id ?? MPB_ORG_ID_ALT,
+    };
   }
 
   // Create a new user
@@ -499,7 +514,7 @@ export class UserService {
 
   /**
    * Impersonate an advisor by generating a magic link or setting a temporary password.
-   * Restricted to super_admin / admin roles (enforced server-side by the edge function).
+   * Restricted to super_admin or advisors.impersonate (enforced server-side by the edge function).
    */
   async impersonateAdvisor(
     advisorId: string,

@@ -1,4 +1,5 @@
 import { supabase } from '@mpbhealth/database';
+import { getAdminOrgId } from '../operations/adminOrgScope';
 
 export type EventLocationType = 'in_person' | 'virtual' | 'hybrid';
 export type EventType =
@@ -58,6 +59,7 @@ export class EventsAdminService {
     let query = supabase
       .from('events')
       .select('id, title, slug, excerpt, content, featured_image_url, event_date, event_end_date, location, location_type, registration_url, event_type, organizer, max_attendees, is_published, is_featured, tags, gallery_images, video_url, created_by, created_at, updated_at')
+      .eq('org_id', getAdminOrgId())
       .order('event_date', { ascending: false });
 
     if (filters?.is_published !== undefined) {
@@ -82,6 +84,7 @@ export class EventsAdminService {
       .from('events')
       .select('id, title, slug, excerpt, content, featured_image_url, event_date, event_end_date, location, location_type, registration_url, event_type, organizer, max_attendees, is_published, is_featured, tags, gallery_images, video_url, created_by, created_at, updated_at')
       .eq('id', eventId)
+      .eq('org_id', getAdminOrgId())
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
@@ -92,7 +95,7 @@ export class EventsAdminService {
     const slug = event.slug || this.generateSlug(event.title);
     const { data, error } = await supabase
       .from('events')
-      .insert({ ...event, slug })
+      .insert({ ...event, slug, org_id: getAdminOrgId() })
       .select('id, title, slug, excerpt, content, featured_image_url, event_date, event_end_date, location, location_type, registration_url, event_type, organizer, max_attendees, is_published, is_featured, tags, gallery_images, video_url, created_by, created_at, updated_at')
       .single();
 
@@ -105,6 +108,7 @@ export class EventsAdminService {
       .from('events')
       .update(updates)
       .eq('id', eventId)
+      .eq('org_id', getAdminOrgId())
       .select('id, title, slug, excerpt, content, featured_image_url, event_date, event_end_date, location, location_type, registration_url, event_type, organizer, max_attendees, is_published, is_featured, tags, gallery_images, video_url, created_by, created_at, updated_at')
       .single();
 
@@ -124,7 +128,8 @@ export class EventsAdminService {
     const { error } = await supabase
       .from('events')
       .delete()
-      .eq('id', eventId);
+      .eq('id', eventId)
+      .eq('org_id', getAdminOrgId());
 
     if (error) throw error;
   }

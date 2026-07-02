@@ -40,7 +40,7 @@ export const FORMS: FormEntry[] = [
     icon: 'Edit',
     estimatedMinutes: 5,
     requiresAuth: false,
-    cognitoEmbed: '',
+    cognitoEmbed: '<iframe src="https://www.cognitoforms.com/MPoweringBenefits1/EmployeeUpdates" allow="payment" style="border:0;width:100%;" height="1200"></iframe><script src="https://www.cognitoforms.com/f/iframe.js"></script>',
   },
   {
     slug: '/employee-removal/',
@@ -50,7 +50,7 @@ export const FORMS: FormEntry[] = [
     icon: 'UserMinus',
     estimatedMinutes: 5,
     requiresAuth: false,
-    cognitoEmbed: '',
+    cognitoEmbed: '<iframe src="https://www.cognitoforms.com/MPoweringBenefits1/NotificationEmployeeRemovalFromListBillInvoice" allow="payment" style="border:0;width:100%;" height="1200"></iframe><script src="https://www.cognitoforms.com/f/iframe.js"></script>',
   },
   {
     slug: '/adult-dependent-information/',
@@ -140,6 +140,7 @@ export const FORMS: FormEntry[] = [
     icon: 'CreditCard',
     estimatedMinutes: 5,
     requiresAuth: false,
+    cognitoEmbed: '<iframe src="https://www.cognitoforms.com/MPoweringBenefits1/UpdateFormOfPayment" allow="payment" style="border:0;width:100%;" height="1200"></iframe><script src="https://www.cognitoforms.com/f/iframe.js"></script>',
   },
   {
     slug: '/dependent-over-18-information/',

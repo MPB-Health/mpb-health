@@ -1,15 +1,16 @@
 import { useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { supabase, isSupabaseConfigured } from '@mpbhealth/database';
 import toast from 'react-hot-toast';
 import { LoginLayout, AryxAuthShell, detectBrand } from '@mpbhealth/ui';
 import { AuthPageSeo } from '../components/AuthPageSeo';
 import { useAdvisor } from '../contexts/AdvisorContext';
 import { useAdvisorPageDebugLog } from '../hooks/useAdvisorPageDebugLog';
+import { useAdvisorNavigate } from '../hooks/useAdvisorNavigate';
 
 export default function Login() {
   useAdvisorPageDebugLog('Login');
-  const navigate = useNavigate();
+  const navigate = useAdvisorNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { loading: authLoading, hasSession, profile, profileLoading } = useAdvisor();
 

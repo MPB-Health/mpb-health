@@ -1,11 +1,11 @@
-import { useNavigate } from 'react-router-dom';
 import { supabase, isSupabaseConfigured } from '@mpbhealth/database';
 import toast from 'react-hot-toast';
 import { LoginLayout } from '@mpbhealth/ui';
 import { HeartHandshake, BookOpen, Headphones } from 'lucide-react';
+import { useConciergeNavigate } from '../hooks/useConciergeNavigate';
 
 export default function Login() {
-  const navigate = useNavigate();
+  const navigate = useConciergeNavigate();
 
   const handleSubmit = async (email: string, password: string) => {
     if (!isSupabaseConfigured) {

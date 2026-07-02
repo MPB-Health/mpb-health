@@ -133,6 +133,15 @@ export {
 
 // Org & Permission Services
 export {
+  resolveOrgId,
+  resolveOrgIdFromMap,
+  translateOrgId,
+  isUnifiedOrgSlug,
+  MPB_HEALTH_SLUG,
+  type OrgIdPurpose,
+} from './services/orgIdResolver';
+
+export {
   orgService,
   getUserOrgs,
   getOrg,
@@ -211,6 +220,33 @@ export {
 
 // Org Switcher Component
 export { OrgSwitcher, type OrgSwitcherProps } from './components/OrgSwitcher';
+
+// Tenant / multi-org portal resolution
+export {
+  tenantService,
+  resolvePortalSlugFromHost,
+  resolveTenantFromHostname,
+  resolveTenantForPortal,
+  isAosPlatformHost,
+  isPathTenantPlatformHost,
+  parsePathTenantSlug,
+  prefixTenantPath,
+  listOrgPortalAccess,
+  upsertOrgPortalAccess,
+  type PortalSlug,
+  type OrgPortalAccess,
+  type ResolvedTenant,
+} from './services/tenantService';
+
+export {
+  TenantProvider,
+  useTenant,
+  useTenantOptional,
+  type TenantContextValue,
+  type TenantProviderProps,
+} from './contexts/TenantContext';
+
+export { useTenantPath, tenantPathForHost } from './hooks/useTenantPath';
 
 // Types (re-exported for convenience)
 export type { AuthUser, AuthState } from './types';

@@ -1,4 +1,5 @@
 import { supabase } from '@mpbhealth/database';
+import { getAdminOrgId } from '../operations/adminOrgScope';
 
 export interface AdminForm {
   id: string;
@@ -23,6 +24,7 @@ export class FormsAdminService {
     let query = supabase
       .from('cognito_forms')
       .select('id, label, slug, category, cognito_embed, is_active, show_in_menu, sort_order, menu_section, menu_order, created_at, updated_at')
+      .eq('org_id', getAdminOrgId())
       .order('sort_order', { ascending: true });
 
     if (category) query = query.eq('category', category);
@@ -37,6 +39,7 @@ export class FormsAdminService {
       .from('cognito_forms')
       .select('id, label, slug, category, cognito_embed, is_active, show_in_menu, sort_order, menu_section, menu_order, created_at, updated_at')
       .eq('id', id)
+      .eq('org_id', getAdminOrgId())
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
@@ -46,7 +49,7 @@ export class FormsAdminService {
   async createForm(input: FormCreateInput): Promise<AdminForm> {
     const { data, error } = await supabase
       .from('cognito_forms')
-      .insert(input)
+      .insert({ ...input, org_id: getAdminOrgId() })
       .select('id, label, slug, category, cognito_embed, is_active, show_in_menu, sort_order, menu_section, menu_order, created_at, updated_at')
       .single();
 
@@ -59,6 +62,7 @@ export class FormsAdminService {
       .from('cognito_forms')
       .update({ ...input, updated_at: new Date().toISOString() })
       .eq('id', id)
+      .eq('org_id', getAdminOrgId())
       .select('id, label, slug, category, cognito_embed, is_active, show_in_menu, sort_order, menu_section, menu_order, created_at, updated_at')
       .single();
 
@@ -70,7 +74,8 @@ export class FormsAdminService {
     const { error } = await supabase
       .from('cognito_forms')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('org_id', getAdminOrgId());
 
     if (error) throw error;
   }
@@ -82,8 +87,9 @@ export class FormsAdminService {
   }
 
   async reorderForms(formIds: string[]): Promise<void> {
+    const orgId = getAdminOrgId();
     const updates = formIds.map((id, index) =>
-      supabase.from('cognito_forms').update({ sort_order: index }).eq('id', id),
+      supabase.from('cognito_forms').update({ sort_order: index }).eq('id', id).eq('org_id', orgId),
     );
     await Promise.all(updates);
   }
@@ -91,7 +97,8 @@ export class FormsAdminService {
   async getStats(): Promise<{ total: number; active: number; inMenu: number }> {
     const { data, error } = await supabase
       .from('cognito_forms')
-      .select('is_active, show_in_menu');
+      .select('is_active, show_in_menu')
+      .eq('org_id', getAdminOrgId());
 
     if (error) throw error;
     const forms = data || [];
@@ -106,6 +113,7 @@ export class FormsAdminService {
     const { data, error } = await supabase
       .from('cognito_forms')
       .select('category')
+      .eq('org_id', getAdminOrgId())
       .not('category', 'is', null);
 
     if (error) throw error;

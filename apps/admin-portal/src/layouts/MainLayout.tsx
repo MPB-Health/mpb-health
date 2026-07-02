@@ -21,11 +21,7 @@ import {
   CalendarDays,
   ShieldCheck,
 } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
-import { AppLayout, PortalSwitcher, type NavItem, type PortalKey } from '@mpbhealth/ui';
-import { getPortalUrl } from '@mpbhealth/config';
-import { supabase } from '@mpbhealth/database';
-import { usePortalAccess, buildPortalSSOUrl } from '@mpbhealth/auth';
+import { AppLayout, type NavItem } from '@mpbhealth/ui';
 import { useAdmin } from '../contexts/AdminContext';
 
 const navigation: NavItem[] = [
@@ -150,6 +146,8 @@ const navigation: NavItem[] = [
       { name: 'E-Signature', href: '/settings/esignature' },
       { name: 'Ticket Categories', href: '/settings/ticket-categories' },
       { name: 'Notifications', href: '/settings/notifications' },
+      { name: 'Organizations & Tenants', href: '/settings/tenants' },
+      { name: 'Module Licensing', href: '/settings/modules' },
     ],
   },
 ];
@@ -157,33 +155,6 @@ const navigation: NavItem[] = [
 export default function MainLayout() {
   const navigate = useNavigate();
   const { user, logout, pendingEnrollments, loading } = useAdmin();
-
-  // Load portal access from global user_roles table
-  const [authUserId, setAuthUserId] = useState<string | null>(null);
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setAuthUserId(session?.user?.id ?? null);
-    });
-  }, []);
-  const { canAccessAdmin, canAccessAdvisor, canAccessCrm, canAccessWebsite, canAccessConcierge, canAccessSupport } = usePortalAccess(authUserId);
-
-  const safeGetPortalUrl = useCallback((portal: PortalKey): string => {
-    try {
-      return getPortalUrl(portal as Parameters<typeof getPortalUrl>[0]);
-    } catch {
-      return '#';
-    }
-  }, []);
-
-  const getPortalUrlWithSSO = useCallback(async (portal: PortalKey): Promise<string | null> => {
-    try {
-      const baseUrl = safeGetPortalUrl(portal);
-      if (!baseUrl || baseUrl === '#') return null;
-      return await buildPortalSSOUrl(baseUrl, supabase);
-    } catch {
-      return null;
-    }
-  }, [safeGetPortalUrl]);
 
   // No session — route unauthenticated visitors based on brand:
   //   * ARYX hosts (admin.aryxcloud.com)  → /landing (marketing page)
@@ -214,19 +185,6 @@ export default function MainLayout() {
       appName="Admin Portal"
       logoSrc={getBrandLogo()}
       navigation={navWithBadges}
-      portalSwitcher={
-        <PortalSwitcher
-          currentPortal="admin"
-          canAccessAdmin={canAccessAdmin}
-          canAccessCRM={canAccessCrm}
-          canAccessAdvisor={canAccessAdvisor}
-          canAccessWebsite={canAccessWebsite}
-          canAccessConcierge={canAccessConcierge}
-          canAccessSupport={canAccessSupport}
-          getPortalUrl={safeGetPortalUrl}
-          getPortalUrlWithSSO={getPortalUrlWithSSO}
-        />
-      }
       renderNavLink={(item, props) => (
         <NavLink
           key={item.name}

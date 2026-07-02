@@ -31,6 +31,9 @@ import CognitoFormEmbed from '../components/CognitoFormEmbed';
 
 const WEBSITE_BASE_URL = 'https://mpb.health';
 
+/** Form slugs hidden from the advisor portal regardless of CMS configuration. */
+const HIDDEN_FORM_SLUGS = new Set(['/update-form-of-payment/', '/update-form-of-payment']);
+
 /** Extract the direct Cognito form URL from cognito_embed HTML (iframe src) */
 function getCognitoFormUrl(form: AdvisorForm): string | null {
   if (!form.cognito_embed || !form.cognito_embed.includes('cognitoforms.com')) return null;
@@ -136,6 +139,10 @@ export default function Forms({ section }: FormsProps) {
   const currentSection = section ? sectionConfig[section] : null;
 
   const filteredForms = [...forms].sort((a, b) => (a.name || a.label).localeCompare(b.name || b.label)).filter((form) => {
+    // Hide forms explicitly excluded from the advisor portal
+    if (form.slug && HIDDEN_FORM_SLUGS.has(form.slug)) {
+      return false;
+    }
     // Apply section filter first if specified
     if (currentSection && !currentSection.filter(form)) {
       return false;

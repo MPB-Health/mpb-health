@@ -48,6 +48,7 @@ import {
 } from '../../lib/userRolesService';
 import { toast } from 'sonner';
 import { createClientLogger } from '@mpbhealth/utils';
+import { resolveOrgIdFromMap, MPB_HEALTH_SLUG } from '@mpbhealth/auth';
 import { passwordSecurityService } from '../../lib/passwordSecurityService';
 import { PasswordStrengthMeter } from '../../components/ui/PasswordStrengthMeter';
 import { cn } from '../../lib/utils';
@@ -67,7 +68,7 @@ const RoleIcons: Record<UserRole, React.FC<{ className?: string }>> = {
   member: User,
 };
 
-const DEFAULT_ORG_ID = '00000000-0000-4000-a000-000000000001';
+const DEFAULT_ORG_ID = resolveOrgIdFromMap(MPB_HEALTH_SLUG, 'membership')!;
 
 async function invokeEdgeFunction<T>(
   functionName: string,

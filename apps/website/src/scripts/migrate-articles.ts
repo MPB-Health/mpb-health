@@ -203,8 +203,8 @@ const existingArticles = [
   {
     title: 'How MEC Works with Health Sharing for Better Care',
     slug: 'how-mec-works-with-health-sharing-for-better-care',
-    excerpt: 'Understanding Minimum Essential Coverage and how it complements health sharing programs.',
-    content: `<p>Minimum Essential Coverage (MEC) and health sharing can work together to provide comprehensive, affordable healthcare solutions.</p>
+    excerpt: 'Understanding Minimum Essential Care and how it complements health sharing programs.',
+    content: `<p>Minimum Essential Care (MEC) and health sharing can work together to provide comprehensive, affordable healthcare solutions.</p>
 <h2>What Is MEC?</h2>
 <p>MEC is a type of health coverage that meets basic standards under the Affordable Care Act, typically covering preventive care at no cost to you.</p>
 <h2>How Health Sharing Complements MEC</h2>

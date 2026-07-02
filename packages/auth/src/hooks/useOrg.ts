@@ -4,7 +4,13 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { OrgWithMembership, OrgRole } from '../services/orgService';
-import { getUserOrgs, invalidateCache, DEFAULT_ORG_ID } from '../services/orgService';
+import {
+  getUserOrgs,
+  invalidateCache,
+  DEFAULT_ORG_ID,
+  DEFAULT_ORG_ID_ALT,
+} from '../services/orgService';
+import { MPB_HEALTH_SLUG } from '../services/orgIdResolver';
 import { useAuth } from '../contexts/AuthContext';
 
 const ACTIVE_ORG_KEY = 'mpb_active_org_id';
@@ -53,8 +59,10 @@ export function useOrg(): UseOrgReturn {
         const storedOrgValid = storedId && userOrgs.some((o) => o.id === storedId);
 
         if (!storedOrgValid) {
-          // Default to MPB Health org or first available
-          const defaultOrg = userOrgs.find((o) => o.id === DEFAULT_ORG_ID) || userOrgs[0];
+          const defaultOrg =
+            userOrgs.find((o) => o.slug === MPB_HEALTH_SLUG) ||
+            userOrgs.find((o) => o.id === DEFAULT_ORG_ID || o.id === DEFAULT_ORG_ID_ALT) ||
+            userOrgs[0];
           setActiveOrgId(defaultOrg.id);
           localStorage.setItem(ACTIVE_ORG_KEY, defaultOrg.id);
         }

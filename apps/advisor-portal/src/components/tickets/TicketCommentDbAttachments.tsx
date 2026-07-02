@@ -70,7 +70,13 @@ export function TicketCommentDbAttachments({
           }
         }
         setItems(next);
-        setSignError(errs.length > 0 && next.length === 0 ? errs[0] : null);
+        setSignError(
+          errs.length > 0
+            ? next.length === 0
+              ? errs[0]
+              : `Could not load ${errs.length} attachment${errs.length === 1 ? '' : 's'}: ${errs.slice(0, 2).join(', ')}${errs.length > 2 ? '…' : ''}`
+            : null,
+        );
       } catch (err) {
         if (cancelled) return;
         setItems([]);
@@ -114,5 +120,12 @@ export function TicketCommentDbAttachments({
     );
   }
 
-  return <TicketMessageAttachments items={items} tone={tone} />;
+  return (
+    <div className="space-y-2">
+      {signError ? (
+        <p className="mt-3 text-xs text-amber-700 dark:text-amber-300">{signError}</p>
+      ) : null}
+      <TicketMessageAttachments items={items} tone={tone} />
+    </div>
+  );
 }

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
+import { useAdvisorNavigate } from '../hooks/useAdvisorNavigate';
 import { supabase, isSupabaseConfigured } from '@mpbhealth/database';
 import toast from 'react-hot-toast';
 import { Lock, Eye, EyeOff, CheckCircle2, AlertCircle } from 'lucide-react';
@@ -15,7 +16,7 @@ const resetPasswordSeo = (
 
 export default function ResetPassword() {
   useAdvisorPageDebugLog('ResetPassword');
-  const navigate = useNavigate();
+  const navigate = useAdvisorNavigate();
   const [searchParams] = useSearchParams();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');

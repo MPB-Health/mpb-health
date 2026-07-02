@@ -157,7 +157,7 @@ const STATIC_HANDBOOKS: HandbookRecord[] = [
     id: 'static-mec',
     slug: 'mecessentials-handbook',
     name: 'MEC+ Essentials Handbook',
-    description: 'Minimum Essential Coverage plus additional benefits for comprehensive protection.',
+    description: 'Minimum Essential Care plus additional benefits for comprehensive protection.',
     pdf_path: '/docs/MEC+Essentials Handbook-New Members 1.pdf',
     plan_type: 'employer',
     color: 'purple',

@@ -1,4 +1,5 @@
 import { supabase } from '@mpbhealth/database';
+import { getAdminOrgId } from '../operations/adminOrgScope';
 
 export interface ContactEntry {
   id: string;
@@ -24,6 +25,7 @@ export class ContactDirectoryService {
     let query = supabase
       .from('advisor_contact_directory')
       .select('id, name, title, department, email, phone, extension, avatar_url, bio, is_active, display_order, created_at, updated_at')
+      .eq('org_id', getAdminOrgId())
       .order('display_order', { ascending: true })
       .order('name', { ascending: true });
 
@@ -39,6 +41,7 @@ export class ContactDirectoryService {
       .from('advisor_contact_directory')
       .select('id, name, title, department, email, phone, extension, avatar_url, bio, is_active, display_order, created_at, updated_at')
       .eq('id', id)
+      .eq('org_id', getAdminOrgId())
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
@@ -48,7 +51,7 @@ export class ContactDirectoryService {
   async createContact(input: ContactCreateInput): Promise<ContactEntry> {
     const { data, error } = await supabase
       .from('advisor_contact_directory')
-      .insert(input)
+      .insert({ ...input, org_id: getAdminOrgId() })
       .select('id, name, title, department, email, phone, extension, avatar_url, bio, is_active, display_order, created_at, updated_at')
       .single();
 
@@ -61,6 +64,7 @@ export class ContactDirectoryService {
       .from('advisor_contact_directory')
       .update({ ...input, updated_at: new Date().toISOString() })
       .eq('id', id)
+      .eq('org_id', getAdminOrgId())
       .select('id, name, title, department, email, phone, extension, avatar_url, bio, is_active, display_order, created_at, updated_at')
       .single();
 
@@ -72,7 +76,8 @@ export class ContactDirectoryService {
     const { error } = await supabase
       .from('advisor_contact_directory')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('org_id', getAdminOrgId());
 
     if (error) throw error;
   }
@@ -84,8 +89,9 @@ export class ContactDirectoryService {
   }
 
   async reorderContacts(contactIds: string[]): Promise<void> {
+    const orgId = getAdminOrgId();
     const updates = contactIds.map((id, index) =>
-      supabase.from('advisor_contact_directory').update({ display_order: index }).eq('id', id),
+      supabase.from('advisor_contact_directory').update({ display_order: index }).eq('id', id).eq('org_id', orgId),
     );
     await Promise.all(updates);
   }
@@ -94,6 +100,7 @@ export class ContactDirectoryService {
     const { data, error } = await supabase
       .from('advisor_contact_directory')
       .select('department')
+      .eq('org_id', getAdminOrgId())
       .not('department', 'is', null);
 
     if (error) throw error;
@@ -103,7 +110,8 @@ export class ContactDirectoryService {
   async getStats(): Promise<{ total: number; active: number }> {
     const { data, error } = await supabase
       .from('advisor_contact_directory')
-      .select('is_active');
+      .select('is_active')
+      .eq('org_id', getAdminOrgId());
 
     if (error) throw error;
     const contacts = data || [];

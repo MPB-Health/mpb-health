@@ -4,7 +4,9 @@ import { BrowserRouter } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { installAuthRefreshGuard } from '@mpbhealth/database';
 import { ThemeProvider } from '@mpbhealth/ui';
+import { TenantProvider } from '@mpbhealth/auth';
 import App from './App';
+import { StaffHubOrgSync } from './components/StaffHubOrgSync';
 import '@mpbhealth/ui/theme-tokens.css';
 import './index.css';
 import '@mpbhealth/ui/login-animations.css';
@@ -56,7 +58,11 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light">
         <BrowserRouter>
-          <App />
+          <TenantProvider portalSlug="staff_hub">
+            <StaffHubOrgSync>
+              <App />
+            </StaffHubOrgSync>
+          </TenantProvider>
           <Toaster
             position="top-right"
             toastOptions={{

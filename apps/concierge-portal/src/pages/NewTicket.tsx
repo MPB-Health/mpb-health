@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { useConciergeNavigate } from '../hooks/useConciergeNavigate';
 import { Headphones, ArrowLeft, Loader2, AlertCircle, PlusCircle, Paperclip, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { ticketService, type TicketPriority } from '@mpbhealth/advisor-core';
@@ -35,7 +36,7 @@ function formatBytes(bytes: number): string {
 }
 
 export default function NewTicket() {
-  const navigate = useNavigate();
+  const navigate = useConciergeNavigate();
   const [categories, setCategories] = useState<string[]>([]);
   const [catLoading, setCatLoading] = useState(true);
   const [subject, setSubject] = useState('');

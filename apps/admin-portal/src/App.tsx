@@ -94,6 +94,7 @@ const PushNotifications = lazyRetry(() => import('./pages/PushNotifications'));
 const Reports = lazyRetry(() => import('./pages/Reports'));
 const AdvisorAccess = lazyRetry(() => import('./pages/AdvisorAccess'));
 const ModuleManagement = lazyRetry(() => import('./pages/ModuleManagement'));
+const TenantManagement = lazyRetry(() => import('./pages/TenantManagement'));
 
 // Eagerly prefetch all route chunks after initial paint
 if (typeof window !== 'undefined') {
@@ -299,6 +300,15 @@ function RequirePermission({ permission, children }: { permission: string; child
   return <>{children}</>;
 }
 
+function RequireAnyPermission({ permissions, children }: { permissions: string[]; children: React.ReactNode }) {
+  const { hasPermission, loading } = useAdmin();
+  if (loading) return <LoadingSpinner />;
+  if (!permissions.some((permission) => hasPermission(permission))) {
+    return <Navigate to="/" replace />;
+  }
+  return <>{children}</>;
+}
+
 export default function App() {
   return (
     <AdminProvider>
@@ -314,7 +324,7 @@ export default function App() {
             <Route path="/" element={<MainLayout />}>
               <Route index element={<Dashboard />} />
               <Route path="users" element={<RequirePermission permission="users.manage"><Users /></RequirePermission>} />
-              <Route path="advisor-access" element={<RequirePermission permission="users.manage"><AdvisorAccess /></RequirePermission>} />
+              <Route path="advisor-access" element={<RequireAnyPermission permissions={['users.manage', 'advisors.impersonate']}><AdvisorAccess /></RequireAnyPermission>} />
               <Route path="users/:userId" element={<RequirePermission permission="users.manage"><UserDetail /></RequirePermission>} />
               <Route path="enrollments" element={<RequirePermission permission="enrollments.manage"><Enrollments /></RequirePermission>} />
               <Route path="enrollments/:enrollmentId" element={<RequirePermission permission="enrollments.manage"><EnrollmentDetail /></RequirePermission>} />
@@ -398,6 +408,7 @@ export default function App() {
               <Route path="content/widgets-config" element={<WidgetConfig />} />
               <Route path="settings/notifications" element={<NotificationRules />} />
               <Route path="settings/modules" element={<RequirePermission permission="settings.manage"><ModuleManagement /></RequirePermission>} />
+              <Route path="settings/tenants" element={<RequirePermission permission="settings.manage"><TenantManagement /></RequirePermission>} />
               <Route path="system/health" element={<SystemHealth />} />
               <Route path="messaging/chat" element={<ChatModeration />} />
               <Route path="messaging/push" element={<PushNotifications />} />

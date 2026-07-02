@@ -5,6 +5,7 @@ import {
   userService,
   analyticsService,
   enrollmentService,
+  setAdminOrgContext,
   type AdminUser,
   type DashboardMetrics,
 } from '@mpbhealth/admin-core';
@@ -28,6 +29,7 @@ interface AdminContextType {
   hasPermission: (permission: string) => boolean;
   isAdmin: boolean;
   isSuperAdmin: boolean;
+  canImpersonateAdvisors: boolean;
 }
 
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
@@ -51,6 +53,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       if (verifyError || !verified) {
         if (verifyError) await supabase.auth.signOut({ scope: 'local' });
         setUser(null);
+        setAdminOrgContext(null);
         setLoading(false);
         return;
       }
@@ -70,9 +73,11 @@ export function AdminProvider({ children }: { children: ReactNode }) {
           throw e;
         }
         setUser(null);
+        setAdminOrgContext(null);
         return;
       }
       setUser(adminUser);
+      setAdminOrgContext(adminUser?.org_id);
       setError(null);
 
       if (adminUser) {
@@ -114,6 +119,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(async () => {
     await supabase.auth.signOut();
     setUser(null);
+    setAdminOrgContext(null);
   }, []);
 
   const hasPermission = useCallback((permission: string): boolean => {
@@ -124,6 +130,8 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
   const isSuperAdmin = user?.role === 'super_admin';
+  const canImpersonateAdvisors =
+    isSuperAdmin || (user?.permissions?.includes('advisors.impersonate') ?? false);
 
   // Initial load — onAuthStateChange handles INITIAL_SESSION + SIGNED_IN
   // to avoid the race condition of calling loadUser() twice simultaneously.
@@ -151,6 +159,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
           await loadUser();
         } else if (event === 'SIGNED_OUT') {
           setUser(null);
+          setAdminOrgContext(null);
           setLoading(false);
         }
       }
@@ -166,6 +175,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     return onSessionDead(() => {
       setUser(null);
+      setAdminOrgContext(null);
       setLoading(false);
     });
   }, []);
@@ -206,6 +216,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       hasPermission,
       isAdmin,
       isSuperAdmin,
+      canImpersonateAdvisors,
     }),
     [
       user,
@@ -219,6 +230,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       hasPermission,
       isAdmin,
       isSuperAdmin,
+      canImpersonateAdvisors,
     ]
   );
 

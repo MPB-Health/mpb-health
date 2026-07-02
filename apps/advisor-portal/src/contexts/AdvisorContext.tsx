@@ -21,6 +21,7 @@ import {
 import { ADVISOR_TRAINING_GATE_CUTOFF_MS } from '../config/advisorTrainingGate';
 import { secureAuthService } from '@mpbhealth/auth';
 import { clearNavCache } from '../utils/navCache';
+import { setAdvisorImpersonationFlag } from '../pages/AuthConfirm';
 import { startEdgeFunctionWarmup, stopEdgeFunctionWarmup } from '../utils/edgeFunctionWarmup';
 /**
  * Centralized session reads use `getCachedSession` from @mpbhealth/database, which has its own
@@ -396,6 +397,11 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem(SUPABASE_AUTH_STORAGE_KEY);
       localStorage.removeItem('mpb-auth-token');
     } catch (_) { /* storage may not be available */ }
+    try {
+      setAdvisorImpersonationFlag(false);
+    } catch {
+      // ignore storage errors
+    }
     clearNavCache();
     setProfile(null);
     setSessionUserCreatedAt(undefined);
@@ -518,7 +524,7 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!isSupabaseConfigured) return;
 
-    let debounce: ReturnType<typeof setTimeout> | undefined;
+    let debounce: number | undefined;
 
     const recover = () => {
       void (async () => {

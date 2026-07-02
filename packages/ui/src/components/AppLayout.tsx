@@ -24,8 +24,6 @@ export interface AppLayoutProps {
   topBarActions?: React.ReactNode;
   /** Content rendered in the center of the top bar (e.g. global search) */
   topBarCenter?: React.ReactNode;
-  /** Optional portal switcher dropdown to enable navigation between portals */
-  portalSwitcher?: React.ReactNode;
   /** Persistent footer bar rendered at the bottom of the viewport */
   footerBar?: React.ReactNode;
   /** Initial collapsed state for the sidebar */
@@ -58,7 +56,6 @@ export function AppLayout({
   userSection,
   topBarActions,
   topBarCenter,
-  portalSwitcher,
   footerBar,
   initialCollapsed = false,
   renderNavLink,
@@ -172,13 +169,6 @@ export function AppLayout({
             </div>
           )}
         </div>
-
-        {/* ---- Portal Switcher ---- */}
-        {portalSwitcher && !(collapsed && !isMobile) && (
-          <div className="px-3 py-2 border-b border-[rgb(var(--sidebar-text)_/_0.1)]">
-            {portalSwitcher}
-          </div>
-        )}
 
         {/* ---- Navigation ---- */}
         <nav className={cn(

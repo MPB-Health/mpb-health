@@ -1,4 +1,5 @@
 import { supabase } from '@mpbhealth/database';
+import { getAdminOrgId } from '../operations/adminOrgScope';
 
 export interface AdminSOPDocument {
   id: string;
@@ -40,6 +41,7 @@ export class SOPAdminService {
     let query = supabase
       .from('sop_documents')
       .select('id, title, description, category, content, content_type, file_url, image_url, version, is_published, tags, view_count, metadata, created_at, updated_at')
+      .eq('org_id', getAdminOrgId())
       .order('title', { ascending: true });
 
     if (filters?.category) query = query.eq('category', filters.category);
@@ -58,6 +60,7 @@ export class SOPAdminService {
       .from('sop_documents')
       .select('id, title, description, category, content, content_type, file_url, image_url, version, is_published, tags, view_count, metadata, created_at, updated_at')
       .eq('id', id)
+      .eq('org_id', getAdminOrgId())
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
@@ -67,7 +70,7 @@ export class SOPAdminService {
   async createDocument(input: SOPCreateInput): Promise<AdminSOPDocument> {
     const { data, error } = await supabase
       .from('sop_documents')
-      .insert({ ...input, view_count: 0 })
+      .insert({ ...input, view_count: 0, org_id: getAdminOrgId() })
       .select('id, title, description, category, content, content_type, file_url, image_url, version, is_published, tags, view_count, metadata, created_at, updated_at')
       .single();
 
@@ -80,6 +83,7 @@ export class SOPAdminService {
       .from('sop_documents')
       .update({ ...input, updated_at: new Date().toISOString() })
       .eq('id', id)
+      .eq('org_id', getAdminOrgId())
       .select('id, title, description, category, content, content_type, file_url, image_url, version, is_published, tags, view_count, metadata, created_at, updated_at')
       .single();
 
@@ -91,7 +95,8 @@ export class SOPAdminService {
     const { error } = await supabase
       .from('sop_documents')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .eq('org_id', getAdminOrgId());
 
     if (error) throw error;
   }
@@ -115,7 +120,8 @@ export class SOPAdminService {
   async getStats(): Promise<SOPAdminStats> {
     const { data, error } = await supabase
       .from('sop_documents')
-      .select('is_published');
+      .select('is_published')
+      .eq('org_id', getAdminOrgId());
 
     if (error) throw error;
     const docs = data || [];

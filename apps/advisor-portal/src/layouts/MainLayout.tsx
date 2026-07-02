@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useCallback } from 'react';
-import { getBrandLogo, AppLayout, PortalSwitcher, Button, detectBrand, type NavItem, type PortalKey } from '@mpbhealth/ui';
-import { Outlet, NavLink, useNavigate, Navigate, useLocation } from 'react-router-dom';
+import { getBrandLogo, AppLayout, Button, detectBrand, type NavItem } from '@mpbhealth/ui';
+import { Outlet, NavLink, Navigate, useLocation } from 'react-router-dom';
 import { PortalSeo } from '../components/PortalSeo';
+import { ImpersonationBanner } from '../components/ImpersonationBanner';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import type { LucideIcon } from 'lucide-react';
@@ -54,8 +55,12 @@ import {
   Pill,
   Compass,
 } from 'lucide-react';
-import { getPortalUrl } from '@mpbhealth/config';
-import { isAdmin as checkIsAdmin, usePortalAccess, buildPortalSSOUrl, useSSONavigation } from '@mpbhealth/auth';
+import {
+  isAdmin as checkIsAdmin,
+  useSSONavigation,
+  useTenant,
+  useTenantPath,
+} from '@mpbhealth/auth';
 import { supabase } from '@mpbhealth/database';
 import { navigationService, type NavMenuItem, isAdvisorExemptFromTrainingGate } from '@mpbhealth/advisor-core';
 import { useAdvisor } from '../contexts/AdvisorContext';
@@ -73,7 +78,8 @@ import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { useUserPreferences } from '../hooks/useSettings';
 import { GlobalSearch } from '../components/GlobalSearch';
 import { setClearQueryCache } from '../utils/navCache';
-import { prefetchRouteByPath } from '../App';
+import { prefetchRouteByPath } from '../routing/lazyPages';
+import { useAdvisorNavigate } from '../hooks/useAdvisorNavigate';
 import { AdvisorPageLoader } from '../components/loading';
 
 // Icon mapping for dynamic icons from CMS
@@ -210,7 +216,9 @@ function mapMenuItemsToNavItems(items: NavMenuItem[]): NavItem[] {
 }
 
 export default function MainLayout() {
-  const navigate = useNavigate();
+  const navigate = useAdvisorNavigate();
+  const toPath = useTenantPath();
+  const { isAosPlatform, pathTenantSlug } = useTenant();
   const location = useLocation();
   const {
     profile,
@@ -249,24 +257,6 @@ export default function MainLayout() {
     staleTime: 5 * 60 * 1000,
   });
   const isAdminRolePending = advisorReady && isAdminQueryPending;
-
-  // Portal access from global user_roles table
-  const { canAccessAdmin, canAccessAdvisor, canAccessCrm } = usePortalAccess(profile?.user_id);
-
-  const safeGetPortalUrl = useCallback((portal: PortalKey): string => {
-    try {
-      return getPortalUrl(portal as Parameters<typeof getPortalUrl>[0]);
-    } catch {
-      return '#';
-    }
-  }, []);
-
-  // SSO-aware portal navigation (client-side session transfer)
-  const getPortalUrlWithSSO = useCallback(async (portal: PortalKey): Promise<string | null> => {
-    const baseUrl = safeGetPortalUrl(portal);
-    if (!baseUrl || baseUrl === '#') return null;
-    return buildPortalSSOUrl(baseUrl, supabase);
-  }, [safeGetPortalUrl]);
 
   // CMS navigation via React Query — automatic dedup, caching, and stale-while-revalidate
   const { data: cmsNavItems = [] } = useQuery<NavItem[]>({
@@ -416,6 +406,9 @@ export default function MainLayout() {
   // We avoid kicking users who DO have a session but suffered a transient
   // profile-fetch failure (they get the recovery UI below instead).
   if (!loading && !hasSession) {
+    if (isAosPlatform && pathTenantSlug) {
+      return <Navigate to={toPath('/login')} replace />;
+    }
     const target = detectBrand() === 'aryx' ? '/landing' : '/login';
     return <Navigate to={target} replace />;
   }
@@ -446,7 +439,7 @@ export default function MainLayout() {
 
   // Force password change for newly imported accounts
   if (!loading && profile?.must_change_password) {
-    return <Navigate to="/change-password" replace />;
+    return <Navigate to={toPath('/change-password')} replace />;
   }
 
   const isShellLoading = loading || (!profile && profileLoading);
@@ -572,6 +565,7 @@ export default function MainLayout() {
 
   return (
     <>
+      <ImpersonationBanner />
       <PortalSeo />
       {/* Command Palette (Cmd+K) */}
       <CommandPalette />
@@ -598,23 +592,13 @@ export default function MainLayout() {
         logoSrc={getBrandLogo()}
         navigation={navWithBadges}
         initialCollapsed={userPreferences?.sidebar_collapsed ?? false}
-        portalSwitcher={
-          <PortalSwitcher
-            currentPortal="advisors"
-            canAccessAdmin={canAccessAdmin}
-            canAccessCRM={canAccessCrm}
-            canAccessAdvisor={canAccessAdvisor}
-            getPortalUrl={safeGetPortalUrl}
-            getPortalUrlWithSSO={getPortalUrlWithSSO}
-          />
-        }
         userSection={userSection}
         topBarCenter={<GlobalSearch />}
         topBarActions={topBarActions}
         renderNavLink={(item, props) => (
           <NavLink
             key={item.name}
-            to={item.href}
+            to={toPath(item.href)}
             className={({ isActive }) =>
               `${props.className} ${
                 isActive
@@ -650,7 +634,7 @@ export default function MainLayout() {
           ) : (
             <NavLink
               key={child.name}
-              to={child.href}
+              to={toPath(child.href)}
               className={({ isActive }) =>
                 `${props.className} ${
                   isActive

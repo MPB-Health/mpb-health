@@ -56,7 +56,7 @@ export const ResourceAdmin: React.FC = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      if (data) setResources(data);
+      if (data) setResources(data as Resource[]);
     } catch (error) {
       console.error('Error fetching resources:', error);
       setNotification({ type: 'error', message: 'Failed to load resources' });
@@ -73,7 +73,7 @@ export const ResourceAdmin: React.FC = () => {
         .order('name');
 
       if (error) throw error;
-      if (data) setTopics(data);
+      if (data) setTopics(data as ResourceTopic[]);
     } catch (error) {
       console.error('Error fetching topics:', error);
     }

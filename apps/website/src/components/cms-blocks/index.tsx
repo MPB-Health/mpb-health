@@ -35,6 +35,61 @@ import type {
 } from '@mpbhealth/database';
 
 // ---------------------------------------------------------------------------
+// Legacy prop shapes
+// ---------------------------------------------------------------------------
+// Pages authored before the May 2026 CMS model refresh may still store blocks
+// using these older property names in cms_pages rows. Renderers read the
+// canonical shape first (types in @mpbhealth/database) and fall back to the
+// legacy field, so both generations of stored content render.
+
+interface LegacyBannerFields {
+  link?: { href: string; label: string };
+}
+
+interface LegacyTestimonialFields {
+  author?: string;
+  role?: string;
+  avatar_src?: string;
+}
+
+interface LegacyTabsFields {
+  title?: string;
+}
+
+interface LegacyAccordionItemFields {
+  body_html?: string;
+}
+
+interface LegacyTeamMemberFields {
+  photo_src?: string;
+}
+
+interface LegacyNewsletterFields {
+  description?: string;
+  disclaimer?: string;
+}
+
+interface LegacyDividerFields {
+  width?: 'narrow' | 'medium' | 'full';
+}
+
+interface LegacyVideoHeroFields {
+  alignment?: 'left' | 'center';
+  video_src?: string;
+  poster_src?: string;
+  cta?: { href: string; label: string };
+}
+
+interface LegacyAlertBoxFields {
+  body_html?: string;
+}
+
+interface LegacyMapFields {
+  embed_url?: string;
+  title?: string;
+}
+
+// ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------
 
@@ -420,7 +475,7 @@ function SpacerBlock({ props }: { props: CmsSpacerProps }) {
 // Banner
 // ---------------------------------------------------------------------------
 
-function BannerBlock({ props }: { props: CmsBannerProps }) {
+function BannerBlock({ props }: { props: CmsBannerProps & LegacyBannerFields }) {
   const variantStyles: Record<string, string> = {
     info: 'bg-blue-50 border-blue-200 text-blue-900',
     warning: 'bg-amber-50 border-amber-200 text-amber-900',
@@ -429,16 +484,18 @@ function BannerBlock({ props }: { props: CmsBannerProps }) {
     promo: 'bg-gradient-to-r from-primary/10 to-cyan-500/10 border-primary/20 text-neutral-900',
   };
   const style = variantStyles[props.variant ?? 'info'] || variantStyles.info;
+  const linkHref = props.link_url ?? props.link?.href;
+  const linkLabel = props.link_label ?? props.link?.label ?? linkHref;
   return (
     <section className={`border-y ${style}`}>
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-center gap-3 text-sm font-medium">
         <span>{props.text}</span>
-        {props.link && (
+        {linkHref && (
           <a
-            href={props.link.href}
+            href={linkHref}
             className="underline underline-offset-2 font-semibold hover:opacity-80 transition-opacity"
           >
-            {props.link.label}
+            {linkLabel}
           </a>
         )}
       </div>
@@ -450,7 +507,10 @@ function BannerBlock({ props }: { props: CmsBannerProps }) {
 // Testimonial
 // ---------------------------------------------------------------------------
 
-function TestimonialBlock({ props }: { props: CmsTestimonialProps }) {
+function TestimonialBlock({ props }: { props: CmsTestimonialProps & LegacyTestimonialFields }) {
+  const author = props.author_name ?? props.author;
+  const role = props.author_title ?? props.role;
+  const avatar = props.author_avatar ?? props.avatar_src;
   return (
     <section className="py-12 sm:py-16">
       <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
@@ -459,17 +519,17 @@ function TestimonialBlock({ props }: { props: CmsTestimonialProps }) {
             &ldquo;{props.quote}&rdquo;
           </p>
           <footer className="mt-6 flex items-center gap-4">
-            {props.avatar_src && (
+            {avatar && (
               <img
-                src={props.avatar_src}
-                alt={props.author}
+                src={avatar}
+                alt={author}
                 className="w-12 h-12 rounded-full object-cover bg-neutral-100"
               />
             )}
             <div>
-              <div className="font-semibold text-neutral-900">{props.author}</div>
-              {props.role && (
-                <div className="text-sm text-neutral-500">{props.role}</div>
+              <div className="font-semibold text-neutral-900">{author}</div>
+              {role && (
+                <div className="text-sm text-neutral-500">{role}</div>
               )}
             </div>
           </footer>
@@ -493,31 +553,36 @@ function TestimonialCarouselBlock({ props }: { props: CmsTestimonialCarouselProp
           </h2>
         )}
         <div className="flex gap-6 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-thin scrollbar-thumb-neutral-300">
-          {props.items.map((item, idx) => (
-            <blockquote
-              key={`${item.author}-${idx}`}
-              className="flex-shrink-0 w-[320px] sm:w-[380px] snap-start bg-white rounded-xl border border-neutral-200 p-6"
-            >
-              <p className="text-neutral-700 leading-relaxed italic">
-                &ldquo;{item.quote}&rdquo;
-              </p>
-              <footer className="mt-4 flex items-center gap-3">
-                {item.avatar_src && (
-                  <img
-                    src={item.avatar_src}
-                    alt={item.author}
-                    className="w-10 h-10 rounded-full object-cover bg-neutral-100"
-                  />
-                )}
-                <div>
-                  <div className="font-semibold text-neutral-900 text-sm">{item.author}</div>
-                  {item.role && (
-                    <div className="text-xs text-neutral-500">{item.role}</div>
+          {props.items.map((item: CmsTestimonialCarouselProps['items'][number] & LegacyTestimonialFields, idx) => {
+            const author = item.author_name ?? item.author;
+            const role = item.author_title ?? item.role;
+            const avatar = item.author_avatar ?? item.avatar_src;
+            return (
+              <blockquote
+                key={`${author}-${idx}`}
+                className="flex-shrink-0 w-[320px] sm:w-[380px] snap-start bg-white rounded-xl border border-neutral-200 p-6"
+              >
+                <p className="text-neutral-700 leading-relaxed italic">
+                  &ldquo;{item.quote}&rdquo;
+                </p>
+                <footer className="mt-4 flex items-center gap-3">
+                  {avatar && (
+                    <img
+                      src={avatar}
+                      alt={author}
+                      className="w-10 h-10 rounded-full object-cover bg-neutral-100"
+                    />
                   )}
-                </div>
-              </footer>
-            </blockquote>
-          ))}
+                  <div>
+                    <div className="font-semibold text-neutral-900 text-sm">{author}</div>
+                    {role && (
+                      <div className="text-xs text-neutral-500">{role}</div>
+                    )}
+                  </div>
+                </footer>
+              </blockquote>
+            );
+          })}
         </div>
       </div>
     </section>
@@ -592,7 +657,7 @@ function PricingTableBlock({ props }: { props: CmsPricingTableProps }) {
 // Tabs
 // ---------------------------------------------------------------------------
 
-function TabsBlock({ props }: { props: CmsTabsProps }) {
+function TabsBlock({ props }: { props: CmsTabsProps & LegacyTabsFields }) {
   const [activeIdx, setActiveIdx] = useState(0);
   return (
     <section className="py-12 sm:py-16">
@@ -646,7 +711,7 @@ function AccordionBlock({ props }: { props: CmsAccordionProps }) {
           </h2>
         )}
         <div className="space-y-3">
-          {props.items.map((item, idx) => (
+          {props.items.map((item: CmsAccordionProps['items'][number] & LegacyAccordionItemFields, idx) => (
             <details
               key={`${item.heading}-${idx}`}
               className="group bg-white border border-neutral-200 rounded-xl overflow-hidden"
@@ -659,7 +724,7 @@ function AccordionBlock({ props }: { props: CmsAccordionProps }) {
               </summary>
               <div
                 className="px-5 pb-5 prose prose-neutral max-w-none prose-a:text-primary"
-                dangerouslySetInnerHTML={{ __html: sanitizeHtml(item.body_html || '') }}
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(item.content_html ?? item.body_html ?? '') }}
               />
             </details>
           ))}
@@ -689,15 +754,17 @@ function TeamGridBlock({ props }: { props: CmsTeamGridProps }) {
           </h2>
         )}
         <div className={`grid gap-6 ${cols}`}>
-          {props.members.map((member, idx) => (
+          {props.members.map((member: CmsTeamGridProps['members'][number] & LegacyTeamMemberFields, idx) => {
+            const photo = member.photo_url ?? member.photo_src;
+            return (
             <div
               key={`${member.name}-${idx}`}
               className="bg-white rounded-xl border border-neutral-200 overflow-hidden text-center"
             >
-              {member.photo_src && (
+              {photo && (
                 <div className="aspect-square bg-neutral-100 overflow-hidden">
                   <img
-                    src={member.photo_src}
+                    src={photo}
                     alt={member.name}
                     className="w-full h-full object-cover"
                     loading="lazy"
@@ -714,7 +781,8 @@ function TeamGridBlock({ props }: { props: CmsTeamGridProps }) {
                 )}
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>
@@ -814,7 +882,8 @@ function CountdownBlock({ props }: { props: CmsCountdownProps }) {
 // Newsletter Signup
 // ---------------------------------------------------------------------------
 
-function NewsletterSignupBlock({ props }: { props: CmsNewsletterSignupProps }) {
+function NewsletterSignupBlock({ props }: { props: CmsNewsletterSignupProps & LegacyNewsletterFields }) {
+  const subtitle = props.subtitle ?? props.description;
   return (
     <section className="py-12 sm:py-16">
       <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8 text-center">
@@ -823,8 +892,8 @@ function NewsletterSignupBlock({ props }: { props: CmsNewsletterSignupProps }) {
             {props.title}
           </h2>
         )}
-        {props.description && (
-          <p className="text-neutral-600 mb-6">{props.description}</p>
+        {subtitle && (
+          <p className="text-neutral-600 mb-6">{subtitle}</p>
         )}
         <form
           onSubmit={(e) => e.preventDefault()}
@@ -854,7 +923,7 @@ function NewsletterSignupBlock({ props }: { props: CmsNewsletterSignupProps }) {
 // Divider
 // ---------------------------------------------------------------------------
 
-function DividerBlock({ props }: { props: CmsDividerProps }) {
+function DividerBlock({ props }: { props: CmsDividerProps & LegacyDividerFields }) {
   const width = props.width === 'full' ? 'max-w-none' : props.width === 'narrow' ? 'max-w-xs' : 'max-w-2xl';
   const style =
     props.style === 'dashed'
@@ -875,14 +944,15 @@ function DividerBlock({ props }: { props: CmsDividerProps }) {
 // Video Hero
 // ---------------------------------------------------------------------------
 
-function VideoHeroBlock({ props }: { props: CmsVideoHeroProps }) {
+function VideoHeroBlock({ props }: { props: CmsVideoHeroProps & LegacyVideoHeroFields }) {
   const alignment = props.alignment ?? 'center';
   const align = alignment === 'left' ? 'text-left items-start' : 'text-center items-center';
+  const cta = props.primary_cta ?? props.cta;
   return (
     <section className="relative py-20 sm:py-28 overflow-hidden">
       <video
-        src={props.video_src}
-        poster={props.poster_src}
+        src={props.video_url ?? props.video_src}
+        poster={props.poster_image ?? props.poster_src}
         autoPlay
         muted
         loop
@@ -900,12 +970,12 @@ function VideoHeroBlock({ props }: { props: CmsVideoHeroProps }) {
               {props.subtitle}
             </p>
           )}
-          {props.cta && (
+          {cta && (
             <a
-              href={props.cta.href}
+              href={cta.href}
               className="inline-flex items-center gap-2 rounded-lg bg-white px-5 py-2.5 text-sm font-semibold text-neutral-900 hover:bg-white/90 transition-colors"
             >
-              {props.cta.label}
+              {cta.label}
               <ArrowRight className="w-4 h-4" />
             </a>
           )}
@@ -961,7 +1031,7 @@ function IconGridBlock({ props }: { props: CmsIconGridProps }) {
 // Alert Box
 // ---------------------------------------------------------------------------
 
-function AlertBoxBlock({ props }: { props: CmsAlertBoxProps }) {
+function AlertBoxBlock({ props }: { props: CmsAlertBoxProps & LegacyAlertBoxFields }) {
   const variantStyles: Record<string, string> = {
     info: 'bg-blue-50 border-blue-200 text-blue-900',
     warning: 'bg-amber-50 border-amber-200 text-amber-900',
@@ -987,7 +1057,7 @@ function AlertBoxBlock({ props }: { props: CmsAlertBoxProps }) {
             )}
             <div
               className="prose prose-sm max-w-none [&_p]:m-0"
-              dangerouslySetInnerHTML={{ __html: sanitizeHtml(props.body_html || '') }}
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(props.content_html ?? props.body_html ?? '') }}
             />
           </div>
         </div>
@@ -1029,7 +1099,7 @@ function ButtonGroupBlock({ props }: { props: CmsButtonGroupProps }) {
 // Map
 // ---------------------------------------------------------------------------
 
-function MapBlock({ props }: { props: CmsMapProps }) {
+function MapBlock({ props }: { props: CmsMapProps & LegacyMapFields }) {
   const src = props.embed_url || `https://www.google.com/maps?q=${encodeURIComponent(props.address || '')}&output=embed`;
   return (
     <section className="py-12 sm:py-16">
@@ -1210,8 +1280,8 @@ export const BLOCK_REGISTRY: BlockMeta[] = [
     description: 'Single quote card with author info',
     defaultProps: {
       quote: 'This product changed everything for us.',
-      author: 'Jane Doe',
-      role: 'CEO, Acme Corp',
+      author_name: 'Jane Doe',
+      author_title: 'CEO, Acme Corp',
     } satisfies Partial<CmsTestimonialProps>,
   },
   {
@@ -1220,8 +1290,8 @@ export const BLOCK_REGISTRY: BlockMeta[] = [
     description: 'Scrollable row of testimonial quotes',
     defaultProps: {
       items: [
-        { quote: 'Amazing experience!', author: 'Jane Doe', role: 'CEO' },
-        { quote: 'Highly recommended.', author: 'John Smith', role: 'CTO' },
+        { quote: 'Amazing experience!', author_name: 'Jane Doe', author_title: 'CEO' },
+        { quote: 'Highly recommended.', author_name: 'John Smith', author_title: 'CTO' },
       ],
     } satisfies Partial<CmsTestimonialCarouselProps>,
   },
@@ -1252,7 +1322,7 @@ export const BLOCK_REGISTRY: BlockMeta[] = [
     label: 'Accordion',
     description: 'Generic expandable sections',
     defaultProps: {
-      items: [{ heading: 'Section 1', body_html: '<p>Content here.</p>' }],
+      items: [{ heading: 'Section 1', content_html: '<p>Content here.</p>' }],
     } satisfies Partial<CmsAccordionProps>,
   },
   {
@@ -1261,7 +1331,7 @@ export const BLOCK_REGISTRY: BlockMeta[] = [
     description: 'Photo + name + role cards in a grid',
     defaultProps: {
       columns: 3,
-      members: [{ name: 'Jane Doe', role: 'CEO', photo_src: '' }],
+      members: [{ name: 'Jane Doe', role: 'CEO', photo_url: '' }],
     } satisfies Partial<CmsTeamGridProps>,
   },
   {
@@ -1288,7 +1358,7 @@ export const BLOCK_REGISTRY: BlockMeta[] = [
     description: 'Email capture form with title and description',
     defaultProps: {
       title: 'Stay in the loop',
-      description: 'Get the latest updates straight to your inbox.',
+      subtitle: 'Get the latest updates straight to your inbox.',
       button_label: 'Subscribe',
     } satisfies Partial<CmsNewsletterSignupProps>,
   },
@@ -1296,7 +1366,7 @@ export const BLOCK_REGISTRY: BlockMeta[] = [
     kind: 'divider',
     label: 'Divider',
     description: 'Horizontal separator with style variants',
-    defaultProps: { style: 'solid', width: 'medium' } satisfies Partial<CmsDividerProps>,
+    defaultProps: { style: 'line' } satisfies Partial<CmsDividerProps>,
   },
   {
     kind: 'video_hero',
@@ -1304,7 +1374,7 @@ export const BLOCK_REGISTRY: BlockMeta[] = [
     description: 'Hero section with video background',
     defaultProps: {
       title: 'Section title',
-      video_src: '',
+      video_url: '',
     } satisfies Partial<CmsVideoHeroProps>,
   },
   {
@@ -1323,7 +1393,7 @@ export const BLOCK_REGISTRY: BlockMeta[] = [
     defaultProps: {
       variant: 'info',
       title: 'Note',
-      body_html: '<p>Important information here.</p>',
+      content_html: '<p>Important information here.</p>',
     } satisfies Partial<CmsAlertBoxProps>,
   },
   {

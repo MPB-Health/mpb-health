@@ -209,7 +209,7 @@ export const EventArticle: React.FC = () => {
         setError('Event not found');
         setEvent(null);
       } else {
-        setEvent(data);
+        setEvent(data as CmsEvent);
 
         const { data: related } = await supabase
           .from('events')
@@ -219,7 +219,7 @@ export const EventArticle: React.FC = () => {
           .order('event_date', { ascending: false })
           .limit(3);
 
-        if (related) setRelatedEvents(related);
+        if (related) setRelatedEvents(related as CmsEvent[]);
       }
     } catch (err) {
       console.error('Error fetching event:', err);

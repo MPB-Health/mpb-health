@@ -113,7 +113,7 @@ export const ContentManagementPanel: React.FC = () => {
         });
       }
 
-      setArticles(articlesWithStats);
+      setArticles(articlesWithStats as ContentWithAnalytics[]);
     } catch (error) {
       console.error('Error loading articles:', error);
     } finally {

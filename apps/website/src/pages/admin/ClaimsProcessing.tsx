@@ -37,7 +37,7 @@ const ClaimsProcessing: React.FC = () => {
     if (error) {
       console.error('Error loading claims:', error);
     } else {
-      setClaims(data || []);
+      setClaims((data || []) as Claim[]);
     }
 
     setLoading(false);

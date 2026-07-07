@@ -153,7 +153,7 @@ function ensureFacebookPixel(pixelId: string): void {
     } else {
       queue.push(args);
     }
-  } as typeof window.fbq & { queue: unknown[][]; loaded?: boolean; version?: string; callMethod?: (...a: unknown[]) => void };
+  } as ((...args: any[]) => void) & { queue: unknown[][]; loaded?: boolean; version?: string; callMethod?: (...a: unknown[]) => void };
 
   fbq.queue = queue;
   fbq.loaded = true;
@@ -177,7 +177,7 @@ function ensureTwitterPixel(pixelId: string): void {
     } else {
       queue.push(args);
     }
-  } as typeof window.twq & { queue: unknown[][]; version?: string; exe?: (...a: unknown[]) => void };
+  } as ((...args: any[]) => void) & { queue: unknown[][]; version?: string; exe?: (...a: unknown[]) => void };
 
   twq.queue = queue;
   twq.version = '1.1';
@@ -194,7 +194,7 @@ function ensurePinterestTag(tagId: string): void {
   const queue: unknown[][] = [];
   const pintrk = function (...args: unknown[]) {
     queue.push(Array.prototype.slice.call(args));
-  } as typeof window.pintrk & { queue: unknown[][]; version?: string };
+  } as ((...args: any[]) => void) & { queue: unknown[][]; version?: string };
 
   pintrk.queue = queue;
   pintrk.version = '3.0';
@@ -236,7 +236,7 @@ function ensureRedditPixel(pixelId: string): void {
     } else {
       callQueue.push(args);
     }
-  } as typeof window.rdt & { callQueue: unknown[][]; sendEvent?: (...a: unknown[]) => void };
+  } as ((...args: any[]) => void) & { callQueue: unknown[][]; sendEvent?: (...a: unknown[]) => void };
 
   rdt.callQueue = callQueue;
   window.rdt = rdt;
@@ -257,7 +257,7 @@ function ensureSnapchatPixel(pixelId: string): void {
     } else {
       queue.push(args);
     }
-  } as typeof window.snaptr & { queue: unknown[][]; handleRequest?: (...a: unknown[]) => void };
+  } as ((...args: any[]) => void) & { queue: unknown[][]; handleRequest?: (...a: unknown[]) => void };
 
   snaptr.queue = queue;
   window.snaptr = snaptr;

@@ -41,6 +41,8 @@ export interface PortalInfo {
   key: PortalKey;
   name: string;
   description: string;
+  /** Open in a new tab by default (cross-project portals like support/ITSTS). */
+  openInNewTab?: boolean;
 }
 
 export const PORTALS: Record<PortalKey, PortalInfo> = {
@@ -73,6 +75,7 @@ export const PORTALS: Record<PortalKey, PortalInfo> = {
     key: 'support',
     name: 'Support Portal',
     description: 'IT support ticketing and issue tracking',
+    openInNewTab: true,
   },
 } as const;
 

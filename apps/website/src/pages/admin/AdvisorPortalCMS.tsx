@@ -249,7 +249,9 @@ export default function AdvisorPortalCMS() {
             .select('id, title, description, category, tags, content, file_url, image_url, version, is_active, is_published, order_index, view_count, slug, content_type, metadata, created_at, updated_at')
             .order('title', { ascending: true });
           if (!sopError && sopData) {
-            setSops(sopData);
+            // NOTE: pre-existing drift — the query selects more columns than this
+            // component's SOPDocument interface declares (and omits created_by).
+            setSops(sopData as unknown as SOPDocument[]);
           }
           break;
         }

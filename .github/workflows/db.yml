@@ -2,12 +2,12 @@ name: DB
 
 on:
   pull_request:
-    branches: [master]
+    branches: [main]
     paths:
       - "supabase/**"
       - ".github/workflows/db.yml"
   push:
-    branches: [master]
+    branches: [main]
     paths:
       - "supabase/**"
       - ".github/workflows/db.yml"

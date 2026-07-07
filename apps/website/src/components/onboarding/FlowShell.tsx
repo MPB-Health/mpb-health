@@ -14,7 +14,8 @@ import { ArrowLeft, ArrowRight } from 'lucide-react';
 
 declare global {
   interface Window {
-    dataLayer?: Array<Record<string, unknown>>;
+    // Must match the declaration in src/lib/analytics.ts (merged globals).
+    dataLayer?: unknown[];
   }
 }
 

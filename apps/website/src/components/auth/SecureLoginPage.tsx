@@ -5,7 +5,7 @@ import { Card } from '../ui/Card';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/button';
 import { Label } from '../ui/Label';
-import { secureAuthService } from '../../lib/secureAuthService';
+import { secureAuthService } from '@mpbhealth/auth';
 import { mfaService } from '@mpbhealth/auth';
 import { supabase } from '../../lib/supabase';
 

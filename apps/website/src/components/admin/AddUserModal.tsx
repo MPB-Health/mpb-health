@@ -10,6 +10,7 @@ import {
   ShieldCheck,
   Briefcase,
   Building2,
+  Headphones,
   User,
   Copy,
   Check,
@@ -18,7 +19,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/Input';
 import { Badge } from '../ui/Badge';
 import { cn } from '../../lib/utils';
-import { type UserRole, ROLE_LABELS, ROLE_DESCRIPTIONS, ALL_ROLES } from '../../lib/userRolesService';
+import { type UserRole, ROLE_LABELS, ROLE_DESCRIPTIONS, ALL_ROLES } from '@mpbhealth/auth';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'sonner';
 
@@ -53,6 +54,7 @@ const ROLE_ICONS: Record<UserRole, React.FC<{ className?: string }>> = {
   admin: ShieldCheck,
   advisor: Briefcase,
   crm_user: Building2,
+  concierge: Headphones,
   member: User,
 };
 

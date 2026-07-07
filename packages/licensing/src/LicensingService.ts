@@ -38,7 +38,7 @@ export class LicensingService {
       console.error('[LicensingService] Failed to get modules:', error);
       throw error;
     }
-    return (data || []) as any;
+    return (data || []) as unknown as ProductModule[];
   }
 
   async getModule(slugOrId: string): Promise<ProductModule | null> {
@@ -52,7 +52,7 @@ export class LicensingService {
       console.error('[LicensingService] Failed to get module:', error);
       throw error;
     }
-    return data as any;
+    return data as unknown as ProductModule | null;
   }
 
   async getAddonModules(): Promise<ProductModule[]> {
@@ -68,7 +68,7 @@ export class LicensingService {
       console.error('[LicensingService] Failed to get addon modules:', error);
       throw error;
     }
-    return (data || []) as any;
+    return (data || []) as unknown as ProductModule[];
   }
 
   // =========================================================================
@@ -86,7 +86,7 @@ export class LicensingService {
       console.error('[LicensingService] Failed to get org licenses:', error);
       throw error;
     }
-    return (data || []) as any;
+    return (data || []) as unknown as OrgModuleLicenseWithModule[];
   }
 
   async orgHasModule(orgId: string, moduleSlug: ModuleSlug): Promise<boolean> {
@@ -114,7 +114,7 @@ export class LicensingService {
       console.error('[LicensingService] Failed to activate module:', error);
       throw error;
     }
-    return data as any;
+    return data as unknown as string;
   }
 
   async deactivateModule(orgId: string, moduleSlug: ModuleSlug): Promise<void> {
@@ -172,7 +172,7 @@ export class LicensingService {
       console.error('[LicensingService] Failed to get feature flags:', error);
       throw error;
     }
-    return (data || []) as any;
+    return (data || []) as unknown as FeatureFlag[];
   }
 
   async orgHasFeature(orgId: string, featureSlug: string): Promise<boolean> {
@@ -268,7 +268,7 @@ export class LicensingService {
       console.error('[LicensingService] Failed to get white-label config:', error);
       throw error;
     }
-    return data as any;
+    return data as unknown as WhiteLabelConfig | null;
   }
 
   async upsertWhiteLabelConfig(orgId: string, input: UpdateWhiteLabelInput): Promise<WhiteLabelConfig> {
@@ -291,7 +291,7 @@ export class LicensingService {
       console.error('[LicensingService] Failed to upsert white-label config:', error);
       throw error;
     }
-    return data as any;
+    return data as unknown as WhiteLabelConfig;
   }
 
   async requestMobileBuild(orgId: string): Promise<void> {

@@ -29,7 +29,7 @@ export class EventsService {
 
     const { data, error } = await query;
     if (error) throw error;
-    return (data || []) as any;
+    return (data || []) as unknown as CmsEvent[];
   }
 
   /** Get single event by ID */
@@ -41,7 +41,7 @@ export class EventsService {
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
-    return data as any;
+    return data as unknown as CmsEvent | null;
   }
 
   /** Create event */
@@ -55,7 +55,7 @@ export class EventsService {
       .single();
 
     if (error) throw error;
-    return data as any;
+    return data as unknown as CmsEvent;
   }
 
   /** Update event */
@@ -71,7 +71,7 @@ export class EventsService {
       .single();
 
     if (error) throw error;
-    return data as any;
+    return data as unknown as CmsEvent;
   }
 
   /** Delete event */

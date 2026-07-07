@@ -292,7 +292,7 @@ export class AdvisorOverviewService {
       .map((r) => r.agent_id)
       .filter((id): id is string => Boolean(id));
 
-    let memberCountsByAgent = new Map<string, number>();
+    const memberCountsByAgent = new Map<string, number>();
     if (directAgentIds.length > 0) {
       const directUserIds = directAgentIds
         .map((id) => agentToUser.get(id))

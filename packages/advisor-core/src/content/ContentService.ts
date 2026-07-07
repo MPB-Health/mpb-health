@@ -58,7 +58,7 @@ export class ContentService {
 
     const { data, error } = await query;
     if (error) throw error;
-    return (data || []) as any;
+    return (data || []) as unknown as SOPDocument[];
   }
 
   // Get a single SOP document
@@ -70,7 +70,7 @@ export class ContentService {
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
-    return data as any;
+    return data as unknown as SOPDocument | null;
   }
 
   // Get SOP categories
@@ -131,7 +131,7 @@ export class ContentService {
       .limit(limit);
 
     if (error) throw error;
-    return (data || []) as any;
+    return (data || []) as unknown as SOPDocument[];
   }
 
   // Get recently updated SOPs
@@ -144,7 +144,7 @@ export class ContentService {
       .limit(limit);
 
     if (error) throw error;
-    return (data || []) as any;
+    return (data || []) as unknown as SOPDocument[];
   }
 
   // ========== Handbooks ==========
@@ -158,7 +158,7 @@ export class ContentService {
       .order('sort_order', { ascending: true });
 
     if (error) throw error;
-    return (data || []) as any;
+    return (data || []) as unknown as Handbook[];
   }
 
   // Get a single handbook
@@ -170,7 +170,7 @@ export class ContentService {
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
-    return data as any;
+    return data as unknown as Handbook | null;
   }
 
   // ========== Bulletins (from advisor_content table - CMS managed) ==========
@@ -183,7 +183,7 @@ export class ContentService {
       .order('display_order', { ascending: true });
 
     if (error) throw error;
-    return (data || []) as any;
+    return (data || []) as unknown as BulletinCategory[];
   }
 
   // Get all bulletins from advisor_content table
@@ -276,7 +276,7 @@ export class ContentService {
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
-    return data as any;
+    return data as unknown as Bulletin | null;
   }
 
   // Get bulletin by slug
@@ -292,7 +292,7 @@ export class ContentService {
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
-    return data as any;
+    return data as unknown as Bulletin | null;
   }
 
   // Mark bulletin as read (using advisor_content_views table)

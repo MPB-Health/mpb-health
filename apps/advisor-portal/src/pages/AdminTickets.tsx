@@ -359,9 +359,10 @@ export default function AdminTickets() {
 
       setError('We\u2019re having trouble loading tickets right now. Please check your internet connection and try again.');
     } finally {
-      if (gen !== listFetchGenRef.current || ac.signal.aborted) return;
-      if (mountedRef.current && (retryCountRef.current === 0 || retryCountRef.current >= MAX_PAGE_RETRIES)) {
-        setLoading(false);
+      if (gen === listFetchGenRef.current && !ac.signal.aborted) {
+        if (mountedRef.current && (retryCountRef.current === 0 || retryCountRef.current >= MAX_PAGE_RETRIES)) {
+          setLoading(false);
+        }
       }
     }
   }, [statusFilter, priorityFilter, advisorFilter, sortBy, sortOrder, searchDebounced, page, executeWithAuth]);

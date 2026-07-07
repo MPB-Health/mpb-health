@@ -111,7 +111,7 @@ export class FormsService {
 
     const { data, error } = await query;
     if (error) throw error;
-    return (data || []) as any;
+    return (data || []) as unknown as FormSubmission[];
   }
 
   // Get a single submission
@@ -123,7 +123,7 @@ export class FormsService {
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
-    return data as any;
+    return data as unknown as FormSubmission | null;
   }
 
   // Record a form submission (called by Cognito webhook)
@@ -172,7 +172,7 @@ export class FormsService {
       .single();
 
     if (error) throw error;
-    return data as any;
+    return data as unknown as FormSubmission;
   }
 
   // Get pending submissions count

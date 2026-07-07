@@ -35,7 +35,7 @@ export class MeetingService {
 
     const { data, error } = await query;
     if (error) throw error;
-    return (data || []) as any;
+    return (data || []) as unknown as AdvisorMeeting[];
   }
 
   // Get upcoming meetings for an advisor
@@ -65,7 +65,7 @@ export class MeetingService {
       .limit(limit);
 
     if (error) throw error;
-    return (data || []) as any;
+    return (data || []) as unknown as AdvisorMeeting[];
   }
 
   // Get a single meeting by ID
@@ -77,7 +77,7 @@ export class MeetingService {
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
-    return data as any;
+    return data as unknown as AdvisorMeeting | null;
   }
 
   // Get live meetings
@@ -89,7 +89,7 @@ export class MeetingService {
       .order('scheduled_at', { ascending: true });
 
     if (error) throw error;
-    return (data || []) as any;
+    return (data || []) as unknown as AdvisorMeeting[];
   }
 
   // Create a new meeting
@@ -108,7 +108,7 @@ export class MeetingService {
       .single();
 
     if (error) throw error;
-    return data as any;
+    return data as unknown as AdvisorMeeting;
   }
 
   // Update a meeting
@@ -124,7 +124,7 @@ export class MeetingService {
       .single();
 
     if (error) throw error;
-    return data as any;
+    return data as unknown as AdvisorMeeting;
   }
 
   // Start a meeting (set to live)
@@ -154,7 +154,7 @@ export class MeetingService {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return (data || []) as any;
+    return (data || []) as unknown as MeetingInvitation[];
   }
 
   // Get invitations for a meeting
@@ -165,7 +165,7 @@ export class MeetingService {
       .eq('meeting_id', meetingId);
 
     if (error) throw error;
-    return (data || []) as any;
+    return (data || []) as unknown as MeetingInvitation[];
   }
 
   // Send invitations to multiple advisors
@@ -186,7 +186,7 @@ export class MeetingService {
       .select('id, meeting_id, advisor_id, status, responded_at, reminder_sent, created_at');
 
     if (error) throw error;
-    return (data || []) as any;
+    return (data || []) as unknown as MeetingInvitation[];
   }
 
   // Respond to an invitation
@@ -205,7 +205,7 @@ export class MeetingService {
       .single();
 
     if (error) throw error;
-    return data as any;
+    return data as unknown as MeetingInvitation;
   }
 
   // Record attendance
@@ -236,7 +236,7 @@ export class MeetingService {
       .single();
 
     if (error) throw error;
-    return data as any;
+    return data as unknown as MeetingAttendee;
   }
 
   // Record leaving a meeting
@@ -270,7 +270,7 @@ export class MeetingService {
       .single();
 
     if (error) throw error;
-    return data as any;
+    return data as unknown as MeetingAttendee | null;
   }
 
   // Get attendees for a meeting
@@ -281,7 +281,7 @@ export class MeetingService {
       .eq('meeting_id', meetingId);
 
     if (error) throw error;
-    return (data || []) as any;
+    return (data || []) as unknown as MeetingAttendee[];
   }
 
   // Get meeting templates
@@ -292,7 +292,7 @@ export class MeetingService {
       .order('name', { ascending: true });
 
     if (error) throw error;
-    return (data || []) as any;
+    return (data || []) as unknown as MeetingTemplate[];
   }
 
   // Create meeting from template

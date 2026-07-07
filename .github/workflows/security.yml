@@ -2,9 +2,9 @@ name: "Security Scan (SOC 2 & HIPAA Compliance)"
 
 on:
   pull_request:
-    branches: [master]
+    branches: [main]
   push:
-    branches: [master]
+    branches: [main]
   schedule:
     # SOC 2 CC7.1: Run security scans weekly for continuous monitoring
     - cron: "0 6 * * 1"

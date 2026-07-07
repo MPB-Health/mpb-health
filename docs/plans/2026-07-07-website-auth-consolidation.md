@@ -86,9 +86,19 @@ staged merges, and watch windows.
    to `[main]` (one line each).
 2. Fix `packages/auth/src/services/ssoService.ts(47)` — `openInNewTab` missing
    on `PortalInfo`.
-3. Exit criterion: typecheck + build green in CI for `website`, `auth`,
+3. *(Expanded 2026-07-07, approved.)* Fix the 69 pre-existing type errors in
+   `apps/website` that surfaced once the Turbo cache invalidated — all
+   type-level and non-breaking: CMS block renderers accept both legacy and
+   canonical prop shapes (canonical read first, legacy fallback), window
+   global declarations aligned, typed Supabase selects cast explicitly. Two
+   real interface-vs-query drifts (`TrainingManager`, `AdvisorPortalCMS`)
+   are cast via `unknown` and flagged with comments for a later cleanup.
+4. Exit criterion: typecheck + build green in CI for `website`, `auth`,
    `utils` paths. Other pre-existing red (crm-core tests, dependency audit) is
    out of scope — visible, not blocking this plan.
+
+Status: done locally (typecheck 31/31, website build green, 69/69 unit
+tests); committed on `stage0/revive-ci-fix-typecheck`, awaiting push/PR.
 
 **Stage 1 — the nine lib files (PR 1)**
 

@@ -197,7 +197,7 @@ export class ProfileService {
       .order('order_index', { ascending: true });
 
     if (error) throw error;
-    return (data || []) as any;
+    return (data || []) as unknown as OnboardingStep[];
   }
 
   // Get advisor's onboarding progress
@@ -208,7 +208,7 @@ export class ProfileService {
       .eq('advisor_id', advisorId);
 
     if (error) throw error;
-    return (data || []) as any;
+    return (data || []) as unknown as OnboardingProgress[];
   }
 
   // Get complete onboarding status
@@ -274,7 +274,7 @@ export class ProfileService {
           .single();
 
         if (error) throw error;
-        return data as any;
+        return data as unknown as OnboardingProgress;
       }
       return existing;
     }
@@ -292,7 +292,7 @@ export class ProfileService {
       .single();
 
     if (error) throw error;
-    return data as any;
+    return data as unknown as OnboardingProgress;
   }
 
   // Complete an onboarding step
@@ -325,7 +325,7 @@ export class ProfileService {
       });
     }
 
-    return data as any;
+    return data as unknown as OnboardingProgress;
   }
 
   // Skip an optional onboarding step
@@ -357,7 +357,7 @@ export class ProfileService {
       .single();
 
     if (error) throw error;
-    return data as any;
+    return data as unknown as OnboardingProgress;
   }
 
   // Get advisor stats

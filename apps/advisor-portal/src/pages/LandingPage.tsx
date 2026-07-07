@@ -446,7 +446,7 @@ function FeatureShowcase({ id }: { id: string }) {
           <div style={featureStyles.eyebrow}>FEATURES</div>
           <h2 style={featureStyles.title}>
             Everything an advisor needs.<br />
-            <span style={featureStyles.titleAccent}>Nothing they don't.</span>
+            <span style={featureStyles.titleAccent}>Nothing they don&apos;t.</span>
           </h2>
           <p style={featureStyles.subtitle}>
             ARYX consolidates the entire advisor workflow into a single platform — replacing
@@ -651,7 +651,7 @@ function TrustSection() {
         style={trustStyles.container}
       >
         <motion.div variants={fadeIn} style={trustStyles.quoteCard}>
-          <div style={trustStyles.quoteMark}>"</div>
+          <div style={trustStyles.quoteMark}>&ldquo;</div>
           <p style={trustStyles.quoteText}>
             ARYX replaced four separate tools and cut our advisor onboarding time from three weeks
             to four days. The training, SOPs, and ticketing are seamless — and our compliance team
@@ -705,7 +705,7 @@ function CTASection({ id, onSignIn }: { id: string; onSignIn: () => void }) {
           <span style={ctaStyles.titleAccent}>advisor operations?</span>
         </motion.h2>
         <motion.p variants={fadeUp} style={ctaStyles.subtitle}>
-          Join the modern health-sharing organizations running on ARYX. Request access and we'll
+          Join the modern health-sharing organizations running on ARYX. Request access and we&apos;ll
           have your advisors onboarded in days.
         </motion.p>
         <motion.div variants={fadeUp} style={ctaStyles.buttons}>

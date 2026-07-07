@@ -20,7 +20,7 @@ export class TrainingService {
 
     const { data, error } = await query;
     if (error) throw error;
-    return (data || []) as any;
+    return (data || []) as unknown as TrainingModule[];
   }
 
   // Get a single module by ID
@@ -32,7 +32,7 @@ export class TrainingService {
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
-    return data as any;
+    return data as unknown as TrainingModule | null;
   }
 
   // Get training categories
@@ -43,7 +43,7 @@ export class TrainingService {
       .order('order_index', { ascending: true });
 
     if (error) throw error;
-    return (data || []) as any;
+    return (data || []) as unknown as TrainingCategory[];
   }
 
   // Get advisor's progress for all modules
@@ -54,7 +54,7 @@ export class TrainingService {
       .eq('advisor_id', advisorId);
 
     if (error) throw error;
-    return (data || []) as any;
+    return (data || []) as unknown as TrainingProgress[];
   }
 
   // Get progress for a specific module
@@ -70,7 +70,7 @@ export class TrainingService {
       .single();
 
     if (error && error.code !== 'PGRST116') throw error;
-    return data as any;
+    return data as unknown as TrainingProgress | null;
   }
 
   // Start a training module
@@ -92,7 +92,7 @@ export class TrainingService {
           .single();
 
         if (error) throw error;
-        return data as any;
+        return data as unknown as TrainingProgress;
       }
       return existing;
     }
@@ -112,7 +112,7 @@ export class TrainingService {
       .single();
 
     if (error) throw error;
-    return data as any;
+    return data as unknown as TrainingProgress;
   }
 
   // Update progress (time spent)
@@ -128,7 +128,7 @@ export class TrainingService {
       .single();
 
     if (error) throw error;
-    return data as any;
+    return data as unknown as TrainingProgress;
   }
 
   // Complete a module
@@ -158,7 +158,7 @@ export class TrainingService {
       .single();
 
     if (error) throw error;
-    return data as any;
+    return data as unknown as TrainingProgress;
   }
 
   // Get overall training stats for an advisor
@@ -208,7 +208,7 @@ export class TrainingService {
       .order('issued_at', { ascending: false });
 
     if (error) throw error;
-    return (data || []) as any;
+    return (data || []) as unknown as Certification[];
   }
 
   // Save quiz certification when advisor passes the Healthcare Advisor quiz
@@ -238,7 +238,7 @@ export class TrainingService {
       console.error('Failed to save quiz certification:', error);
       return null;
     }
-    return data as any;
+    return data as unknown as Certification | null;
   }
 
   // Check and issue certifications based on completed training

@@ -19,9 +19,9 @@ const sharedConfig = compat.extends('@mpbhealth/eslint-config');
 export default [
   { ignores: ['**/node_modules/**', '**/dist/**', '**/build/**', '**/.next/**', '**/coverage/**', '**/public/sw.js'] },
   ...sharedConfig,
-  // Node globals for config files (vite.config.js, etc.)
+  // Node globals for config files (vite.config.js, etc.) and Node-run scripts
   {
-    files: ['**/*.config.js', '**/*.config.mjs', '**/*.config.cjs'],
+    files: ['**/*.config.js', '**/*.config.mjs', '**/*.config.cjs', '**/scripts/**/*.{js,mjs,cjs}'],
     languageOptions: {
       globals: {
         process: 'readonly',

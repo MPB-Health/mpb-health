@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import { FileText, Loader2 } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
 // Vite resolves this import to a hashed URL pointing at the worker file.
-// eslint-disable-next-line import/no-unresolved
 import workerSrc from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 
 // Configure the worker once per module load.

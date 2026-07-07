@@ -329,7 +329,7 @@ export class TicketService {
     try {
       for (const file of attachments) {
         if (file.size > TicketService.ATTACHMENT_MAX_SIZE) {
-          throw new Error(`File \"${file.name}\" exceeds the 15 MB limit.`);
+          throw new Error(`File "${file.name}" exceeds the 15 MB limit.`);
         }
       }
 
@@ -678,7 +678,7 @@ export class TicketService {
       throw new Error('_RETRYABLE');
     }
 
-    return data as any;
+    return data as unknown as T | null;
   }
 
   // ── Advisor read methods ───────────────────────────────────────────────

@@ -2,6 +2,8 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useEditor, EditorContent, Editor } from '@tiptap/react';
 import { Extension } from '@tiptap/core';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
+import type { EditorView } from '@tiptap/pm/view';
+import type { Slice } from '@tiptap/pm/model';
 import StarterKit from '@tiptap/starter-kit';
 import { Link } from '@tiptap/extension-link';
 import { Image } from '@tiptap/extension-image';
@@ -51,7 +53,7 @@ const createImageUploadExtension = (
         new Plugin({
           key: new PluginKey('imageUpload'),
           props: {
-            handleDrop(view: any, event: DragEvent, _slice: any, moved: boolean) {
+            handleDrop(view: EditorView, event: DragEvent, _slice: Slice, moved: boolean) {
               if (moved || !event.dataTransfer?.files.length) return false;
               const images = Array.from(event.dataTransfer.files).filter((f: File) => f.type.startsWith('image/'));
               if (images.length === 0) return false;
@@ -70,7 +72,7 @@ const createImageUploadExtension = (
               });
               return true;
             },
-            handlePaste(view: any, event: ClipboardEvent) {
+            handlePaste(view: EditorView, event: ClipboardEvent) {
               const images = Array.from(event.clipboardData?.items || []).filter((i: DataTransferItem) => i.type.startsWith('image/'));
               if (images.length === 0) return false;
               event.preventDefault();

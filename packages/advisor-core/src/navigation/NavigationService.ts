@@ -86,7 +86,7 @@ export class NavigationService {
       .order('order_index', { ascending: true });
 
     if (error) throw error;
-    return (data || []) as any;
+    return (data || []) as unknown as NavMenuItem[];
   }
 
   // Build a tree structure from flat list
@@ -155,7 +155,7 @@ export class NavigationService {
 
     const { data, error } = await query;
     if (error) throw error;
-    return (data || []) as any;
+    return (data || []) as unknown as QuickLink[];
   }
 
   selectDashboardQuickLinks(links: QuickLink[], limit = 8): QuickLink[] {

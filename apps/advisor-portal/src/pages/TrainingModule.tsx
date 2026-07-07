@@ -20,6 +20,7 @@ import {
 import { Button } from '@mpbhealth/ui';
 import { useAdvisor } from '../contexts/AdvisorContext';
 import { useAdvisorQueryReady } from '../hooks/useAdvisorQueryReady';
+import { useTraining } from '../hooks/useTraining';
 import Training from './Training';
 import { useAdvisorPageDebugLog } from '../hooks/useAdvisorPageDebugLog';
 import { AdvisorPageLoader } from '../components/loading';
@@ -33,7 +34,8 @@ export default function TrainingModule() {
   const { moduleId } = useParams<{ moduleId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { profile, refreshTraining } = useAdvisor();
+  const { profile } = useAdvisor();
+  const { refreshTraining } = useTraining();
   const { advisorReady } = useAdvisorQueryReady();
   const [completing, setCompleting] = useState(false);
 

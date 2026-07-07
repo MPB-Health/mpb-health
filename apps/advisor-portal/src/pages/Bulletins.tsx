@@ -18,13 +18,15 @@ import { contentService, type Bulletin } from '@mpbhealth/advisor-core';
 import { Button, GradientHeader } from '@mpbhealth/ui';
 import { useAdvisor } from '../contexts/AdvisorContext';
 import { useAdvisorQueryReady } from '../hooks/useAdvisorQueryReady';
+import { useUnreadBulletinCount } from '../hooks/useUnreadBulletinCount';
 import { supabase } from '@mpbhealth/database';
 import SafeImage from '../components/SafeImage';
 import { useAdvisorPageDebugLog } from '../hooks/useAdvisorPageDebugLog';
 
 export default function Bulletins() {
   useAdvisorPageDebugLog('Bulletins');
-  const { profile, unreadBulletinCount } = useAdvisor();
+  const { profile } = useAdvisor();
+  const unreadBulletinCount = useUnreadBulletinCount();
   const { advisorReady } = useAdvisorQueryReady();
   const navigate = useNavigate();
   const queryClient = useQueryClient();

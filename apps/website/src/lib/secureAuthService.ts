@@ -1,6 +1,5 @@
 import { supabase } from './supabase';
-import { rateLimitService } from './rateLimitService';
-import { mfaService } from './mfaService';
+import { rateLimitService, mfaService } from '@mpbhealth/auth';
 import { passwordSecurityService } from './passwordSecurityService';
 import { securityEventService } from './securityEventService';
 

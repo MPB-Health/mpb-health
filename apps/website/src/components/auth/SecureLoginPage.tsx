@@ -6,7 +6,7 @@ import { Input } from '../ui/Input';
 import { Button } from '../ui/button';
 import { Label } from '../ui/Label';
 import { secureAuthService } from '../../lib/secureAuthService';
-import { mfaService } from '../../lib/mfaService';
+import { mfaService } from '@mpbhealth/auth';
 import { supabase } from '../../lib/supabase';
 
 interface SecureLoginPageProps {

@@ -42,6 +42,8 @@ import { supabase, supabaseUrl } from '@mpbhealth/database';
 import { useAdvisor } from '../contexts/AdvisorContext';
 import { useWidgetVisibility } from '../hooks/useWidgetVisibility';
 import { useAdvisorQueryReady } from '../hooks/useAdvisorQueryReady';
+import { useTraining } from '../hooks/useTraining';
+import { useUnreadBulletinCount } from '../hooks/useUnreadBulletinCount';
 import { useAdvisorPageDebugLog } from '../hooks/useAdvisorPageDebugLog';
 import SafeImage from '../components/SafeImage';
 import AdvisorAtAGlance from '../components/dashboard/AdvisorAtAGlance';
@@ -222,13 +224,9 @@ const ADVISOR_VIDEOS = [
 export default function Dashboard() {
   useAdvisorPageDebugLog('Dashboard');
   const navigate = useNavigate();
-  const {
-    profile,
-    trainingStats,
-    trainingModules,
-    trainingProgress,
-    unreadBulletinCount,
-  } = useAdvisor();
+  const { profile } = useAdvisor();
+  const { trainingStats, trainingModules, trainingProgress } = useTraining();
+  const unreadBulletinCount = useUnreadBulletinCount();
   const { advisorReady, profileId } = useAdvisorQueryReady();
 
   const { isVisible } = useWidgetVisibility();

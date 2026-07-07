@@ -23,11 +23,13 @@ import { Button } from '@mpbhealth/ui';
 import { useAdvisor } from '../contexts/AdvisorContext';
 import { generateCertificate } from '../utils/generateCertificate';
 import { useAdvisorQueryReady } from '../hooks/useAdvisorQueryReady';
+import { useTraining } from '../hooks/useTraining';
 import { useAdvisorPageDebugLog } from '../hooks/useAdvisorPageDebugLog';
 
 export default function Profile() {
   useAdvisorPageDebugLog('Profile');
-  const { profile, trainingStats, refreshProfile } = useAdvisor();
+  const { profile, refreshProfile } = useAdvisor();
+  const { trainingStats } = useTraining();
   const { advisorReady } = useAdvisorQueryReady();
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);

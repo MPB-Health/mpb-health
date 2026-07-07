@@ -10,13 +10,8 @@ import {
 } from '@mpbhealth/database';
 import {
   profileService,
-  trainingService,
-  contentService,
   isAdvisorExemptFromTrainingGate,
   type AdvisorProfile,
-  type TrainingModule,
-  type TrainingProgress,
-  type Bulletin,
 } from '@mpbhealth/advisor-core';
 import { ADVISOR_TRAINING_GATE_CUTOFF_MS } from '../config/advisorTrainingGate';
 import { secureAuthService } from '@mpbhealth/auth';
@@ -32,6 +27,10 @@ async function readSession(opts: { forceRefresh?: boolean } = {}) {
   return getCachedSession(opts);
 }
 
+/**
+ * Identity-only context. Server state (training progress, bulletin counts)
+ * lives in TanStack Query hooks: useTraining, useUnreadBulletinCount.
+ */
 interface AdvisorContextType {
   // Profile
   profile: AdvisorProfile | null;
@@ -42,23 +41,9 @@ interface AdvisorContextType {
   error: string | null;
   hasSession: boolean;
 
-  // Training
-  trainingModules: TrainingModule[];
-  trainingProgress: TrainingProgress[];
-  trainingStats: {
-    totalModules: number;
-    completedModules: number;
-    completionPercentage: number;
-  };
-
-  // Bulletins
-  unreadBulletinCount: number;
-
   // Actions
   refreshProfile: () => Promise<void>;
-  refreshTraining: () => Promise<void>;
   logout: () => Promise<void>;
-  handleAuthError: () => Promise<void>;
 }
 
 const AdvisorContext = createContext<AdvisorContextType | undefined>(undefined);
@@ -72,16 +57,6 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
   const [profileLoading, setProfileLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasSession, setHasSession] = useState(false);
-
-  const [trainingModules, setTrainingModules] = useState<TrainingModule[]>([]);
-  const [trainingProgress, setTrainingProgress] = useState<TrainingProgress[]>([]);
-  const [trainingStats, setTrainingStats] = useState({
-    totalModules: 0,
-    completedModules: 0,
-    completionPercentage: 0,
-  });
-
-  const [unreadBulletinCount, setUnreadBulletinCount] = useState(0);
 
   profileRef.current = profile;
 
@@ -300,83 +275,10 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
     return p;
   }, [loadProfileInner]);
 
-  // Load training data
-  const refreshTraining = useCallback(async () => {
-    if (!profile) return;
-
-    try {
-      const [modules, progress, stats] = await Promise.all([
-        trainingService.getModules(),
-        trainingService.getAdvisorProgress(profile.id),
-        trainingService.getTrainingStats(profile.id),
-      ]);
-
-      setTrainingModules(modules);
-      setTrainingProgress(progress);
-      setTrainingStats({
-        totalModules: stats.totalModules,
-        completedModules: stats.completedModules,
-        completionPercentage: stats.completionPercentage,
-      });
-    } catch (err) {
-      console.error('Failed to load training data:', err);
-    }
-  }, [profile]);
-
-  // Load bulletin count
-  const loadBulletinCount = async () => {
-    if (!profile) return;
-
-    try {
-      const count = await contentService.getUnreadBulletinCount(profile.id);
-      setUnreadBulletinCount(count);
-    } catch (err) {
-      console.error('Failed to load bulletin count:', err);
-    }
-  };
-
   // Refresh profile
   const refreshProfile = useCallback(async () => {
     setProfileLoading(true);
     await loadProfile();
-  }, [loadProfile]);
-
-  // Handle authentication errors by refreshing session
-  const handleAuthError = useCallback(async () => {
-    try {
-      setProfileLoading(true);
-      const { data, error } = await refreshSessionOnce();
-      if (error) {
-        throw error;
-      }
-
-      const session = data?.session;
-      if (!session?.user) {
-        setProfile(null);
-        setSessionUserCreatedAt(undefined);
-        window.location.href = '/login';
-        return;
-      }
-
-      await loadProfile();
-    } catch (err) {
-      if (err instanceof Error && err.message === 'REFRESH_SESSION_TIMEOUT') {
-        console.warn('[AdvisorContext] Session refresh timed out — retrying profile with existing cookies');
-        try {
-          await loadProfile();
-          return;
-        } catch (inner) {
-          console.error('Auth error handling failed after refresh timeout:', inner);
-        }
-      } else {
-        console.error('Auth error handling failed:', err);
-      }
-      setProfile(null);
-      setSessionUserCreatedAt(undefined);
-      window.location.href = '/login';
-    } finally {
-      setProfileLoading(false);
-    }
   }, [loadProfile]);
 
   // Logout
@@ -569,15 +471,12 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
     };
   }, [loadProfile]);
 
-  // Load data when profile is available — deferred so the initial render
-  // (profile + auth check) completes first before firing secondary requests.
+  // Warm edge functions when profile is available — deferred so the initial
+  // render (profile + auth check) completes first before firing secondary requests.
   useEffect(() => {
     if (!profile) return;
-    // Use setTimeout(0) to yield to the browser paint before hitting Supabase
-    // for non-critical data (training stats, bulletin count).
+    // Use setTimeout(0) to yield to the browser paint first.
     const timer = setTimeout(() => {
-      refreshTraining();
-      loadBulletinCount();
       startEdgeFunctionWarmup();
     }, 0);
     return () => {
@@ -586,20 +485,6 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
     };
   }, [profile?.id]);
 
-  // Subscribe to bulletins — skip when must_change_password to avoid WebSocket
-  // "closed before connection established" during redirect to /change-password.
-  useEffect(() => {
-    if (!profile || profile.must_change_password) return;
-
-    const channel = contentService.subscribeToBulletins(() => {
-      loadBulletinCount();
-    });
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [profile?.id, profile?.must_change_password]);
-
   const value = useMemo<AdvisorContextType>(() => ({
     profile,
     sessionUserCreatedAt,
@@ -607,14 +492,8 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
     profileLoading,
     error,
     hasSession,
-    trainingModules,
-    trainingProgress,
-    trainingStats,
-    unreadBulletinCount,
     refreshProfile,
-    refreshTraining,
     logout,
-    handleAuthError,
   }), [
     profile,
     sessionUserCreatedAt,
@@ -622,14 +501,8 @@ export function AdvisorProvider({ children }: { children: ReactNode }) {
     profileLoading,
     error,
     hasSession,
-    trainingModules,
-    trainingProgress,
-    trainingStats,
-    unreadBulletinCount,
     refreshProfile,
-    refreshTraining,
     logout,
-    handleAuthError,
   ]);
 
   return (

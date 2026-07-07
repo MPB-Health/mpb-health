@@ -65,6 +65,7 @@ import { supabase } from '@mpbhealth/database';
 import { navigationService, type NavMenuItem, isAdvisorExemptFromTrainingGate } from '@mpbhealth/advisor-core';
 import { useAdvisor } from '../contexts/AdvisorContext';
 import { useAdvisorQueryReady } from '../hooks/useAdvisorQueryReady';
+import { useUnreadBulletinCount } from '../hooks/useUnreadBulletinCount';
 import { NotificationCenter } from '../components/notifications';
 import { CommandPalette } from '../components/command-palette';
 import { MobileBottomNav } from '../components/mobile';
@@ -223,7 +224,6 @@ export default function MainLayout() {
   const {
     profile,
     sessionUserCreatedAt,
-    unreadBulletinCount,
     logout,
     loading,
     profileLoading,
@@ -231,6 +231,7 @@ export default function MainLayout() {
     error: profileError,
     refreshProfile,
   } = useAdvisor();
+  const unreadBulletinCount = useUnreadBulletinCount();
   const { advisorReady } = useAdvisorQueryReady();
   const { open: openCommandPalette } = useCommandPalette();
   const { showShortcutsModal, setShowShortcutsModal } = useKeyboardShortcuts();

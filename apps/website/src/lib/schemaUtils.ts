@@ -1,4 +1,4 @@
-import { safeJsonStringify } from './safeJson';
+import { safeJsonStringify } from '@mpbhealth/utils';
 
 export function sanitizeForJsonLd(value: string): string {
   if (!value || typeof value !== 'string') {

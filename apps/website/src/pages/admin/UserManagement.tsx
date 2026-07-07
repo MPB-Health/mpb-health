@@ -16,6 +16,7 @@ import {
   Crown,
   Briefcase,
   Building2,
+  Headphones,
   Mail,
   Key,
   Eye,
@@ -45,11 +46,11 @@ import {
   ROLE_LABELS,
   ROLE_COLORS,
   ALL_ROLES,
-} from '../../lib/userRolesService';
+} from '@mpbhealth/auth';
 import { toast } from 'sonner';
 import { createClientLogger } from '@mpbhealth/utils';
 import { resolveOrgIdFromMap, MPB_HEALTH_SLUG } from '@mpbhealth/auth';
-import { passwordSecurityService } from '../../lib/passwordSecurityService';
+import { passwordSecurityService } from '@mpbhealth/auth';
 import { PasswordStrengthMeter } from '../../components/ui/PasswordStrengthMeter';
 import { cn } from '../../lib/utils';
 import AddUserModal from '../../components/admin/AddUserModal';
@@ -65,6 +66,7 @@ const RoleIcons: Record<UserRole, React.FC<{ className?: string }>> = {
   admin: ShieldCheck,
   advisor: Briefcase,
   crm_user: Building2,
+  concierge: Headphones,
   member: User,
 };
 

@@ -119,6 +119,15 @@ Order of work:
 6. Exit criterion: `rg` finds no imports of the deleted files; diff shows
    `apps/website/src/lib` has zero auth/security modules; CI green.
 
+Status (2026-07-07): done locally on `stage1/consolidate-auth-lib` — all
+nine forks deleted, call sites on package imports, `getAdvisorProfiles`
+ported into `packages/auth`, 36 pinning tests added (packages/auth and
+packages/utils vitest setups), full typecheck 31/31 and test tasks 17/17
+green. Notable adopted deltas: session revocation on logout actually works
+now (fork's token match was broken), CAPTCHA fails closed via the
+verify-captcha edge function, concierge role appears in admin role UI,
+recent-searches storage loses its TTL. Awaiting push/PR + preview checklist.
+
 **Stage 2 — contexts and guards (PR 2, starts after Stage 1 soak)**
 
 1. Build the website-side role-mapper adapter: derives `isAdmin`, `isAdvisor`,

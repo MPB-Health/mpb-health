@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { User, Session, AuthError } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import { userRolesService, type UserRole } from '../lib/userRolesService';
+import { userRolesService, type UserRole } from '@mpbhealth/auth';
 
 interface AuthContextType {
   user: User | null;

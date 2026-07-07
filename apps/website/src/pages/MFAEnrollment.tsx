@@ -5,7 +5,7 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
-import { mfaService } from '../lib/mfaService';
+import { mfaService } from '@mpbhealth/auth';
 import { AuthPageSeo } from '../components/AuthPageSeo';
 
 export default function MFAEnrollment() {

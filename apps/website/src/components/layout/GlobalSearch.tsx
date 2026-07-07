@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search, X, Clock } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { supabase } from '../../lib/supabase';
-import { safeLocalStorage } from '../../lib/safeStorage';
+import { safeLocalStorage } from '@mpbhealth/utils';
 
 interface SearchResult {
   id: string;
@@ -147,7 +147,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ className, onResultC
 
     const updated = [search, ...recentSearches.filter(s => s !== search)].slice(0, 5);
     setRecentSearches(updated);
-    safeLocalStorage.setItem('recent_searches', updated, { ttl: 30 * 24 * 60 * 60 * 1000 });
+    safeLocalStorage.setItem('recent_searches', updated);
   };
 
   const handleRecentSearchClick = (search: string) => {

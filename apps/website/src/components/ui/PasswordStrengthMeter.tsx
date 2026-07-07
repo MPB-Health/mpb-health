@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
-import { passwordSecurityService } from '../../lib/passwordSecurityService';
+import { passwordSecurityService } from '@mpbhealth/auth';
 
 interface PasswordStrengthMeterProps {
   password: string;
@@ -88,7 +88,7 @@ export function PasswordStrengthMeter({ password, onStrengthChange }: PasswordSt
       <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
         <div
           className={`h-full transition-all duration-300 ${getColorClass()}`}
-          style={{ width: `${(strength.score / 10) * 100}%` }}
+          style={{ width: `${strength.score}%` }}
         />
       </div>
 

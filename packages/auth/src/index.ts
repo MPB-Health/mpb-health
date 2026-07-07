@@ -74,7 +74,10 @@ export {
   canAccessCrmPortal,
   canAccessMemberPortal,
   canAccessConciergePortal,
+  canAccessSupportPortal,
   getAccessiblePortals,
+  getAdvisorProfiles,
+  type AdvisorProfileInfo,
 } from './services/userRolesService';
 
 // Contexts

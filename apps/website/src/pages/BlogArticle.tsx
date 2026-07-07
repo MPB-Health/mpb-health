@@ -50,7 +50,7 @@ export const BlogArticle: React.FC = () => {
           setError('Article not found');
           setArticle(null);
         } else {
-          setArticle(data);
+          setArticle(data as BlogArticleType);
 
           // Fetch author details if author_id exists
           if (data.author_id) {
@@ -62,7 +62,7 @@ export const BlogArticle: React.FC = () => {
               .maybeSingle();
             
             if (authorData) {
-              setAuthor(authorData);
+              setAuthor(authorData as BlogAuthor);
             }
           }
 
@@ -82,7 +82,7 @@ export const BlogArticle: React.FC = () => {
               .limit(3);
             
             if (tagRelated && tagRelated.length > 0) {
-              related = tagRelated;
+              related = tagRelated as BlogArticleType[];
             }
           }
           
@@ -101,7 +101,7 @@ export const BlogArticle: React.FC = () => {
               .limit(3 - related.length);
 
             if (categoryRelated) {
-              related = [...related, ...categoryRelated];
+              related = [...related, ...(categoryRelated as BlogArticleType[])];
             }
           }
 

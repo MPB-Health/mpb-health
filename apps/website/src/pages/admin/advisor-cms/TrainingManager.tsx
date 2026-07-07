@@ -132,7 +132,9 @@ export default function TrainingManager() {
       if (modulesResult.error) throw modulesResult.error;
 
       setLearningPaths(pathsResult.data || []);
-      setModules(modulesResult.data || []);
+      // NOTE: pre-existing drift — the query selects content_type/is_active but
+      // this component's TrainingModule interface declares type/is_published.
+      setModules((modulesResult.data || []) as unknown as TrainingModule[]);
       setCategories(categoriesResult.data || []);
     } catch (error) {
       console.error('Error loading training data:', error);

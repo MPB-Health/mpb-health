@@ -49,7 +49,7 @@ import {
 import { toast } from 'sonner';
 import { createClientLogger } from '@mpbhealth/utils';
 import { resolveOrgIdFromMap, MPB_HEALTH_SLUG } from '@mpbhealth/auth';
-import { passwordSecurityService } from '../../lib/passwordSecurityService';
+import { passwordSecurityService } from '@mpbhealth/auth';
 import { PasswordStrengthMeter } from '../../components/ui/PasswordStrengthMeter';
 import { cn } from '../../lib/utils';
 import AddUserModal from '../../components/admin/AddUserModal';

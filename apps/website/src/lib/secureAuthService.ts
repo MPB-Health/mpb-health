@@ -1,7 +1,6 @@
 import { supabase } from './supabase';
 import { rateLimitService, mfaService } from '@mpbhealth/auth';
-import { passwordSecurityService } from './passwordSecurityService';
-import { securityEventService } from './securityEventService';
+import { passwordSecurityService, securityEventService } from '@mpbhealth/auth';
 
 export interface SecureLoginRequest {
   email: string;

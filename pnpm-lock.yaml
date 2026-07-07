@@ -1009,6 +1009,9 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.4(@types/debug@4.1.12)(@types/node@25.3.2)(@vitest/ui@3.2.4)(jsdom@27.4.0)(terser@5.46.0)
 
   packages/champion-core:
     dependencies:
@@ -1260,12 +1263,18 @@ importers:
       '@mpbhealth/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
+      jsdom:
+        specifier: ^27.4.0
+        version: 27.4.0
       tsup:
         specifier: 'catalog:'
         version: 8.5.1(jiti@1.21.7)(postcss@8.5.6)(typescript@5.9.3)
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.4(@types/debug@4.1.12)(@types/node@25.3.2)(@vitest/ui@3.2.4)(jsdom@27.4.0)(terser@5.46.0)
 
 packages:
 

@@ -19,7 +19,9 @@
     "build": "tsup src/index.ts --format esm --dts --external react --external @mpbhealth/utils --external @mpbhealth/config --external @mpbhealth/database --external @supabase/supabase-js --external react-router-dom",
     "dev": "tsup src/index.ts --format esm --dts --external react --external @mpbhealth/utils --external @mpbhealth/config --external @mpbhealth/database --external @supabase/supabase-js --external react-router-dom --watch",
     "clean": "rm -rf dist",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "peerDependencies": {
     "react": "^18.0.0",
@@ -37,6 +39,7 @@
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "tsup": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "^3.2.4"
   }
 }

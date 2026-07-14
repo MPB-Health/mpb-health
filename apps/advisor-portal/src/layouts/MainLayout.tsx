@@ -62,7 +62,7 @@ import {
   useTenantPath,
 } from '@mpbhealth/auth';
 import { supabase } from '@mpbhealth/database';
-import { navigationService, type NavMenuItem, isAdvisorExemptFromTrainingGate } from '@mpbhealth/advisor-core';
+import { navigationService, type NavMenuItem, isAdvisorExemptFromTrainingGate, getRecurringAdvisorMeetingInfo } from '@mpbhealth/advisor-core';
 import { useAdvisor } from '../contexts/AdvisorContext';
 import { useAdvisorQueryReady } from '../hooks/useAdvisorQueryReady';
 import { useUnreadBulletinCount } from '../hooks/useUnreadBulletinCount';
@@ -349,56 +349,9 @@ export default function MainLayout() {
     return base;
   }, [cmsNavItems, isAdminUser, profile, sessionUserCreatedAt]);
 
-  // Determine if today is a meeting day (2nd or 4th Tuesday)
+  // Determine if today is a meeting day (2nd or 4th Tuesday) and which Teams link to use.
   // NOTE: This useMemo MUST be above the early returns to satisfy React's Rules of Hooks.
-  const meetingInfo = useMemo(() => {
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const dayOfWeek = today.getDay();
-
-    // Check if today is a Tuesday
-    const isTuesday = dayOfWeek === 2;
-
-    // Find which Tuesday of the month this is
-    let tuesayCount = 0;
-    if (isTuesday) {
-      for (let d = 1; d <= today.getDate(); d++) {
-        const date = new Date(today.getFullYear(), today.getMonth(), d);
-        if (date.getDay() === 2) tuesayCount++;
-      }
-    }
-
-    const isMeetingDay = isTuesday && (tuesayCount === 2 || tuesayCount === 4);
-
-    // Find next meeting date (next 2nd or 4th Tuesday)
-    let nextMeeting: Date | null = null;
-    let month = now.getMonth();
-    let year = now.getFullYear();
-    let found = false;
-
-    while (!found) {
-      const tuesdays: Date[] = [];
-      for (let d = 1; d <= 31; d++) {
-        const date = new Date(year, month, d);
-        if (date.getMonth() !== month) break;
-        if (date.getDay() === 2) tuesdays.push(date);
-      }
-      const targets = [tuesdays[1], tuesdays[3]].filter(Boolean);
-      for (const t of targets) {
-        if (t && t > today) {
-          nextMeeting = t;
-          found = true;
-          break;
-        }
-      }
-      if (!found) {
-        month++;
-        if (month > 11) { month = 0; year++; }
-      }
-    }
-
-    return { isMeetingDay, nextMeeting };
-  }, []);
+  const meetingInfo = useMemo(() => getRecurringAdvisorMeetingInfo(), []);
 
   // No Supabase session — route unauthenticated visitors based on brand:
   //   * ARYX hosts (advisor.aryxcloud.com)  → /landing (marketing page)
@@ -530,9 +483,9 @@ export default function MainLayout() {
   const topBarActions = (
     <>
       {/* Meeting Button */}
-      {meetingInfo.isMeetingDay ? (
+      {meetingInfo.isMeetingDay && meetingInfo.teamsUrl ? (
         <a
-          href="https://teams.microsoft.com/l/meetup-join/19%3ameeting_ODY1ZGM0NjEtYWIwNi00YzdmLTg1MjEtZWRiODEwZDc3NDVh%40thread.v2/0?context=%7b%22Tid%22%3a%22ad4e49c8-3dea-4d37-8be6-ee2fdc324f04%22%2c%22Oid%22%3a%22ad01a7ba-787a-4389-97d2-90b3ec45896c%22%7d"
+          href={meetingInfo.teamsUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="relative flex items-center gap-2 px-3 py-1.5 bg-red-500 text-white rounded-full text-sm font-medium hover:bg-red-600 transition-colors animate-pulse"
@@ -540,22 +493,28 @@ export default function MainLayout() {
           <Radio className="w-4 h-4" />
           <span className="hidden md:inline">Live Meeting</span>
         </a>
-      ) : (
+      ) : meetingInfo.nextMeetingUrl ? (
         <div className="relative group">
-          <button
-            type="button"
-            disabled
-            className="flex items-center gap-2 px-3 py-1.5 bg-gray-400 text-white rounded-full text-sm font-medium cursor-not-allowed opacity-75"
+          <a
+            href={meetingInfo.nextMeetingUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 px-3 py-1.5 bg-gray-500 text-white rounded-full text-sm font-medium hover:bg-gray-600 transition-colors"
           >
             <Video className="w-4 h-4" />
             <span className="hidden md:inline">Meeting</span>
-          </button>
+          </a>
           {meetingInfo.nextMeeting && (
             <div className="absolute top-full mt-2 right-0 z-50 hidden group-hover:block bg-gray-900 text-white text-xs rounded-lg px-3 py-2 whitespace-nowrap shadow-lg">
               Next meeting: {format(meetingInfo.nextMeeting, 'EEEE, MMM d')}
               <div className="absolute -top-1 right-4 w-2 h-2 bg-gray-900 rotate-45" />
             </div>
           )}
+        </div>
+      ) : (
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-400 text-white rounded-full text-sm font-medium cursor-not-allowed opacity-75">
+          <Video className="w-4 h-4" />
+          <span className="hidden md:inline">Meeting</span>
         </div>
       )}
 

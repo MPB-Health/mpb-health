@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import {
@@ -37,7 +37,7 @@ import {
 } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button, GradientHeader, MetricCard, SkeletonLine, SkeletonAvatar } from '@mpbhealth/ui';
-import { meetingService, enrollmentService, portalSettingsService, announcementService, formsService, navigationService, type AdvisorMeeting, type EnrollmentLink, type Announcement, type AdvisorForm, type QuickLink } from '@mpbhealth/advisor-core';
+import { enrollmentService, portalSettingsService, announcementService, formsService, navigationService, getUpcomingRecurringMeetings, getTeamsMeetingUrlForDate, type EnrollmentLink, type Announcement, type AdvisorForm, type QuickLink } from '@mpbhealth/advisor-core';
 import { supabase, supabaseUrl } from '@mpbhealth/database';
 import { useAdvisor } from '../contexts/AdvisorContext';
 import { useWidgetVisibility } from '../hooks/useWidgetVisibility';
@@ -137,36 +137,6 @@ const FALLBACK_ENROLL_OPTIONS: { label: string; url: string }[] = [
   { label: 'Secure HSA', url: 'https://securehsa.enrollmpb.com/?id=768413' },
   { label: 'MEC + Essentials', url: 'https://mec.enrollmpb.com/?id=768413' },
 ];
-
-// Teams meeting link for recurring advisor meetings
-const TEAMS_MEETING_URL = 'https://teams.microsoft.com/l/meetup-join/19%3ameeting_ODY1ZGM0NjEtYWIwNi00YzdmLTg1MjEtZWRiODEwZDc3NDVh%40thread.v2/0?context=%7b%22Tid%22%3a%22ad4e49c8-3dea-4d37-8be6-ee2fdc324f04%22%2c%22Oid%22%3a%22ad01a7ba-787a-4389-97d2-90b3ec45896c%22%7d';
-
-// Get the next N upcoming 2nd and 4th Tuesdays
-function getUpcomingRecurringMeetings(count = 4): Date[] {
-  const meetings: Date[] = [];
-  const now = new Date();
-  let month = now.getMonth();
-  let year = now.getFullYear();
-
-  while (meetings.length < count) {
-    const tuesdays: Date[] = [];
-    for (let d = 1; d <= 31; d++) {
-      const date = new Date(year, month, d);
-      if (date.getMonth() !== month) break;
-      if (date.getDay() === 2) tuesdays.push(date);
-    }
-    const targets = [tuesdays[1], tuesdays[3]].filter(Boolean);
-    for (const t of targets) {
-      if (t && t >= new Date(now.getFullYear(), now.getMonth(), now.getDate()) && meetings.length < count) {
-        t.setHours(16, 0, 0, 0);
-        meetings.push(t);
-      }
-    }
-    month++;
-    if (month > 11) { month = 0; year++; }
-  }
-  return meetings;
-}
 
 // Video slider data - matching the advisor playbook video slider
 const ADVISOR_VIDEOS = [
@@ -318,12 +288,10 @@ export default function Dashboard() {
     staleTime: 2 * 60 * 1000,
   });
 
-  const { data: upcomingMeetings = [], isLoading: meetingsLoading } = useQuery({
-    queryKey: ['dashboardMeetings', profile?.id],
-    queryFn: () => meetingService.getUpcomingMeetings(profile!.id, 4),
-    enabled: advisorReady,
-    staleTime: 5 * 60 * 1000,
-  });
+  // Healthcare Advisor Meetings come from the shared recurring Teams engine
+  // (packages/advisor-core/.../recurringAdvisorMeetings) — not the unused
+  // Jitsi invitation path, which pointed advisors at the wrong join URL.
+  const upcomingRecurringMeetings = useMemo(() => getUpcomingRecurringMeetings(4), []);
 
   const { data: hasAdvisorPageAccess = false } = useQuery({
     queryKey: ['advisorPageAccess', profile?.email],
@@ -499,9 +467,7 @@ export default function Dashboard() {
           {/* Stat pills */}
           <div className="mt-5 pt-5 border-t border-th-border-subtle flex flex-wrap gap-2.5">
             {(() => {
-              const nextMeeting = upcomingMeetings.length > 0
-                ? new Date(upcomingMeetings[0].scheduled_at)
-                : getUpcomingRecurringMeetings(1)[0];
+              const nextMeeting = upcomingRecurringMeetings[0];
               return nextMeeting ? (
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-surface-tertiary rounded-full text-xs text-th-text-secondary border border-th-border-subtle">
                   <Calendar className="w-3.5 h-3.5 text-th-accent-500" />
@@ -1059,114 +1025,62 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Upcoming Meetings */}
+        {/* Upcoming Meetings — shared Teams engine (2nd & 4th Tuesday) */}
         <div className="lg:col-span-1 bg-surface-primary rounded-xl border border-th-border">
           <div className="flex items-center justify-between p-5 border-b border-th-border-subtle">
             <h2 className="font-semibold text-th-text-primary">Upcoming Meetings</h2>
-            <span className="text-xs text-th-text-tertiary font-medium">
-              {upcomingMeetings.length > 0 ? `${upcomingMeetings.length} upcoming` : 'Every 2nd & 4th Tuesday'}
-            </span>
+            <span className="text-xs text-th-text-tertiary font-medium">Every 2nd &amp; 4th Tuesday</span>
           </div>
           <div className="p-5">
-            {meetingsLoading ? (
-              <div className="space-y-4">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="flex items-center space-x-4 p-3 rounded-lg">
-                    <SkeletonAvatar size="w-12 h-12" className="rounded-lg" />
-                    <div className="flex-1 min-w-0 space-y-2">
-                      <SkeletonLine width="w-2/3" />
-                      <SkeletonLine width="w-1/2" className="h-3" />
+            <div className="space-y-4">
+              {upcomingRecurringMeetings.map((date, index) => {
+                const isNext = index === 0;
+                const today = new Date();
+                const isToday =
+                  date.getFullYear() === today.getFullYear() &&
+                  date.getMonth() === today.getMonth() &&
+                  date.getDate() === today.getDate();
+                const teamsUrl = getTeamsMeetingUrlForDate(date);
+                return (
+                  <div
+                    key={date.toISOString()}
+                    className={`flex items-center space-x-4 p-3 rounded-lg ${isNext ? 'bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800' : ''}`}
+                  >
+                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${isNext ? 'bg-blue-600' : 'bg-blue-100 dark:bg-blue-900/30'}`}>
+                      <Video className={`w-6 h-6 ${isNext ? 'text-white' : 'text-blue-600 dark:text-blue-400'}`} />
                     </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-th-text-primary">
+                        Advisor Meeting
+                        {isToday && <span className="ml-2 text-xs font-semibold text-red-600 dark:text-red-400">Today</span>}
+                        {!isToday && isNext && <span className="ml-2 text-xs font-semibold text-blue-600 dark:text-blue-400">Next</span>}
+                      </p>
+                      <div className="flex items-center space-x-2 mt-1">
+                        <Calendar className="w-4 h-4 text-th-text-tertiary" />
+                        <span className="text-sm text-th-text-tertiary">
+                          {format(date, 'EEEE, MMM d · h:mm a')}
+                        </span>
+                      </div>
+                    </div>
+                    {teamsUrl ? (
+                      <a
+                        href={teamsUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`flex-shrink-0 px-3 py-1.5 text-xs font-medium text-white rounded-lg transition-colors ${
+                          isToday ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-600 hover:bg-blue-700'
+                        }`}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {isToday ? 'Join Live' : 'Join'}
+                      </a>
+                    ) : (
+                      <ArrowRight className="w-5 h-5 text-th-text-tertiary flex-shrink-0" />
+                    )}
                   </div>
-                ))}
-              </div>
-            ) : upcomingMeetings.length > 0 ? (
-              <div className="space-y-4">
-                {upcomingMeetings.map((meeting, index) => {
-                  const isNext = index === 0;
-                  const meetingDate = new Date(meeting.scheduled_at);
-                  const joinUrl = meetingService.getJitsiUrl(meeting);
-                  return (
-                    <div
-                      key={meeting.id}
-                      className={`flex items-center space-x-4 p-3 rounded-lg ${isNext ? 'bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800' : ''}`}
-                    >
-                      <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${isNext ? 'bg-blue-600' : 'bg-blue-100 dark:bg-blue-900/30'}`}>
-                        <Video className={`w-6 h-6 ${isNext ? 'text-white' : 'text-blue-600 dark:text-blue-400'}`} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-th-text-primary">
-                          {meeting.title}
-                          {isNext && <span className="ml-2 text-xs font-semibold text-blue-600 dark:text-blue-400">Next</span>}
-                        </p>
-                        <div className="flex items-center space-x-2 mt-1">
-                          <Calendar className="w-4 h-4 text-th-text-tertiary" />
-                          <span className="text-sm text-th-text-tertiary">
-                            {format(meetingDate, 'EEEE, MMM d · h:mm a')}
-                          </span>
-                        </div>
-                      </div>
-                      {joinUrl ? (
-                        <a
-                          href={joinUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex-shrink-0 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          Join
-                        </a>
-                      ) : (
-                        <ArrowRight className="w-5 h-5 text-th-text-tertiary flex-shrink-0" />
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {getUpcomingRecurringMeetings(4).map((date, index) => {
-                  const isNext = index === 0;
-                  const today = new Date();
-                  const isToday = date.getFullYear() === today.getFullYear() && date.getMonth() === today.getMonth() && date.getDate() === today.getDate();
-                  return (
-                    <div
-                      key={date.toISOString()}
-                      className={`flex items-center space-x-4 p-3 rounded-lg ${isNext ? 'bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800' : ''}`}
-                    >
-                      <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${isNext ? 'bg-blue-600' : 'bg-blue-100 dark:bg-blue-900/30'}`}>
-                        <Video className={`w-6 h-6 ${isNext ? 'text-white' : 'text-blue-600 dark:text-blue-400'}`} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-th-text-primary">
-                          Advisor Meeting
-                          {isNext && <span className="ml-2 text-xs font-semibold text-blue-600 dark:text-blue-400">Next</span>}
-                        </p>
-                        <div className="flex items-center space-x-2 mt-1">
-                          <Calendar className="w-4 h-4 text-th-text-tertiary" />
-                          <span className="text-sm text-th-text-tertiary">
-                            {format(date, 'EEEE, MMM d · h:mm a')}
-                          </span>
-                        </div>
-                      </div>
-                      {isToday && TEAMS_MEETING_URL ? (
-                        <a
-                          href={TEAMS_MEETING_URL}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex-shrink-0 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          Join
-                        </a>
-                      ) : (
-                        <ArrowRight className="w-5 h-5 text-th-text-tertiary flex-shrink-0" />
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>}

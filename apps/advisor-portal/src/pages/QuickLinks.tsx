@@ -2,7 +2,12 @@ import { useEffect, useState } from 'react';
 import { ExternalLink, X, Smartphone, ArrowRight, Video, Calendar } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabaseUrl } from '@mpbhealth/database';
-import { navigationService, type QuickLink } from '@mpbhealth/advisor-core';
+import {
+  navigationService,
+  HEALTHCARE_ADVISOR_MEETING_LINKS,
+  SECURE_HSA_WEBINAR_LINKS,
+  type QuickLink,
+} from '@mpbhealth/advisor-core';
 import SafeImage from '../components/SafeImage';
 import { useAdvisorPageDebugLog } from '../hooks/useAdvisorPageDebugLog';
 import { useAdvisorQueryReady } from '../hooks/useAdvisorQueryReady';
@@ -183,7 +188,44 @@ export default function QuickLinks() {
         </p>
       </div>
 
-      {/* Secure HSA Webinar */}
+      {/* Healthcare Advisor Meetings — 2nd & 4th Tuesday (shared engine) */}
+      <div className="rounded-xl border border-red-200 dark:border-red-800 bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-950/40 dark:to-orange-950/30 overflow-hidden">
+        <div className="px-6 py-4 border-b border-red-200 dark:border-red-800 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-red-500 flex items-center justify-center">
+            <Video className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h2 className="text-base font-bold text-th-text-primary">Healthcare Advisor Meetings</h2>
+            <p className="text-xs text-th-text-secondary mt-0.5">
+              2nd &amp; 4th Tuesday each month — each date has its own Teams link
+            </p>
+          </div>
+        </div>
+        <div className="divide-y divide-red-100 dark:divide-red-900">
+          {HEALTHCARE_ADVISOR_MEETING_LINKS.map((link) => (
+            <div key={link.id} className="flex items-center justify-between px-6 py-4 gap-4">
+              <div className="flex items-start gap-3">
+                <Calendar className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-semibold text-th-text-primary text-sm">{link.label}</p>
+                  <p className="text-xs text-th-text-secondary mt-0.5">{link.schedule}</p>
+                </div>
+              </div>
+              <a
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                Join Meeting
+              </a>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Secure HSA Webinar — separate series from Healthcare Advisor Meetings */}
       <div className="rounded-xl border border-blue-200 dark:border-blue-800 bg-gradient-to-r from-blue-50 to-sky-50 dark:from-blue-950/40 dark:to-sky-950/30 overflow-hidden">
         <div className="px-6 py-4 border-b border-blue-200 dark:border-blue-800 flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center">
@@ -195,44 +237,26 @@ export default function QuickLinks() {
           </div>
         </div>
         <div className="divide-y divide-blue-100 dark:divide-blue-900">
-          {/* Tuesday sessions */}
-          <div className="flex items-center justify-between px-6 py-4 gap-4">
-            <div className="flex items-start gap-3">
-              <Calendar className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="font-semibold text-th-text-primary text-sm">Tuesdays at 12 PM ET</p>
-                <p className="text-xs text-th-text-secondary mt-0.5">1st &amp; 3rd Tuesday each month</p>
+          {SECURE_HSA_WEBINAR_LINKS.map((link) => (
+            <div key={link.id} className="flex items-center justify-between px-6 py-4 gap-4">
+              <div className="flex items-start gap-3">
+                <Calendar className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-semibold text-th-text-primary text-sm">{link.label}</p>
+                  <p className="text-xs text-th-text-secondary mt-0.5">{link.schedule}</p>
+                </div>
               </div>
+              <a
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                Join Meeting
+              </a>
             </div>
-            <a
-              href="https://teams.microsoft.com/l/meetup-join/19%3ameeting_NzZkOTcxZWQtMTJmOC00MThlLWEwZWQtNTI3MTM4NjZkZjcx%40thread.v2/0?context=%7b%22Tid%22%3a%22ad4e49c8-3dea-4d37-8be6-ee2fdc324f04%22%2c%22Oid%22%3a%22790aa558-4c20-46ec-8708-30d8168cfa5d%22%7d"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap"
-            >
-              <ExternalLink className="w-3.5 h-3.5" />
-              Join Meeting
-            </a>
-          </div>
-          {/* Thursday sessions */}
-          <div className="flex items-center justify-between px-6 py-4 gap-4">
-            <div className="flex items-start gap-3">
-              <Calendar className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-              <div>
-                <p className="font-semibold text-th-text-primary text-sm">Thursdays at 4 PM ET</p>
-                <p className="text-xs text-th-text-secondary mt-0.5">2nd &amp; 4th Thursday each month</p>
-              </div>
-            </div>
-            <a
-              href="https://teams.microsoft.com/l/meetup-join/19%3ameeting_ODgxYmZiOTItZjBlMy00NWE4LWE3ZjUtMWFkZTBmYjEwZWEy%40thread.v2/0?context=%7b%22Tid%22%3a%22ad4e49c8-3dea-4d37-8be6-ee2fdc324f04%22%2c%22Oid%22%3a%22790aa558-4c20-46ec-8708-30d8168cfa5d%22%7d"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap"
-            >
-              <ExternalLink className="w-3.5 h-3.5" />
-              Join Meeting
-            </a>
-          </div>
+          ))}
         </div>
       </div>
 

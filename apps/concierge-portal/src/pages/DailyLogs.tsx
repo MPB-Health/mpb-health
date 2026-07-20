@@ -390,6 +390,20 @@ function getWeekDateStrings(weekNum: number, isoWeekYear: number): string[] {
   return Array.from({ length: 5 }, (_, i) => format(addDays(monday, i), 'yyyy-MM-dd'));
 }
 
+/** Human-readable Mon–Fri span, e.g. "Jul 14–18" or "Jul 28 – Aug 1". */
+function formatBusinessWeekRange(weekDates: string[]): string {
+  if (weekDates.length === 0) return '';
+  const start = parseDate(weekDates[0], 'yyyy-MM-dd', new Date());
+  const end = parseDate(weekDates[weekDates.length - 1], 'yyyy-MM-dd', new Date());
+  if (!isValid(start) || !isValid(end)) {
+    return `${weekDates[0]} – ${weekDates[weekDates.length - 1]}`;
+  }
+  if (start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear()) {
+    return `${format(start, 'MMM d')}–${format(end, 'd')}`;
+  }
+  return `${format(start, 'MMM d')} – ${format(end, 'MMM d')}`;
+}
+
 /** Monday of an ISO week (local), for week-number / ISO week-year math. */
 function mondayOfISOWeek(isoWeekYear: number, weekNum: number): Date {
   const jan4 = new Date(isoWeekYear, 0, 4);
@@ -3519,9 +3533,17 @@ export default function DailyLogs() {
     [weekNumber, reportISOWeekYear],
   );
 
+  const weekDateRangeLabel = useMemo(
+    () => formatBusinessWeekRange(weekDates),
+    [weekDates],
+  );
+
   const periodLabel = useMemo(
-    () => `ISO Week ${weekNumber} · ${reportISOWeekYear}`,
-    [weekNumber, reportISOWeekYear],
+    () =>
+      weekDateRangeLabel
+        ? `ISO Week ${weekNumber} · ${reportISOWeekYear} · ${weekDateRangeLabel} (Mon–Fri)`
+        : `ISO Week ${weekNumber} · ${reportISOWeekYear}`,
+    [weekNumber, reportISOWeekYear, weekDateRangeLabel],
   );
 
   const reportStorageKey = useMemo(
@@ -3660,13 +3682,14 @@ export default function DailyLogs() {
             >
               Jump to latest log week
             </button>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <label className="text-sm font-medium text-slate-600">ISO week:</label>
               <div className="flex items-center border border-[#A8B8AC]/40 rounded-lg overflow-hidden">
                 <button
                   type="button"
                   onClick={() => setWeekNumber((w) => w - 1)}
                   className="px-2 py-1.5 hover:bg-[#A8B8AC]/10 text-slate-600 transition-colors"
+                  aria-label="Previous week"
                 >
                   <ChevronDown className="w-4 h-4 rotate-90" />
                 </button>
@@ -3677,10 +3700,20 @@ export default function DailyLogs() {
                   type="button"
                   onClick={() => setWeekNumber((w) => w + 1)}
                   className="px-2 py-1.5 hover:bg-[#A8B8AC]/10 text-slate-600 transition-colors"
+                  aria-label="Next week"
                 >
                   <ChevronDown className="w-4 h-4 -rotate-90" />
                 </button>
               </div>
+              {weekDateRangeLabel && (
+                <span
+                  className="text-sm font-medium text-[#2F3E2F] tabular-nums whitespace-nowrap"
+                  title={`Business week Monday–Friday · ${weekDates[0]} – ${weekDates[weekDates.length - 1]}`}
+                >
+                  {weekDateRangeLabel}
+                  <span className="text-xs font-normal text-slate-500 ml-1">(Mon–Fri)</span>
+                </span>
+              )}
             </div>
 
             <button

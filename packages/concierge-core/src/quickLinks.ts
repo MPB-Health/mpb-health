@@ -40,6 +40,10 @@ export const QUICK_LINKS: QuickLink[] = [
         name: 'Preventive Task Force',
         url: 'https://www.uspreventiveservicestaskforce.org/uspstf/recommendation-topics/uspstf-a-and-b-recommendations',
       },
+      {
+        name: 'Non-Covered Diagnostic Lab Codes',
+        url: '/docs/MB_Health_NonCovered_Diagnostic_Lab_Codes.pdf',
+      },
     ],
   },
   {

@@ -42,7 +42,7 @@ export const QUICK_LINKS: QuickLink[] = [
       },
       {
         name: 'Non-Covered Diagnostic Lab Codes',
-        url: '/docs/MB_Health_NonCovered_Diagnostic_Lab_Codes.pdf',
+        url: '/docs/MPB_Health_NonCovered_Diagnostic_Lab_Codes.pdf',
       },
     ],
   },

@@ -423,6 +423,22 @@ export default function Dashboard() {
               <p className="text-th-text-tertiary text-sm max-w-md">
                 Empowering Healthcare Advisors — Making a Difference Every Day.
               </p>
+              <div className="!mt-4 flex items-start gap-3 rounded-xl border border-blue-200 dark:border-blue-800/40 bg-gradient-to-r from-blue-50 via-sky-50 to-indigo-50 dark:from-blue-900/20 dark:via-sky-900/15 dark:to-indigo-900/20 p-4 shadow-sm">
+                <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0">
+                  <Info className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-blue-800 dark:text-blue-300">
+                    MPB Health Billing Update
+                  </p>
+                  <p className="text-sm text-blue-700/90 dark:text-blue-300/80 leading-relaxed mt-0.5">
+                    If your account was affected by the recent billing issue, your refund has been
+                    processed. Please allow your financial institution time to post the refund to
+                    your account, as processing times may vary. We appreciate your patience and
+                    will continue to provide updates as needed.
+                  </p>
+                </div>
+              </div>
             </div>
 
             {/* Quick-access actions */}

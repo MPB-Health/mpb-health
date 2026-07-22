@@ -297,24 +297,35 @@ export class ContentService {
 
   // Mark bulletin as read (using advisor_content_views table)
   async markBulletinRead(bulletinId: string, advisorId: string): Promise<void> {
-    // Check if already viewed
-    const { data: existing } = await supabase
+    // Check if already viewed — maybeSingle avoids PostgREST 406 when no row exists
+    const { data: existing, error: existingError } = await supabase
       .from('advisor_content_views')
       .select('id')
       .eq('content_id', bulletinId)
       .eq('advisor_id', advisorId)
-      .single();
+      .maybeSingle();
+
+    if (existingError) {
+      console.error('Error checking content view:', existingError);
+      return;
+    }
 
     if (!existing) {
-      // Create view record
-      await supabase
+      const { error: insertError } = await supabase
         .from('advisor_content_views')
         .insert({
           content_id: bulletinId,
           advisor_id: advisorId,
         });
 
-      // Increment view count
+      if (insertError) {
+        // Unique race is fine; other errors should surface for debugging
+        if (insertError.code !== '23505') {
+          console.error('Error recording content view:', insertError);
+        }
+        return;
+      }
+
       await supabase.rpc('increment_advisor_content_view_count', { content_id: bulletinId });
     }
   }
@@ -349,7 +360,7 @@ export class ContentService {
       .select('id')
       .eq('content_id', bulletinId)
       .eq('advisor_id', advisorId)
-      .single();
+      .maybeSingle();
 
     if (existing) {
       await supabase

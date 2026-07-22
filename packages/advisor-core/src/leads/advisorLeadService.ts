@@ -9,6 +9,10 @@ import type {
   LogLeadActivityInput,
 } from './types';
 
+// Note: do NOT embed crm_pipeline_stages — live DB has no FK from
+// lead_submissions.pipeline_stage_id → crm_pipeline_stages, so PostgREST
+// returns 400 on the embed. Stage name lives on pipeline_stage (text);
+// pipeline_stage_id is unused in monorepo lead data today (all null).
 const LEAD_LIST_SELECT = `
   id,
   first_name,
@@ -23,11 +27,7 @@ const LEAD_LIST_SELECT = `
   last_activity_at,
   next_followup_at,
   created_at,
-  pipeline_stage_id,
-  crm_pipeline_stages (
-    name,
-    color
-  )
+  pipeline_stage_id
 `;
 
 const LEAD_DETAIL_SELECT = `
@@ -53,11 +53,7 @@ const LEAD_DETAIL_SELECT = `
   pipeline_stage,
   created_at,
   updated_at,
-  pipeline_stage_id,
-  crm_pipeline_stages (
-    name,
-    color
-  )
+  pipeline_stage_id
 `;
 
 interface LeadListRow {
@@ -74,7 +70,6 @@ interface LeadListRow {
   last_activity_at: string | null;
   next_followup_at: string | null;
   created_at: string;
-  crm_pipeline_stages: { name: string; color: string } | { name: string; color: string }[] | null;
 }
 
 interface LeadDetailRow extends LeadListRow {
@@ -89,15 +84,13 @@ interface LeadDetailRow extends LeadListRow {
   updated_at: string | null;
 }
 
-function stageFromRow(row: { pipeline_stage?: string | null; crm_pipeline_stages?: LeadListRow['crm_pipeline_stages'] }): {
+function stageFromRow(row: { pipeline_stage?: string | null }): {
   name: string | null;
   color: string | null;
 } {
-  const stages = row.crm_pipeline_stages;
-  const stage = Array.isArray(stages) ? stages[0] : stages;
   return {
-    name: row.pipeline_stage || stage?.name || null,
-    color: stage?.color || null,
+    name: row.pipeline_stage || null,
+    color: null,
   };
 }
 

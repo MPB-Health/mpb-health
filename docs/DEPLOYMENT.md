@@ -232,8 +232,8 @@ These must NEVER be prefixed with `VITE_` as they would be exposed in the client
 |----------|-------|
 | Project | mpbhealth.v7 |
 | PostgreSQL Version | 17 |
-| Legacy Reference | `dtmnkzllidaiqyheguhl` |
-| Active Reference (ARYX) | `knelbprqqbjggqfqvfmc` |
+| Active Reference | `dtmnkzllidaiqyheguhl` |
+| ARYX Reference | `knelbprqqbjggqfqvfmc` |
 | Region | US East |
 
 ### Edge Functions

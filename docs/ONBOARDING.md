@@ -73,7 +73,7 @@ cp apps/concierge-portal/.env.example apps/concierge-portal/.env
 **Minimum required variables** (for any app):
 
 ```env
-VITE_SUPABASE_URL=https://knelbprqqbjggqfqvfmc.supabase.co
+VITE_SUPABASE_URL=https://dtmnkzllidaiqyheguhl.supabase.co
 VITE_SUPABASE_ANON_KEY=<anon-key>
 ```
 

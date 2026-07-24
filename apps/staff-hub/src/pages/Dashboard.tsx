@@ -4,7 +4,6 @@ import {
   LayoutDashboard,
   Users,
   GraduationCap,
-  Globe,
   HeadsetIcon,
   ExternalLink,
   Loader2,
@@ -64,14 +63,6 @@ const PORTAL_CARDS: PortalCardDef[] = [
     description: 'Training, meetings, and member tools',
     icon: GraduationCap,
     well: 'hr-icon-well-signal',
-    openInNewTab: true,
-  },
-  {
-    key: 'website',
-    name: 'Website Backend',
-    description: 'CMS, blog, and site configuration',
-    icon: Globe,
-    well: 'hr-icon-well-amber',
     openInNewTab: true,
   },
   {
@@ -299,8 +290,6 @@ export default function Dashboard() {
         return canAccessCrm;
       case 'advisors':
         return canAccessAdvisor;
-      case 'website':
-        return canAccessAdmin;
       case 'support':
         return canAccessSupport;
       default:

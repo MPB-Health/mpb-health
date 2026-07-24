@@ -37,7 +37,15 @@ import {
 import { useAdmin } from '../contexts/AdminContext';
 import { openUrlInNewTab } from '../utils/openUrlInNewTab';
 
-const ALL_PORTAL_ROLES: PortalRole[] = ['super_admin', 'admin', 'advisor', 'member', 'crm_user', 'concierge'];
+const ALL_PORTAL_ROLES: PortalRole[] = [
+  'super_admin',
+  'admin',
+  'advisor',
+  'member',
+  'crm_user',
+  'concierge',
+  'staff_hr',
+];
 
 const PORTAL_ROLE_LABELS: Record<PortalRole, string> = {
   super_admin: 'Super Admin',
@@ -46,6 +54,7 @@ const PORTAL_ROLE_LABELS: Record<PortalRole, string> = {
   member: 'Member',
   crm_user: 'CRM User',
   concierge: 'Concierge',
+  staff_hr: 'Staff HR',
 };
 
 const PORTAL_ROLE_COLORS: Record<PortalRole, string> = {
@@ -55,6 +64,7 @@ const PORTAL_ROLE_COLORS: Record<PortalRole, string> = {
   member: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
   crm_user: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300',
   concierge: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300',
+  staff_hr: 'bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-300',
 };
 
 const ADVISOR_STATUS_OPTIONS: AdvisorProfileSummary['status'][] = [

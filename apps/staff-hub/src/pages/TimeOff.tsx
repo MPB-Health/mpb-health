@@ -3,7 +3,12 @@ import { Link } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
 import { ArrowUpRight, CalendarPlus, Plus } from 'lucide-react';
 import { useTenant } from '@mpbhealth/auth';
-import { listMyRequests, type StaffTimeRequest } from '../lib/hr';
+import {
+  listMyRequests,
+  requestHasHrResponse,
+  requestHasUnreadHrResponse,
+  type StaffTimeRequest,
+} from '../lib/hr';
 import {
   HrBezel,
   HrEmptyState,
@@ -123,6 +128,15 @@ export default function TimeOff() {
                     <div className="flex flex-wrap items-center gap-2">
                       <TypeBadge type={r.type} />
                       <StatusBadge status={r.status} />
+                      {requestHasUnreadHrResponse(r) ? (
+                        <span className="rounded-full bg-sky-100 px-2.5 py-0.5 text-[11px] font-semibold text-sky-800">
+                          HR responded
+                        </span>
+                      ) : requestHasHrResponse(r) ? (
+                        <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-medium text-slate-600">
+                          HR responded
+                        </span>
+                      ) : null}
                     </div>
                     <p className="truncate text-sm font-semibold text-[color:var(--hr-ink)]">
                       {r.title}

@@ -12,12 +12,18 @@ import {
   getDocumentSignedUrl,
   getRequest,
   listDocuments,
+  listEvents,
+  markStaffSeen,
   type StaffTimeDocument,
   type StaffTimeRequest,
+  type StaffTimeRequestEvent,
 } from '../lib/hr';
 import { HrBezel, HrPageHeader, HrPrimaryButton, HrSecondaryButton } from '../components/hr/HrChrome';
 import { StatusBadge, TypeBadge } from '../components/hr/StatusBadge';
 import { DocumentList, DocumentUpload } from '../components/hr/DocumentUpload';
+import { RequestTimeline } from '../components/hr/RequestTimeline';
+import { CommentComposer } from '../components/hr/CommentComposer';
+import { DecisionNoteModal } from '../components/hr/DecisionNoteModal';
 
 function formatRange(r: StaffTimeRequest): string {
   const start = parseISO(r.starts_at);
@@ -34,17 +40,23 @@ export default function TimeOffDetail() {
   const { orgId, loading: tenantLoading } = useTenant();
   const [request, setRequest] = useState<StaffTimeRequest | null>(null);
   const [docs, setDocs] = useState<StaffTimeDocument[]>([]);
+  const [events, setEvents] = useState<StaffTimeRequestEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [isHr, setIsHr] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
-  const [decisionNote, setDecisionNote] = useState('');
   const [acting, setActing] = useState(false);
+  const [decisionModal, setDecisionModal] = useState<'approved' | 'denied' | null>(null);
 
   const reload = async () => {
     if (!id) return;
-    const [row, documents] = await Promise.all([getRequest(id), listDocuments(id)]);
+    const [row, documents, timeline] = await Promise.all([
+      getRequest(id),
+      listDocuments(id),
+      listEvents(id),
+    ]);
     setRequest(row);
     setDocs(documents);
+    setEvents(timeline);
   };
 
   useEffect(() => {
@@ -53,11 +65,15 @@ export default function TimeOffDetail() {
     (async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
+        const hr = await checkIsStaffHr();
         if (!cancelled) {
           setUserId(user?.id ?? null);
-          setIsHr(checkIsStaffHr(user?.email));
+          setIsHr(hr);
         }
         await reload();
+        if (user && !hr) {
+          await markStaffSeen(id);
+        }
       } catch {
         toast.error('Could not load request');
       } finally {
@@ -71,6 +87,10 @@ export default function TimeOffDetail() {
   }, [tenantLoading, orgId, id]);
 
   const isOwner = Boolean(request && userId && request.user_id === userId);
+  const canComment =
+    Boolean(request) &&
+    request!.status !== 'cancelled' &&
+    (isOwner || isHr);
 
   const onCancel = async () => {
     if (!request) return;
@@ -78,6 +98,7 @@ export default function TimeOffDetail() {
     try {
       const updated = await cancelRequest(request.id);
       setRequest(updated);
+      await reload();
       toast.success('Request cancelled');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Cancel failed');
@@ -86,15 +107,17 @@ export default function TimeOffDetail() {
     }
   };
 
-  const onDecide = async (status: 'approved' | 'denied') => {
+  const onDecide = async (status: 'approved' | 'denied', note: string) => {
     if (!request) return;
     setActing(true);
     try {
       const { request: updated, notifyDelayed } = await decideRequest(request.id, {
         status,
-        decision_note: decisionNote,
+        decision_note: note || undefined,
       });
       setRequest(updated);
+      setDecisionModal(null);
+      await reload();
       toast.success(
         notifyDelayed
           ? `${status === 'approved' ? 'Approved' : 'Denied'}. Employee email may be delayed.`
@@ -135,11 +158,11 @@ export default function TimeOffDetail() {
   return (
     <div className="hr-surface mx-auto max-w-3xl animate-fade-up space-y-6">
       <Link
-        to="/time-off"
+        to={isHr ? '/hr' : '/time-off'}
         className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800"
       >
         <ArrowLeft className="h-4 w-4" />
-        My requests
+        {isHr ? 'HR queue' : 'My requests'}
       </Link>
 
       <HrPageHeader
@@ -209,11 +232,44 @@ export default function TimeOffDetail() {
                 <DocumentUpload
                   requestId={request.id}
                   requestType={request.type}
-                  onUploaded={(doc) => setDocs((prev) => [...prev, doc])}
+                  onUploaded={(doc) => {
+                    setDocs((prev) => [...prev, doc]);
+                    void reload();
+                  }}
+                />
+              </div>
+            )}
+            {isHr && !isOwner && request.status !== 'cancelled' && (
+              <div className="mt-4">
+                <p className="mb-2 text-xs text-slate-500">HR supporting document</p>
+                <DocumentUpload
+                  requestId={request.id}
+                  requestType={request.type}
+                  forcedKind="supporting"
+                  onUploaded={(doc) => {
+                    setDocs((prev) => [...prev, doc]);
+                    void reload();
+                  }}
                 />
               </div>
             )}
           </div>
+
+          <div className="border-t border-slate-100 pt-6">
+            <h3 className="mb-4 text-sm font-semibold text-slate-800">History</h3>
+            <RequestTimeline events={events} />
+          </div>
+
+          {canComment && (
+            <div className="border-t border-slate-100 pt-6">
+              <h3 className="mb-3 text-sm font-semibold text-slate-800">Add comment</h3>
+              <CommentComposer
+                requestId={request.id}
+                disabled={acting}
+                onPosted={() => void reload()}
+              />
+            </div>
+          )}
 
           {isOwner && request.status === 'pending' && (
             <div className="flex flex-wrap gap-3 border-t border-slate-100 pt-6">
@@ -226,18 +282,14 @@ export default function TimeOffDetail() {
           {isHr && request.status === 'pending' && (
             <div className="space-y-4 border-t border-slate-100 pt-6">
               <h3 className="text-sm font-semibold text-slate-800">HR decision</h3>
-              <textarea
-                rows={2}
-                value={decisionNote}
-                onChange={(e) => setDecisionNote(e.target.value)}
-                placeholder="Optional note to the employee"
-                className="w-full rounded-xl border-0 bg-slate-50 px-3 py-2.5 text-sm ring-1 ring-slate-200 focus:outline-none focus:ring-2 focus:ring-[#0A4E8E]/40"
-              />
+              <p className="text-xs text-slate-500">
+                Deny requires a note. Approve may include an optional note.
+              </p>
               <div className="flex flex-wrap gap-3">
                 <HrPrimaryButton
                   type="button"
                   disabled={acting}
-                  onClick={() => void onDecide('approved')}
+                  onClick={() => setDecisionModal('approved')}
                   className="!bg-emerald-600 hover:!bg-emerald-700"
                 >
                   Approve
@@ -245,7 +297,7 @@ export default function TimeOffDetail() {
                 <HrSecondaryButton
                   type="button"
                   disabled={acting}
-                  onClick={() => void onDecide('denied')}
+                  onClick={() => setDecisionModal('denied')}
                   className="!text-rose-700 !ring-rose-200 hover:!bg-rose-50"
                 >
                   Deny
@@ -255,6 +307,19 @@ export default function TimeOffDetail() {
           )}
         </div>
       </HrBezel>
+
+      <DecisionNoteModal
+        open={decisionModal !== null}
+        status={decisionModal ?? 'approved'}
+        requireNote={decisionModal === 'denied'}
+        busy={acting}
+        onClose={() => {
+          if (!acting) setDecisionModal(null);
+        }}
+        onConfirm={(note) => {
+          if (decisionModal) void onDecide(decisionModal, note);
+        }}
+      />
     </div>
   );
 }

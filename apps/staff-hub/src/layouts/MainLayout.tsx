@@ -12,12 +12,21 @@ import {
   CalendarDays,
   CalendarClock,
   ClipboardList,
+  Clock3,
+  Users,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { HR_TIME_OFF_ENABLED, checkIsStaffHr } from '../lib/hr';
+import {
+  HR_ATTENDANCE_ENABLED,
+  HR_TIME_OFF_ENABLED,
+  checkIsStaffHr,
+} from '../lib/hr';
 
 const BASE_NAV = [
   { name: 'Hub', href: '/', icon: LayoutDashboard },
+  ...(HR_ATTENDANCE_ENABLED
+    ? [{ name: 'Attendance', href: '/attendance', icon: Clock3 }]
+    : []),
   ...(HR_TIME_OFF_ENABLED
     ? [
         { name: 'Time Off', href: '/time-off', icon: CalendarClock },
@@ -32,11 +41,15 @@ const BASE_NAV = [
 export default function MainLayout() {
   const location = useLocation();
   const [user, setUser] = useState<{ email: string } | null>(null);
+  const [isHr, setIsHr] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) setUser({ email: session.user.email ?? '' });
+    supabase.auth.getUser().then(async ({ data: { user: u } }) => {
+      if (u) {
+        setUser({ email: u.email ?? '' });
+        setIsHr(await checkIsStaffHr());
+      }
     });
   }, []);
 
@@ -46,11 +59,18 @@ export default function MainLayout() {
 
   const navItems = useMemo(() => {
     const items = [...BASE_NAV];
-    if (HR_TIME_OFF_ENABLED && checkIsStaffHr(user?.email)) {
-      items.splice(3, 0, { name: 'HR', href: '/hr', icon: ClipboardList });
+    if (HR_TIME_OFF_ENABLED && isHr) {
+      items.splice(
+        HR_ATTENDANCE_ENABLED ? 4 : 3,
+        0,
+        { name: 'HR', href: '/hr', icon: ClipboardList },
+        { name: 'Roster', href: '/hr/roster', icon: Users },
+      );
+    } else if (HR_ATTENDANCE_ENABLED && isHr) {
+      items.splice(2, 0, { name: 'Roster', href: '/hr/roster', icon: Users });
     }
     return items;
-  }, [user?.email]);
+  }, [isHr]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();

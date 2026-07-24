@@ -69,3 +69,19 @@ export interface UploadDocumentInput {
   file: File;
   kind: StaffTimeDocumentKind;
 }
+
+export interface StaffTimeRequestEvent {
+  id: string;
+  request_id: string;
+  org_id: string;
+  actor_id: string | null;
+  action: string;
+  detail: Record<string, unknown>;
+  created_at: string;
+  actor_name?: string | null;
+  actor_email?: string | null;
+}
+
+export interface AddCommentInput {
+  body: string;
+}

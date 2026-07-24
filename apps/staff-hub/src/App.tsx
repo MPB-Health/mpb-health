@@ -4,6 +4,7 @@ import { supabase } from '@mpbhealth/database';
 import { Loader2 } from 'lucide-react';
 import Login from './pages/Login';
 import MainLayout from './layouts/MainLayout';
+import { HR_ATTENDANCE_ENABLED, HR_TIME_OFF_ENABLED } from './lib/hr';
 
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Notes = lazy(() => import('./pages/Notes'));
@@ -14,6 +15,8 @@ const TimeOffNew = lazy(() => import('./pages/TimeOffNew'));
 const TimeOffDetail = lazy(() => import('./pages/TimeOffDetail'));
 const StaffCalendar = lazy(() => import('./pages/StaffCalendar'));
 const HrQueue = lazy(() => import('./pages/HrQueue'));
+const HrRoster = lazy(() => import('./pages/HrRoster'));
+const Attendance = lazy(() => import('./pages/Attendance'));
 
 function PageLoader() {
   return (
@@ -116,11 +119,21 @@ export default function App() {
         }
       >
         <Route index element={<Suspense fallback={<PageLoader />}><Dashboard /></Suspense>} />
-        <Route path="time-off" element={<Suspense fallback={<PageLoader />}><TimeOff /></Suspense>} />
-        <Route path="time-off/new" element={<Suspense fallback={<PageLoader />}><TimeOffNew /></Suspense>} />
-        <Route path="time-off/:id" element={<Suspense fallback={<PageLoader />}><TimeOffDetail /></Suspense>} />
-        <Route path="calendar" element={<Suspense fallback={<PageLoader />}><StaffCalendar /></Suspense>} />
-        <Route path="hr" element={<Suspense fallback={<PageLoader />}><HrQueue /></Suspense>} />
+        {HR_ATTENDANCE_ENABLED ? (
+          <Route path="attendance" element={<Suspense fallback={<PageLoader />}><Attendance /></Suspense>} />
+        ) : null}
+        {HR_TIME_OFF_ENABLED ? (
+          <>
+            <Route path="time-off" element={<Suspense fallback={<PageLoader />}><TimeOff /></Suspense>} />
+            <Route path="time-off/new" element={<Suspense fallback={<PageLoader />}><TimeOffNew /></Suspense>} />
+            <Route path="time-off/:id" element={<Suspense fallback={<PageLoader />}><TimeOffDetail /></Suspense>} />
+            <Route path="calendar" element={<Suspense fallback={<PageLoader />}><StaffCalendar /></Suspense>} />
+            <Route path="hr" element={<Suspense fallback={<PageLoader />}><HrQueue /></Suspense>} />
+          </>
+        ) : null}
+        {HR_ATTENDANCE_ENABLED ? (
+          <Route path="hr/roster" element={<Suspense fallback={<PageLoader />}><HrRoster /></Suspense>} />
+        ) : null}
         <Route path="notes" element={<Suspense fallback={<PageLoader />}><Notes /></Suspense>} />
         <Route path="tasks" element={<Suspense fallback={<PageLoader />}><Tasks /></Suspense>} />
         <Route path="profile" element={<Suspense fallback={<PageLoader />}><Profile /></Suspense>} />

@@ -1,6 +1,14 @@
-import { isHrEmail } from './constants';
+import { supabase } from '@mpbhealth/database';
 
-/** Client-side HR gate matching SQL is_staff_hr() allowlist. */
-export function checkIsStaffHr(email: string | null | undefined): boolean {
-  return isHrEmail(email);
+/**
+ * Async HR gate matching SQL is_staff_hr() (user_roles.staff_hr).
+ * Prefer this over the legacy email allowlist.
+ */
+export async function checkIsStaffHr(): Promise<boolean> {
+  const { data, error } = await supabase.rpc('is_staff_hr');
+  if (error) {
+    console.error('is_staff_hr rpc failed', error);
+    return false;
+  }
+  return Boolean(data);
 }

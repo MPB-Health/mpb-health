@@ -1,10 +1,13 @@
 export const HR_TIME_OFF_ENABLED = true;
 
+/** Bootstrap / fallback notify list when no staff_hr role holders exist. */
 export const HR_NOTIFY_EMAILS = [
   'accounting@mympb.com',
   'catherine@mympb.com',
   'dayra@mympb.com',
 ] as const;
+
+export const STAFF_HR_ROLE = 'staff_hr' as const;
 
 export const STAFF_HUB_PORTAL_URL = 'https://staff.mpb.health';
 

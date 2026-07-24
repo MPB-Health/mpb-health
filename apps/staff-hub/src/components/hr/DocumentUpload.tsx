@@ -15,13 +15,16 @@ interface Props {
   requestId: string;
   requestType: StaffTimeRequestType;
   onUploaded: (doc: StaffTimeDocument) => void;
+  /** When set, hides kind picker and always uploads this kind. */
+  forcedKind?: StaffTimeDocumentKind;
 }
 
-export function DocumentUpload({ requestId, requestType, onUploaded }: Props) {
+export function DocumentUpload({ requestId, requestType, onUploaded, forcedKind }: Props) {
   const [busy, setBusy] = useState(false);
   const [kind, setKind] = useState<StaffTimeDocumentKind>(
-    documentKindForType(requestType),
+    forcedKind ?? documentKindForType(requestType),
   );
+  const activeKind = forcedKind ?? kind;
 
   const onPick = async (files: FileList | null) => {
     if (!files?.length) return;
@@ -36,7 +39,7 @@ export function DocumentUpload({ requestId, requestType, onUploaded }: Props) {
           toast.error(`${file.name}: use PDF, JPG, PNG, or WebP`);
           continue;
         }
-        const doc = await uploadDocument(requestId, { file, kind });
+        const doc = await uploadDocument(requestId, { file, kind: activeKind });
         onUploaded(doc);
         toast.success(`Uploaded ${file.name}`);
       }
@@ -49,22 +52,24 @@ export function DocumentUpload({ requestId, requestType, onUploaded }: Props) {
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap gap-2">
-        {(['doctors_note', 'supporting'] as const).map((k) => (
-          <button
-            key={k}
-            type="button"
-            onClick={() => setKind(k)}
-            className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-              kind === k
-                ? 'bg-[#0A4E8E] text-white'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-            }`}
-          >
-            {k === 'doctors_note' ? "Doctor's note" : 'Supporting doc'}
-          </button>
-        ))}
-      </div>
+      {!forcedKind ? (
+        <div className="flex flex-wrap gap-2">
+          {(['doctors_note', 'supporting'] as const).map((k) => (
+            <button
+              key={k}
+              type="button"
+              onClick={() => setKind(k)}
+              className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                kind === k
+                  ? 'bg-[#0A4E8E] text-white'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              {k === 'doctors_note' ? "Doctor's note" : 'Supporting doc'}
+            </button>
+          ))}
+        </div>
+      ) : null}
 
       <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-300 bg-slate-50/80 px-4 py-8 text-center transition-colors hover:border-[#0A4E8E]/40 hover:bg-sky-50/40">
         <input

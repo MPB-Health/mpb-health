@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -8,7 +8,6 @@ import {
   ExternalLink,
   Loader2,
   Shield,
-  Clock,
   FileSpreadsheet,
   FormInput,
   Database,
@@ -24,12 +23,25 @@ import {
   Workflow,
   HandHeart,
   Sparkles,
+  Clock3,
+  ArrowUpRight,
 } from 'lucide-react';
 import { supabase } from '@mpbhealth/database';
-import { usePortalAccess } from '@mpbhealth/auth';
+import { usePortalAccess, useTenant } from '@mpbhealth/auth';
 import { getPortalUrl, type PortalKey } from '@mpbhealth/config';
 import toast from 'react-hot-toast';
-import { ARYX_APPS, HR_TIME_OFF_ENABLED } from '../lib/hr';
+import {
+  ARYX_APPS,
+  HR_ATTENDANCE_ENABLED,
+  HR_TIME_OFF_ENABLED,
+  getBrowserPosition,
+  getOpenSession,
+  loadAttendanceContext,
+  punchAttendance,
+  type StaffAttendanceSession,
+  type StaffProfile,
+} from '../lib/hr';
+import { DashboardPresenceHero } from '../components/hr/DashboardPresenceHero';
 
 interface PortalCardDef {
   key: PortalKey;
@@ -220,7 +232,12 @@ function HubTileLink({
   if (onClick) {
     return (
       <div className={className} style={style}>
-        <button type="button" onClick={onClick} disabled={loading} className="hr-hub-tile-inner group disabled:cursor-wait disabled:opacity-60">
+        <button
+          type="button"
+          onClick={onClick}
+          disabled={loading}
+          className="hr-hub-tile-inner group disabled:cursor-wait disabled:opacity-60"
+        >
           {inner}
         </button>
       </div>
@@ -247,8 +264,14 @@ function HubTileLink({
 }
 
 export default function Dashboard() {
+  const { orgId, loading: tenantLoading } = useTenant();
   const [user, setUser] = useState<{ id: string; email: string } | null>(null);
   const [sessionLoading, setSessionLoading] = useState(true);
+  const [profile, setProfile] = useState<StaffProfile | null>(null);
+  const [openSession, setOpenSession] = useState<StaffAttendanceSession | null>(null);
+  const [remoteEligible, setRemoteEligible] = useState(false);
+  const [presenceLoading, setPresenceLoading] = useState(HR_ATTENDANCE_ENABLED);
+  const [punchBusy, setPunchBusy] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -270,6 +293,37 @@ export default function Dashboard() {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const reloadPresence = useCallback(async () => {
+    if (!HR_ATTENDANCE_ENABLED) return;
+    const [ctx, open] = await Promise.all([loadAttendanceContext(), getOpenSession()]);
+    setProfile(ctx.profile);
+    setRemoteEligible(ctx.remoteEligible);
+    setOpenSession(open);
+  }, []);
+
+  useEffect(() => {
+    if (!HR_ATTENDANCE_ENABLED) {
+      setPresenceLoading(false);
+      return;
+    }
+    if (tenantLoading || !orgId || sessionLoading || !user) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        await reloadPresence();
+      } catch (err) {
+        if (!cancelled) {
+          toast.error(err instanceof Error ? err.message : 'Could not load presence');
+        }
+      } finally {
+        if (!cancelled) setPresenceLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [tenantLoading, orgId, sessionLoading, user, reloadPresence]);
 
   const {
     canAccessAdmin,
@@ -315,6 +369,39 @@ export default function Dashboard() {
     }
   };
 
+  const runPunch = async (action: 'clock_in' | 'clock_out') => {
+    if (punchBusy) return;
+    setPunchBusy(true);
+    const idempotencyKey = `${action}:${crypto.randomUUID()}`;
+    try {
+      let position = null;
+      if (!remoteEligible) {
+        toast.loading('Getting your location…', { id: 'geo' });
+        position = await getBrowserPosition();
+        toast.dismiss('geo');
+      }
+
+      const result = await punchAttendance({
+        action,
+        position,
+        idempotency_key: idempotencyKey,
+      });
+
+      if (!result.ok) {
+        toast.error(result.message || result.error || 'Punch failed');
+        return;
+      }
+
+      toast.success(action === 'clock_in' ? 'Clocked in' : 'Clocked out');
+      await reloadPresence();
+    } catch (err) {
+      toast.dismiss('geo');
+      toast.error(err instanceof Error ? err.message : 'Punch failed');
+    } finally {
+      setPunchBusy(false);
+    }
+  };
+
   if (sessionLoading || rolesLoading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -332,29 +419,84 @@ export default function Dashboard() {
 
   return (
     <div className="hr-surface space-y-10">
-      <div className="animate-fade-up">
-        <div className="hub-partner-strip">
-          {HEALTHSHARE_PARTNERS.map((p) => (
-            <span key={p.key} className="hub-partner-chip">
-              {p.name}
-            </span>
-          ))}
+      {HR_ATTENDANCE_ENABLED ? (
+        <DashboardPresenceHero
+          greeting={greeting}
+          profile={profile}
+          openSession={openSession}
+          remoteEligible={remoteEligible}
+          busy={punchBusy}
+          loading={presenceLoading}
+          onClockIn={() => void runPunch('clock_in')}
+          onClockOut={() => void runPunch('clock_out')}
+        />
+      ) : (
+        <div className="animate-fade-up">
+          <h1 className="hub-hero-title mb-3">{greeting}</h1>
+          <p className="max-w-xl text-base text-[color:var(--hr-muted)] sm:text-lg">
+            Launch portals, partner communities, and daily tools from one place.
+          </p>
         </div>
-        <h1 className="hub-hero-title mb-3">{greeting}</h1>
-        <p className="max-w-xl text-base text-[color:var(--hr-muted)] sm:text-lg">
-          Launch portals, partner communities, and daily tools from one place.
-        </p>
-      </div>
+      )}
 
-      <section className="animate-fade-up" style={{ animationDelay: '60ms' }}>
+      {(HR_ATTENDANCE_ENABLED || HR_TIME_OFF_ENABLED) && (
+        <section className="animate-fade-up" style={{ animationDelay: '40ms' }}>
+          <div className="mb-4 flex items-end justify-between gap-3">
+            <h2 className="hub-section-title">Your day</h2>
+            {HR_ATTENDANCE_ENABLED ? (
+              <Link
+                to="/attendance"
+                className="inline-flex items-center gap-1 text-xs font-semibold text-[color:var(--hr-accent)]"
+              >
+                Attendance detail
+                <ArrowUpRight className="h-3.5 w-3.5" />
+              </Link>
+            ) : null}
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {HR_ATTENDANCE_ENABLED ? (
+              <HubTileLink
+                href="/attendance"
+                icon={Clock3}
+                well="hr-icon-well-ink"
+                name="Attendance"
+                description="History, geofence, and standing remote requests."
+              />
+            ) : null}
+            {HR_TIME_OFF_ENABLED ? (
+              <>
+                <HubTileLink
+                  href="/time-off"
+                  icon={CalendarClock}
+                  well="hr-icon-well-accent"
+                  name="Request time off"
+                  description="PTO, sick days, appointments, and leave."
+                />
+                <HubTileLink
+                  href="/calendar"
+                  icon={CalendarDays}
+                  well="hr-icon-well-signal"
+                  name="Team calendar"
+                  description="See who is out by name and leave type."
+                />
+              </>
+            ) : null}
+          </div>
+        </section>
+      )}
+
+      <section className="animate-fade-up" style={{ animationDelay: '80ms' }}>
         <h2 className="hub-section-title mb-4">Portals</h2>
         {visiblePortals.length === 0 ? (
           <div className="hr-bezel">
             <div className="hr-bezel-inner px-6 py-14 text-center">
               <Shield className="mx-auto mb-4 h-10 w-10 text-[color:var(--hr-mist)]" />
-              <h3 className="mb-2 text-lg font-semibold text-[color:var(--hr-ink)]">No portals assigned</h3>
+              <h3 className="mb-2 text-lg font-semibold text-[color:var(--hr-ink)]">
+                No portals assigned
+              </h3>
               <p className="mx-auto max-w-md text-sm text-[color:var(--hr-muted)]">
-                You do not have portal access yet. Contact your administrator to get roles assigned.
+                You do not have portal access yet. Contact your administrator to get roles
+                assigned.
               </p>
             </div>
           </div>
@@ -381,30 +523,17 @@ export default function Dashboard() {
         )}
       </section>
 
-      {HR_TIME_OFF_ENABLED && (
-        <section className="animate-fade-up" style={{ animationDelay: '120ms' }}>
-          <h2 className="hub-section-title mb-4">Time & leave</h2>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <HubTileLink
-              href="/time-off"
-              icon={CalendarClock}
-              well="hr-icon-well-accent"
-              name="Request time off"
-              description="PTO, sick days, appointments, and leave. HR is emailed on submit."
-            />
-            <HubTileLink
-              href="/calendar"
-              icon={CalendarDays}
-              well="hr-icon-well-signal"
-              name="Team calendar"
-              description="See who is out by name and leave type. Private notes stay hidden."
-            />
+      <section className="animate-fade-up" style={{ animationDelay: '120ms' }}>
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <h2 className="hub-section-title">Healthshare partners</h2>
+          <div className="hub-partner-strip !mb-0">
+            {HEALTHSHARE_PARTNERS.map((p) => (
+              <span key={p.key} className="hub-partner-chip">
+                {p.name}
+              </span>
+            ))}
           </div>
-        </section>
-      )}
-
-      <section className="animate-fade-up" style={{ animationDelay: '160ms' }}>
-        <h2 className="hub-section-title mb-4">Healthshare partners</h2>
+        </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {HEALTHSHARE_PARTNERS.map((link, i) => (
             <HubTileLink
@@ -424,7 +553,7 @@ export default function Dashboard() {
         </div>
       </section>
 
-      <section className="animate-fade-up" style={{ animationDelay: '200ms' }}>
+      <section className="animate-fade-up" style={{ animationDelay: '160ms' }}>
         <h2 className="hub-section-title mb-4">ARYX Platform</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {ARYX_APPS.map((app, i) => {
@@ -448,7 +577,7 @@ export default function Dashboard() {
         </div>
       </section>
 
-      <section className="animate-fade-up" style={{ animationDelay: '240ms' }}>
+      <section className="animate-fade-up" style={{ animationDelay: '200ms' }}>
         <h2 className="hub-section-title mb-4">Tools & services</h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {EXTERNAL_LINKS.map((link, i) => (
@@ -470,9 +599,9 @@ export default function Dashboard() {
       </section>
 
       {roles.length > 0 && (
-        <div className="animate-fade-up pt-2" style={{ animationDelay: '280ms' }}>
+        <div className="animate-fade-up pt-2" style={{ animationDelay: '240ms' }}>
           <div className="mb-3 flex items-center gap-2 text-xs text-[color:var(--hr-muted)]">
-            <Clock className="h-3.5 w-3.5" />
+            <Shield className="h-3.5 w-3.5" />
             <span>Your roles</span>
           </div>
           <div className="flex flex-wrap gap-2">

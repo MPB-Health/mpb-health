@@ -24,7 +24,11 @@ export async function loadAttendanceContext(): Promise<{
 }> {
   let profile = await getMyProfile();
   if (!profile) {
-    profile = await ensureMyProfile();
+    await ensureMyProfile();
+    profile = await getMyProfile();
+  }
+  if (!profile) {
+    throw new Error('Could not load staff profile');
   }
   const remoteEligible = await checkRemoteEligible();
   return { profile, remoteEligible };

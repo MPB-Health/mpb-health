@@ -57,13 +57,13 @@ export async function getMyProfile(): Promise<StaffProfile | null> {
 
   const { data, error } = await supabase
     .from('staff_profiles')
-    .select(PROFILE_COLUMNS)
+    .select(`${PROFILE_COLUMNS}, department:staff_departments(${DEPT_COLUMNS})`)
     .eq('org_id', orgId)
     .eq('user_id', user.id)
     .maybeSingle();
 
   if (error) throw error;
-  return data as StaffProfile | null;
+  return data as unknown as StaffProfile | null;
 }
 
 export async function listDepartments(includeInactive = false): Promise<StaffDepartment[]> {

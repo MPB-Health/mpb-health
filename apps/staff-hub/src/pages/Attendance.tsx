@@ -161,8 +161,10 @@ export default function Attendance() {
         (profile.remote_status === 'ineligible' || profile.remote_status === 'revoked') && (
           <HrBezel>
             <div className="space-y-3 p-4 sm:p-6">
-              <h2 className="text-sm font-semibold text-slate-800">Request standing remote</h2>
-              <p className="text-xs text-slate-500">
+              <h2 className="text-sm font-semibold text-[color:var(--hr-ink)]">
+                Request standing remote
+              </h2>
+              <p className="text-xs text-[color:var(--hr-muted)]">
                 HR must approve before you can punch without being at the office. Dated remote
                 days can also be requested under Time Off.
               </p>
@@ -171,7 +173,7 @@ export default function Attendance() {
                 onChange={(e) => setRemoteNote(e.target.value)}
                 rows={3}
                 placeholder="Optional note for HR"
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none ring-sky-200 focus:ring-2"
+                className="hr-field resize-y"
               />
               <HrSecondaryButton type="button" disabled={busy} onClick={() => void onRequestRemote()}>
                 Submit remote request

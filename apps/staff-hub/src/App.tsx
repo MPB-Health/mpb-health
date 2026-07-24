@@ -21,7 +21,7 @@ const Attendance = lazy(() => import('./pages/Attendance'));
 function PageLoader() {
   return (
     <div className="flex items-center justify-center py-16">
-      <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+      <Loader2 className="h-6 w-6 animate-spin text-[color:var(--hr-accent)]" />
     </div>
   );
 }
@@ -56,8 +56,8 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 
   if (state === 'loading') {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
+      <div className="flex min-h-[100dvh] items-center justify-center bg-[color:var(--hr-paper)]">
+        <Loader2 className="h-8 w-8 animate-spin text-[color:var(--hr-accent)]" />
       </div>
     );
   }
@@ -86,8 +86,8 @@ function GuestGuard({ children }: { children: React.ReactNode }) {
 
   if (state === 'loading') {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
+      <div className="flex min-h-[100dvh] items-center justify-center bg-[color:var(--hr-paper)]">
+        <Loader2 className="h-8 w-8 animate-spin text-[color:var(--hr-accent)]" />
       </div>
     );
   }

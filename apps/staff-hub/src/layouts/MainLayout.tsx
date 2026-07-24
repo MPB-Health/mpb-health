@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { NavLink, useLocation, Outlet } from 'react-router-dom';
 import { supabase } from '@mpbhealth/database';
+import { useTheme } from '@mpbhealth/ui';
 import {
   LayoutDashboard,
   StickyNote,
@@ -21,6 +22,7 @@ import {
   HR_TIME_OFF_ENABLED,
   checkIsStaffHr,
 } from '../lib/hr';
+import { HubAtmosphereControl } from '../components/HubAtmosphereControl';
 
 type NavItem = { name: string; href: string; icon: typeof LayoutDashboard };
 
@@ -64,6 +66,21 @@ function buildNav(isHr: boolean): { label: string; items: NavItem[] }[] {
   return groups;
 }
 
+function pageTitle(pathname: string): string {
+  if (pathname === '/') return 'Hub';
+  if (pathname.startsWith('/attendance')) return 'Attendance';
+  if (pathname.startsWith('/time-off/new')) return 'New request';
+  if (pathname.startsWith('/time-off/')) return 'Request';
+  if (pathname.startsWith('/time-off')) return 'Time Off';
+  if (pathname.startsWith('/calendar')) return 'Calendar';
+  if (pathname.startsWith('/hr/roster')) return 'Roster';
+  if (pathname.startsWith('/hr')) return 'HR Queue';
+  if (pathname.startsWith('/notes')) return 'Notes';
+  if (pathname.startsWith('/tasks')) return 'Tasks';
+  if (pathname.startsWith('/profile')) return 'Profile';
+  return 'Staff Hub';
+}
+
 function NavGroups({
   groups,
   onNavigate,
@@ -103,6 +120,7 @@ function NavGroups({
 
 export default function MainLayout() {
   const location = useLocation();
+  const { resolvedTheme } = useTheme();
   const [user, setUser] = useState<{ email: string } | null>(null);
   const [isHr, setIsHr] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -120,7 +138,30 @@ export default function MainLayout() {
     setMobileOpen(false);
   }, [location.pathname]);
 
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMobileOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [mobileOpen]);
+
+  useEffect(() => {
+    const meta = document.querySelector('meta[name="theme-color"]:not([media])');
+    const color = resolvedTheme === 'dark' ? '#0a1620' : '#0A4E8E';
+    if (meta) {
+      meta.setAttribute('content', color);
+    } else {
+      const el = document.createElement('meta');
+      el.name = 'theme-color';
+      el.content = color;
+      document.head.appendChild(el);
+    }
+  }, [resolvedTheme]);
+
   const groups = useMemo(() => buildNav(isHr), [isHr]);
+  const title = pageTitle(location.pathname);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -129,7 +170,7 @@ export default function MainLayout() {
   };
 
   return (
-    <div className="hub-shell hub-shell-rail">
+    <div className="hub-shell hub-shell-rail" data-theme={resolvedTheme}>
       <aside className="hub-sidebar" aria-label="Staff Hub sidebar">
         <div className="hub-sidebar-inner">
           <div className="flex items-center gap-3 px-1">
@@ -150,18 +191,21 @@ export default function MainLayout() {
             <NavGroups groups={groups} />
           </div>
 
-          <div className="mt-6 border-t border-[color:var(--hr-line)] pt-4">
-            <p className="truncate px-2.5 text-[11px] text-[color:var(--hr-muted)]">
-              {user?.email ?? 'Signed in'}
-            </p>
-            <button
-              type="button"
-              onClick={() => void handleSignOut()}
-              className="hub-side-link mt-2 w-full"
-            >
-              <LogOut className="h-4 w-4 shrink-0 opacity-80" strokeWidth={1.75} />
-              <span>Sign out</span>
-            </button>
+          <div className="mt-6 space-y-4 border-t border-[color:var(--hr-line)] pt-4">
+            <HubAtmosphereControl />
+            <div>
+              <p className="truncate px-2.5 text-[11px] text-[color:var(--hr-muted)]">
+                {user?.email ?? 'Signed in'}
+              </p>
+              <button
+                type="button"
+                onClick={() => void handleSignOut()}
+                className="hub-side-link mt-2 w-full"
+              >
+                <LogOut className="h-4 w-4 shrink-0 opacity-80" strokeWidth={1.75} />
+                <span>Sign out</span>
+              </button>
+            </div>
           </div>
         </div>
       </aside>
@@ -171,21 +215,18 @@ export default function MainLayout() {
           <button
             type="button"
             onClick={() => setMobileOpen(true)}
-            className="rounded-full p-2 text-[color:var(--hr-muted)] transition-colors hover:bg-[color:var(--hr-mist)] hover:text-[color:var(--hr-ink)]"
+            className="hub-icon-btn"
             aria-label="Open menu"
           >
             <Menu className="h-5 w-5" />
           </button>
-          <div className="flex min-w-0 items-center gap-2">
-            <div className="hub-mark !h-8 !w-8 !rounded-lg !text-[0.6rem]" aria-hidden>
-              MPB
-            </div>
-            <p className="truncate text-sm font-semibold text-[color:var(--hr-ink)]">Staff Hub</p>
+          <div className="min-w-0 text-center">
+            <p className="truncate text-sm font-semibold text-[color:var(--hr-ink)]">{title}</p>
           </div>
           <button
             type="button"
             onClick={() => void handleSignOut()}
-            className="rounded-full p-2 text-[color:var(--hr-muted)] transition-colors hover:bg-[color:var(--hr-mist)]"
+            className="hub-icon-btn"
             aria-label="Sign out"
           >
             <LogOut className="h-4 w-4" />
@@ -196,7 +237,7 @@ export default function MainLayout() {
           <>
             <button
               type="button"
-              className="fixed inset-0 z-40 bg-[color:var(--hr-ink)]/30 lg:hidden"
+              className="hub-drawer-scrim lg:hidden"
               aria-label="Close menu overlay"
               onClick={() => setMobileOpen(false)}
             />
@@ -211,18 +252,32 @@ export default function MainLayout() {
                 <button
                   type="button"
                   onClick={() => setMobileOpen(false)}
-                  className="rounded-full p-2 text-[color:var(--hr-muted)] hover:bg-[color:var(--hr-mist)]"
+                  className="hub-icon-btn"
                   aria-label="Close menu"
                 >
                   <X className="h-5 w-5" />
                 </button>
               </div>
               <NavGroups groups={groups} onNavigate={() => setMobileOpen(false)} />
+              <div className="mt-8 border-t border-[color:var(--hr-line)] pt-4">
+                <HubAtmosphereControl />
+                <p className="mt-4 truncate px-2.5 text-[11px] text-[color:var(--hr-muted)]">
+                  {user?.email ?? 'Signed in'}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => void handleSignOut()}
+                  className="hub-side-link mt-2 w-full"
+                >
+                  <LogOut className="h-4 w-4 shrink-0 opacity-80" strokeWidth={1.75} />
+                  <span>Sign out</span>
+                </button>
+              </div>
             </div>
           </>
         ) : null}
 
-        <main className="hub-main">
+        <main className="hub-main" key={location.pathname}>
           <Outlet />
         </main>
       </div>

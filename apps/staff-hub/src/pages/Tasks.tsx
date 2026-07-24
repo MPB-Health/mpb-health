@@ -31,10 +31,30 @@ interface Task {
 }
 
 const PRIORITY_CONFIG = {
-  urgent: { label: 'Urgent', color: 'text-red-600 bg-red-50 border-red-200', icon: AlertTriangle },
-  high: { label: 'High', color: 'text-orange-600 bg-orange-50 border-orange-200', icon: ArrowUp },
-  medium: { label: 'Medium', color: 'text-blue-600 bg-blue-50 border-blue-200', icon: ArrowRight },
-  low: { label: 'Low', color: 'text-slate-500 bg-slate-50 border-slate-200', icon: ArrowDown },
+  urgent: {
+    label: 'Urgent',
+    color:
+      'text-red-600 bg-red-50 border-red-200 dark:text-red-300 dark:bg-red-950/50 dark:border-red-800/40',
+    icon: AlertTriangle,
+  },
+  high: {
+    label: 'High',
+    color:
+      'text-orange-600 bg-orange-50 border-orange-200 dark:text-orange-300 dark:bg-orange-950/40 dark:border-orange-800/40',
+    icon: ArrowUp,
+  },
+  medium: {
+    label: 'Medium',
+    color:
+      'text-blue-600 bg-blue-50 border-blue-200 dark:text-sky-300 dark:bg-sky-950/40 dark:border-sky-800/40',
+    icon: ArrowRight,
+  },
+  low: {
+    label: 'Low',
+    color:
+      'text-slate-500 bg-slate-50 border-slate-200 dark:text-[color:var(--hr-muted)] dark:bg-[color:var(--hr-mist)] dark:border-[color:var(--hr-line)]',
+    icon: ArrowDown,
+  },
 };
 
 type FilterStatus = 'all' | 'active' | 'done';

@@ -628,7 +628,7 @@ export default function Dashboard() {
             {roles.map((role) => (
               <span
                 key={role}
-                className="inline-flex items-center gap-1.5 rounded-full bg-white/80 px-3 py-1.5 text-xs font-medium text-[color:var(--hr-ink)] shadow-[inset_0_0_0_1px_var(--hr-line)]"
+                className="inline-flex items-center gap-1.5 rounded-full bg-[color:var(--hr-elevated)]/90 px-3 py-1.5 text-xs font-medium text-[color:var(--hr-ink)] shadow-[inset_0_0_0_1px_var(--hr-line)]"
               >
                 <Shield className="h-3 w-3 text-[color:var(--hr-accent)]" />
                 {formatRole(role)}

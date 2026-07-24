@@ -23,6 +23,8 @@ import {
   CalendarDays,
   Boxes,
   Workflow,
+  HandHeart,
+  Sparkles,
 } from 'lucide-react';
 import { supabase } from '@mpbhealth/database';
 import { usePortalAccess } from '@mpbhealth/auth';
@@ -35,8 +37,7 @@ interface PortalCardDef {
   name: string;
   description: string;
   icon: React.ElementType;
-  gradient: string;
-  iconBg: string;
+  well: string;
   openInNewTab?: boolean;
 }
 
@@ -44,46 +45,41 @@ const PORTAL_CARDS: PortalCardDef[] = [
   {
     key: 'admin',
     name: 'Admin Portal',
-    description: 'Manage users, enrollments, content, and platform settings',
+    description: 'Users, enrollments, content, and platform settings',
     icon: LayoutDashboard,
-    gradient: 'from-blue-500/10 to-blue-600/5',
-    iconBg: 'bg-blue-500/15 text-blue-600',
+    well: 'hr-icon-well-accent',
     openInNewTab: true,
   },
   {
     key: 'crm',
     name: 'CRM',
-    description: 'Manage leads, sales pipeline, and client relationships',
+    description: 'Leads, pipeline, and client relationships',
     icon: Users,
-    gradient: 'from-indigo-500/10 to-indigo-600/5',
-    iconBg: 'bg-indigo-500/15 text-indigo-600',
+    well: 'hr-icon-well-sky',
     openInNewTab: true,
   },
   {
     key: 'advisors',
     name: 'Advisor Portal',
-    description: 'Training modules, meetings, resources, and member tools',
+    description: 'Training, meetings, and member tools',
     icon: GraduationCap,
-    gradient: 'from-emerald-500/10 to-emerald-600/5',
-    iconBg: 'bg-emerald-500/15 text-emerald-600',
+    well: 'hr-icon-well-signal',
     openInNewTab: true,
   },
   {
     key: 'website',
     name: 'Website Backend',
-    description: 'CMS, blog management, and site configuration',
+    description: 'CMS, blog, and site configuration',
     icon: Globe,
-    gradient: 'from-amber-500/10 to-amber-600/5',
-    iconBg: 'bg-amber-500/15 text-amber-600',
+    well: 'hr-icon-well-amber',
     openInNewTab: true,
   },
   {
     key: 'support',
     name: 'Support Portal',
-    description: 'IT support ticketing and issue tracking',
+    description: 'IT ticketing and issue tracking',
     icon: HeadsetIcon,
-    gradient: 'from-purple-500/10 to-purple-600/5',
-    iconBg: 'bg-purple-500/15 text-purple-600',
+    well: 'hr-icon-well-teal',
     openInNewTab: true,
   },
 ];
@@ -94,9 +90,43 @@ interface ExternalLinkDef {
   description: string;
   url: string;
   icon: React.ElementType;
-  gradient: string;
-  iconBg: string;
+  well: string;
 }
+
+const HEALTHSHARE_PARTNERS: ExternalLinkDef[] = [
+  {
+    key: 'zion-healthshare',
+    name: 'Zion HealthShare',
+    description: 'Health sharing community portal',
+    url: 'https://zionhealthshare.org/',
+    icon: Heart,
+    well: 'hr-icon-well-rose',
+  },
+  {
+    key: 'sedera',
+    name: 'Sedera',
+    description: 'Medical cost sharing platform',
+    url: 'https://sedera.com/',
+    icon: ShieldPlus,
+    well: 'hr-icon-well-signal',
+  },
+  {
+    key: 'evertrust',
+    name: 'EverTrust',
+    description: 'Community health share memberships',
+    url: 'https://evertrusthealth.org/',
+    icon: HandHeart,
+    well: 'hr-icon-well-accent',
+  },
+  {
+    key: 'sharewell',
+    name: 'ShareWell',
+    description: 'Health care sharing community',
+    url: 'https://sharewellhealth.org/',
+    icon: Sparkles,
+    well: 'hr-icon-well-teal',
+  },
+];
 
 const EXTERNAL_LINKS: ExternalLinkDef[] = [
   {
@@ -105,8 +135,7 @@ const EXTERNAL_LINKS: ExternalLinkDef[] = [
     description: 'Enrollment administration platform',
     url: 'https://www.1administration.com/manage/',
     icon: FileSpreadsheet,
-    gradient: 'from-teal-500/10 to-teal-600/5',
-    iconBg: 'bg-teal-500/15 text-teal-600',
+    well: 'hr-icon-well-teal',
   },
   {
     key: 'cognito-forms',
@@ -114,8 +143,7 @@ const EXTERNAL_LINKS: ExternalLinkDef[] = [
     description: 'Form builder and data collection',
     url: 'https://www.cognitoforms.com/login',
     icon: FormInput,
-    gradient: 'from-sky-500/10 to-sky-600/5',
-    iconBg: 'bg-sky-500/15 text-sky-600',
+    well: 'hr-icon-well-sky',
   },
   {
     key: 'zoho-crm',
@@ -123,8 +151,7 @@ const EXTERNAL_LINKS: ExternalLinkDef[] = [
     description: 'Legacy CRM and customer management',
     url: 'https://www.zoho.com/crm/login.html',
     icon: Database,
-    gradient: 'from-red-500/10 to-red-600/5',
-    iconBg: 'bg-red-500/15 text-red-600',
+    well: 'hr-icon-well-rose',
   },
   {
     key: 'zoho-salesiq',
@@ -132,8 +159,7 @@ const EXTERNAL_LINKS: ExternalLinkDef[] = [
     description: 'Live chat and visitor tracking',
     url: 'https://www.zoho.com/salesiq/login.html',
     icon: MessageSquare,
-    gradient: 'from-orange-500/10 to-orange-600/5',
-    iconBg: 'bg-orange-500/15 text-orange-600',
+    well: 'hr-icon-well-amber',
   },
   {
     key: 'goto-connect',
@@ -141,8 +167,7 @@ const EXTERNAL_LINKS: ExternalLinkDef[] = [
     description: 'Phone system and communications',
     url: 'https://identity.goto.com/login',
     icon: Phone,
-    gradient: 'from-cyan-500/10 to-cyan-600/5',
-    iconBg: 'bg-cyan-500/15 text-cyan-600',
+    well: 'hr-icon-well-sky',
   },
   {
     key: 'outlook',
@@ -150,8 +175,7 @@ const EXTERNAL_LINKS: ExternalLinkDef[] = [
     description: 'Email, calendar, and contacts',
     url: 'https://outlook.office.com/mail/',
     icon: Mail,
-    gradient: 'from-blue-500/10 to-blue-600/5',
-    iconBg: 'bg-blue-500/15 text-blue-600',
+    well: 'hr-icon-well-accent',
   },
   {
     key: 'outlook-calendar',
@@ -159,28 +183,77 @@ const EXTERNAL_LINKS: ExternalLinkDef[] = [
     description: 'Schedule meetings and manage events',
     url: 'https://outlook.office.com/calendar/',
     icon: Calendar,
-    gradient: 'from-blue-400/10 to-indigo-500/5',
-    iconBg: 'bg-indigo-500/15 text-indigo-600',
-  },
-  {
-    key: 'zion-healthshare',
-    name: 'Zion HealthShare',
-    description: 'Health sharing community portal',
-    url: 'https://zionhealthshare.org/',
-    icon: Heart,
-    gradient: 'from-rose-500/10 to-rose-600/5',
-    iconBg: 'bg-rose-500/15 text-rose-600',
-  },
-  {
-    key: 'sedera',
-    name: 'Sedera',
-    description: 'Medical cost sharing platform',
-    url: 'https://sedera.com/',
-    icon: ShieldPlus,
-    gradient: 'from-green-500/10 to-green-600/5',
-    iconBg: 'bg-green-500/15 text-green-600',
+    well: 'hr-icon-well-ink',
   },
 ];
+
+function HubTileLink({
+  href,
+  external,
+  icon: Icon,
+  well,
+  name,
+  description,
+  trailing,
+  delayMs,
+  onClick,
+  loading,
+}: {
+  href?: string;
+  external?: boolean;
+  icon: React.ElementType;
+  well: string;
+  name: string;
+  description: string;
+  trailing?: React.ReactNode;
+  delayMs?: number;
+  onClick?: () => void;
+  loading?: boolean;
+}) {
+  const inner = (
+    <>
+      <div className="mb-4 flex items-start justify-between">
+        <div className={`hr-icon-well ${well}`}>
+          {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Icon className="h-5 w-5" />}
+        </div>
+        {trailing}
+      </div>
+      <h3 className="mb-1 font-semibold text-[color:var(--hr-ink)]">{name}</h3>
+      <p className="text-sm leading-relaxed text-[color:var(--hr-muted)]">{description}</p>
+    </>
+  );
+
+  const className = 'hr-hub-tile animate-fade-up';
+  const style = delayMs != null ? { animationDelay: `${delayMs}ms` } : undefined;
+
+  if (onClick) {
+    return (
+      <div className={className} style={style}>
+        <button type="button" onClick={onClick} disabled={loading} className="hr-hub-tile-inner group disabled:cursor-wait disabled:opacity-60">
+          {inner}
+        </button>
+      </div>
+    );
+  }
+
+  if (external && href) {
+    return (
+      <div className={className} style={style}>
+        <a href={href} target="_blank" rel="noopener noreferrer" className="hr-hub-tile-inner group">
+          {inner}
+        </a>
+      </div>
+    );
+  }
+
+  return (
+    <div className={className} style={style}>
+      <Link to={href ?? '/'} className="hr-hub-tile-inner group">
+        {inner}
+      </Link>
+    </div>
+  );
+}
 
 export default function Dashboard() {
   const [user, setUser] = useState<{ id: string; email: string } | null>(null);
@@ -194,7 +267,9 @@ export default function Dashboard() {
       setSessionLoading(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         setUser({ id: session.user.id, email: session.user.email ?? '' });
       } else {
@@ -218,12 +293,18 @@ export default function Dashboard() {
 
   const canAccess = (key: PortalKey): boolean => {
     switch (key) {
-      case 'admin': return canAccessAdmin;
-      case 'crm': return canAccessCrm;
-      case 'advisors': return canAccessAdvisor;
-      case 'website': return canAccessAdmin;
-      case 'support': return canAccessSupport;
-      default: return false;
+      case 'admin':
+        return canAccessAdmin;
+      case 'crm':
+        return canAccessCrm;
+      case 'advisors':
+        return canAccessAdvisor;
+      case 'website':
+        return canAccessAdmin;
+      case 'support':
+        return canAccessSupport;
+      default:
+        return false;
     }
   };
 
@@ -247,10 +328,12 @@ export default function Dashboard() {
 
   if (sessionLoading || rolesLoading) {
     return (
-      <div className="flex items-center justify-center py-16">
+      <div className="flex items-center justify-center py-20">
         <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-          <p className="text-sm text-slate-500">Loading your portals...</p>
+          <div className="hr-icon-well hr-icon-well-accent">
+            <Loader2 className="h-5 w-5 animate-spin" />
+          </div>
+          <p className="text-sm text-[color:var(--hr-muted)]">Loading your workspace...</p>
         </div>
       </div>
     );
@@ -259,180 +342,163 @@ export default function Dashboard() {
   const greeting = getGreeting();
 
   return (
-    <div className="space-y-8">
-      {/* Greeting */}
+    <div className="hr-surface space-y-10">
       <div className="animate-fade-up">
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">{greeting}</h1>
-          <p className="text-slate-500 text-lg">Select a portal to get started.</p>
+        <div className="hub-partner-strip">
+          {HEALTHSHARE_PARTNERS.map((p) => (
+            <span key={p.key} className="hub-partner-chip">
+              {p.name}
+            </span>
+          ))}
         </div>
+        <h1 className="hub-hero-title mb-3">{greeting}</h1>
+        <p className="max-w-xl text-base text-[color:var(--hr-muted)] sm:text-lg">
+          Launch portals, partner communities, and daily tools from one place.
+        </p>
+      </div>
 
-        {/* Portal cards */}
+      <section className="animate-fade-up" style={{ animationDelay: '60ms' }}>
+        <h2 className="hub-section-title mb-4">Portals</h2>
         {visiblePortals.length === 0 ? (
-          <div className="animate-fade-up text-center py-16 rounded-2xl border border-dashed border-slate-300 bg-white">
-            <Shield className="w-12 h-12 mx-auto text-slate-300 mb-4" />
-            <h2 className="text-lg font-semibold text-slate-700 mb-2">No portals assigned</h2>
-            <p className="text-slate-500 max-w-md mx-auto">
-              You don&apos;t have access to any portals yet. Contact your administrator
-              to get access assigned to your account.
-            </p>
+          <div className="hr-bezel">
+            <div className="hr-bezel-inner px-6 py-14 text-center">
+              <Shield className="mx-auto mb-4 h-10 w-10 text-[color:var(--hr-mist)]" />
+              <h3 className="mb-2 text-lg font-semibold text-[color:var(--hr-ink)]">No portals assigned</h3>
+              <p className="mx-auto max-w-md text-sm text-[color:var(--hr-muted)]">
+                You do not have portal access yet. Contact your administrator to get roles assigned.
+              </p>
+            </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {visiblePortals.map((portal, i) => {
-              const Icon = portal.icon;
-              const isLoading = loadingPortal === portal.key;
-
-              return (
-                <button
-                  key={portal.key}
-                  onClick={() => handleNavigate(portal)}
-                  disabled={isLoading}
-                  className="animate-fade-up group relative text-left rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm hover:shadow-lg hover:border-slate-300 hover:-translate-y-1 transition-all duration-200 disabled:opacity-60 disabled:cursor-wait"
-                  style={{ animationDelay: `${i * 80}ms` }}
-                >
-                  <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${portal.gradient} opacity-0 group-hover:opacity-100 transition-opacity`} />
-
-                  <div className="relative">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${portal.iconBg} transition-transform group-hover:scale-110`}>
-                        {isLoading ? (
-                          <Loader2 className="w-6 h-6 animate-spin" />
-                        ) : (
-                          <Icon className="w-6 h-6" />
-                        )}
-                      </div>
-                      {portal.openInNewTab && (
-                        <ExternalLink className="w-4 h-4 text-slate-300 group-hover:text-slate-400 transition-colors" />
-                      )}
-                    </div>
-
-                    <h3 className="font-semibold text-slate-800 mb-1 group-hover:text-slate-900">{portal.name}</h3>
-                    <p className="text-sm text-slate-500 leading-relaxed">{portal.description}</p>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Time & leave shortcuts */}
-        {HR_TIME_OFF_ENABLED && (
-          <div className="hr-surface animate-fade-up" style={{ animationDelay: '120ms' }}>
-            <h2 className="hr-display mb-4 text-lg font-semibold tracking-tight text-[color:var(--hr-ink)]">
-              Time & leave
-            </h2>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="hr-hub-tile">
-                <Link to="/time-off" className="hr-hub-tile-inner group">
-                  <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-[color:var(--hr-accent)]/10 text-[color:var(--hr-accent)] transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:scale-105">
-                    <CalendarClock className="h-5 w-5" />
-                  </div>
-                  <h3 className="mb-1 font-semibold text-[color:var(--hr-ink)]">Request time off</h3>
-                  <p className="text-sm leading-relaxed text-[color:var(--hr-muted)]">
-                    PTO, sick days, appointments, and leave. HR is emailed on submit.
-                  </p>
-                </Link>
-              </div>
-              <div className="hr-hub-tile">
-                <Link to="/calendar" className="hr-hub-tile-inner group">
-                  <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-[color:var(--hr-signal)]/25 text-[color:var(--hr-ink)] transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:scale-105">
-                    <CalendarDays className="h-5 w-5" />
-                  </div>
-                  <h3 className="mb-1 font-semibold text-[color:var(--hr-ink)]">Team calendar</h3>
-                  <p className="text-sm leading-relaxed text-[color:var(--hr-muted)]">
-                    See who is out by name and leave type. Private notes stay hidden.
-                  </p>
-                </Link>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ARYX Platform */}
-        <div className="hr-surface mt-2 animate-fade-up" style={{ animationDelay: '200ms' }}>
-          <h2 className="hr-display mb-4 text-lg font-semibold tracking-tight text-[color:var(--hr-ink)]">
-            ARYX Platform
-          </h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {ARYX_APPS.map((app) => {
-              const Icon = app.key === 'aryx-crm' ? Boxes : Workflow;
-              return (
-                <div key={app.key} className="hr-hub-tile">
-                  <a
-                    href={app.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hr-hub-tile-inner group"
-                  >
-                    <div className="mb-4 flex items-start justify-between">
-                      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[color:var(--hr-ink)] text-white transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:scale-105">
-                        <Icon className="h-5 w-5" />
-                      </div>
-                      <ExternalLink className="h-4 w-4 text-slate-300 transition-colors group-hover:text-[color:var(--hr-muted)]" />
-                    </div>
-                    <h3 className="mb-1 font-semibold text-[color:var(--hr-ink)]">{app.name}</h3>
-                    <p className="text-sm leading-relaxed text-[color:var(--hr-muted)]">
-                      {app.description}
-                    </p>
-                  </a>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* External tools */}
-        <div className="mt-10 animate-fade-up" style={{ animationDelay: '300ms' }}>
-          <h2 className="mb-4 text-lg font-semibold text-slate-700">Tools & Services</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {EXTERNAL_LINKS.map((link, i) => {
-              const Icon = link.icon;
-              return (
-                <a
-                  key={link.key}
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="animate-fade-up group relative text-left rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm hover:shadow-lg hover:border-slate-300 hover:-translate-y-1 transition-all duration-200"
-                  style={{ animationDelay: `${(i + visiblePortals.length) * 80}ms` }}
-                >
-                  <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${link.gradient} opacity-0 group-hover:opacity-100 transition-opacity`} />
-                  <div className="relative">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${link.iconBg} transition-transform group-hover:scale-110`}>
-                        <Icon className="w-6 h-6" />
-                      </div>
-                      <ExternalLink className="w-4 h-4 text-slate-300 group-hover:text-slate-400 transition-colors" />
-                    </div>
-                    <h3 className="font-semibold text-slate-800 mb-1 group-hover:text-slate-900">{link.name}</h3>
-                    <p className="text-sm text-slate-500 leading-relaxed">{link.description}</p>
-                  </div>
-                </a>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Role badges */}
-        {roles.length > 0 && (
-          <div className="mt-12 animate-fade-up" style={{ animationDelay: '400ms' }}>
-            <div className="flex items-center gap-2 text-xs text-slate-400 mb-3">
-              <Clock className="w-3.5 h-3.5" />
-              <span>Your roles</span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {roles.map((role) => (
-                <span
-                  key={role}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full bg-slate-100 text-slate-600 border border-slate-200/80"
-                >
-                  <Shield className="w-3 h-3" />
-                  {formatRole(role)}
-                </span>
-              ))}
-            </div>
+            {visiblePortals.map((portal, i) => (
+              <HubTileLink
+                key={portal.key}
+                icon={portal.icon}
+                well={portal.well}
+                name={portal.name}
+                description={portal.description}
+                delayMs={i * 50}
+                loading={loadingPortal === portal.key}
+                onClick={() => handleNavigate(portal)}
+                trailing={
+                  portal.openInNewTab ? (
+                    <ExternalLink className="h-4 w-4 text-slate-300 transition-colors group-hover:text-[color:var(--hr-muted)]" />
+                  ) : undefined
+                }
+              />
+            ))}
           </div>
         )}
+      </section>
+
+      {HR_TIME_OFF_ENABLED && (
+        <section className="animate-fade-up" style={{ animationDelay: '120ms' }}>
+          <h2 className="hub-section-title mb-4">Time & leave</h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <HubTileLink
+              href="/time-off"
+              icon={CalendarClock}
+              well="hr-icon-well-accent"
+              name="Request time off"
+              description="PTO, sick days, appointments, and leave. HR is emailed on submit."
+            />
+            <HubTileLink
+              href="/calendar"
+              icon={CalendarDays}
+              well="hr-icon-well-signal"
+              name="Team calendar"
+              description="See who is out by name and leave type. Private notes stay hidden."
+            />
+          </div>
+        </section>
+      )}
+
+      <section className="animate-fade-up" style={{ animationDelay: '160ms' }}>
+        <h2 className="hub-section-title mb-4">Healthshare partners</h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {HEALTHSHARE_PARTNERS.map((link, i) => (
+            <HubTileLink
+              key={link.key}
+              href={link.url}
+              external
+              icon={link.icon}
+              well={link.well}
+              name={link.name}
+              description={link.description}
+              delayMs={i * 40}
+              trailing={
+                <ExternalLink className="h-4 w-4 text-slate-300 transition-colors group-hover:text-[color:var(--hr-muted)]" />
+              }
+            />
+          ))}
+        </div>
+      </section>
+
+      <section className="animate-fade-up" style={{ animationDelay: '200ms' }}>
+        <h2 className="hub-section-title mb-4">ARYX Platform</h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {ARYX_APPS.map((app, i) => {
+            const Icon = app.key === 'aryx-crm' ? Boxes : Workflow;
+            return (
+              <HubTileLink
+                key={app.key}
+                href={app.url}
+                external
+                icon={Icon}
+                well="hr-icon-well-ink"
+                name={app.name}
+                description={app.description}
+                delayMs={i * 40}
+                trailing={
+                  <ExternalLink className="h-4 w-4 text-slate-300 transition-colors group-hover:text-[color:var(--hr-muted)]" />
+                }
+              />
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="animate-fade-up" style={{ animationDelay: '240ms' }}>
+        <h2 className="hub-section-title mb-4">Tools & services</h2>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {EXTERNAL_LINKS.map((link, i) => (
+            <HubTileLink
+              key={link.key}
+              href={link.url}
+              external
+              icon={link.icon}
+              well={link.well}
+              name={link.name}
+              description={link.description}
+              delayMs={i * 35}
+              trailing={
+                <ExternalLink className="h-4 w-4 text-slate-300 transition-colors group-hover:text-[color:var(--hr-muted)]" />
+              }
+            />
+          ))}
+        </div>
+      </section>
+
+      {roles.length > 0 && (
+        <div className="animate-fade-up pt-2" style={{ animationDelay: '280ms' }}>
+          <div className="mb-3 flex items-center gap-2 text-xs text-[color:var(--hr-muted)]">
+            <Clock className="h-3.5 w-3.5" />
+            <span>Your roles</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {roles.map((role) => (
+              <span
+                key={role}
+                className="inline-flex items-center gap-1.5 rounded-full bg-white/80 px-3 py-1.5 text-xs font-medium text-[color:var(--hr-ink)] shadow-[inset_0_0_0_1px_var(--hr-line)]"
+              >
+                <Shield className="h-3 w-3 text-[color:var(--hr-accent)]" />
+                {formatRole(role)}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

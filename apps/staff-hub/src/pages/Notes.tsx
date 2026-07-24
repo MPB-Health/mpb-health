@@ -159,16 +159,15 @@ export default function Notes() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="hr-surface mx-auto max-w-5xl space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Notes</h1>
-          <p className="text-slate-500 mt-1">{notes.length} note{notes.length !== 1 ? 's' : ''}</p>
+          <h1 className="hub-hero-title text-3xl">Notes</h1>
+          <p className="mt-2 text-[color:var(--hr-muted)]">
+            {notes.length} note{notes.length !== 1 ? 's' : ''}
+          </p>
         </div>
-        <button
-          onClick={createNote}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
-        >
+        <button onClick={createNote} className="hr-btn-primary">
           <Plus className="w-4 h-4" />
           New Note
         </button>

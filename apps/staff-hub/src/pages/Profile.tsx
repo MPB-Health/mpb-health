@@ -121,16 +121,17 @@ export default function Profile() {
   if (!profile) return null;
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="hr-surface mx-auto max-w-2xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Profile</h1>
-        <p className="text-slate-500 mt-1">Manage your account information</p>
+        <h1 className="hub-hero-title text-3xl">Profile</h1>
+        <p className="mt-2 text-[color:var(--hr-muted)]">Manage your account information</p>
       </div>
 
       {/* Avatar + name header */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6">
+      <div className="hr-bezel">
+      <div className="hr-bezel-inner p-6">
         <div className="flex items-center gap-4 mb-6">
-          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white text-xl font-bold">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[#0a4e8e] to-[#7eb82d] text-xl font-bold text-white shadow-[0_8px_20px_rgba(10,78,142,0.25)]">
             {profile.first_name?.[0]?.toUpperCase() || profile.email[0]?.toUpperCase() || <User className="w-7 h-7" />}
           </div>
           <div>
@@ -218,12 +219,13 @@ export default function Profile() {
           <button
             onClick={handleSave}
             disabled={!dirty || saving}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="hr-btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Save
           </button>
         </div>
+      </div>
       </div>
     </div>
   );

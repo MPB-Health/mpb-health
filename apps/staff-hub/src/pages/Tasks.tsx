@@ -160,10 +160,10 @@ export default function Tasks() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="hr-surface mx-auto max-w-3xl space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Tasks</h1>
+          <h1 className="hub-hero-title text-3xl">Tasks</h1>
           <p className="text-slate-500 mt-1">
             {tasks.filter((t) => t.status !== 'done').length} active
             {overdue.length > 0 && <span className="text-red-500 font-medium"> &middot; {overdue.length} overdue</span>}
@@ -172,7 +172,7 @@ export default function Tasks() {
         </div>
         <button
           onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+          className="hr-btn-primary"
         >
           <Plus className="w-4 h-4" />
           New Task

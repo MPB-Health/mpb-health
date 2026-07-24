@@ -59,25 +59,32 @@ export default function MainLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
-      <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/80 backdrop-blur-sm">
-        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6">
-          <div className="flex items-center gap-3">
+    <div className="hub-shell">
+      <div className="hub-nav-island pt-3 sm:pt-4">
+        <header className="hub-nav-glass">
+          <div className="flex min-w-0 items-center gap-2.5 pl-1">
             <button
+              type="button"
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="-ml-1.5 rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700 lg:hidden"
+              className="rounded-full p-2 text-[color:var(--hr-muted)] transition-colors hover:bg-[color:var(--hr-mist)] hover:text-[color:var(--hr-ink)] lg:hidden"
+              aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
             >
               {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-cyan-500">
-                <span className="text-xs font-bold text-white">MPB</span>
-              </div>
-              <span className="font-semibold text-slate-800">Staff Hub</span>
+            <div className="hub-mark" aria-hidden>
+              MPB
+            </div>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold tracking-tight text-[color:var(--hr-ink)]">
+                Staff Hub
+              </p>
+              <p className="hidden truncate text-[11px] text-[color:var(--hr-muted)] sm:block">
+                Healthshare operations
+              </p>
             </div>
           </div>
 
-          <nav className="hidden items-center gap-1 lg:flex">
+          <nav className="hidden items-center gap-0.5 lg:flex" aria-label="Primary">
             {navItems.map((item) => {
               const Icon = item.icon;
               return (
@@ -86,64 +93,69 @@ export default function MainLayout() {
                   to={item.href}
                   end={item.href === '/'}
                   className={({ isActive }) =>
-                    `flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
-                      isActive
-                        ? 'bg-blue-50 text-blue-700'
-                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-800'
-                    }`
+                    `hub-nav-link ${isActive ? 'hub-nav-link-active' : ''}`
                   }
                 >
-                  <Icon className="h-4 w-4" />
+                  <Icon className="h-3.5 w-3.5" />
                   {item.name}
                 </NavLink>
               );
             })}
           </nav>
 
-          <div className="flex items-center gap-3">
-            <span className="hidden text-sm text-slate-500 sm:block">{user?.email}</span>
+          <div className="flex items-center gap-1.5 pr-0.5">
+            <span className="hidden max-w-[10rem] truncate text-xs text-[color:var(--hr-muted)] xl:block">
+              {user?.email}
+            </span>
             <button
+              type="button"
               onClick={handleSignOut}
-              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
+              className="inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium text-[color:var(--hr-muted)] transition-colors hover:bg-[color:var(--hr-mist)] hover:text-[color:var(--hr-ink)]"
             >
-              <LogOut className="h-4 w-4" />
+              <LogOut className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Sign out</span>
             </button>
           </div>
-        </div>
-      </header>
+        </header>
+
+        {mobileOpen && (
+          <div className="hub-mobile-drawer lg:hidden" role="dialog" aria-label="Navigation">
+            <nav className="space-y-1">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <NavLink
+                    key={item.href}
+                    to={item.href}
+                    end={item.href === '/'}
+                    className={({ isActive }) =>
+                      `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium ${
+                        isActive
+                          ? 'bg-[color:var(--hr-mist)] text-[color:var(--hr-accent-deep)]'
+                          : 'text-[color:var(--hr-muted)] hover:bg-[color:var(--hr-mist)] hover:text-[color:var(--hr-ink)]'
+                      }`
+                    }
+                  >
+                    <Icon className="h-5 w-5" />
+                    {item.name}
+                  </NavLink>
+                );
+              })}
+            </nav>
+          </div>
+        )}
+      </div>
 
       {mobileOpen && (
-        <div className="fixed inset-0 z-20 bg-black/20 lg:hidden" onClick={() => setMobileOpen(false)}>
-          <nav
-            className="absolute top-14 right-0 left-0 space-y-1 border-b border-slate-200 bg-white p-3 shadow-lg"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <NavLink
-                  key={item.href}
-                  to={item.href}
-                  end={item.href === '/'}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                      isActive
-                        ? 'bg-blue-50 text-blue-700'
-                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-800'
-                    }`
-                  }
-                >
-                  <Icon className="h-5 w-5" />
-                  {item.name}
-                </NavLink>
-              );
-            })}
-          </nav>
-        </div>
+        <button
+          type="button"
+          className="fixed inset-0 z-30 bg-[color:var(--hr-ink)]/20 lg:hidden"
+          aria-label="Close menu overlay"
+          onClick={() => setMobileOpen(false)}
+        />
       )}
 
-      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
+      <main className="hub-main">
         <Outlet />
       </main>
     </div>

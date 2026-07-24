@@ -7,6 +7,7 @@ import { TenantProvider } from '@mpbhealth/auth';
 import App from './App';
 import { StaffHubOrgSync } from './components/StaffHubOrgSync';
 import { HubToaster } from './components/HubToaster';
+import { registerStaffHubServiceWorker } from './registerServiceWorker';
 import '@mpbhealth/ui/theme-tokens.css';
 import './index.css';
 import '@mpbhealth/ui/login-animations.css';
@@ -14,6 +15,7 @@ import '@mpbhealth/ui/login-animations.css';
 // Detect dead refresh tokens at the network level and redirect to /login.
 // Must run before React renders to catch early Supabase auto-refresh failures.
 installAuthRefreshGuard({ loginPath: '/login' });
+registerStaffHubServiceWorker();
 
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },

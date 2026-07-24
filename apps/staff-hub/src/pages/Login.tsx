@@ -23,6 +23,7 @@ export default function Login() {
         throw new Error(error.message || 'Invalid email or password');
       }
       toast.success('Welcome back!');
+      sessionStorage.setItem('staff-hub-offer-install', '1');
       navigate('/');
     } catch (err) {
       throw err instanceof Error ? err : new Error('Login failed. Please try again.');

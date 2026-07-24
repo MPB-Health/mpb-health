@@ -15,6 +15,7 @@ import {
   ClipboardList,
   Clock3,
   Users,
+  Download,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
@@ -23,6 +24,8 @@ import {
   checkIsStaffHr,
 } from '../lib/hr';
 import { HubAtmosphereControl } from '../components/HubAtmosphereControl';
+import { InstallAppModal } from '../components/InstallAppModal';
+import { useStaffHubInstall } from '../hooks/useStaffHubInstall';
 
 type NavItem = { name: string; href: string; icon: typeof LayoutDashboard };
 
@@ -124,6 +127,7 @@ export default function MainLayout() {
   const [user, setUser] = useState<{ email: string } | null>(null);
   const [isHr, setIsHr] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const install = useStaffHubInstall();
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data: { user: u } }) => {
@@ -193,6 +197,16 @@ export default function MainLayout() {
 
           <div className="mt-6 space-y-4 border-t border-[color:var(--hr-line)] pt-4">
             <HubAtmosphereControl />
+            {!install.isInstalled && !install.isStandalone ? (
+              <button
+                type="button"
+                onClick={() => install.openModal()}
+                className="hub-side-link w-full"
+              >
+                <Download className="h-4 w-4 shrink-0 opacity-80" strokeWidth={1.75} />
+                <span>Install app</span>
+              </button>
+            ) : null}
             <div>
               <p className="truncate px-2.5 text-[11px] text-[color:var(--hr-muted)]">
                 {user?.email ?? 'Signed in'}
@@ -261,6 +275,19 @@ export default function MainLayout() {
               <NavGroups groups={groups} onNavigate={() => setMobileOpen(false)} />
               <div className="mt-8 border-t border-[color:var(--hr-line)] pt-4">
                 <HubAtmosphereControl />
+                {!install.isInstalled && !install.isStandalone ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMobileOpen(false);
+                      install.openModal();
+                    }}
+                    className="hub-side-link mt-4 w-full"
+                  >
+                    <Download className="h-4 w-4 shrink-0 opacity-80" strokeWidth={1.75} />
+                    <span>Install app</span>
+                  </button>
+                ) : null}
                 <p className="mt-4 truncate px-2.5 text-[11px] text-[color:var(--hr-muted)]">
                   {user?.email ?? 'Signed in'}
                 </p>
@@ -281,6 +308,16 @@ export default function MainLayout() {
           <Outlet />
         </main>
       </div>
+
+      <InstallAppModal
+        open={install.modalOpen}
+        canNativeInstall={install.canNativeInstall}
+        needsManualInstall={install.needsManualInstall}
+        manualSteps={install.manualSteps}
+        onInstall={() => void install.install()}
+        onDismiss={() => install.dismiss(14)}
+        onClose={install.closeModal}
+      />
     </div>
   );
 }

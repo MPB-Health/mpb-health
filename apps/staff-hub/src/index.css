@@ -994,6 +994,25 @@ html.dark .hub-shell .hover\:bg-slate-200:hover {
   background-color: rgba(78, 160, 223, 0.12) !important;
 }
 
+.hub-install-modal {
+  isolation: isolate;
+}
+
+.hub-install-modal-mesh {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 70% 55% at 0% 0%, rgba(10, 78, 142, 0.14), transparent 60%),
+    radial-gradient(ellipse 50% 45% at 100% 0%, rgba(164, 204, 67, 0.12), transparent 55%);
+}
+
+html.dark .hub-install-modal-mesh {
+  background:
+    radial-gradient(ellipse 70% 55% at 0% 0%, rgba(78, 160, 223, 0.18), transparent 60%),
+    radial-gradient(ellipse 50% 45% at 100% 0%, rgba(181, 216, 92, 0.1), transparent 55%);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-up,
   .hr-skeleton,

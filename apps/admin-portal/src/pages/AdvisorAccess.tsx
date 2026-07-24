@@ -3,7 +3,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
-  ShieldCheck,
   Search,
   KeyRound,
   Mail,
@@ -30,6 +29,11 @@ import {
 } from '@mpbhealth/admin-core';
 import { useAdmin } from '../contexts/AdminContext';
 import AddAdvisorModal from '../components/AddAdvisorModal';
+import PageChrome, {
+  BezelPanel,
+  adminSearchInputClass,
+} from '../components/PageChrome';
+import { Button } from '@mpbhealth/ui';
 import { openUrlInNewTab } from '../utils/openUrlInNewTab';
 
 type SortField = 'name' | 'email' | 'status' | 'created_at';
@@ -273,87 +277,77 @@ export default function AdvisorAccess() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-teal-100 dark:bg-teal-900/30">
-            <ShieldCheck className="w-6 h-6 text-teal-600 dark:text-teal-400" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-th-text-primary">Advisor Access</h1>
-            <p className="text-th-text-tertiary text-sm mt-0.5">
-              Help advisors log in, reset passwords, and manage access
-            </p>
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-th-accent-600 text-white rounded-lg font-medium hover:bg-th-accent-700 transition-colors"
-        >
-          <UserPlus className="w-4 h-4" />
-          New Advisor
-        </button>
-      </div>
+    <div className="space-y-5">
+      <PageChrome
+        title="Advisor Access"
+        description="Help advisors log in, reset passwords, and manage access"
+        actions={
+          <Button
+            type="button"
+            onClick={() => setShowAddModal(true)}
+            className="rounded-full shadow-[0_8px_24px_rgb(12_113_195/0.22)]"
+          >
+            <UserPlus className="w-4 h-4" />
+            New Advisor
+          </Button>
+        }
+      />
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <button
           type="button"
           onClick={() => setStatusFilter('')}
-          className={`bg-surface-primary rounded-xl border p-4 text-left transition-colors ${!statusFilter ? 'border-th-accent-500 ring-1 ring-th-accent-500' : 'border-th-border hover:border-th-accent-300'}`}
+          className={`card-premium p-4 text-left ${!statusFilter ? 'border-th-accent-500 ring-1 ring-th-accent-500' : ''}`}
         >
           <div className="flex items-center gap-2 text-th-text-tertiary mb-1">
             <Users className="w-4 h-4" />
-            <span className="text-xs font-medium uppercase tracking-wide">Total</span>
+            <span className="text-xs font-medium tracking-wide">Total</span>
           </div>
-          <p className="text-2xl font-bold text-th-text-primary">{totalAdvisors}</p>
+          <p className="text-2xl font-semibold tracking-tight text-th-text-primary">{totalAdvisors}</p>
         </button>
         <button
           type="button"
           onClick={() => setStatusFilter('active')}
-          className={`bg-surface-primary rounded-xl border p-4 text-left transition-colors ${statusFilter === 'active' ? 'border-green-500 ring-1 ring-green-500' : 'border-th-border hover:border-green-300'}`}
+          className={`card-premium p-4 text-left ${statusFilter === 'active' ? 'border-green-500 ring-1 ring-green-500' : ''}`}
         >
           <div className="flex items-center gap-2 text-green-600 dark:text-green-400 mb-1">
             <UserCheck className="w-4 h-4" />
-            <span className="text-xs font-medium uppercase tracking-wide">Active</span>
+            <span className="text-xs font-medium tracking-wide">Active</span>
           </div>
-          <p className="text-2xl font-bold text-th-text-primary">{activeAdvisors}</p>
+          <p className="text-2xl font-semibold tracking-tight text-th-text-primary">{activeAdvisors}</p>
         </button>
         <button
           type="button"
           onClick={() => setStatusFilter('')}
-          className="bg-surface-primary rounded-xl border border-th-border p-4 text-left hover:border-amber-300 transition-colors"
+          className="card-premium p-4 text-left"
         >
           <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 mb-1">
             <Clock className="w-4 h-4" />
-            <span className="text-xs font-medium uppercase tracking-wide">Never Logged In</span>
+            <span className="text-xs font-medium tracking-wide">Never Logged In</span>
           </div>
-          <p className="text-2xl font-bold text-th-text-primary">{neverLoggedIn}</p>
+          <p className="text-2xl font-semibold tracking-tight text-th-text-primary">{neverLoggedIn}</p>
         </button>
         <button
           type="button"
           onClick={() => setStatusFilter('suspended')}
-          className={`bg-surface-primary rounded-xl border p-4 text-left transition-colors ${statusFilter === 'suspended' ? 'border-red-500 ring-1 ring-red-500' : 'border-th-border hover:border-red-300'}`}
+          className={`card-premium p-4 text-left ${statusFilter === 'suspended' ? 'border-red-500 ring-1 ring-red-500' : ''}`}
         >
           <div className="flex items-center gap-2 text-red-600 dark:text-red-400 mb-1">
             <UserX className="w-4 h-4" />
-            <span className="text-xs font-medium uppercase tracking-wide">Suspended</span>
+            <span className="text-xs font-medium tracking-wide">Suspended</span>
           </div>
-          <p className="text-2xl font-bold text-th-text-primary">{suspendedAdvisors}</p>
+          <p className="text-2xl font-semibold tracking-tight text-th-text-primary">{suspendedAdvisors}</p>
         </button>
       </div>
 
-      {/* Search */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-th-text-tertiary" />
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-th-text-tertiary" />
         <input
           type="text"
           placeholder="Search by name, email, or agent ID..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-10 pr-4 py-2.5 bg-surface-primary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 focus:border-transparent text-th-text-primary placeholder-th-text-tertiary"
+          className={adminSearchInputClass}
         />
         {statusFilter && (
           <button
@@ -366,16 +360,15 @@ export default function AdvisorAccess() {
         )}
       </div>
 
-      {/* Table */}
-      <div className="bg-surface-primary rounded-xl border border-th-border overflow-hidden">
+      <BezelPanel>
         {loading ? (
           <div className="flex items-center justify-center py-16">
             <Loader2 className="w-8 h-8 animate-spin text-th-accent-600" />
           </div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-16">
-            <Users className="w-12 h-12 mx-auto mb-4 text-th-text-tertiary" />
-            <p className="text-th-text-tertiary">
+          <div className="text-center py-16 px-4">
+            <Users className="w-11 h-11 mx-auto mb-3 text-th-text-tertiary" />
+            <p className="text-th-text-primary font-medium">
               {debouncedSearch ? 'No advisors match your search' : 'No advisors found'}
             </p>
           </div>
@@ -674,7 +667,7 @@ export default function AdvisorAccess() {
             </table>
           </div>
         )}
-      </div>
+      </BezelPanel>
 
       <AddAdvisorModal
         isOpen={showAddModal}

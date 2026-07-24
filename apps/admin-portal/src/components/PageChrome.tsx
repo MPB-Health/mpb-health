@@ -83,3 +83,10 @@ export function BezelPanel({
     </div>
   );
 }
+
+/** Soft Structuralism search field used across list pages */
+export const adminSearchInputClass =
+  'w-full pl-10 pr-4 py-2.5 bg-surface-primary/90 border border-th-border/80 rounded-full focus:outline-none focus:ring-2 focus:ring-th-accent-500 focus:border-transparent text-th-text-primary placeholder-th-text-tertiary shadow-[0_1px_2px_rgb(15_23_42/0.03)]';
+
+export const adminSelectClass =
+  'px-4 py-2.5 bg-surface-primary border border-th-border/80 rounded-full focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary';

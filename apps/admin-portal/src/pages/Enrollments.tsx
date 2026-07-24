@@ -12,6 +12,11 @@ import {
   Eye,
 } from 'lucide-react';
 import { enrollmentService, type Enrollment } from '@mpbhealth/admin-core';
+import PageChrome, {
+  BezelPanel,
+  adminSearchInputClass,
+  adminSelectClass,
+} from '../components/PageChrome';
 
 export default function Enrollments() {
   const navigate = useNavigate();
@@ -84,17 +89,13 @@ export default function Enrollments() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-th-text-primary">Enrollments</h1>
-        <p className="text-th-text-tertiary text-sm mt-1">
-          Review and manage enrollment applications
-        </p>
-      </div>
+    <div className="space-y-5">
+      <PageChrome
+        title="Enrollments"
+        description="Review and manage enrollment applications"
+      />
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         {[
           { label: 'Pending', count: enrollments.filter((e) => e.status === 'pending').length, color: 'neutral' },
           { label: 'In Review', count: enrollments.filter((e) => e.status === 'in_review').length, color: 'blue' },
@@ -104,38 +105,38 @@ export default function Enrollments() {
         ].map((stat) => (
           <button
             key={stat.label}
+            type="button"
             onClick={() => setStatusFilter(stat.label.toLowerCase().replace(' ', '_'))}
-            className={`p-4 rounded-xl border transition-colors ${
+            className={`card-premium p-4 text-left transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.99] ${
               statusFilter === stat.label.toLowerCase().replace(' ', '_')
                 ? 'border-th-accent-300 bg-th-accent-50 dark:bg-th-accent-900/20 dark:border-th-accent-700'
-                : 'border-th-border bg-surface-primary hover:border-th-accent-200 dark:hover:border-th-accent-800'
+                : 'hover:border-th-accent-200 dark:hover:border-th-accent-800'
             }`}
           >
-            <p className="text-2xl font-bold text-th-text-primary">{stat.count}</p>
+            <p className="text-2xl font-semibold tracking-tight text-th-text-primary">{stat.count}</p>
             <p className="text-sm text-th-text-tertiary">{stat.label}</p>
           </button>
         ))}
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
+      <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-th-text-tertiary" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-th-text-tertiary" />
           <input
             type="text"
             placeholder="Search by name or email..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-surface-primary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 focus:border-transparent text-th-text-primary placeholder-th-text-tertiary"
+            className={adminSearchInputClass}
           />
         </div>
-        <div className="flex items-center space-x-2">
-          <Filter className="w-5 h-5 text-th-text-tertiary" />
+        <div className="flex items-center gap-2">
+          <Filter className="w-4 h-4 text-th-text-tertiary shrink-0" />
           <select
             aria-label="Filter by status"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2.5 bg-surface-primary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary"
+            className={adminSelectClass}
           >
             <option value="">All Status</option>
             <option value="pending">Pending</option>
@@ -148,7 +149,7 @@ export default function Enrollments() {
             aria-label="Filter by type"
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
-            className="px-4 py-2.5 bg-surface-primary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary"
+            className={adminSelectClass}
           >
             <option value="">All Types</option>
             <option value="advisor">Advisor</option>
@@ -158,10 +159,9 @@ export default function Enrollments() {
         </div>
       </div>
 
-      {/* Enrollments table */}
-      <div className="bg-surface-primary rounded-xl border border-th-border overflow-hidden">
+      <BezelPanel>
         {loading ? (
-          <div className="flex items-center justify-center py-12">
+          <div className="flex items-center justify-center py-14">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-th-accent-600"></div>
           </div>
         ) : enrollments.length > 0 ? (
@@ -250,12 +250,13 @@ export default function Enrollments() {
             </tbody>
           </table>
         ) : (
-          <div className="text-center py-12">
-            <UserPlus className="w-12 h-12 mx-auto mb-4 text-th-text-tertiary" />
-            <p className="text-th-text-tertiary">No enrollments found</p>
+          <div className="text-center py-14 px-4">
+            <UserPlus className="w-11 h-11 mx-auto mb-3 text-th-text-tertiary" />
+            <p className="text-th-text-primary font-medium">No enrollments found</p>
+            <p className="text-sm text-th-text-tertiary mt-1">Try adjusting filters or search.</p>
           </div>
         )}
-      </div>
+      </BezelPanel>
     </div>
   );
 }

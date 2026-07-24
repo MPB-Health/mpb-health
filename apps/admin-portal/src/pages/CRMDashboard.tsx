@@ -5,6 +5,8 @@ import {
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { crmBridgeService, type CRMSummary } from '@mpbhealth/admin-core';
+import { Button } from '@mpbhealth/ui';
+import PageChrome, { BezelPanel } from '../components/PageChrome';
 
 export default function CRMDashboard() {
   const navigate = useNavigate();
@@ -33,20 +35,23 @@ export default function CRMDashboard() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-th-text-primary">CRM Dashboard</h1>
-        <button
-          onClick={() => navigate('/crm/leads')}
-          className="flex items-center gap-2 px-4 py-2 bg-th-accent-600 text-white rounded-lg hover:bg-th-accent-700 transition-colors"
-        >
-          View All Leads <ArrowRight className="w-4 h-4" />
-        </button>
-      </div>
+    <div className="space-y-5">
+      <PageChrome
+        title="CRM Dashboard"
+        description="Pipeline health, lead velocity, and revenue at a glance"
+        actions={
+          <Button
+            type="button"
+            onClick={() => navigate('/crm/leads')}
+            className="rounded-full shadow-[0_8px_24px_rgb(12_113_195/0.22)]"
+          >
+            View All Leads <ArrowRight className="w-4 h-4" />
+          </Button>
+        }
+      />
 
-      {/* Top metrics */}
       {summary && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <MetricCard icon={Users} label="Total Leads" value={summary.total_leads} color="text-blue-600" />
           <MetricCard icon={TrendingUp} label="New Today" value={summary.new_today} color="text-green-600" />
           <MetricCard icon={Target} label="Conversion Rate" value={`${summary.conversion_rate}%`} color="text-purple-600" />
@@ -54,9 +59,8 @@ export default function CRMDashboard() {
         </div>
       )}
 
-      {/* Revenue metrics */}
       {revenue && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <MetricCard icon={DollarSign} label="Total Invoiced" value={`$${revenue.total_invoiced.toLocaleString()}`} color="text-blue-600" />
           <MetricCard icon={CheckCircle} label="Total Paid" value={`$${revenue.total_paid.toLocaleString()}`} color="text-green-600" />
           <MetricCard icon={Clock} label="Outstanding" value={`$${revenue.outstanding.toLocaleString()}`} color="text-orange-600" />
@@ -64,30 +68,31 @@ export default function CRMDashboard() {
         </div>
       )}
 
-      {/* Pipeline stages */}
       {summary && summary.leads_by_stage.length > 0 && (
-        <div className="bg-surface-primary rounded-xl border border-th-border p-6">
-          <h2 className="text-lg font-semibold text-th-text-primary mb-4">Pipeline Overview</h2>
-          <div className="space-y-3">
-            {summary.leads_by_stage.map((stage) => {
-              const pct = summary.total_leads > 0 ? (stage.count / summary.total_leads) * 100 : 0;
-              return (
-                <div key={stage.stage} className="flex items-center gap-4">
-                  <div className="w-32 text-sm text-th-text-secondary truncate">{stage.stage}</div>
-                  <div className="flex-1 bg-surface-tertiary rounded-full h-6 overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all duration-500"
-                      style={{ width: `${Math.max(pct, 2)}%`, backgroundColor: stage.color }}
-                    />
+        <BezelPanel>
+          <div className="p-6">
+            <h2 className="text-lg font-semibold tracking-tight text-th-text-primary mb-4">Pipeline Overview</h2>
+            <div className="space-y-3">
+              {summary.leads_by_stage.map((stage) => {
+                const pct = summary.total_leads > 0 ? (stage.count / summary.total_leads) * 100 : 0;
+                return (
+                  <div key={stage.stage} className="flex items-center gap-4">
+                    <div className="w-32 text-sm text-th-text-secondary truncate">{stage.stage}</div>
+                    <div className="flex-1 bg-surface-tertiary rounded-full h-6 overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{ width: `${Math.max(pct, 2)}%`, backgroundColor: stage.color }}
+                      />
+                    </div>
+                    <div className="w-16 text-right text-sm font-medium text-th-text-primary">
+                      {stage.count}
+                    </div>
                   </div>
-                  <div className="w-16 text-right text-sm font-medium text-th-text-primary">
-                    {stage.count}
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        </div>
+        </BezelPanel>
       )}
     </div>
   );
@@ -100,12 +105,12 @@ function MetricCard({ icon: Icon, label, value, color }: {
   color: string;
 }) {
   return (
-    <div className="bg-surface-primary rounded-xl border border-th-border p-4">
+    <div className="card-premium p-4">
       <div className="flex items-center gap-2 mb-1">
         <Icon className={`w-4 h-4 ${color}`} />
         <span className="text-xs text-th-text-tertiary">{label}</span>
       </div>
-      <p className={`text-2xl font-bold ${color}`}>{value}</p>
+      <p className={`text-2xl font-semibold tracking-tight ${color}`}>{value}</p>
     </div>
   );
 }

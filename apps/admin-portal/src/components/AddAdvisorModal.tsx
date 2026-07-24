@@ -134,23 +134,22 @@ export default function AddAdvisorModal({ isOpen, onClose, onSuccess }: AddAdvis
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-surface-primary rounded-xl border border-th-border w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="sticky top-0 bg-surface-primary border-b border-th-border px-6 py-4 flex items-center justify-between z-10">
+    <div className="fixed inset-0 admin-modal-backdrop flex items-center justify-center z-50 p-4">
+      <div className="admin-modal-shell w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="sticky top-0 z-10 px-6 py-4 flex items-center justify-between border-b border-th-border/70 bg-surface-primary/90 backdrop-blur-md">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg">
-              <GraduationCap className="w-5 h-5 text-emerald-600" />
+            <div className="p-2.5 rounded-2xl bg-th-accent-50 dark:bg-th-accent-900/30 ring-1 ring-th-accent-200/60 dark:ring-th-accent-800/50">
+              <GraduationCap className="w-5 h-5 text-th-accent-600" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-th-text-primary">Create New Advisor</h2>
+              <h2 className="text-lg font-semibold tracking-tight text-th-text-primary">Create New Advisor</h2>
               <p className="text-sm text-th-text-tertiary">Create an advisor account with portal access</p>
             </div>
           </div>
           <button
             onClick={onClose}
             aria-label="Close"
-            className="p-2 text-th-text-tertiary hover:text-th-text-primary rounded-lg hover:bg-surface-secondary"
+            className="p-2 text-th-text-tertiary hover:text-th-text-primary rounded-xl hover:bg-surface-secondary active:scale-[0.98] transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]"
           >
             <X className="w-5 h-5" />
           </button>
@@ -322,19 +321,18 @@ export default function AddAdvisorModal({ isOpen, onClose, onSuccess }: AddAdvis
             </label>
           </div>
 
-          {/* Actions */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-th-border">
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-th-border/70">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border border-th-border rounded-lg text-th-text-secondary hover:bg-surface-secondary transition-colors"
+              className="px-4 py-2.5 border border-th-border rounded-full text-th-text-secondary hover:bg-surface-secondary active:scale-[0.98] transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="flex items-center gap-2 px-5 py-2.5 bg-th-accent-600 text-white rounded-full font-medium hover:bg-th-accent-700 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] shadow-[0_8px_24px_rgb(12_113_195/0.25)] transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]"
             >
               {saving && <Loader2 className="w-4 h-4 animate-spin" />}
               {saving ? 'Creating...' : 'Create Advisor'}

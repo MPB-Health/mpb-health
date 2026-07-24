@@ -795,8 +795,10 @@ export default function Users() {
             {STAFF_HUB_ORIGIN.replace('https://', '')}
           </a>
           . Admin, CRM, and Advisor users can also use Staff Hub with the same login.
-          Grant <span className="font-medium text-th-text-secondary">Staff HR</span> on the
-          user detail page to unlock the HR queue and time-off review.
+          Super Admins (e.g. vrt@ / system@) can grant{' '}
+          <span className="font-medium text-th-text-secondary">HR Staff Admin</span> on the
+          user detail page (Portal Access → Add Role) to unlock the HR queue, roster, and
+          attendance review.
         </p>
       )}
 

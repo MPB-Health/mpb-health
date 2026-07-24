@@ -54,7 +54,7 @@ const PORTAL_ROLE_LABELS: Record<PortalRole, string> = {
   member: 'Member',
   crm_user: 'CRM User',
   concierge: 'Concierge',
-  staff_hr: 'Staff HR',
+  staff_hr: 'HR Staff Admin',
 };
 
 const PORTAL_ROLE_COLORS: Record<PortalRole, string> = {

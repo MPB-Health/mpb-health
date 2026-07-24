@@ -8,7 +8,14 @@ import { supabase } from '@mpbhealth/database';
 // Types
 // ============================================================================
 
-export type UserRole = 'super_admin' | 'admin' | 'advisor' | 'member' | 'crm_user' | 'concierge';
+export type UserRole =
+  | 'super_admin'
+  | 'admin'
+  | 'advisor'
+  | 'member'
+  | 'crm_user'
+  | 'concierge'
+  | 'staff_hr';
 
 export interface UserRoleRecord {
   id: string;
@@ -45,15 +52,17 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   member: 'Member',
   crm_user: 'CRM User',
   concierge: 'Concierge',
+  staff_hr: 'HR Staff Admin',
 };
 
 export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
-  super_admin: 'Full access to all portals (Admin, Advisor, Member, CRM, Concierge)',
+  super_admin: 'Full access to all portals (Admin, Advisor, Member, CRM, Concierge, Staff Hub HR)',
   admin: 'Access to Admin portal',
   advisor: 'Access to Advisor portal',
   member: 'Access to Member portal',
   crm_user: 'Access to CRM portal',
   concierge: 'Access to Concierge portal',
+  staff_hr: 'Staff Hub HR admin — roster, attendance, and time-off review',
 };
 
 export const ROLE_COLORS: Record<UserRole, string> = {
@@ -63,9 +72,18 @@ export const ROLE_COLORS: Record<UserRole, string> = {
   member: 'bg-gray-100 text-gray-800 border-gray-200',
   crm_user: 'bg-indigo-100 text-indigo-800 border-indigo-200',
   concierge: 'bg-teal-100 text-teal-800 border-teal-200',
+  staff_hr: 'bg-sky-100 text-sky-800 border-sky-200',
 };
 
-export const ALL_ROLES: UserRole[] = ['super_admin', 'admin', 'advisor', 'crm_user', 'concierge', 'member'];
+export const ALL_ROLES: UserRole[] = [
+  'super_admin',
+  'admin',
+  'advisor',
+  'crm_user',
+  'concierge',
+  'staff_hr',
+  'member',
+];
 
 // ============================================================================
 // Cache

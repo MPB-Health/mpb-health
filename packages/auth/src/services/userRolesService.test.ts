@@ -17,6 +17,11 @@ describe('role constants', () => {
     expect(ALL_ROLES).toContain('concierge');
   });
 
+  it('includes staff_hr (HR Staff Admin for Staff Hub)', () => {
+    expect(ALL_ROLES).toContain('staff_hr');
+    expect(ROLE_LABELS.staff_hr).toBe('HR Staff Admin');
+  });
+
   it('covers every role with a label, description, and color', () => {
     for (const role of ALL_ROLES) {
       expect(ROLE_LABELS[role], `label for ${role}`).toBeTruthy();

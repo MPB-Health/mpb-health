@@ -21,7 +21,7 @@ export const DOMAINS = {
   concierge: 'concierge.mpb.health',
   training: 'training.mpb.health',
   support: 'support.mpb.health',
-  staff: 'portal.mpb.health',
+  staff: 'staff.mpb.health',
 } as const;
 
 export const DEV_PORTS = {

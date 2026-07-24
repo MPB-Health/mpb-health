@@ -15,6 +15,7 @@
     "@mpbhealth/config": "workspace:*",
     "@mpbhealth/database": "workspace:*",
     "@mpbhealth/ui": "workspace:*",
+    "date-fns": "catalog:",
     "lucide-react": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",

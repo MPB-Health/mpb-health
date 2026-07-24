@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import {
   LayoutDashboard,
   Users,
@@ -18,11 +19,16 @@ import {
   ShieldPlus,
   Mail,
   Calendar,
+  CalendarClock,
+  CalendarDays,
+  Boxes,
+  Workflow,
 } from 'lucide-react';
 import { supabase } from '@mpbhealth/database';
 import { usePortalAccess } from '@mpbhealth/auth';
-import { getPortalUrl, PORTALS, type PortalKey } from '@mpbhealth/config';
+import { getPortalUrl, type PortalKey } from '@mpbhealth/config';
 import toast from 'react-hot-toast';
+import { ARYX_APPS, HR_TIME_OFF_ENABLED } from '../lib/hr';
 
 interface PortalCardDef {
   key: PortalKey;
@@ -309,9 +315,75 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* Time & leave shortcuts */}
+        {HR_TIME_OFF_ENABLED && (
+          <div className="hr-surface animate-fade-up" style={{ animationDelay: '120ms' }}>
+            <h2 className="hr-display mb-4 text-lg font-semibold tracking-tight text-[color:var(--hr-ink)]">
+              Time & leave
+            </h2>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="hr-hub-tile">
+                <Link to="/time-off" className="hr-hub-tile-inner group">
+                  <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-[color:var(--hr-accent)]/10 text-[color:var(--hr-accent)] transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:scale-105">
+                    <CalendarClock className="h-5 w-5" />
+                  </div>
+                  <h3 className="mb-1 font-semibold text-[color:var(--hr-ink)]">Request time off</h3>
+                  <p className="text-sm leading-relaxed text-[color:var(--hr-muted)]">
+                    PTO, sick days, appointments, and leave. HR is emailed on submit.
+                  </p>
+                </Link>
+              </div>
+              <div className="hr-hub-tile">
+                <Link to="/calendar" className="hr-hub-tile-inner group">
+                  <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-[color:var(--hr-signal)]/25 text-[color:var(--hr-ink)] transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:scale-105">
+                    <CalendarDays className="h-5 w-5" />
+                  </div>
+                  <h3 className="mb-1 font-semibold text-[color:var(--hr-ink)]">Team calendar</h3>
+                  <p className="text-sm leading-relaxed text-[color:var(--hr-muted)]">
+                    See who is out by name and leave type. Private notes stay hidden.
+                  </p>
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ARYX Platform */}
+        <div className="hr-surface mt-2 animate-fade-up" style={{ animationDelay: '200ms' }}>
+          <h2 className="hr-display mb-4 text-lg font-semibold tracking-tight text-[color:var(--hr-ink)]">
+            ARYX Platform
+          </h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {ARYX_APPS.map((app) => {
+              const Icon = app.key === 'aryx-crm' ? Boxes : Workflow;
+              return (
+                <div key={app.key} className="hr-hub-tile">
+                  <a
+                    href={app.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hr-hub-tile-inner group"
+                  >
+                    <div className="mb-4 flex items-start justify-between">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[color:var(--hr-ink)] text-white transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:scale-105">
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <ExternalLink className="h-4 w-4 text-slate-300 transition-colors group-hover:text-[color:var(--hr-muted)]" />
+                    </div>
+                    <h3 className="mb-1 font-semibold text-[color:var(--hr-ink)]">{app.name}</h3>
+                    <p className="text-sm leading-relaxed text-[color:var(--hr-muted)]">
+                      {app.description}
+                    </p>
+                  </a>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
         {/* External tools */}
         <div className="mt-10 animate-fade-up" style={{ animationDelay: '300ms' }}>
-          <h2 className="text-lg font-semibold text-slate-700 mb-4">Tools & Services</h2>
+          <h2 className="mb-4 text-lg font-semibold text-slate-700">Tools & Services</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {EXTERNAL_LINKS.map((link, i) => {
               const Icon = link.icon;

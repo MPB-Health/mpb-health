@@ -9,6 +9,11 @@ const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Notes = lazy(() => import('./pages/Notes'));
 const Tasks = lazy(() => import('./pages/Tasks'));
 const Profile = lazy(() => import('./pages/Profile'));
+const TimeOff = lazy(() => import('./pages/TimeOff'));
+const TimeOffNew = lazy(() => import('./pages/TimeOffNew'));
+const TimeOffDetail = lazy(() => import('./pages/TimeOffDetail'));
+const StaffCalendar = lazy(() => import('./pages/StaffCalendar'));
+const HrQueue = lazy(() => import('./pages/HrQueue'));
 
 function PageLoader() {
   return (
@@ -111,6 +116,11 @@ export default function App() {
         }
       >
         <Route index element={<Suspense fallback={<PageLoader />}><Dashboard /></Suspense>} />
+        <Route path="time-off" element={<Suspense fallback={<PageLoader />}><TimeOff /></Suspense>} />
+        <Route path="time-off/new" element={<Suspense fallback={<PageLoader />}><TimeOffNew /></Suspense>} />
+        <Route path="time-off/:id" element={<Suspense fallback={<PageLoader />}><TimeOffDetail /></Suspense>} />
+        <Route path="calendar" element={<Suspense fallback={<PageLoader />}><StaffCalendar /></Suspense>} />
+        <Route path="hr" element={<Suspense fallback={<PageLoader />}><HrQueue /></Suspense>} />
         <Route path="notes" element={<Suspense fallback={<PageLoader />}><Notes /></Suspense>} />
         <Route path="tasks" element={<Suspense fallback={<PageLoader />}><Tasks /></Suspense>} />
         <Route path="profile" element={<Suspense fallback={<PageLoader />}><Profile /></Suspense>} />

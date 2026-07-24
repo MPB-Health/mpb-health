@@ -30,6 +30,7 @@ const ALLOWED_ORIGINS: string[] = [
   "https://concierge.mpb.health",
   "https://support.mpb.health",
   "https://portal.mpb.health",
+  "https://staff.mpb.health",
 
   // Production — ARYX white-label portals (apex + subdomains)
   // matched via the *.aryxcloud.com pattern in isOriginAllowed() below.

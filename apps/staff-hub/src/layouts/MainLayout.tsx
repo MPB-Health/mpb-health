@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { NavLink, useLocation, Outlet } from 'react-router-dom';
 import { supabase } from '@mpbhealth/database';
 import {
@@ -9,12 +9,21 @@ import {
   LogOut,
   Menu,
   X,
-  ChevronLeft,
+  CalendarDays,
+  CalendarClock,
+  ClipboardList,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { HR_TIME_OFF_ENABLED, checkIsStaffHr } from '../lib/hr';
 
-const NAV_ITEMS = [
+const BASE_NAV = [
   { name: 'Hub', href: '/', icon: LayoutDashboard },
+  ...(HR_TIME_OFF_ENABLED
+    ? [
+        { name: 'Time Off', href: '/time-off', icon: CalendarClock },
+        { name: 'Calendar', href: '/calendar', icon: CalendarDays },
+      ]
+    : []),
   { name: 'Notes', href: '/notes', icon: StickyNote },
   { name: 'Tasks', href: '/tasks', icon: CheckSquare },
   { name: 'Profile', href: '/profile', icon: UserCircle },
@@ -35,6 +44,14 @@ export default function MainLayout() {
     setMobileOpen(false);
   }, [location.pathname]);
 
+  const navItems = useMemo(() => {
+    const items = [...BASE_NAV];
+    if (HR_TIME_OFF_ENABLED && checkIsStaffHr(user?.email)) {
+      items.splice(3, 0, { name: 'HR', href: '/hr', icon: ClipboardList });
+    }
+    return items;
+  }, [user?.email]);
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     toast.success('Signed out');
@@ -43,27 +60,25 @@ export default function MainLayout() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
-      {/* Header */}
-      <header className="border-b border-slate-200/80 bg-white/80 backdrop-blur-sm sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+      <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/80 backdrop-blur-sm">
+        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="lg:hidden p-1.5 -ml-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg"
+              className="-ml-1.5 rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-700 lg:hidden"
             >
-              {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center">
-                <span className="text-white font-bold text-xs">MPB</span>
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-cyan-500">
+                <span className="text-xs font-bold text-white">MPB</span>
               </div>
               <span className="font-semibold text-slate-800">Staff Hub</span>
             </div>
           </div>
 
-          {/* Desktop nav */}
-          <nav className="hidden lg:flex items-center gap-1">
-            {NAV_ITEMS.map((item) => {
+          <nav className="hidden items-center gap-1 lg:flex">
+            {navItems.map((item) => {
               const Icon = item.icon;
               return (
                 <NavLink
@@ -71,14 +86,14 @@ export default function MainLayout() {
                   to={item.href}
                   end={item.href === '/'}
                   className={({ isActive }) =>
-                    `flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                    `flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
                       isActive
                         ? 'bg-blue-50 text-blue-700'
-                        : 'text-slate-600 hover:text-slate-800 hover:bg-slate-100'
+                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-800'
                     }`
                   }
                 >
-                  <Icon className="w-4 h-4" />
+                  <Icon className="h-4 w-4" />
                   {item.name}
                 </NavLink>
               );
@@ -86,26 +101,25 @@ export default function MainLayout() {
           </nav>
 
           <div className="flex items-center gap-3">
-            <span className="text-sm text-slate-500 hidden sm:block">{user?.email}</span>
+            <span className="hidden text-sm text-slate-500 sm:block">{user?.email}</span>
             <button
               onClick={handleSignOut}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors"
+              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
             >
-              <LogOut className="w-4 h-4" />
+              <LogOut className="h-4 w-4" />
               <span className="hidden sm:inline">Sign out</span>
             </button>
           </div>
         </div>
       </header>
 
-      {/* Mobile nav drawer */}
       {mobileOpen && (
-        <div className="lg:hidden fixed inset-0 z-20 bg-black/20" onClick={() => setMobileOpen(false)}>
+        <div className="fixed inset-0 z-20 bg-black/20 lg:hidden" onClick={() => setMobileOpen(false)}>
           <nav
-            className="absolute top-14 left-0 right-0 bg-white border-b border-slate-200 shadow-lg p-3 space-y-1"
+            className="absolute top-14 right-0 left-0 space-y-1 border-b border-slate-200 bg-white p-3 shadow-lg"
             onClick={(e) => e.stopPropagation()}
           >
-            {NAV_ITEMS.map((item) => {
+            {navItems.map((item) => {
               const Icon = item.icon;
               return (
                 <NavLink
@@ -113,14 +127,14 @@ export default function MainLayout() {
                   to={item.href}
                   end={item.href === '/'}
                   className={({ isActive }) =>
-                    `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                    `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                       isActive
                         ? 'bg-blue-50 text-blue-700'
-                        : 'text-slate-600 hover:text-slate-800 hover:bg-slate-100'
+                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-800'
                     }`
                   }
                 >
-                  <Icon className="w-5 h-5" />
+                  <Icon className="h-5 w-5" />
                   {item.name}
                 </NavLink>
               );
@@ -129,8 +143,7 @@ export default function MainLayout() {
         </div>
       )}
 
-      {/* Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
         <Outlet />
       </main>
     </div>

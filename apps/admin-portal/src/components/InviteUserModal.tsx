@@ -90,23 +90,22 @@ export default function InviteUserModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-surface-primary rounded-xl border border-th-border w-full max-w-md">
-        {/* Header */}
-        <div className="border-b border-th-border px-6 py-4 flex items-center justify-between">
+    <div className="fixed inset-0 admin-modal-backdrop flex items-center justify-center z-50 p-4">
+      <div className="admin-modal-shell w-full max-w-md">
+        <div className="border-b border-th-border/70 px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-              <Send className="w-5 h-5 text-blue-600" />
+            <div className="p-2.5 rounded-2xl bg-th-accent-50 dark:bg-th-accent-900/30 ring-1 ring-th-accent-200/60 dark:ring-th-accent-800/50">
+              <Send className="w-5 h-5 text-th-accent-600" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-th-text-primary">Invite User</h2>
+              <h2 className="text-lg font-semibold tracking-tight text-th-text-primary">Invite User</h2>
               <p className="text-sm text-th-text-tertiary">Send an invitation to join</p>
             </div>
           </div>
           <button
             onClick={onClose}
             aria-label="Close"
-            className="p-2 text-th-text-tertiary hover:text-th-text-primary rounded-lg hover:bg-surface-secondary"
+            className="p-2 text-th-text-tertiary hover:text-th-text-primary rounded-xl hover:bg-surface-secondary active:scale-[0.98] transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]"
           >
             <X className="w-5 h-5" />
           </button>
@@ -165,26 +164,24 @@ export default function InviteUserModal({
             </div>
           </div>
 
-          {/* Info Box */}
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-            <p className="text-sm text-blue-800 dark:text-blue-200">
+          <div className="rounded-2xl border border-th-accent-200/80 dark:border-th-accent-800/60 bg-th-accent-50/70 dark:bg-th-accent-900/20 p-4">
+            <p className="text-sm text-th-accent-800 dark:text-th-accent-200 leading-relaxed">
               The user will receive an email with a link to accept the invitation and create their account. The invitation expires in 7 days.
             </p>
           </div>
 
-          {/* Actions */}
           <div className="flex items-center justify-end gap-3 pt-2">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border border-th-border rounded-lg text-th-text-secondary hover:bg-surface-secondary transition-colors"
+              className="px-4 py-2.5 border border-th-border rounded-full text-th-text-secondary hover:bg-surface-secondary active:scale-[0.98] transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={sending}
-              className="flex items-center gap-2 px-4 py-2 bg-th-accent-600 text-white rounded-lg font-medium hover:bg-th-accent-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="flex items-center gap-2 px-5 py-2.5 bg-th-accent-600 text-white rounded-full font-medium hover:bg-th-accent-700 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] shadow-[0_8px_24px_rgb(12_113_195/0.25)] transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]"
             >
               {sending && <Loader2 className="w-4 h-4 animate-spin" />}
               {sending ? 'Sending...' : 'Send Invitation'}

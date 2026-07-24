@@ -4,11 +4,13 @@ import { X, User, Mail, Shield, Loader2, Briefcase } from 'lucide-react';
 import { userService, type Permission } from '@mpbhealth/admin-core';
 import { invokeWithResolvedAuth } from '@mpbhealth/database';
 import { handleAuthFailureMessage, isSessionExpiredMessage } from '../utils/authErrors';
+import { STAFF_HUB_LOGIN_URL, STAFF_HUB_ORIGIN } from '../lib/portalUrls';
 
 // ---------------------------------------------------------------------------
 // User-type-driven creation modal.
 // ---------------------------------------------------------------------------
 // Two backends, picked by `user_type`:
+//   - staff_hub    → create-admin-user  (admin_users role=staff; invite → staff.mpb.health)
 //   - admin_staff  → create-admin-user  (admin_users table + admin_role)
 //   - advisor      → create-user        (auth.users + user_roles['advisor'] + advisor_profiles)
 //   - crm_user     → create-user        (auth.users + user_roles['crm_user'])
@@ -27,7 +29,7 @@ interface AddUserModalProps {
   suggestedAdminRole?: AdminRole;
 }
 
-type UserType = 'admin_staff' | 'advisor' | 'crm_user' | 'member';
+type UserType = 'staff_hub' | 'admin_staff' | 'advisor' | 'crm_user' | 'member';
 type AdminRole = 'super_admin' | 'admin' | 'manager' | 'staff' | 'concierge';
 
 interface CreateUserResponse {
@@ -55,7 +57,7 @@ interface FormData {
 }
 
 const DEFAULT_FORM: FormData = {
-  user_type: 'admin_staff',
+  user_type: 'staff_hub',
   email: '',
   first_name: '',
   last_name: '',
@@ -71,9 +73,14 @@ const DEFAULT_FORM: FormData = {
 
 const USER_TYPES: { value: UserType; label: string; description: string }[] = [
   {
+    value: 'staff_hub',
+    label: 'Staff Hub',
+    description: 'Internal staff — login at staff.mpb.health (notes, tasks, time off, tool links)',
+  },
+  {
     value: 'admin_staff',
     label: 'Admin Portal Staff',
-    description: 'Internal MPB staff — Admin Portal or Concierge Portal access',
+    description: 'Admin or Concierge access; they can also use Staff Hub with the same login',
   },
   {
     value: 'advisor',
@@ -93,7 +100,11 @@ const USER_TYPES: { value: UserType; label: string; description: string }[] = [
 ];
 
 const ADMIN_ROLES: { value: AdminRole; label: string; description: string }[] = [
-  { value: 'staff', label: 'Staff', description: 'Basic access to admin portal' },
+  {
+    value: 'staff',
+    label: 'Staff',
+    description: 'Staff Hub + limited Admin Portal access (no elevated portal roles)',
+  },
   { value: 'manager', label: 'Manager', description: 'Manage templates and view reports' },
   { value: 'admin', label: 'Admin', description: 'Full admin access except user management' },
   { value: 'concierge', label: 'Concierge', description: 'Concierge Portal only — member support dashboard' },
@@ -137,7 +148,7 @@ export default function AddUserModal({ isOpen, onClose, onSuccess, suggestedUser
     try {
       let result: CreateUserResponse | null = null;
 
-      if (form.user_type === 'admin_staff') {
+      if (form.user_type === 'admin_staff' || form.user_type === 'staff_hub') {
         const { data, error } = await invokeWithResolvedAuth<CreateUserResponse>(
           'create-admin-user',
           {
@@ -145,9 +156,10 @@ export default function AddUserModal({ isOpen, onClose, onSuccess, suggestedUser
               email: form.email,
               first_name: form.first_name,
               last_name: form.last_name,
-              role: form.admin_role,
-              permissions: form.permissions,
+              role: form.user_type === 'staff_hub' ? 'staff' : form.admin_role,
+              permissions: form.user_type === 'staff_hub' ? [] : form.permissions,
               send_invite: form.send_invite,
+              ...(form.user_type === 'staff_hub' ? { invite_portal: 'staff_hub' as const } : {}),
             },
           },
         );
@@ -222,70 +234,71 @@ export default function AddUserModal({ isOpen, onClose, onSuccess, suggestedUser
 
   if (!isOpen) return null;
 
+  const isStaffHub = form.user_type === 'staff_hub';
   const isAdminStaff = form.user_type === 'admin_staff';
   const isAdvisor = form.user_type === 'advisor';
   const showPermissionsSection =
     isAdminStaff && form.admin_role !== 'super_admin' && form.admin_role !== 'concierge';
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-surface-primary rounded-xl border border-th-border w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="sticky top-0 bg-surface-primary border-b border-th-border px-6 py-4 flex items-center justify-between z-10">
+    <div className="fixed inset-0 admin-modal-backdrop flex items-center justify-center z-50 p-4">
+      <div className="admin-modal-shell w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="sticky top-0 z-10 px-6 py-4 flex items-center justify-between border-b border-th-border/70 bg-surface-primary/90 backdrop-blur-md">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-th-accent-100 dark:bg-th-accent-900/30 rounded-lg">
+            <div className="p-2.5 rounded-2xl bg-th-accent-50 dark:bg-th-accent-900/30 ring-1 ring-th-accent-200/60 dark:ring-th-accent-800/50">
               <User className="w-5 h-5 text-th-accent-600" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-th-text-primary">Add New User</h2>
+              <h2 className="text-lg font-semibold tracking-tight text-th-text-primary">Add New User</h2>
               <p className="text-sm text-th-text-tertiary">
-                Super admins only — create users for any portal in the ecosystem
+                Super admins only. Staff Hub, Admin, CRM, Advisor, and Member.
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
             aria-label="Close"
-            className="p-2 text-th-text-tertiary hover:text-th-text-primary rounded-lg hover:bg-surface-secondary"
+            className="p-2 text-th-text-tertiary hover:text-th-text-primary rounded-xl hover:bg-surface-secondary active:scale-[0.98] transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* User Type */}
           <div className="space-y-4">
             <h3 className="text-sm font-medium text-th-text-secondary flex items-center gap-2">
               <Briefcase className="w-4 h-4" />
               User Type
             </h3>
-            <div className="grid grid-cols-2 gap-3">
-              {USER_TYPES.map((ut) => (
-                <label
-                  key={ut.value}
-                  className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
-                    form.user_type === ut.value
-                      ? 'border-th-accent-500 bg-th-accent-50 dark:bg-th-accent-900/20'
-                      : 'border-th-border hover:border-th-accent-300'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="user_type"
-                    value={ut.value}
-                    checked={form.user_type === ut.value}
-                    onChange={(e) =>
-                      setForm({ ...form, user_type: e.target.value as UserType })
-                    }
-                    className="mt-1"
-                  />
-                  <div>
-                    <p className="font-medium text-th-text-primary">{ut.label}</p>
-                    <p className="text-xs text-th-text-tertiary">{ut.description}</p>
-                  </div>
-                </label>
-              ))}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {USER_TYPES.map((ut) => {
+                const selected = form.user_type === ut.value;
+                return (
+                  <label
+                    key={ut.value}
+                    className={`flex items-start gap-3 p-3.5 rounded-2xl border cursor-pointer transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.99] ${
+                      selected
+                        ? 'border-th-accent-500 bg-th-accent-50/90 dark:bg-th-accent-900/25 shadow-[0_8px_24px_rgb(12_113_195/0.08)]'
+                        : 'border-th-border/80 bg-surface-secondary/40 hover:border-th-accent-300 hover:bg-surface-secondary/70'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="user_type"
+                      value={ut.value}
+                      checked={selected}
+                      onChange={(e) =>
+                        setForm({ ...form, user_type: e.target.value as UserType })
+                      }
+                      className="mt-1"
+                    />
+                    <div>
+                      <p className="font-medium text-th-text-primary">{ut.label}</p>
+                      <p className="text-xs text-th-text-tertiary leading-relaxed mt-0.5">{ut.description}</p>
+                    </div>
+                  </label>
+                );
+              })}
             </div>
           </div>
 
@@ -339,6 +352,25 @@ export default function AddUserModal({ isOpen, onClose, onSuccess, suggestedUser
               />
             </div>
           </div>
+
+          {isStaffHub && (
+            <div className="rounded-2xl border border-th-accent-200/80 dark:border-th-accent-800/60 bg-th-accent-50/70 dark:bg-th-accent-900/20 p-4 space-y-1.5">
+              <p className="text-sm font-medium text-th-text-primary">Staff Hub account</p>
+              <p className="text-xs text-th-text-tertiary leading-relaxed">
+                Creates a login for{' '}
+                <a
+                  href={STAFF_HUB_LOGIN_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-th-accent-600 underline underline-offset-2"
+                >
+                  {STAFF_HUB_ORIGIN.replace('https://', '')}
+                </a>
+                . They get Notes, Tasks, Time Off, Calendar, and partner links. Add Admin, CRM, or
+                Advisor roles later if they need those portal tiles.
+              </p>
+            </div>
+          )}
 
           {/* Admin Role (only when user_type = admin_staff) */}
           {isAdminStaff && (
@@ -511,24 +543,25 @@ export default function AddUserModal({ isOpen, onClose, onSuccess, suggestedUser
                 Send invitation email
               </p>
               <p className="text-xs text-th-text-tertiary">
-                User will receive an email with a link to set their password
+                {isStaffHub
+                  ? `Email includes temporary password and a link to ${STAFF_HUB_ORIGIN.replace('https://', '')}`
+                  : 'User will receive an email with a link to set their password'}
               </p>
             </label>
           </div>
 
-          {/* Actions */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-th-border">
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-th-border/70">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 border border-th-border rounded-lg text-th-text-secondary hover:bg-surface-secondary transition-colors"
+              className="px-4 py-2.5 border border-th-border rounded-full text-th-text-secondary hover:bg-surface-secondary active:scale-[0.98] transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="flex items-center gap-2 px-4 py-2 bg-th-accent-600 text-white rounded-lg font-medium hover:bg-th-accent-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="flex items-center gap-2 px-5 py-2.5 bg-th-accent-600 text-white rounded-full font-medium hover:bg-th-accent-700 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] shadow-[0_8px_24px_rgb(12_113_195/0.25)] transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]"
             >
               {saving && <Loader2 className="w-4 h-4 animate-spin" />}
               {saving ? 'Creating...' : 'Create User'}

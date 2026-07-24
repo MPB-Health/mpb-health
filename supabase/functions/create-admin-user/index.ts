@@ -15,26 +15,52 @@ interface CreateUserRequest {
   role: "super_admin" | "admin" | "manager" | "staff" | "concierge";
   permissions: string[];
   send_invite: boolean;
+  /** Override invite login destination (defaults from role). */
+  invite_portal?: "admin" | "concierge" | "staff_hub";
 }
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const CONCIERGE_LOGIN_URL =
   Deno.env.get("CONCIERGE_PORTAL_LOGIN_URL") ?? "https://concierge.mpb.health/login";
 const ADMIN_LOGIN_URL = Deno.env.get("ADMIN_PORTAL_LOGIN_URL") ?? "https://admin.mpb.health/login";
+const STAFF_HUB_LOGIN_URL =
+  Deno.env.get("STAFF_HUB_LOGIN_URL") ?? "https://staff.mpb.health/login";
+
+type InvitePortal = "admin" | "concierge" | "staff_hub";
+
+function resolveInvitePortal(
+  role: CreateUserRequest["role"],
+  invitePortal?: InvitePortal,
+): InvitePortal {
+  if (invitePortal) return invitePortal;
+  if (role === "concierge") return "concierge";
+  if (role === "staff") return "staff_hub";
+  return "admin";
+}
 
 async function sendInviteEmail(
   email: string,
   firstName: string,
   tempPassword: string,
-  portal: "admin" | "concierge",
+  portal: InvitePortal,
 ): Promise<void> {
   if (!RESEND_API_KEY) {
     log.error('Resend API key not configured, cannot send invite email');
     throw new Error("RESEND_API_KEY is not configured in Supabase. Add it in Project Settings → Edge Functions → Secrets.");
   }
 
-  const loginUrl = portal === "concierge" ? CONCIERGE_LOGIN_URL : ADMIN_LOGIN_URL;
-  const portalTitle = portal === "concierge" ? "Concierge Portal" : "Admin Portal";
+  const loginUrl =
+    portal === "concierge"
+      ? CONCIERGE_LOGIN_URL
+      : portal === "staff_hub"
+        ? STAFF_HUB_LOGIN_URL
+        : ADMIN_LOGIN_URL;
+  const portalTitle =
+    portal === "concierge"
+      ? "Concierge Portal"
+      : portal === "staff_hub"
+        ? "MPB Staff Hub"
+        : "Admin Portal";
 
   const body = `
     <p style="color:#374151;font-size:15px;line-height:1.6;margin:0 0 16px;">Hi ${firstName},</p>
@@ -148,7 +174,7 @@ Deno.serve(async (req: Request) => {
 
     // Parse request body
     const body: CreateUserRequest = await req.json();
-    const { email, first_name, last_name, role, permissions, send_invite } = body;
+    const { email, first_name, last_name, role, permissions, send_invite, invite_portal } = body;
 
     if (!email || !first_name || !last_name || !role) {
       return new Response(
@@ -229,7 +255,12 @@ Deno.serve(async (req: Request) => {
       let emailError: string | undefined;
       if (send_invite) {
         try {
-          await sendInviteEmail(email, first_name, tempPassword, "concierge");
+          await sendInviteEmail(
+            email,
+            first_name,
+            tempPassword,
+            resolveInvitePortal(role, invite_portal),
+          );
           emailSent = true;
         } catch (emailErr) {
           log.error("Email send error:", emailErr);
@@ -317,7 +348,12 @@ Deno.serve(async (req: Request) => {
     let emailError: string | undefined;
     if (send_invite) {
       try {
-        await sendInviteEmail(email, first_name, tempPassword, "admin");
+        await sendInviteEmail(
+          email,
+          first_name,
+          tempPassword,
+          resolveInvitePortal(role, invite_portal),
+        );
         emailSent = true;
       } catch (emailErr) {
         log.error('Email send error:', emailErr);

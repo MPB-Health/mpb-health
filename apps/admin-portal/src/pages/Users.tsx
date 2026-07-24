@@ -27,8 +27,11 @@ import { invokeWithResolvedAuth } from '@mpbhealth/database';
 import { useAdmin } from '../contexts/AdminContext';
 import AddUserModal from '../components/AddUserModal';
 import InviteUserModal from '../components/InviteUserModal';
+import PageChrome, { BezelPanel, PortalTabs } from '../components/PageChrome';
+import { STAFF_HUB_LOGIN_URL, STAFF_HUB_ORIGIN } from '../lib/portalUrls';
+import { Button } from '@mpbhealth/ui';
 
-type PortalTab = 'admin' | 'advisor' | 'member' | 'concierge' | 'support' | 'all';
+type PortalTab = 'admin' | 'staff_hub' | 'advisor' | 'member' | 'concierge' | 'support' | 'all';
 
 const SUPPORT_ACCESS_ROLES = ['super_admin', 'admin', 'advisor', 'concierge'];
 
@@ -41,6 +44,7 @@ interface MassPasswordResetResponse {
 }
 
 const PORTAL_TABS: { id: PortalTab; label: string }[] = [
+  { id: 'staff_hub', label: 'Staff Hub' },
   { id: 'admin', label: 'Admin' },
   { id: 'advisor', label: 'Advisor' },
   { id: 'concierge', label: 'Concierge' },
@@ -87,7 +91,7 @@ export default function Users() {
   const { isSuperAdmin } = useAdmin();
 
   // Tab state
-  const [activeTab, setActiveTab] = useState<PortalTab>('admin');
+  const [activeTab, setActiveTab] = useState<PortalTab>('staff_hub');
 
   // Admin portal users (from admin_users table)
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
@@ -155,7 +159,7 @@ export default function Users() {
 
   useEffect(() => {
     setSelectedIds(new Set());
-    if (activeTab === 'admin') {
+    if (activeTab === 'admin' || activeTab === 'staff_hub') {
       loadAdminUsers();
     } else if (activeTab === 'advisor') {
       loadCrossPortalUsers('advisor');
@@ -172,10 +176,15 @@ export default function Users() {
 
   // ── Bulk actions ────────────────────────────────────────────────────────────
 
+  const filteredAdminUsers =
+    activeTab === 'staff_hub'
+      ? adminUsers.filter((u) => u.role === 'staff')
+      : adminUsers;
   const filteredCrossUsers = activeTab === 'support'
     ? crossUsers.filter((u) => u.roles.some((r) => SUPPORT_ACCESS_ROLES.includes(r)))
     : crossUsers;
-  const currentList = activeTab === 'admin' ? adminUsers : filteredCrossUsers;
+  const isAdminStyleTab = activeTab === 'admin' || activeTab === 'staff_hub';
+  const currentList = isAdminStyleTab ? filteredAdminUsers : filteredCrossUsers;
   const currentListIds = currentList.map((u) => u.id);
 
   const toggleSelect = (id: string) => {
@@ -376,12 +385,12 @@ export default function Users() {
   );
 
   const renderAdminTable = () => (
-    <div className="bg-surface-primary rounded-xl border border-th-border overflow-hidden">
+    <BezelPanel>
       {loading ? (
-        <div className="flex items-center justify-center py-12">
+        <div className="flex items-center justify-center py-14">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-th-accent-600" />
         </div>
-      ) : adminUsers.length > 0 ? (
+      ) : filteredAdminUsers.length > 0 ? (
         <table className="w-full">
           <thead className="bg-surface-secondary border-b border-th-border">
             <tr>
@@ -394,7 +403,7 @@ export default function Users() {
             </tr>
           </thead>
           <tbody className="divide-y divide-th-border-subtle">
-            {adminUsers.map((user) => (
+            {filteredAdminUsers.map((user) => (
               <tr
                 key={user.id}
                 className="hover:bg-surface-tertiary cursor-pointer"
@@ -482,12 +491,17 @@ export default function Users() {
           </tbody>
         </table>
       ) : (
-        <div className="text-center py-12">
-          <UsersIcon className="w-12 h-12 mx-auto mb-4 text-th-text-tertiary" />
-          <p className="text-th-text-tertiary">No users found</p>
+        <div className="text-center py-14 px-4">
+          <UsersIcon className="w-11 h-11 mx-auto mb-3 text-th-text-tertiary" />
+          <p className="text-th-text-primary font-medium">No users found</p>
+          <p className="text-sm text-th-text-tertiary mt-1">
+            {activeTab === 'staff_hub'
+              ? 'Create a Staff Hub account with Add User.'
+              : 'Try adjusting filters or search.'}
+          </p>
         </div>
       )}
-    </div>
+    </BezelPanel>
   );
 
   const renderCrossPortalTable = () => {
@@ -495,9 +509,9 @@ export default function Users() {
     const showSupportColumn = activeTab === 'all' || activeTab === 'support';
 
     return (
-      <div className="bg-surface-primary rounded-xl border border-th-border overflow-hidden">
+      <BezelPanel>
         {loading ? (
-          <div className="flex items-center justify-center py-12">
+          <div className="flex items-center justify-center py-14">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-th-accent-600" />
           </div>
         ) : usersToShow.length > 0 ? (
@@ -617,157 +631,146 @@ export default function Users() {
             </tbody>
           </table>
         ) : (
-          <div className="text-center py-12">
-            <UsersIcon className="w-12 h-12 mx-auto mb-4 text-th-text-tertiary" />
-            <p className="text-th-text-tertiary">No users found</p>
+          <div className="text-center py-14 px-4">
+            <UsersIcon className="w-11 h-11 mx-auto mb-3 text-th-text-tertiary" />
+            <p className="text-th-text-primary font-medium">No users found</p>
+            <p className="text-sm text-th-text-tertiary mt-1">Try adjusting filters or search.</p>
           </div>
         )}
-      </div>
+      </BezelPanel>
     );
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-th-text-primary">Users</h1>
-          <p className="text-th-text-tertiary text-sm mt-1">
-            Manage users across all portals
-          </p>
-        </div>
-        <div className="flex items-center space-x-2">
-          {/* Bulk actions (any tab, super_admin only) */}
-          {isSuperAdmin && selectedIds.size > 0 && (
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setBulkMenuOpen((o) => !o)}
-                className="flex items-center space-x-1 px-4 py-2 border border-th-border text-th-text-secondary rounded-lg font-medium hover:bg-surface-secondary transition-colors"
-              >
-                <span>{selectedIds.size} selected</span>
-                <ChevronDown className="w-4 h-4" />
-              </button>
-              {bulkMenuOpen && (
-                <div className="absolute right-0 mt-1 w-52 bg-surface-primary border border-th-border rounded-lg shadow-lg z-10">
-                  {activeTab === 'admin' && (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => handleBulkAction('active')}
-                        className="w-full text-left px-4 py-2 text-sm text-th-text-primary hover:bg-surface-secondary"
-                      >
-                        Activate
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleBulkAction('suspended')}
-                        className="w-full text-left px-4 py-2 text-sm text-th-text-primary hover:bg-surface-secondary"
-                      >
-                        Suspend
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleBulkAction('inactive')}
-                        className="w-full text-left px-4 py-2 text-sm text-th-text-primary hover:bg-surface-secondary"
-                      >
-                        Deactivate
-                      </button>
-                      <div className="border-t border-th-border my-1" />
-                    </>
-                  )}
-                  <button
-                    type="button"
-                    onClick={openMassReset}
-                    className="w-full text-left px-4 py-2 text-sm text-th-text-primary hover:bg-surface-secondary flex items-center space-x-2"
-                  >
-                    <KeyRound className="w-4 h-4" />
-                    <span>Send Password Reset</span>
-                  </button>
-                  <div className="border-t border-th-border my-1" />
-                  <button
-                    type="button"
-                    onClick={openBulkDelete}
-                    className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center space-x-2"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    <span>Delete Selected</span>
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-          <button
-            type="button"
-            onClick={() => setShowInviteModal(true)}
-            className="flex items-center space-x-2 px-4 py-2 border border-th-border text-th-text-secondary rounded-lg font-medium hover:bg-surface-secondary transition-colors"
-          >
-            <Plus className="w-5 h-5" />
-            <span>Invite</span>
-          </button>
-          {isSuperAdmin && (
-            <button
+    <div className="space-y-5">
+      <PageChrome
+        title="Users"
+        description="Create Staff Hub logins and manage Admin, CRM, Advisor, and Member access."
+        actions={
+          <>
+            {isSuperAdmin && selectedIds.size > 0 && (
+              <div className="relative">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setBulkMenuOpen((o) => !o)}
+                  className="rounded-full"
+                >
+                  <span>{selectedIds.size} selected</span>
+                  <ChevronDown className="w-4 h-4" />
+                </Button>
+                {bulkMenuOpen && (
+                  <div className="absolute right-0 mt-1 w-52 admin-modal-shell z-10 overflow-hidden">
+                    {isAdminStyleTab && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => handleBulkAction('active')}
+                          className="w-full text-left px-4 py-2 text-sm text-th-text-primary hover:bg-surface-secondary"
+                        >
+                          Activate
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleBulkAction('suspended')}
+                          className="w-full text-left px-4 py-2 text-sm text-th-text-primary hover:bg-surface-secondary"
+                        >
+                          Suspend
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleBulkAction('inactive')}
+                          className="w-full text-left px-4 py-2 text-sm text-th-text-primary hover:bg-surface-secondary"
+                        >
+                          Deactivate
+                        </button>
+                        <div className="border-t border-th-border my-1" />
+                      </>
+                    )}
+                    <button
+                      type="button"
+                      onClick={openMassReset}
+                      className="w-full text-left px-4 py-2 text-sm text-th-text-primary hover:bg-surface-secondary flex items-center space-x-2"
+                    >
+                      <KeyRound className="w-4 h-4" />
+                      <span>Send Password Reset</span>
+                    </button>
+                    <div className="border-t border-th-border my-1" />
+                    <button
+                      type="button"
+                      onClick={openBulkDelete}
+                      className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center space-x-2"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      <span>Delete Selected</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+            <Button
               type="button"
-              onClick={() => setShowAddModal(true)}
-              className="flex items-center space-x-2 px-4 py-2 bg-th-accent-600 text-white rounded-lg font-medium hover:bg-th-accent-700 transition-colors"
+              variant="outline"
+              onClick={() => setShowInviteModal(true)}
+              className="rounded-full"
             >
-              <Plus className="w-5 h-5" />
-              <span>Add User</span>
-            </button>
-          )}
-        </div>
-      </div>
+              <Plus className="w-4 h-4" />
+              Invite
+            </Button>
+            {isSuperAdmin && (
+              <Button
+                type="button"
+                onClick={() => setShowAddModal(true)}
+                className="rounded-full shadow-[0_8px_24px_rgb(12_113_195/0.22)]"
+              >
+                <Plus className="w-4 h-4" />
+                Add User
+              </Button>
+            )}
+          </>
+        }
+        tabs={
+          <PortalTabs
+            tabs={PORTAL_TABS}
+            active={activeTab}
+            onChange={setActiveTab}
+          />
+        }
+      />
 
-      {/* Portal tabs */}
-      <div className="flex border-b border-th-border">
-        {PORTAL_TABS.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === tab.id
-                ? 'border-th-accent-600 text-th-accent-600'
-                : 'border-transparent text-th-text-tertiary hover:text-th-text-secondary'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
+      <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-th-text-tertiary" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-th-text-tertiary" />
           <input
             type="text"
             placeholder="Search users..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-surface-primary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 focus:border-transparent text-th-text-primary placeholder-th-text-tertiary"
+            className="w-full pl-10 pr-4 py-2.5 bg-surface-primary/90 border border-th-border/80 rounded-full focus:outline-none focus:ring-2 focus:ring-th-accent-500 focus:border-transparent text-th-text-primary placeholder-th-text-tertiary shadow-[0_1px_2px_rgb(15_23_42/0.03)]"
           />
         </div>
-        {activeTab === 'admin' && (
-          <div className="flex items-center space-x-2">
-            <Filter className="w-5 h-5 text-th-text-tertiary" />
-            <select
-              aria-label="Filter by role"
-              value={roleFilter}
-              onChange={(e) => setRoleFilter(e.target.value)}
-              className="px-4 py-2.5 bg-surface-primary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary"
-            >
-              <option value="">All Roles</option>
-              <option value="super_admin">Super Admin</option>
-              <option value="admin">Admin</option>
-              <option value="manager">Manager</option>
-              <option value="staff">Staff</option>
-            </select>
+        {isAdminStyleTab && (
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-th-text-tertiary shrink-0" />
+            {activeTab === 'admin' && (
+              <select
+                aria-label="Filter by role"
+                value={roleFilter}
+                onChange={(e) => setRoleFilter(e.target.value)}
+                className="px-4 py-2.5 bg-surface-primary border border-th-border/80 rounded-full focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary"
+              >
+                <option value="">All Roles</option>
+                <option value="super_admin">Super Admin</option>
+                <option value="admin">Admin</option>
+                <option value="manager">Manager</option>
+                <option value="staff">Staff</option>
+              </select>
+            )}
             <select
               aria-label="Filter by status"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-4 py-2.5 bg-surface-primary border border-th-border rounded-lg focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary"
+              className="px-4 py-2.5 bg-surface-primary border border-th-border/80 rounded-full focus:outline-none focus:ring-2 focus:ring-th-accent-500 text-th-text-primary"
             >
               <option value="">All Status</option>
               <option value="active">Active</option>
@@ -778,10 +781,23 @@ export default function Users() {
         )}
       </div>
 
-      {/* Table */}
-      {activeTab === 'admin' ? renderAdminTable() : renderCrossPortalTable()}
+      {isAdminStyleTab ? renderAdminTable() : renderCrossPortalTable()}
 
-      {/* Support tab hint */}
+      {activeTab === 'staff_hub' && (
+        <p className="text-xs text-th-text-tertiary leading-relaxed">
+          Staff Hub accounts (admin role = staff). They sign in at{' '}
+          <a
+            href={STAFF_HUB_LOGIN_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="text-th-accent-600 underline underline-offset-2"
+          >
+            {STAFF_HUB_ORIGIN.replace('https://', '')}
+          </a>
+          . Admin, CRM, and Advisor users can also use Staff Hub with the same login.
+        </p>
+      )}
+
       {activeTab === 'support' && filteredCrossUsers.length > 0 && (
         <p className="text-xs text-th-text-tertiary">
           Showing users with Support Portal access (Super Admin, Admin, Advisor, or Concierge roles).
@@ -793,15 +809,17 @@ export default function Users() {
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
         suggestedUserType={
-          activeTab === 'advisor'
-            ? 'advisor'
-            : activeTab === 'member'
-              ? 'member'
-              : 'admin_staff'
+          activeTab === 'staff_hub'
+            ? 'staff_hub'
+            : activeTab === 'advisor'
+              ? 'advisor'
+              : activeTab === 'member'
+                ? 'member'
+                : 'admin_staff'
         }
         suggestedAdminRole={activeTab === 'concierge' ? 'concierge' : undefined}
         onSuccess={() => {
-          if (activeTab === 'admin') loadAdminUsers();
+          if (activeTab === 'admin' || activeTab === 'staff_hub') loadAdminUsers();
           else if (activeTab === 'concierge') loadCrossPortalUsers('concierge');
           else if (activeTab === 'advisor') loadCrossPortalUsers('advisor');
           else if (activeTab === 'member') loadCrossPortalUsers('member');

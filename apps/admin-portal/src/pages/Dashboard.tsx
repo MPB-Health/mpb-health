@@ -372,19 +372,20 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8">
-      {/* ── Welcome banner ─────────────────────────────────────────────── */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[rgb(var(--accent-600))] via-[rgb(var(--accent-700))] to-[rgb(var(--accent-900))] p-8 text-white">
+      {/* ── Welcome banner (Soft Structuralism accent plate) ───────────── */}
+      <div className="admin-bezel">
+        <div className="admin-bezel-inner relative overflow-hidden bg-gradient-to-br from-[rgb(var(--accent-600))] via-[rgb(var(--accent-700))] to-[rgb(var(--accent-900))] p-7 md:p-8 text-white border-0">
         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_30%_40%,white_0%,transparent_60%)]" />
-        <div className="relative z-10 flex items-start justify-between">
+        <div className="relative z-10 flex items-start justify-between gap-4">
           <div>
-            <p className="text-sm font-medium text-white/70 mb-1 tracking-wide uppercase">
+            <p className="text-sm font-medium text-white/70 mb-1 tracking-wide">
               {greeting}
             </p>
-            <h1 className="text-2xl md:text-3xl font-bold mb-2">
+            <h1 className="text-2xl md:text-3xl font-semibold tracking-tight mb-2">
               {user?.first_name} {user?.last_name}
             </h1>
-            <p className="text-white/60 text-sm max-w-lg">
-              Command Center — your unified view across all systems.
+            <p className="text-white/65 text-sm max-w-lg leading-relaxed">
+              Command Center. Your unified view across Staff Hub, CRM, members, and ops.
             </p>
           </div>
 
@@ -403,6 +404,7 @@ export default function Dashboard() {
             <StatusIcon className="w-4 h-4" />
             {statusConfig.label}
           </button>
+        </div>
         </div>
       </div>
 

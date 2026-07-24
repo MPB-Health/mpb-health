@@ -270,7 +270,9 @@ export default function MainLayout() {
         )
       }
     >
-      <Outlet />
+      <div className="admin-page-atmosphere">
+        <Outlet />
+      </div>
     </AppLayout>
   );
 }

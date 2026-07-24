@@ -21,7 +21,6 @@ export const STATIC_PATHS = new Set([
   "/auth/confirm",
   "/benefits/accident",
   "/benefits/critical-illness",
-  "/benefits/dental",
   "/benefits/disability",
   "/benefits/hospital",
   "/benefits/life",

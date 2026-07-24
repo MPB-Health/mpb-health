@@ -29,6 +29,8 @@ export interface BenefitPricingTier {
 export interface VoluntaryBenefit {
   id: string;
   name: string;
+  /** Hidden benefits keep their data but are not rendered or routable. */
+  hidden?: boolean;
   icon: LucideIcon;
   tagline: string;
   description: string;
@@ -533,6 +535,8 @@ export const voluntaryBenefits: VoluntaryBenefit[] = [
   {
     id: 'dental',
     name: 'Dental',
+    // Hidden until further notice (July 2026) — remove this flag to re-enable /benefits/dental
+    hidden: true,
     icon: Smile,
     tagline: 'Complete oral health membership',
     description: 'Membership for preventive care, fillings, crowns, and major dental work',

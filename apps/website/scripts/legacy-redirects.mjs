@@ -10,6 +10,10 @@ export const LEGACY_REDIRECTS = [
   { from: '/benefits/telehealth', to: '/features/primary-care' },
   { from: '/benefits/maternity', to: '/features/maternity-care' },
 
+  // Dental benefit hidden until further notice (July 2026) — temporary redirect,
+  // remove when the page is re-enabled in page-seo-extra.mjs / voluntaryBenefitsData.ts
+  { from: '/benefits/dental', to: '/features', status: 302 },
+
   // Dead form slug → active member updates form
   { from: '/forms/member-change-request', to: '/membership-changes' },
 

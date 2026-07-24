@@ -8,7 +8,7 @@ import { Button } from '../components/ui/button';
 
 export const BenefitDetail: React.FC = () => {
   const { benefitId } = useParams<{ benefitId: string }>();
-  const benefit = voluntaryBenefits.find((b) => b.id === benefitId);
+  const benefit = voluntaryBenefits.find((b) => b.id === benefitId && !b.hidden);
 
   if (!benefit) {
     return <Navigate to="/features" replace />;

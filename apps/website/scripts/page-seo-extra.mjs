@@ -186,7 +186,10 @@ const entries = [
   benefit('life', 'Life', 'Financial protection for your loved ones', 'Provide financial security for your family in the event of your passing with life insurance options.'),
   benefit('hospital', 'Hospital', 'Cash benefits for hospital stays', 'Fixed cash payments for hospital admissions, surgeries, and inpatient stays to supplement your sharing plan.'),
   benefit('accident', 'Accident', 'Coverage for unexpected injuries', 'Financial assistance for emergency care, fractures, and accident-related medical expenses.'),
-  benefit('dental', 'Dental', 'Complete oral health membership', 'Membership for preventive dental care, fillings, crowns, and major dental procedures.'),
+  // Dental hidden until further notice (July 2026). Restore this entry (and the
+  // `hidden` flag in src/data/voluntaryBenefitsData.ts, plus the temporary
+  // redirect in legacy-redirects.mjs) to re-enable /benefits/dental.
+  // benefit('dental', 'Dental', 'Complete oral health membership', 'Membership for preventive dental care, fillings, crowns, and major dental procedures.'),
   benefit('pet', 'Pet', 'Healthcare for your pets', 'Veterinary expense membership for pet accidents, illnesses, surgeries, and optional wellness care.'),
 
   // ── Member handbooks ─────────────────────────────────────────────────

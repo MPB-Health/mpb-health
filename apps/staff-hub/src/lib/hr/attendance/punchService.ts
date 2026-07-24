@@ -85,7 +85,9 @@ export async function listMySessions(limit = 30): Promise<StaffAttendanceSession
   return (data ?? []) as StaffAttendanceSession[];
 }
 
-export async function listTodaySessionsForHr(): Promise<StaffAttendanceSession[]> {
+export async function listTodaySessionsForHr(): Promise<
+  (StaffAttendanceSession & { employee_name: string | null })[]
+> {
   const start = new Date();
   start.setHours(0, 0, 0, 0);
 
@@ -97,7 +99,23 @@ export async function listTodaySessionsForHr(): Promise<StaffAttendanceSession[]
     .limit(500);
 
   if (error) throw error;
-  return (data ?? []) as StaffAttendanceSession[];
+  const sessions = (data ?? []) as StaffAttendanceSession[];
+  const userIds = [...new Set(sessions.map((s) => s.user_id))];
+  if (userIds.length === 0) return [];
+
+  const { data: profiles } = await supabase
+    .from('staff_profiles')
+    .select('user_id, display_name')
+    .in('user_id', userIds);
+
+  const nameByUser = new Map(
+    (profiles ?? []).map((p) => [p.user_id as string, (p.display_name as string) || null]),
+  );
+
+  return sessions.map((s) => ({
+    ...s,
+    employee_name: nameByUser.get(s.user_id) ?? null,
+  }));
 }
 
 export async function correctAttendanceSession(input: {

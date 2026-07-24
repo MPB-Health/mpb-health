@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { format, parseISO } from 'date-fns';
 import { Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useTenant } from '@mpbhealth/auth';
@@ -17,6 +16,7 @@ import {
 } from '../lib/hr';
 import { HrBezel, HrPageHeader, HrSecondaryButton } from '../components/hr/HrChrome';
 import { ClockPunchCard } from '../components/hr/ClockPunchCard';
+import { ClockingLog } from '../components/hr/ClockingLog';
 import { GeoGateBanner } from '../components/hr/GeoGateBanner';
 import { RemoteStatusBadge } from '../components/hr/RemoteStatusBadge';
 
@@ -36,7 +36,7 @@ export default function Attendance() {
       loadAttendanceContext(),
       getActiveOffice(),
       getOpenSession(),
-      listMySessions(20),
+      listMySessions(60),
     ]);
     setProfile(ctx.profile);
     setRemoteEligible(ctx.remoteEligible);
@@ -65,11 +65,9 @@ export default function Attendance() {
   const runPunch = async (action: 'clock_in' | 'clock_out') => {
     if (busy) return;
     setBusy(true);
-    // Stable for this attempt so a network retry cannot double-create a session.
     const idempotencyKey = `${action}:${crypto.randomUUID()}`;
     try {
       let position = null;
-      // Always re-check eligibility at punch time via RPC; client only decides whether to prompt GPS.
       if (!remoteEligible) {
         toast.loading('Getting your location…', { id: 'geo' });
         position = await getBrowserPosition();
@@ -127,7 +125,7 @@ export default function Attendance() {
     <div className="hr-surface animate-fade-up space-y-8">
       <HrPageHeader
         title="Attendance"
-        subtitle="Clock in and out for your workday. Portal login works from anywhere — punches require the office unless HR approves remote."
+        subtitle="Clock in and out for your workday. Your punch history lives here. HR can review org-wide attendance."
         meta={profile ? <RemoteStatusBadge status={profile.remote_status} /> : null}
       />
 
@@ -139,17 +137,25 @@ export default function Attendance() {
         />
       ) : null}
 
-      <HrBezel>
-        <div className="p-4 sm:p-6">
-          <ClockPunchCard
-            openSession={openSession}
-            remoteEligible={remoteEligible}
-            busy={busy}
-            onClockIn={() => void runPunch('clock_in')}
-            onClockOut={() => void runPunch('clock_out')}
-          />
-        </div>
-      </HrBezel>
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] xl:items-start">
+        <HrBezel>
+          <div className="p-4 sm:p-6">
+            <ClockPunchCard
+              openSession={openSession}
+              remoteEligible={remoteEligible}
+              busy={busy}
+              onClockIn={() => void runPunch('clock_in')}
+              onClockOut={() => void runPunch('clock_out')}
+            />
+          </div>
+        </HrBezel>
+
+        <ClockingLog
+          sessions={history}
+          title="Your clocking log"
+          emptyBody="Your punches appear here after you clock in. Only you and Staff HR can see them."
+        />
+      </div>
 
       {profile &&
         (profile.remote_status === 'ineligible' || profile.remote_status === 'revoked') && (
@@ -173,40 +179,6 @@ export default function Attendance() {
             </div>
           </HrBezel>
         )}
-
-      <HrBezel>
-        <div className="p-4 sm:p-6">
-          <h2 className="mb-4 text-sm font-semibold text-slate-800">Recent punches</h2>
-          {history.length === 0 ? (
-            <p className="py-8 text-center text-sm text-slate-400">No attendance records yet.</p>
-          ) : (
-            <ul className="divide-y divide-slate-100">
-              {history.map((s) => (
-                <li
-                  key={s.id}
-                  className="flex flex-col gap-1 py-3 sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <div>
-                    <p className="text-sm font-medium text-slate-900">
-                      {format(parseISO(s.clock_in_at), 'EEE, MMM d · h:mm a')}
-                      {s.clock_out_at
-                        ? ` – ${format(parseISO(s.clock_out_at), 'h:mm a')}`
-                        : ' – open'}
-                    </p>
-                    <p className="text-xs text-slate-500">
-                      {s.method === 'remote' ? 'Remote' : 'Office'}
-                      {s.clock_in_distance_m != null
-                        ? ` · ${Math.round(s.clock_in_distance_m)}m from office`
-                        : ''}
-                    </p>
-                  </div>
-                  <span className="text-xs capitalize text-slate-500">{s.status.replace('_', ' ')}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </HrBezel>
     </div>
   );
 }

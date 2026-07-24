@@ -5,12 +5,15 @@ import { ClipboardList, Loader2, Users } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useTenant } from '@mpbhealth/auth';
 import {
+  HR_ATTENDANCE_ENABLED,
   checkIsStaffHr,
   decideRequest,
   decideStandingRemote,
   listAllForHr,
   listPendingForHr,
   listPendingRemoteProfiles,
+  listTodaySessionsForHr,
+  type StaffAttendanceSession,
   type StaffProfile,
   type StaffTimeRequest,
 } from '../lib/hr';
@@ -18,6 +21,7 @@ import { HrBezel, HrPageHeader, HrPrimaryButton, HrSecondaryButton } from '../co
 import { StatusBadge, TypeBadge } from '../components/hr/StatusBadge';
 import { RemoteStatusBadge } from '../components/hr/RemoteStatusBadge';
 import { DecisionNoteModal } from '../components/hr/DecisionNoteModal';
+import { ClockingLog } from '../components/hr/ClockingLog';
 
 export default function HrQueue() {
   const { orgId, loading: tenantLoading } = useTenant();
@@ -25,6 +29,9 @@ export default function HrQueue() {
   const [pending, setPending] = useState<StaffTimeRequest[]>([]);
   const [pendingRemote, setPendingRemote] = useState<StaffProfile[]>([]);
   const [recent, setRecent] = useState<StaffTimeRequest[]>([]);
+  const [todayFloor, setTodayFloor] = useState<
+    (StaffAttendanceSession & { employee_name: string | null })[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [actingId, setActingId] = useState<string | null>(null);
   const [decisionTarget, setDecisionTarget] = useState<{
@@ -33,14 +40,16 @@ export default function HrQueue() {
   } | null>(null);
 
   const reload = async () => {
-    const [p, all, remote] = await Promise.all([
+    const [p, all, remote, floor] = await Promise.all([
       listPendingForHr(),
       listAllForHr(),
       listPendingRemoteProfiles(),
+      HR_ATTENDANCE_ENABLED ? listTodaySessionsForHr() : Promise.resolve([]),
     ]);
     setPending(p);
     setRecent(all.filter((r) => r.status !== 'pending').slice(0, 40));
     setPendingRemote(remote);
+    setTodayFloor(floor);
   };
 
   useEffect(() => {
@@ -120,7 +129,7 @@ export default function HrQueue() {
     <div className="hr-surface animate-fade-up space-y-8">
       <HrPageHeader
         title="HR queue"
-        subtitle="Review pending time-off, leave, and standing remote requests."
+        subtitle="Review pending time-off, leave, and standing remote requests. Today's floor shows who clocked in."
         action={
           <Link to="/hr/roster">
             <HrSecondaryButton type="button" className="inline-flex items-center gap-2">
@@ -130,6 +139,18 @@ export default function HrQueue() {
           </Link>
         }
       />
+
+      {HR_ATTENDANCE_ENABLED ? (
+        <ClockingLog
+          sessions={todayFloor}
+          title={`Today's floor (${todayFloor.length})`}
+          subtitle="Staff HR only. Names and punches for today across the organization."
+          emptyBody="No clock-ins yet today across the organization."
+          employeeNameByUserId={Object.fromEntries(
+            todayFloor.map((s) => [s.user_id, s.employee_name || 'Staff member']),
+          )}
+        />
+      ) : null}
 
       <HrBezel>
         <div className="p-4 sm:p-6">

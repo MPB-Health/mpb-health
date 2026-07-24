@@ -22,21 +22,84 @@ import {
   checkIsStaffHr,
 } from '../lib/hr';
 
-const BASE_NAV = [
-  { name: 'Hub', href: '/', icon: LayoutDashboard },
-  ...(HR_ATTENDANCE_ENABLED
-    ? [{ name: 'Attendance', href: '/attendance', icon: Clock3 }]
-    : []),
-  ...(HR_TIME_OFF_ENABLED
-    ? [
-        { name: 'Time Off', href: '/time-off', icon: CalendarClock },
-        { name: 'Calendar', href: '/calendar', icon: CalendarDays },
-      ]
-    : []),
-  { name: 'Notes', href: '/notes', icon: StickyNote },
-  { name: 'Tasks', href: '/tasks', icon: CheckSquare },
-  { name: 'Profile', href: '/profile', icon: UserCircle },
-];
+type NavItem = { name: string; href: string; icon: typeof LayoutDashboard };
+
+function buildNav(isHr: boolean): { label: string; items: NavItem[] }[] {
+  const workspace: NavItem[] = [
+    { name: 'Hub', href: '/', icon: LayoutDashboard },
+    { name: 'Notes', href: '/notes', icon: StickyNote },
+    { name: 'Tasks', href: '/tasks', icon: CheckSquare },
+    { name: 'Profile', href: '/profile', icon: UserCircle },
+  ];
+
+  const time: NavItem[] = [];
+  if (HR_ATTENDANCE_ENABLED) {
+    time.push({ name: 'Attendance', href: '/attendance', icon: Clock3 });
+  }
+  if (HR_TIME_OFF_ENABLED) {
+    time.push(
+      { name: 'Time Off', href: '/time-off', icon: CalendarClock },
+      { name: 'Calendar', href: '/calendar', icon: CalendarDays },
+    );
+  }
+
+  const groups: { label: string; items: NavItem[] }[] = [
+    { label: 'Workspace', items: workspace },
+  ];
+  if (time.length > 0) {
+    groups.push({ label: 'Time', items: time });
+  }
+  if (isHr && (HR_ATTENDANCE_ENABLED || HR_TIME_OFF_ENABLED)) {
+    const people: NavItem[] = [];
+    if (HR_TIME_OFF_ENABLED) {
+      people.push({ name: 'HR Queue', href: '/hr', icon: ClipboardList });
+    }
+    if (HR_ATTENDANCE_ENABLED) {
+      people.push({ name: 'Roster', href: '/hr/roster', icon: Users });
+    }
+    if (people.length > 0) {
+      groups.push({ label: 'People', items: people });
+    }
+  }
+  return groups;
+}
+
+function NavGroups({
+  groups,
+  onNavigate,
+}: {
+  groups: { label: string; items: NavItem[] }[];
+  onNavigate?: () => void;
+}) {
+  return (
+    <div className="space-y-6">
+      {groups.map((group) => (
+        <div key={group.label}>
+          <p className="hub-side-label">{group.label}</p>
+          <nav className="mt-2 space-y-0.5" aria-label={group.label}>
+            {group.items.map((item) => {
+              const Icon = item.icon;
+              return (
+                <NavLink
+                  key={item.href}
+                  to={item.href}
+                  end={item.href === '/'}
+                  onClick={onNavigate}
+                  className={({ isActive }) =>
+                    `hub-side-link ${isActive ? 'hub-side-link-active' : ''}`
+                  }
+                >
+                  <Icon className="h-4 w-4 shrink-0 opacity-80" strokeWidth={1.75} />
+                  <span>{item.name}</span>
+                </NavLink>
+              );
+            })}
+          </nav>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export default function MainLayout() {
   const location = useLocation();
@@ -57,20 +120,7 @@ export default function MainLayout() {
     setMobileOpen(false);
   }, [location.pathname]);
 
-  const navItems = useMemo(() => {
-    const items = [...BASE_NAV];
-    if (HR_TIME_OFF_ENABLED && isHr) {
-      items.splice(
-        HR_ATTENDANCE_ENABLED ? 4 : 3,
-        0,
-        { name: 'HR', href: '/hr', icon: ClipboardList },
-        { name: 'Roster', href: '/hr/roster', icon: Users },
-      );
-    } else if (HR_ATTENDANCE_ENABLED && isHr) {
-      items.splice(2, 0, { name: 'Roster', href: '/hr/roster', icon: Users });
-    }
-    return items;
-  }, [isHr]);
+  const groups = useMemo(() => buildNav(isHr), [isHr]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -79,18 +129,10 @@ export default function MainLayout() {
   };
 
   return (
-    <div className="hub-shell">
-      <div className="hub-nav-island pt-3 sm:pt-4">
-        <header className="hub-nav-glass">
-          <div className="flex min-w-0 items-center gap-2.5 pl-1">
-            <button
-              type="button"
-              onClick={() => setMobileOpen(!mobileOpen)}
-              className="rounded-full p-2 text-[color:var(--hr-muted)] transition-colors hover:bg-[color:var(--hr-mist)] hover:text-[color:var(--hr-ink)] lg:hidden"
-              aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
-            >
-              {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </button>
+    <div className="hub-shell hub-shell-rail">
+      <aside className="hub-sidebar" aria-label="Staff Hub sidebar">
+        <div className="hub-sidebar-inner">
+          <div className="flex items-center gap-3 px-1">
             <div className="hub-mark" aria-hidden>
               MPB
             </div>
@@ -98,86 +140,92 @@ export default function MainLayout() {
               <p className="truncate text-sm font-semibold tracking-tight text-[color:var(--hr-ink)]">
                 Staff Hub
               </p>
-              <p className="hidden truncate text-[11px] text-[color:var(--hr-muted)] sm:block">
-                Healthshare operations
+              <p className="truncate text-[11px] text-[color:var(--hr-muted)]">
+                Healthshare ops
               </p>
             </div>
           </div>
 
-          <nav className="hidden items-center gap-0.5 lg:flex" aria-label="Primary">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <NavLink
-                  key={item.href}
-                  to={item.href}
-                  end={item.href === '/'}
-                  className={({ isActive }) =>
-                    `hub-nav-link ${isActive ? 'hub-nav-link-active' : ''}`
-                  }
-                >
-                  <Icon className="h-3.5 w-3.5" />
-                  {item.name}
-                </NavLink>
-              );
-            })}
-          </nav>
+          <div className="mt-8 flex-1 overflow-y-auto pr-1">
+            <NavGroups groups={groups} />
+          </div>
 
-          <div className="flex items-center gap-1.5 pr-0.5">
-            <span className="hidden max-w-[10rem] truncate text-xs text-[color:var(--hr-muted)] xl:block">
-              {user?.email}
-            </span>
+          <div className="mt-6 border-t border-[color:var(--hr-line)] pt-4">
+            <p className="truncate px-2.5 text-[11px] text-[color:var(--hr-muted)]">
+              {user?.email ?? 'Signed in'}
+            </p>
             <button
               type="button"
-              onClick={handleSignOut}
-              className="inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-medium text-[color:var(--hr-muted)] transition-colors hover:bg-[color:var(--hr-mist)] hover:text-[color:var(--hr-ink)]"
+              onClick={() => void handleSignOut()}
+              className="hub-side-link mt-2 w-full"
             >
-              <LogOut className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Sign out</span>
+              <LogOut className="h-4 w-4 shrink-0 opacity-80" strokeWidth={1.75} />
+              <span>Sign out</span>
             </button>
           </div>
+        </div>
+      </aside>
+
+      <div className="hub-content">
+        <header className="hub-mobile-bar lg:hidden">
+          <button
+            type="button"
+            onClick={() => setMobileOpen(true)}
+            className="rounded-full p-2 text-[color:var(--hr-muted)] transition-colors hover:bg-[color:var(--hr-mist)] hover:text-[color:var(--hr-ink)]"
+            aria-label="Open menu"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+          <div className="flex min-w-0 items-center gap-2">
+            <div className="hub-mark !h-8 !w-8 !rounded-lg !text-[0.6rem]" aria-hidden>
+              MPB
+            </div>
+            <p className="truncate text-sm font-semibold text-[color:var(--hr-ink)]">Staff Hub</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => void handleSignOut()}
+            className="rounded-full p-2 text-[color:var(--hr-muted)] transition-colors hover:bg-[color:var(--hr-mist)]"
+            aria-label="Sign out"
+          >
+            <LogOut className="h-4 w-4" />
+          </button>
         </header>
 
-        {mobileOpen && (
-          <div className="hub-mobile-drawer lg:hidden" role="dialog" aria-label="Navigation">
-            <nav className="space-y-1">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <NavLink
-                    key={item.href}
-                    to={item.href}
-                    end={item.href === '/'}
-                    className={({ isActive }) =>
-                      `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium ${
-                        isActive
-                          ? 'bg-[color:var(--hr-mist)] text-[color:var(--hr-accent-deep)]'
-                          : 'text-[color:var(--hr-muted)] hover:bg-[color:var(--hr-mist)] hover:text-[color:var(--hr-ink)]'
-                      }`
-                    }
-                  >
-                    <Icon className="h-5 w-5" />
-                    {item.name}
-                  </NavLink>
-                );
-              })}
-            </nav>
-          </div>
-        )}
+        {mobileOpen ? (
+          <>
+            <button
+              type="button"
+              className="fixed inset-0 z-40 bg-[color:var(--hr-ink)]/30 lg:hidden"
+              aria-label="Close menu overlay"
+              onClick={() => setMobileOpen(false)}
+            />
+            <div className="hub-mobile-drawer-rail lg:hidden" role="dialog" aria-label="Navigation">
+              <div className="mb-5 flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="hub-mark" aria-hidden>
+                    MPB
+                  </div>
+                  <p className="text-sm font-semibold text-[color:var(--hr-ink)]">Menu</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setMobileOpen(false)}
+                  className="rounded-full p-2 text-[color:var(--hr-muted)] hover:bg-[color:var(--hr-mist)]"
+                  aria-label="Close menu"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <NavGroups groups={groups} onNavigate={() => setMobileOpen(false)} />
+            </div>
+          </>
+        ) : null}
+
+        <main className="hub-main">
+          <Outlet />
+        </main>
       </div>
-
-      {mobileOpen && (
-        <button
-          type="button"
-          className="fixed inset-0 z-30 bg-[color:var(--hr-ink)]/20 lg:hidden"
-          aria-label="Close menu overlay"
-          onClick={() => setMobileOpen(false)}
-        />
-      )}
-
-      <main className="hub-main">
-        <Outlet />
-      </main>
     </div>
   );
 }

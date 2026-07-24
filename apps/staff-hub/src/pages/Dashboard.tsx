@@ -36,12 +36,14 @@ import {
   HR_TIME_OFF_ENABLED,
   getBrowserPosition,
   getOpenSession,
+  listMySessions,
   loadAttendanceContext,
   punchAttendance,
   type StaffAttendanceSession,
   type StaffProfile,
 } from '../lib/hr';
 import { DashboardPresenceHero } from '../components/hr/DashboardPresenceHero';
+import { ClockingLog } from '../components/hr/ClockingLog';
 
 interface PortalCardDef {
   key: PortalKey;
@@ -269,6 +271,7 @@ export default function Dashboard() {
   const [sessionLoading, setSessionLoading] = useState(true);
   const [profile, setProfile] = useState<StaffProfile | null>(null);
   const [openSession, setOpenSession] = useState<StaffAttendanceSession | null>(null);
+  const [recentSessions, setRecentSessions] = useState<StaffAttendanceSession[]>([]);
   const [remoteEligible, setRemoteEligible] = useState(false);
   const [presenceLoading, setPresenceLoading] = useState(HR_ATTENDANCE_ENABLED);
   const [punchBusy, setPunchBusy] = useState(false);
@@ -296,10 +299,15 @@ export default function Dashboard() {
 
   const reloadPresence = useCallback(async () => {
     if (!HR_ATTENDANCE_ENABLED) return;
-    const [ctx, open] = await Promise.all([loadAttendanceContext(), getOpenSession()]);
+    const [ctx, open, sessions] = await Promise.all([
+      loadAttendanceContext(),
+      getOpenSession(),
+      listMySessions(12),
+    ]);
     setProfile(ctx.profile);
     setRemoteEligible(ctx.remoteEligible);
     setOpenSession(open);
+    setRecentSessions(sessions);
   }, []);
 
   useEffect(() => {
@@ -439,8 +447,20 @@ export default function Dashboard() {
         </div>
       )}
 
-      {(HR_ATTENDANCE_ENABLED || HR_TIME_OFF_ENABLED) && (
+      {HR_ATTENDANCE_ENABLED ? (
         <section className="animate-fade-up" style={{ animationDelay: '40ms' }}>
+          <ClockingLog
+            sessions={recentSessions}
+            title="Recent clockings"
+            emptyBody="Your punch history shows here after you clock in."
+            compact
+            showViewAll
+          />
+        </section>
+      ) : null}
+
+      {(HR_ATTENDANCE_ENABLED || HR_TIME_OFF_ENABLED) && (
+        <section className="animate-fade-up" style={{ animationDelay: '70ms' }}>
           <div className="mb-4 flex items-end justify-between gap-3">
             <h2 className="hub-section-title">Your day</h2>
             {HR_ATTENDANCE_ENABLED ? (

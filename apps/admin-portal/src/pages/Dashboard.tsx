@@ -372,39 +372,38 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8">
-      {/* ── Welcome banner (Soft Structuralism accent plate) ───────────── */}
+      {/* ── Welcome banner (accent plate; solid fill must not kill gradient) */}
       <div className="admin-bezel">
-        <div className="admin-bezel-inner relative overflow-hidden bg-gradient-to-br from-[rgb(var(--accent-600))] via-[rgb(var(--accent-700))] to-[rgb(var(--accent-900))] p-7 md:p-8 text-white border-0">
-        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_30%_40%,white_0%,transparent_60%)]" />
-        <div className="relative z-10 flex items-start justify-between gap-4">
-          <div>
-            <p className="text-sm font-medium text-white/70 mb-1 tracking-wide">
-              {greeting}
-            </p>
-            <h1 className="text-2xl md:text-3xl font-semibold tracking-tight mb-2">
-              {user?.first_name} {user?.last_name}
-            </h1>
-            <p className="text-white/65 text-sm max-w-lg leading-relaxed">
-              Command Center. Your unified view across Staff Hub, CRM, members, and ops.
-            </p>
-          </div>
+        <div className="admin-bezel-inner-accent relative p-7 md:p-8">
+          <div className="pointer-events-none absolute inset-0 opacity-15 bg-[radial-gradient(circle_at_30%_40%,white_0%,transparent_60%)]" />
+          <div className="relative z-10 flex items-start justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium text-white/80 mb-1 tracking-wide">
+                {greeting}
+              </p>
+              <h1 className="text-2xl md:text-3xl font-semibold tracking-tight mb-2 text-white">
+                {user?.first_name} {user?.last_name}
+              </h1>
+              <p className="text-white/85 text-sm max-w-lg leading-relaxed">
+                Command Center. Your unified view across Staff Hub, CRM, members, and ops.
+              </p>
+            </div>
 
-          {/* System status pill */}
-          <button
-            type="button"
-            onClick={() => navigate('/system/health')}
-            className={`hidden sm:flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all hover:scale-105 ${
-              overallStatus === 'healthy'
-                ? 'bg-green-500/20 text-green-100'
-                : overallStatus === 'degraded'
-                  ? 'bg-yellow-500/20 text-yellow-100'
-                  : 'bg-red-500/20 text-red-100'
-            }`}
-          >
-            <StatusIcon className="w-4 h-4" />
-            {statusConfig.label}
-          </button>
-        </div>
+            <button
+              type="button"
+              onClick={() => navigate('/system/health')}
+              className={`hidden sm:flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all hover:scale-105 ${
+                overallStatus === 'healthy'
+                  ? 'bg-white/15 text-white ring-1 ring-white/25'
+                  : overallStatus === 'degraded'
+                    ? 'bg-yellow-400/25 text-yellow-50 ring-1 ring-yellow-200/30'
+                    : 'bg-red-400/25 text-red-50 ring-1 ring-red-200/30'
+              }`}
+            >
+              <StatusIcon className="w-4 h-4" />
+              {statusConfig.label}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -525,8 +524,8 @@ export default function Dashboard() {
                   <div className="flex flex-wrap gap-x-8 gap-y-3">
                     {section.metrics.map((m) => (
                       <div key={m.label}>
-                        <p className="text-xs font-medium text-th-text-tertiary mb-1">{m.label}</p>
-                        <p className="text-xl font-bold text-th-text-primary">{m.value}</p>
+                        <p className="text-xs font-medium text-th-text-secondary mb-1">{m.label}</p>
+                        <p className="text-xl font-semibold tracking-tight text-th-text-primary">{m.value}</p>
                       </div>
                     ))}
                   </div>
@@ -534,8 +533,8 @@ export default function Dashboard() {
                   <p className="text-sm text-th-text-tertiary">View details &rarr;</p>
                 )}
                 {section.source && (
-                  <p className="mt-3 pt-3 border-t border-th-border/30 text-[10px] text-th-text-tertiary/70 flex items-center gap-1">
-                    <Info className="w-3 h-3 flex-shrink-0" />
+                  <p className="mt-3 pt-3 border-t border-th-border/50 text-[11px] text-th-text-secondary flex items-center gap-1.5 leading-snug">
+                    <Info className="w-3.5 h-3.5 flex-shrink-0 text-th-text-tertiary" />
                     {section.source}
                   </p>
                 )}

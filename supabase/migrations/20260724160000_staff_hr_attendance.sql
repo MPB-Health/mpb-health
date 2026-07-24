@@ -550,8 +550,8 @@ BEGIN
         'ok', false,
         'error', 'accuracy_poor',
         'message', format(
-          'GPS accuracy is too low (%.0f m). Move outdoors or closer to a window and try again.',
-          p_accuracy_m
+          'GPS accuracy is too low (%s m). Move outdoors or closer to a window and try again.',
+          round(p_accuracy_m)::text
         ),
         'accuracy_m', p_accuracy_m,
         'max_accuracy_m', v_office.max_accuracy_m
@@ -583,9 +583,9 @@ BEGIN
         'ok', false,
         'error', 'too_far',
         'message', format(
-          'You are about %.0f m from the office (need to be within %.0f m).',
-          v_distance,
-          v_allowed_radius
+          'You are about %s m from the office (need to be within %s m).',
+          round(v_distance)::text,
+          round(v_allowed_radius)::text
         ),
         'distance_m', round(v_distance::numeric, 1),
         'allowed_m', round(v_allowed_radius::numeric, 1),
@@ -711,8 +711,8 @@ BEGIN
       'ok', false,
       'error', 'accuracy_poor',
       'message', format(
-        'GPS accuracy is too low (%.0f m). Move outdoors or closer to a window and try again.',
-        p_accuracy_m
+        'GPS accuracy is too low (%s m). Move outdoors or closer to a window and try again.',
+        round(p_accuracy_m)::text
       )
     );
   END IF;
@@ -740,9 +740,9 @@ BEGIN
       'ok', false,
       'error', 'too_far',
       'message', format(
-        'You are about %.0f m from the office (need to be within %.0f m).',
-        v_distance,
-        v_allowed_radius
+        'You are about %s m from the office (need to be within %s m).',
+        round(v_distance)::text,
+        round(v_allowed_radius)::text
       ),
       'distance_m', round(v_distance::numeric, 1),
       'allowed_m', round(v_allowed_radius::numeric, 1)

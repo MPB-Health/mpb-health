@@ -998,13 +998,13 @@ INSERT INTO public.staff_office_locations (
 )
 SELECT
   o.id,
-  'MPB Health Office',
-  '5301 N Federal Hwy, Suite 155',
+  'MPB Health — Greenhouse Offices',
+  '5301 N Federal Hwy Ste 155',
   'Boca Raton',
   'FL',
   '33487',
-  26.3683,
-  -80.0811,
+  26.3958239,
+  -80.0765474,
   150,
   100,
   50,

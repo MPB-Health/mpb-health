@@ -125,6 +125,9 @@ interface WeeklyReportExtras {
 
 const CHANNELS = ['Phone', 'Email', 'SalesIQ', 'Chat'];
 
+/** Dedicated call reason + cross-department report list (`/reports?tab=julyBilling`). */
+const JULY_BILLING_REASON = 'July Billing Issue';
+
 const REASONS = [
   'Sharing Requests',
   'Telehealth Assistance',
@@ -139,6 +142,7 @@ const REASONS = [
   'Welcome Call Attempt',
   'Zion Portal Log In',
   'Preventive/Billing',
+  JULY_BILLING_REASON,
   'Follow Up',
   'Special Project',
   'Other',
@@ -213,13 +217,14 @@ const TABS = [
   { id: 'weekly', label: 'Weekly Report', icon: BarChart3 },
   { id: 'performance', label: 'Performance', icon: TrendingUp },
   { id: 'analytics', label: 'Reason Analytics', icon: PieChart },
+  { id: 'julyBilling', label: 'July Billing', icon: FileSpreadsheet },
   { id: 'trends', label: 'Member Issues', icon: AlertTriangle },
   { id: 'team', label: 'Team', icon: Users },
 ] as const;
 
 type TabId = (typeof TABS)[number]['id'];
 
-const REPORTS_URL_TAB_IDS = ['weekly', 'performance', 'analytics', 'trends'] as const;
+const REPORTS_URL_TAB_IDS = ['weekly', 'performance', 'analytics', 'julyBilling', 'trends'] as const;
 
 function isReportsUrlTab(tab: TabId): tab is (typeof REPORTS_URL_TAB_IDS)[number] {
   return (REPORTS_URL_TAB_IDS as readonly string[]).includes(tab);
@@ -229,7 +234,14 @@ function tabIdFromLocation(pathname: string, search: string): TabId {
   const q = new URLSearchParams(search).get('tab');
   const path = pathname.replace(/\/$/, '') || '/';
   if (path === '/reports') {
-    if (q === 'performance' || q === 'analytics' || q === 'trends') return q;
+    if (
+      q === 'performance' ||
+      q === 'analytics' ||
+      q === 'julyBilling' ||
+      q === 'trends'
+    ) {
+      return q;
+    }
     return 'weekly';
   }
   if (path === '/daily-logs') {
@@ -3005,6 +3017,292 @@ function AnalyticsTab({
   );
 }
 
+// ── July Billing Issue report (cross-department member list) ────────────
+
+type JulyBillingMemberRow = {
+  memberKey: string;
+  memberName: string;
+  contactCount: number;
+  touchCount: number;
+  firstDate: string;
+  lastDate: string;
+  channels: string[];
+  loggedBy: string[];
+  latestNotes: string;
+  latestTeamMember: string;
+};
+
+function buildJulyBillingMemberRows(logs: LogEntry[]): JulyBillingMemberRow[] {
+  const billingLogs = logs.filter((l) => l.reason === JULY_BILLING_REASON);
+  const byMember = new Map<string, LogEntry[]>();
+
+  for (const log of billingLogs) {
+    const key = log.memberName.toLowerCase().trim() || '(unnamed)';
+    const list = byMember.get(key);
+    if (list) list.push(log);
+    else byMember.set(key, [log]);
+  }
+
+  return [...byMember.entries()]
+    .map(([memberKey, entries]) => {
+      const sorted = [...entries].sort((a, b) => {
+        const byDate = b.date.localeCompare(a.date);
+        if (byDate !== 0) return byDate;
+        return (b.createdAt || '').localeCompare(a.createdAt || '');
+      });
+      const latest = sorted[0];
+      const oldest = sorted[sorted.length - 1];
+      const channels = [...new Set(entries.map((e) => e.channel).filter(Boolean))].sort();
+      const loggedBy = [...new Set(entries.map((e) => e.teamMember).filter(Boolean))].sort();
+      const notesParts = [latest.additionalNotes, latest.otherNotes].filter(
+        (s) => s && String(s).trim(),
+      );
+      return {
+        memberKey,
+        memberName: latest.memberName.trim() || '(unnamed)',
+        contactCount: entries.length,
+        touchCount: sumTouches(entries),
+        firstDate: oldest.date,
+        lastDate: latest.date,
+        channels,
+        loggedBy,
+        latestNotes: notesParts.join(' · ') || '—',
+        latestTeamMember: latest.teamMember || '—',
+      };
+    })
+    .sort((a, b) => b.lastDate.localeCompare(a.lastDate) || a.memberName.localeCompare(b.memberName));
+}
+
+function JulyBillingReportTab({ logs }: { logs: LogEntry[] }) {
+  const [search, setSearch] = useState('');
+  const [copiedLink, setCopiedLink] = useState(false);
+
+  const allRows = useMemo(() => buildJulyBillingMemberRows(logs), [logs]);
+  const detailLogs = useMemo(
+    () =>
+      sortLogsChronologically(logs.filter((l) => l.reason === JULY_BILLING_REASON)).reverse(),
+    [logs],
+  );
+
+  const filteredRows = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return allRows;
+    return allRows.filter(
+      (r) =>
+        r.memberName.toLowerCase().includes(q) ||
+        r.loggedBy.some((n) => n.toLowerCase().includes(q)) ||
+        r.latestNotes.toLowerCase().includes(q),
+    );
+  }, [allRows, search]);
+
+  const reportUrl = useMemo(() => {
+    if (typeof window === 'undefined') return '/reports?tab=julyBilling';
+    return `${window.location.origin}/reports?tab=julyBilling`;
+  }, []);
+
+  const exportMemberCsv = () => {
+    const headers = [
+      'Member Name',
+      'Contacts',
+      'Touches',
+      'First Contact',
+      'Last Contact',
+      'Channels',
+      'Logged By',
+      'Latest Notes',
+      'Latest Logged By',
+    ];
+    const rows = filteredRows.map((r) => [
+      r.memberName,
+      String(r.contactCount),
+      String(r.touchCount),
+      r.firstDate,
+      r.lastDate,
+      r.channels.join('; '),
+      r.loggedBy.join('; '),
+      r.latestNotes === '—' ? '' : r.latestNotes,
+      r.latestTeamMember,
+    ]);
+    const csv = [headers, ...rows]
+      .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `july-billing-issue-members-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`Exported ${filteredRows.length} member(s)`);
+  };
+
+  const exportDetailCsv = () => {
+    const headers = [
+      'Date',
+      'Member Name',
+      'Team Member',
+      'Channel',
+      'Other/Notes',
+      'Additional Notes',
+      'Touches',
+      'Follow-up',
+      'CRM Notes',
+    ];
+    const q = search.trim().toLowerCase();
+    const rows = detailLogs
+      .filter((l) => {
+        if (!q) return true;
+        return (
+          l.memberName.toLowerCase().includes(q) ||
+          l.teamMember.toLowerCase().includes(q) ||
+          (l.additionalNotes || '').toLowerCase().includes(q) ||
+          (l.otherNotes || '').toLowerCase().includes(q)
+        );
+      })
+      .map((l) => [
+        l.date,
+        l.memberName,
+        l.teamMember,
+        l.channel,
+        l.otherNotes,
+        l.additionalNotes,
+        String(metricTouches(l)),
+        l.followUp ? 'Yes' : 'No',
+        l.crmNotes ? 'Yes' : 'No',
+      ]);
+    const csv = [headers, ...rows]
+      .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `july-billing-issue-detail-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success(`Exported ${rows.length} log row(s)`);
+  };
+
+  const copyShareLink = async () => {
+    try {
+      await navigator.clipboard.writeText(reportUrl);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2000);
+      toast.success('Report link copied');
+    } catch {
+      toast.error('Could not copy link');
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white rounded-2xl border border-[#A8B8AC]/30 p-5 space-y-4">
+        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+          <div>
+            <h3 className="text-base font-bold text-[#2F3E2F]">July Billing Issue — Member List</h3>
+            <p className="text-sm text-slate-500 mt-0.5 max-w-2xl">
+              Separate report for members logged under <strong>{JULY_BILLING_REASON}</strong>. Billing and other
+              departments with concierge or admin access can open this list at{' '}
+              <code className="text-xs bg-[#A8B8AC]/15 px-1.5 py-0.5 rounded">/reports?tab=julyBilling</code>.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => void copyShareLink()}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[#A8B8AC]/40 text-[#2F3E2F] text-sm font-medium hover:bg-[#A8B8AC]/10 transition-colors"
+            >
+              {copiedLink ? <Check className="w-4 h-4 text-[#5B6B2E]" /> : <Copy className="w-4 h-4" />}
+              {copiedLink ? 'Copied' : 'Copy link'}
+            </button>
+            <button
+              type="button"
+              onClick={exportMemberCsv}
+              disabled={filteredRows.length === 0}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#4A7C8A] text-white text-sm font-medium hover:bg-[#3D6773] transition-colors disabled:opacity-40"
+            >
+              <Download className="w-4 h-4" />
+              Export members
+            </button>
+            <button
+              type="button"
+              onClick={exportDetailCsv}
+              disabled={detailLogs.length === 0}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[#A8B8AC]/40 text-[#2F3E2F] text-sm font-medium hover:bg-[#A8B8AC]/10 transition-colors disabled:opacity-40"
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              Export detail
+            </button>
+          </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="relative flex-1 max-w-md">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search member, rep, or notes…"
+              className="w-full pl-9 pr-3 py-2 rounded-lg border border-[#A8B8AC]/40 bg-white focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm"
+            />
+          </div>
+          <p className="text-sm text-slate-600 tabular-nums">
+            <strong className="text-[#2F3E2F]">{filteredRows.length}</strong> member
+            {filteredRows.length === 1 ? '' : 's'}
+            <span className="text-slate-400 mx-1.5">·</span>
+            <strong className="text-[#2F3E2F]">{detailLogs.length}</strong> log
+            {detailLogs.length === 1 ? '' : 's'}
+          </p>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-[#A8B8AC]/30 overflow-hidden">
+        {filteredRows.length === 0 ? (
+          <div className="p-8 text-center text-slate-500 text-sm">
+            {allRows.length === 0
+              ? `No members logged with reason “${JULY_BILLING_REASON}” yet. Choose that reason on the Daily Log tab when logging the call.`
+              : 'No members match your search.'}
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm min-w-[900px]">
+              <thead>
+                <tr className="bg-[#A8B8AC]/10 text-left text-xs font-medium text-[#2F3E2F] uppercase tracking-wide">
+                  <th className="px-4 py-3">Member</th>
+                  <th className="px-4 py-3 text-right">Contacts</th>
+                  <th className="px-4 py-3 text-right">Touches</th>
+                  <th className="px-4 py-3">First</th>
+                  <th className="px-4 py-3">Last</th>
+                  <th className="px-4 py-3">Channels</th>
+                  <th className="px-4 py-3">Logged by</th>
+                  <th className="px-4 py-3">Latest notes</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#A8B8AC]/15">
+                {filteredRows.map((r) => (
+                  <tr key={r.memberKey} className="hover:bg-[#A8B8AC]/5 transition-colors">
+                    <td className="px-4 py-3 font-medium text-[#2F3E2F]">{r.memberName}</td>
+                    <td className="px-4 py-3 text-right tabular-nums">{r.contactCount}</td>
+                    <td className="px-4 py-3 text-right tabular-nums">{r.touchCount}</td>
+                    <td className="px-4 py-3 text-slate-600 whitespace-nowrap tabular-nums">{r.firstDate}</td>
+                    <td className="px-4 py-3 text-slate-600 whitespace-nowrap tabular-nums">{r.lastDate}</td>
+                    <td className="px-4 py-3 text-slate-600">{r.channels.join(', ') || '—'}</td>
+                    <td className="px-4 py-3 text-slate-600">{r.loggedBy.join(', ') || '—'}</td>
+                    <td className="px-4 py-3 text-slate-600 max-w-xs truncate" title={r.latestNotes}>
+                      {r.latestNotes}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Member Issues Tab ──────────────────────────────────────────────────
 
 function TrendsTab({
@@ -3853,6 +4151,7 @@ export default function DailyLogs() {
           periodLabel={periodLabel}
         />
       )}
+      {activeTab === 'julyBilling' && <JulyBillingReportTab logs={logs} />}
       {activeTab === 'trends' && (
         <TrendsTab logs={logs} escalations={escalations} onSaveEscalation={onSaveEscalation} />
       )}

@@ -14,6 +14,7 @@ import {
   ChevronDown,
   Globe,
   BarChart3,
+  FileSpreadsheet,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { QUICK_LINKS } from '@mpbhealth/concierge-core';
@@ -21,6 +22,7 @@ import { QUICK_LINKS } from '@mpbhealth/concierge-core';
 const MPB_NAV_ITEMS = [
   { name: 'Daily Logs', href: '/daily-logs', icon: ClipboardList },
   { name: 'Reports', href: '/reports', icon: BarChart3 },
+  { name: 'July Billing', href: '/reports?tab=julyBilling', icon: FileSpreadsheet },
   { name: 'Resources', href: '/', icon: LayoutDashboard },
   { name: 'Tickets', href: '/tickets', icon: Headphones },
   { name: 'Member Portal', href: 'https://app.mpb.health/', icon: Globe, external: true },
@@ -36,6 +38,27 @@ export default function MainLayout() {
   const branding = { appName: 'Concierge Portal', logoText: 'MPB' };
   const [user, setUser] = useState<{ email: string } | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const isNavItemActive = (href: string) => {
+    const hrefPath = href.split('?')[0];
+    const hrefTab = new URLSearchParams(href.split('?')[1] || '').get('tab');
+    const path = location.pathname.replace(/\/$/, '') || '/';
+    const tab = new URLSearchParams(location.search).get('tab');
+    if (hrefTab) return path === hrefPath && tab === hrefTab;
+    if (hrefPath === '/reports') return path === '/reports' && tab !== 'julyBilling';
+    if (hrefPath === '/') return path === '/' || path === '';
+    return path === hrefPath;
+  };
+
+  const navLinkClass = (href: string, dense = false) => {
+    const layout = dense
+      ? 'flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors'
+      : 'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors';
+    const tone = isNavItemActive(href)
+      ? 'bg-brand-teal/10 text-brand-teal'
+      : 'text-brand-olive hover:text-brand-forest hover:bg-brand-sage/20';
+    return `${layout} ${tone}`;
+  };
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -108,13 +131,7 @@ export default function MainLayout() {
                   key={item.href}
                   to={toPath(item.href)}
                   end={item.href === '/'}
-                  className={({ isActive }) =>
-                    `flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                      isActive
-                        ? 'bg-brand-teal/10 text-brand-teal'
-                        : 'text-brand-olive hover:text-brand-forest hover:bg-brand-sage/20'
-                    }`
-                  }
+                  className={() => navLinkClass(item.href, true)}
                 >
                   <Icon className="w-4 h-4" />
                   {item.name}
@@ -215,13 +232,7 @@ export default function MainLayout() {
                   key={item.href}
                   to={toPath(item.href)}
                   end={item.href === '/'}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                      isActive
-                        ? 'bg-brand-teal/10 text-brand-teal'
-                        : 'text-brand-olive hover:text-brand-forest hover:bg-brand-sage/20'
-                    }`
-                  }
+                  className={() => navLinkClass(item.href, false)}
                 >
                   <Icon className="w-5 h-5" />
                   {item.name}

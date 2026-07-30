@@ -21,6 +21,7 @@ type ProxyAction =
   | "prepare_ticket_attachment_uploads"
   | "delete_ticket_attachment_paths"
   | "update_ticket"
+  | "reopen_ticket"
   | "get_categories"
   | "create_for_advisor"
   | "resign_attachments"
@@ -1043,6 +1044,55 @@ async function saveTicketFilesForRequester(
   return { ok: true };
 }
 
+/**
+ * Requester-owned reopen: only the ticket owner may move resolved/closed → open.
+ * (Admin bulk reopen continues to use update_ticket.)
+ */
+async function reopenTicketForRequester(
+  itstsAdmin: ReturnType<typeof createClient>,
+  requesterId: string,
+  ticketId: string,
+) {
+  const { data: existing, error: fetchErr } = await itstsAdmin
+    .from("tickets")
+    .select("id, status, requester_id")
+    .eq("id", ticketId)
+    .maybeSingle();
+
+  if (fetchErr) throw fetchErr;
+  if (!existing) throw new Error("Ticket not found");
+  if (existing.requester_id !== requesterId) {
+    throw new Error("Ticket not found or access denied");
+  }
+  if (existing.status !== "resolved" && existing.status !== "closed") {
+    throw new Error("Only resolved or closed tickets can be reopened");
+  }
+
+  const { error } = await itstsAdmin
+    .from("tickets")
+    .update({ status: "open", updated_at: new Date().toISOString() })
+    .eq("id", ticketId)
+    .eq("requester_id", requesterId);
+
+  if (error) throw error;
+
+  // Best-effort audit trail (same action_type as ITSTS staff reopen).
+  const { error: activityError } = await itstsAdmin.from("ticket_activity_log").insert({
+    ticket_id: ticketId,
+    action_type: "reopened",
+    actor_id: requesterId,
+    details: { from: existing.status, to: "open", source: "advisor_portal" },
+  });
+  if (activityError) {
+    log.warn("reopenTicketForRequester activity log insert failed", {
+      ticketId,
+      error: activityError.message,
+    });
+  }
+
+  return { ok: true, status: "open" };
+}
+
 async function updateTicket(
   itstsAdmin: ReturnType<typeof createClient>,
   ticketId: string,
@@ -1317,6 +1367,26 @@ Deno.serve(async (req: Request) => {
         }
         result = await getTicketDetail(itstsAdmin, itstsUserId!, body.ticket_id);
         break;
+      case "reopen_ticket": {
+        if (!body.ticket_id || !UUID_RE.test(body.ticket_id)) {
+          return new Response(
+            JSON.stringify({ success: false, error: "Valid ticket_id required", correlationId }),
+            { status: 400, headers },
+          );
+        }
+        try {
+          result = await reopenTicketForRequester(itstsAdmin, itstsUserId!, body.ticket_id);
+        } catch (reopenErr) {
+          const msg = reopenErr instanceof Error ? reopenErr.message : String(reopenErr);
+          const denied = /access denied|not found/i.test(msg);
+          const badState = /only resolved or closed/i.test(msg);
+          return new Response(
+            JSON.stringify({ success: false, error: msg, correlationId }),
+            { status: denied ? 403 : badState ? 400 : 500, headers },
+          );
+        }
+        break;
+      }
       case "stats":
         try {
           result = await getTicketStats(itstsAdmin, itstsUserId!);

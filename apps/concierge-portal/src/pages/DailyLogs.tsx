@@ -198,7 +198,7 @@ function computeTouchOverrideForSave(next: LogEntry): boolean {
 }
 
 /** Always treated as part-time for performance alerts (even if roster flag is missing). */
-const PART_TIME_NAMES = new Set(['Vanessa Orozco', 'Tupac Manzanarez']);
+const PART_TIME_NAMES = new Set(['Vanessa Orozco']);
 
 function isPartTimeMember(m: TeamMember): boolean {
   if (m.partTime === false) return false;
@@ -255,7 +255,7 @@ const DEFAULT_TEAM: TeamMember[] = [
   { id: '2', name: 'Adam Jordano', status: 'Active', role: 'Concierge' },
   { id: '3', name: 'Ryan Cahill', status: 'Active', role: 'Concierge' },
   { id: '4', name: 'Vanessa Orozco', status: 'Active', role: 'Concierge', partTime: true },
-  { id: '5', name: 'Tupac Manzanarez', status: 'Active', role: 'Concierge', partTime: true },
+  { id: '5', name: 'Moe Tannous', status: 'Active', role: 'Concierge' },
 ];
 
 /** Migrates earlier roster / log entries that used first names only. */
@@ -264,7 +264,7 @@ const LEGACY_TEAM_MEMBER_NAMES: Record<string, string> = {
   Adam: 'Adam Jordano',
   Ryan: 'Ryan Cahill',
   Vanessa: 'Vanessa Orozco',
-  Tupac: 'Tupac Manzanarez',
+  Moe: 'Moe Tannous',
 };
 
 /** Map stored log rep string to canonical roster `name` (case / spacing / first-name only). */

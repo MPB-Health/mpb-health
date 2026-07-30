@@ -729,7 +729,7 @@ const DEFAULT_SEED_TEAM: Omit<TeamMember, 'id'>[] = [
   { name: 'Adam Jordano', status: 'Active', role: 'Concierge' },
   { name: 'Ryan Cahill', status: 'Active', role: 'Concierge' },
   { name: 'Vanessa Orozco', status: 'Active', role: 'Concierge', partTime: true },
-  { name: 'Tupac Manzanarez', status: 'Active', role: 'Concierge', partTime: true },
+  { name: 'Moe Tannous', status: 'Active', role: 'Concierge' },
 ];
 
 export async function loadConciergeWorkspace(): Promise<{

@@ -944,6 +944,13 @@ export class TicketService {
     });
   }
 
+  /** Reopen a resolved/closed ticket back to In progress (`open`). Requester-owned proxy action. */
+  async reopenTicket(ticketId: string): Promise<void> {
+    await this.call<{ success: boolean }>('reopen_ticket', {
+      ticket_id: ticketId,
+    });
+  }
+
   async createTicketForAdvisor(advisorEmail: string, opts: CreateTicketOptions): Promise<CreateTicketResult> {
     if (!advisorEmail?.trim()) throw new Error('advisorEmail is required');
     const data = await this.call<CreateTicketResult & { success: boolean }>('create_for_advisor', {

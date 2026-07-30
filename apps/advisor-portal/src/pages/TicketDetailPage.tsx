@@ -24,6 +24,7 @@ import {
   UserRound,
   Eye,
   Download,
+  RotateCcw,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Button, cn } from '@mpbhealth/ui';
@@ -121,6 +122,10 @@ function itstsStatusChipClass(status: string): string {
   return colors[status] ?? 'bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200';
 }
 
+function isClosedOrResolvedStatus(status: string): boolean {
+  return status === 'resolved' || status === 'closed';
+}
+
 function itstsPriorityChipClass(priority: string): string {
   const colors: Record<string, string> = {
     urgent: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
@@ -210,6 +215,8 @@ export default function TicketDetailPage() {
   const replyAttachmentsInputRef = useRef<HTMLInputElement>(null);
   const [replyAttachments, setReplyAttachments] = useState<File[]>([]);
   const [copiedField, setCopiedField] = useState<null | 'num' | 'link'>(null);
+  const [showReopenConfirm, setShowReopenConfirm] = useState(false);
+  const [reopening, setReopening] = useState(false);
   /** Local id of the outbound bubble while the network send is in flight. */
   const [outboundPendingId, setOutboundPendingId] = useState<string | null>(null);
   const replyDraftBackupRef = useRef<{ plain: string; files: File[] } | null>(null);
@@ -518,6 +525,26 @@ export default function TicketDetailPage() {
     }
   };
 
+  const handleReopenTicket = useCallback(async () => {
+    if (!ticketId || !UUID_RE.test(ticketId)) return;
+    setReopening(true);
+    try {
+      await executeWithAuth(() => ticketService.reopenTicket(ticketId));
+      setShowReopenConfirm(false);
+      await queryClient.invalidateQueries({ queryKey: ['advisorTicketDetail', ticketId] });
+      toast.success('Ticket reopened — status is In progress.');
+    } catch (err) {
+      if (err instanceof Error && err.message === 'SESSION_EXPIRED') {
+        window.location.href = '/login';
+        return;
+      }
+      const msg = err instanceof Error ? err.message : 'Could not reopen ticket';
+      toast.error(msg);
+    } finally {
+      setReopening(false);
+    }
+  }, [ticketId, executeWithAuth, queryClient]);
+
   if (!ticketId || !UUID_RE.test(ticketId)) {
     return (
       <div className="mx-auto max-w-lg py-16 text-center">
@@ -569,6 +596,8 @@ export default function TicketDetailPage() {
     if (c.created_at > lastActivityAt) lastActivityAt = c.created_at;
   }
 
+  const canReopen = isClosedOrResolvedStatus(ticket.status);
+
   return (
     <div className="mx-auto w-full max-w-screen-2xl space-y-5 px-4 pb-8 sm:px-6 lg:px-8 2xl:max-w-[100rem] 2xl:px-10">
       <nav
@@ -587,6 +616,32 @@ export default function TicketDetailPage() {
           {ticketRefLabel}
         </span>
       </nav>
+
+      {canReopen && (
+        <div className="flex flex-col gap-3 rounded-xl border border-slate-300 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700 dark:bg-slate-900/40">
+          <div className="flex min-w-0 items-start gap-3">
+            <RotateCcw size={18} className="mt-0.5 shrink-0 text-slate-600 dark:text-slate-400" aria-hidden />
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                This ticket is {formatStatusLabel(ticket.status).toLowerCase()}
+              </p>
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                Reopen it if you still need help — status will return to In progress.
+              </p>
+            </div>
+          </div>
+          <Button
+            type="button"
+            variant="primary"
+            className="shrink-0"
+            disabled={reopening}
+            onClick={() => setShowReopenConfirm(true)}
+          >
+            <RotateCcw size={15} className="mr-1.5" aria-hidden />
+            Reopen
+          </Button>
+        </div>
+      )}
 
       <header className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900/60 sm:p-6 lg:p-8">
         <div className="flex flex-col gap-5">
@@ -730,6 +785,17 @@ export default function TicketDetailPage() {
             </div>
 
             <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+              {canReopen && (
+                <Button
+                  type="button"
+                  variant="primary"
+                  disabled={reopening}
+                  onClick={() => setShowReopenConfirm(true)}
+                >
+                  <RotateCcw size={14} className="mr-1.5" aria-hidden />
+                  Reopen
+                </Button>
+              )}
               <button
                 type="button"
                 onClick={() => void copyTicketNumber()}
@@ -1265,6 +1331,69 @@ export default function TicketDetailPage() {
           </div>
         </aside>
       </div>
+
+      {showReopenConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="reopen-ticket-title"
+            className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-slate-800"
+          >
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <h3
+                id="reopen-ticket-title"
+                className="flex items-center gap-2 text-xl font-bold text-slate-900 dark:text-white"
+              >
+                <RotateCcw className="text-sky-600 dark:text-sky-400" size={24} aria-hidden />
+                Reopen ticket
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowReopenConfirm(false)}
+                disabled={reopening}
+                className="rounded-lg p-2 transition-colors hover:bg-slate-100 disabled:opacity-50 dark:hover:bg-slate-700"
+                aria-label="Close"
+              >
+                <X size={20} className="text-slate-500" />
+              </button>
+            </div>
+            <p className="mb-6 text-sm leading-relaxed text-slate-600 dark:text-slate-400">
+              Reopen this ticket? Status will return to{' '}
+              <span className="font-semibold text-slate-900 dark:text-white">In progress</span> so
+              support can continue helping you.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowReopenConfirm(false)}
+                disabled={reopening}
+                className="rounded-xl px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 disabled:opacity-50 dark:text-slate-300 dark:hover:bg-slate-700"
+              >
+                Cancel
+              </button>
+              <Button
+                type="button"
+                variant="primary"
+                disabled={reopening}
+                onClick={() => void handleReopenTicket()}
+              >
+                {reopening ? (
+                  <>
+                    <Loader2 size={16} className="mr-1.5 animate-spin" aria-hidden />
+                    Reopening…
+                  </>
+                ) : (
+                  <>
+                    <RotateCcw size={16} className="mr-1.5" aria-hidden />
+                    Reopen ticket
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -286,6 +286,7 @@ export default function HeroCalculator() {
     setSubmissionError(null);
 
     try {
+      // Compact rates only — full tier matrices bloat CRM form_data; keep price ladders lean.
       const allPlanRates: Record<string, any> = {};
       results.estimates.plans.forEach(plan => {
         allPlanRates[plan.planId] = {
@@ -293,7 +294,11 @@ export default function HeroCalculator() {
           lowestPrice: plan.lowestPrice,
           highestPrice: plan.highestPrice,
           flatRate: plan.flatRate,
-          tiers: plan.tiers,
+          tier_count: plan.tiers?.length ?? 0,
+          tier_prices: (plan.tiers ?? []).slice(0, 12).map((t) => ({
+            tierLabel: t.tierLabel ?? t.tierId,
+            monthly: t.monthly,
+          })),
         };
       });
 

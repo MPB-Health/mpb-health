@@ -84,14 +84,14 @@ export function FlowShell() {
         score: reco[0]?.score,
       });
 
-      // Submit to CRM if user opted in for contact
-      if (answers.contactOptIn && (answers.contactEmail || answers.contactPhone)) {
+      // Submit to CRM if user opted in with an email (ARYX requires first/last/email).
+      if (answers.contactOptIn && answers.contactEmail?.trim()) {
         try {
           const leadResult = await leadSubmissionService.submitLead({
-            firstName: answers.contactEmail?.split('@')[0] || 'Quick Start',
+            firstName: answers.contactEmail.split('@')[0] || 'Quick Start',
             lastName: 'Lead',
-            email: answers.contactEmail || '',
-            phone: answers.contactPhone || '',
+            email: answers.contactEmail.trim(),
+            phone: answers.contactPhone?.trim() || 'Not provided',
             zipCode: answers.zipCode,
             sourcePage: window.location.pathname,
             sourceCTA: 'quick-start-plan-finder',

@@ -38,12 +38,13 @@ export const BenefitInterestCTA: React.FC<BenefitInterestCTAProps> = ({
     setError(null);
 
     try {
-      const [firstName, ...lastParts] = formData.name.split(' ');
+      const [firstName, ...lastParts] = formData.name.trim().split(/\s+/);
       const result = await leadSubmissionService.submitLead({
         firstName: firstName || formData.name,
-        lastName: lastParts.join(' ') || '',
+        // ARYX submit_public_lead requires a non-empty last name.
+        lastName: lastParts.join(' ') || 'Interest',
         email: formData.email,
-        phone: formData.phone || '',
+        phone: formData.phone || 'Not provided',
         sourcePage: window.location.pathname,
         sourceCTA: `benefit-interest-${benefitType}`,
         formData: {

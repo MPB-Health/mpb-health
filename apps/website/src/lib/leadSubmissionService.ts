@@ -65,6 +65,118 @@ interface IntakeResponse {
 
 const INTAKE_PATH = 'functions/v1/crm-website-lead-intake';
 
+/**
+ * ARYX `submit_public_lead` rejects form_data over 640 KB (20× original 32 KB).
+ * Client ceiling stays under that with margin; tier matrices are always compacted
+ * so quote engines cannot reintroduce the old 32 KB failure mode.
+ */
+export const FORM_DATA_MAX_BYTES = 600_000;
+/** Soft target for quote payloads — keep CRM rows lean even with 640 KB headroom. */
+export const FORM_DATA_SOFT_MAX_BYTES = 48_000;
+
+/**
+ * Compact quote payloads for CRM storage.
+ * Hero / rate engines attach full tier matrices that easily exceed the RPC limit;
+ * CRM + Email #1 only need plan labels and price bands.
+ */
+export function sanitizeFormDataForCrm(
+  formData: Record<string, unknown> | undefined,
+): Record<string, unknown> | undefined {
+  if (!formData) return undefined;
+
+  const compact = structuredClone(formData) as Record<string, unknown>;
+  const rates = compact.all_plan_rates;
+
+  if (rates && typeof rates === 'object' && !Array.isArray(rates)) {
+    const slim: Record<string, unknown> = {};
+    for (const [planId, raw] of Object.entries(rates as Record<string, unknown>)) {
+      if (!raw || typeof raw !== 'object') continue;
+      const plan = raw as Record<string, unknown>;
+      const tiers = Array.isArray(plan.tiers) ? plan.tiers : [];
+      // Hero already sends compact tier_prices; legacy payloads still send full tiers.
+      const existingPrices = Array.isArray(plan.tier_prices) ? plan.tier_prices : [];
+      const tierPrices =
+        tiers.length > 0
+          ? tiers
+              .slice(0, 12)
+              .map((t) => {
+                if (!t || typeof t !== 'object') return null;
+                const tier = t as Record<string, unknown>;
+                return {
+                  tierLabel: tier.tierLabel ?? tier.tierId,
+                  monthly: tier.monthly,
+                };
+              })
+              .filter(Boolean)
+          : existingPrices.slice(0, 12).map((t) => {
+              if (!t || typeof t !== 'object') return null;
+              const tier = t as Record<string, unknown>;
+              return {
+                tierLabel: tier.tierLabel ?? tier.tierId,
+                monthly: tier.monthly,
+              };
+            }).filter(Boolean);
+
+      slim[planId] = {
+        planLabel: plan.planLabel,
+        lowestPrice: plan.lowestPrice,
+        highestPrice: plan.highestPrice,
+        ...(plan.flatRate != null ? { flatRate: plan.flatRate } : {}),
+        ...(tierPrices.length > 0
+          ? {
+              tier_count:
+                typeof plan.tier_count === 'number' ? plan.tier_count : tiers.length || tierPrices.length,
+              tier_prices: tierPrices,
+            }
+          : {}),
+      };
+    }
+    compact.all_plan_rates = slim;
+  }
+
+  let json = JSON.stringify(compact);
+  // Prefer lean CRM rows; only strip further when soft target is exceeded.
+  if (json.length <= FORM_DATA_SOFT_MAX_BYTES) return compact;
+
+  // Progressive strip: drop tier ladders, then drop all_plan_rates entirely.
+  if (compact.all_plan_rates && typeof compact.all_plan_rates === 'object') {
+    for (const plan of Object.values(compact.all_plan_rates as Record<string, unknown>)) {
+      if (plan && typeof plan === 'object') {
+        delete (plan as Record<string, unknown>).tier_prices;
+        delete (plan as Record<string, unknown>).tier_count;
+      }
+    }
+    json = JSON.stringify(compact);
+  }
+
+  if (json.length > FORM_DATA_SOFT_MAX_BYTES && 'all_plan_rates' in compact) {
+    delete compact.all_plan_rates;
+    compact.all_plan_rates_omitted = true;
+    json = JSON.stringify(compact);
+    log.warn(
+      `[LeadSubmission] form_data still oversized after tier trim (${json.length}B); omitted all_plan_rates`,
+    );
+  }
+
+  if (json.length > FORM_DATA_MAX_BYTES) {
+    log.warn(
+      `[LeadSubmission] form_data truncated to CRM keys only (${json.length}B → essentials)`,
+    );
+    return {
+      lead_type: compact.lead_type,
+      quote_calc_session_id: compact.quote_calc_session_id,
+      household_type: compact.household_type,
+      state: compact.state,
+      best_match_plan: compact.best_match_plan,
+      best_match_percentage: compact.best_match_percentage,
+      traditional_cost_estimate: compact.traditional_cost_estimate,
+      form_data_truncated: true,
+    };
+  }
+
+  return compact;
+}
+
 class LeadSubmissionService {
   async submitLead(formData: LeadFormData): Promise<LeadSubmissionResult> {
     const warnings: string[] = [];
@@ -80,6 +192,7 @@ class LeadSubmissionService {
     }
 
     try {
+      const safeFormData = sanitizeFormDataForCrm(formData.formData);
       const payload = {
         first_name: formData.firstName,
         last_name: formData.lastName,
@@ -100,7 +213,7 @@ class LeadSubmissionService {
         utm_term: formData.utmTerm,
         utm_content: formData.utmContent,
         referrer: formData.referrer,
-        form_data: formData.formData,
+        form_data: safeFormData,
       };
 
       const res = await fetch(`${ARYX_FUNCTIONS_URL}/${INTAKE_PATH}`, {

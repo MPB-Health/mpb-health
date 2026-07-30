@@ -142,11 +142,42 @@ export const QuoteSubmissionsPanel: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between rounded-lg border border-sky-200 bg-sky-50 px-4 py-3">
+            <div className="space-y-1 text-sm text-sky-950">
+              <p className="font-medium">Website quotes write to ARYX CRM only</p>
+              <p className="text-sky-900/80">
+                New quote requests land in{' '}
+                <a
+                  href="https://crm.mpb.health"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium underline underline-offset-2"
+                >
+                  crm.mpb.health
+                </a>{' '}
+                (org <code className="text-xs">mpb</code>). This panel still reads the
+                legacy MonoRepo table and will look empty even when intake succeeds.
+              </p>
+            </div>
+            <a
+              href="https://crm.mpb.health"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-sky-700 px-3 py-2 text-sm font-medium text-white hover:bg-sky-800"
+            >
+              Open CRM
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+          </div>
+        </CardContent>
+      </Card>
       {/* Controls */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Quote Submissions</CardTitle>
+            <CardTitle>Quote Submissions (legacy view)</CardTitle>
             <div className="flex items-center gap-2">
               <select
                 value={sourceFilter}

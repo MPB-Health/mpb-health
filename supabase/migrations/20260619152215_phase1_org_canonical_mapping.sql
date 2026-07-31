@@ -31,20 +31,6 @@ VALUES
     '00000000-0000-4000-a000-000000000001',
     'orgs',
     'MPB CRM memberships and lead_submissions org_id'
-  ),
-  (
-    'saudemax',
-    'portal',
-    '00000000-0000-4000-a000-000000000002',
-    'organizations',
-    'SaudeMAX — unified UUID for portal and membership'
-  ),
-  (
-    'saudemax',
-    'membership',
-    '00000000-0000-4000-a000-000000000002',
-    'orgs',
-    'SaudeMAX — unified UUID for portal and membership'
   )
 ON CONFLICT (slug, purpose) DO UPDATE SET
   org_id = EXCLUDED.org_id,

@@ -1,4 +1,4 @@
--- Concierge tenant CMS + org admin helpers (concierge.aryxcloud.com path tenants only at app layer)
+-- Concierge tenant CMS + org admin helpers (kept as MPB-only scaffolding; no active path tenants)
 
 CREATE TABLE IF NOT EXISTS public.concierge_portal_config (
   org_id uuid PRIMARY KEY REFERENCES public.organizations(id) ON DELETE CASCADE,
@@ -15,7 +15,7 @@ CREATE INDEX IF NOT EXISTS idx_concierge_portal_config_updated
   ON public.concierge_portal_config (updated_at DESC);
 
 COMMENT ON TABLE public.concierge_portal_config IS
-  'Per-org concierge portal content for ARYX path tenants (concierge.aryxcloud.com/{slug}). MPB uses hardcoded defaults.';
+  'Per-org concierge portal content. Currently unused — concierge is MPB-only and uses hardcoded defaults.';
 
 -- Org admin for concierge tenant: global concierge/super_admin + org owner/admin membership
 CREATE OR REPLACE FUNCTION public.is_concierge_org_admin(p_org_id uuid)
@@ -59,10 +59,3 @@ CREATE POLICY concierge_portal_config_write ON public.concierge_portal_config
 
 GRANT SELECT ON public.concierge_portal_config TO authenticated;
 GRANT INSERT, UPDATE, DELETE ON public.concierge_portal_config TO authenticated;
-
--- Empty config rows for ARYX path tenants (SaudeMAX starts clean)
-INSERT INTO public.concierge_portal_config (org_id)
-SELECT o.id
-FROM public.organizations o
-WHERE o.slug = 'saudemax'
-ON CONFLICT (org_id) DO NOTHING;;

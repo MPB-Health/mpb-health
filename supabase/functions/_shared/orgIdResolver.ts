@@ -3,16 +3,12 @@
 export type OrgIdPurpose = "portal" | "membership";
 
 export const MPB_HEALTH_SLUG = "mpb-health";
-export const SAUDEMAX_SLUG = "saudemax";
 
+/** Static map — keep in sync with packages/auth orgIdResolver (MPB-only). */
 const STATIC_ORG_ID_BY_SLUG: Record<string, Record<OrgIdPurpose, string>> = {
   [MPB_HEALTH_SLUG]: {
     portal: "a0000000-0000-0000-0000-000000000001",
     membership: "00000000-0000-4000-a000-000000000001",
-  },
-  [SAUDEMAX_SLUG]: {
-    portal: "00000000-0000-4000-a000-000000000002",
-    membership: "00000000-0000-4000-a000-000000000002",
   },
 };
 

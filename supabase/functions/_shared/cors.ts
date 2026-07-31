@@ -63,8 +63,8 @@ function isOriginAllowed(origin: string): boolean {
   }
 
   // ARYX white-label portals: apex (https://aryxcloud.com) and any subdomain
-  // (admin/crm/advisor/concierge.aryxcloud.com). Mirrors the brand module's
-  // host check (packages/ui/src/brand: host.endsWith('.aryxcloud.com')).
+  // (admin/crm/advisor.aryxcloud.com). Concierge is MPB-only (concierge.mpb.health).
+  // Mirrors the brand module's host check (packages/ui/src/brand).
   // Anchored so lookalikes (evilaryxcloud.com, aryxcloud.com.evil.com) are rejected.
   if (/^https:\/\/([a-z0-9-]+\.)*aryxcloud\.com$/.test(origin)) {
     return true;

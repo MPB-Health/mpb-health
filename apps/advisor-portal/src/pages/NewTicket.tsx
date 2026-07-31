@@ -28,6 +28,7 @@ import { useAdvisorPageDebugLog } from '../hooks/useAdvisorPageDebugLog';
 import { useTicketAuth } from '../components/TicketAuthWrapper';
 import { TicketRichReplyEditor, type TicketRichReplyEditorRef } from '../components/tickets/TicketRichReplyEditor';
 import { TicketNewFileUpload } from '../components/tickets/TicketNewFileUpload';
+import { stripEphemeralInlineMedia } from '../utils/clipboardFiles';
 
 const FALLBACK_CATEGORIES = [
   'Technical Issue',
@@ -248,12 +249,18 @@ export default function NewTicket() {
     [],
   );
 
+  const removePendingAttachment = useCallback((index: number) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
   const onDescriptionDraftChange = useCallback(() => {
     setDescRevision((n) => n + 1);
   }, []);
 
   const buildDescriptionPayload = useCallback(() => {
-    const bodyHtml = descriptionEditorRef.current?.getHtml() ?? '';
+    // Composer may embed blob: preview images; strip those before persist —
+    // durable copy is ticket_files after upload (same as ITSTS TicketNew).
+    const bodyHtml = stripEphemeralInlineMedia(descriptionEditorRef.current?.getHtml() ?? '');
     let inner = bodyHtml.trim();
     if (isForMember && (memberInfo.member_id || memberInfo.member_name || memberInfo.member_email)) {
       const lines: string[] = ['<p><strong>On behalf of member</strong></p><ul>'];
@@ -678,6 +685,8 @@ export default function NewTicket() {
                     placeholder="Describe your issue — what happened, steps to reproduce, expected vs actual. Paste a screenshot to attach it."
                     onDraftChange={onDescriptionDraftChange}
                     onAttachFiles={mergeEditorAttachments}
+                    pendingFiles={files}
+                    onRemovePendingFile={removePendingAttachment}
                   />
                   <div className="mt-1.5 text-xs text-th-text-tertiary">
                     {plainDescriptionLength < 20 ? 'A few sentences go a long way (min. 20 characters)' : ' '}
@@ -830,6 +839,7 @@ export default function NewTicket() {
                 onFilesChange={setFiles}
                 maxFiles={MAX_ATTACHMENT_COUNT}
                 maxSizeMB={MAX_ATTACHMENT_SIZE_MB}
+                showPreviews={false}
               />
               {files.length > 0 ? (
                 <p className="mt-3 text-xs text-th-text-tertiary">

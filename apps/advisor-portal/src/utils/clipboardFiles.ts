@@ -108,3 +108,15 @@ export function filesFromClipboardEvent(data: DataTransfer | null | undefined): 
     ...fromHtml.map((file, index) => withPastedFileName(file, fromTransfer.length + index)),
   ];
 }
+
+/**
+ * Remove composer-only preview media (blob:/data: images) before persisting
+ * ticket HTML. Real bytes live in ticket_files / storage after upload.
+ */
+export function stripEphemeralInlineMedia(html: string): string {
+  if (!html) return html;
+  return html
+    .replace(/<img\b[^>]*\bsrc=["'](?:blob:|data:)[^"']*["'][^>]*>/gi, '')
+    .replace(/<p>(?:\s|&nbsp;|<br\s*\/?>)*<\/p>/gi, '')
+    .trim();
+}

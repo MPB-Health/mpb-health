@@ -51,6 +51,7 @@ import { useAdvisorPageDebugLog } from '../hooks/useAdvisorPageDebugLog';
 import { useAdvisorQueryReady } from '../hooks/useAdvisorQueryReady';
 import { advisorLiveDetailQueryOptions } from '../query/advisorQueryPolicy';
 import { filesFromClipboardEvent } from '../utils/clipboardFiles';
+import { PendingAttachmentPreviews } from '../components/tickets/PendingAttachmentPreviews';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -1148,28 +1149,16 @@ export default function TicketDetailPage() {
                   </div>
                 </div>
                 {replyAttachments.length > 0 ? (
-                  <ul className="mt-3 flex flex-wrap gap-2">
-                    {replyAttachments.map((file, idx) => (
-                      <li
-                        key={`${file.name}-${file.size}-${idx}`}
-                        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white py-1.5 pl-2.5 pr-1 text-xs text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300"
-                      >
-                        <span className="max-w-[min(100%,28rem)] truncate sm:max-w-md lg:max-w-lg">
-                          {file.name}
-                        </span>
-                        <button
-                          type="button"
-                          className="rounded-md p-1 hover:bg-slate-100 dark:hover:bg-slate-700"
-                          aria-label={`Remove ${file.name}`}
-                          onClick={() =>
-                            setReplyAttachments((prev) => prev.filter((_, i) => i !== idx))
-                          }
-                        >
-                          <X className="h-3.5 w-3.5" />
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
+                  <div className="mt-3">
+                    <PendingAttachmentPreviews
+                      files={replyAttachments}
+                      onRemove={(idx) =>
+                        setReplyAttachments((prev) => prev.filter((_, i) => i !== idx))
+                      }
+                      density="compact"
+                      variant="panel"
+                    />
+                  </div>
                 ) : null}
                 {replyError ? (
                   <div className="mt-3 flex items-center gap-2 rounded-xl border border-red-200/80 bg-red-50/80 p-3 text-sm text-red-800 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-200">

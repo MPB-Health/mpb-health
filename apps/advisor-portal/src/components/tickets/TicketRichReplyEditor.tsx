@@ -7,12 +7,18 @@ import {
 } from 'react';
 import type { ChangeEvent } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
+import type { Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
 import Image from '@tiptap/extension-image';
 import Placeholder from '@tiptap/extension-placeholder';
 import { Bold, Italic, List, Link as LinkIcon, Image as ImageIcon, Paperclip } from 'lucide-react';
-import { filesFromClipboardEvent } from '../../utils/clipboardFiles';
+import {
+  filesFromClipboardEvent,
+  stripEphemeralInlineMedia,
+  withPastedFileName,
+} from '../../utils/clipboardFiles';
+import { PendingAttachmentPreviews } from './PendingAttachmentPreviews';
 
 export interface TicketRichReplyEditorRef {
   getHtml: () => string;
@@ -30,6 +36,9 @@ interface TicketRichReplyEditorProps {
   /** Upload an image for inline embed. */
   uploadImage?: (file: File) => Promise<string>;
   onAttachFiles?: (files: File[]) => void;
+  /** Queued attachments — filmstrip under the editor (ITSTS TicketEditor parity). */
+  pendingFiles?: File[];
+  onRemovePendingFile?: (index: number) => void;
   /** After a failed send, parent restores HTML once TipTap is mounted (then callback clears). */
   recoverHtml?: string | null;
   onRecoverHtmlConsumed?: () => void;
@@ -45,6 +54,8 @@ export const TicketRichReplyEditor = forwardRef<TicketRichReplyEditorRef, Ticket
       onDraftChange,
       uploadImage,
       onAttachFiles,
+      pendingFiles,
+      onRemovePendingFile,
       recoverHtml = null,
       onRecoverHtmlConsumed,
     },
@@ -58,6 +69,39 @@ export const TicketRichReplyEditor = forwardRef<TicketRichReplyEditorRef, Ticket
     uploadImageRef.current = uploadImage;
     const onAttachFilesRef = useRef(onAttachFiles);
     onAttachFilesRef.current = onAttachFiles;
+    const editorRef = useRef<Editor | null>(null);
+
+    /**
+     * Queue attachments for the filmstrip preview. Do not insert images into
+     * the editor — PendingAttachmentPreviews is the visual source of truth.
+     * Still paste meaningful HTML/text from the clipboard when present.
+     */
+    const applyClipboardFilesRef = useRef<
+      (files: File[], html?: string, text?: string) => void
+    >(() => {});
+
+    applyClipboardFilesRef.current = (files, html, text) => {
+      const attach = onAttachFilesRef.current;
+      if (!attach || !files.length) return;
+
+      const ed = editorRef.current;
+      if (ed) {
+        const cleanedHtml = html ? stripEphemeralInlineMedia(html) : '';
+        const hasMeaningfulHtml =
+          !!cleanedHtml &&
+          (/<(table|ul|ol|pre|blockquote|h[1-6]|strong|em|a\b)/i.test(cleanedHtml) ||
+            cleanedHtml.replace(/<[^>]*>/g, '').trim().length > 0);
+
+        if (hasMeaningfulHtml) {
+          ed.chain().focus().insertContent(cleanedHtml).run();
+        } else if (text) {
+          ed.chain().focus().insertContent(text).run();
+        }
+      }
+
+      attach(files);
+      onDraftChangeRef.current?.(true);
+    };
 
     const editor = useEditor({
       extensions: [
@@ -76,6 +120,10 @@ export const TicketRichReplyEditor = forwardRef<TicketRichReplyEditorRef, Ticket
         Image.configure({
           inline: true,
           allowBase64: false,
+          HTMLAttributes: {
+            class:
+              'ticket-editor-image max-w-full h-auto rounded-lg my-2 border border-neutral-200 dark:border-neutral-600',
+          },
         }),
         Placeholder.configure({ placeholder }),
       ],
@@ -104,7 +152,11 @@ export const TicketRichReplyEditor = forwardRef<TicketRichReplyEditorRef, Ticket
                 upload(file)
                   .then((url) => {
                     if (url) {
-                      editor?.chain().focus().setImage({ src: url, alt: file.name || 'pasted image' }).run();
+                      editorRef.current
+                        ?.chain()
+                        .focus()
+                        .setImage({ src: url, alt: file.name || 'pasted image' })
+                        .run();
                     }
                   })
                   .catch(() => {
@@ -116,22 +168,21 @@ export const TicketRichReplyEditor = forwardRef<TicketRichReplyEditorRef, Ticket
             return false;
           }
 
-          // Advisor create/reply: queue pasted screenshots/snippets as attachments.
+          // Advisor create: attach + inline blob preview (ITSTS parity).
           if (!attach) return false;
           const clipboardFiles = filesFromClipboardEvent(event.clipboardData);
           if (!clipboardFiles.length) return false;
 
-          const plain = event.clipboardData?.getData('text/plain')?.trim() ?? '';
-          attach(clipboardFiles);
-          onDraftChangeRef.current?.(true);
-
-          // Image-only / file pastes often leave empty or useless plain text.
-          if (!plain) {
-            event.preventDefault();
-            return true;
+          event.preventDefault();
+          let html = '';
+          try {
+            html = event.clipboardData?.getData('text/html') || '';
+          } catch {
+            html = '';
           }
-          // Keep typed/copied text in the editor; files already queued.
-          return false;
+          const text = event.clipboardData?.getData('text/plain')?.trim() || '';
+          applyClipboardFilesRef.current(clipboardFiles, html || undefined, text || undefined);
+          return true;
         },
         handleDrop: (_view, event) => {
           const upload = uploadImageRef.current;
@@ -146,7 +197,13 @@ export const TicketRichReplyEditor = forwardRef<TicketRichReplyEditorRef, Ticket
             for (const file of imageFiles) {
               upload(file)
                 .then((url) => {
-                  if (url) editor?.chain().focus().setImage({ src: url, alt: file.name }).run();
+                  if (url) {
+                    editorRef.current
+                      ?.chain()
+                      .focus()
+                      .setImage({ src: url, alt: file.name })
+                      .run();
+                  }
                 })
                 .catch(() => {
                   /* parent may toast */
@@ -157,8 +214,7 @@ export const TicketRichReplyEditor = forwardRef<TicketRichReplyEditorRef, Ticket
 
           if (!attach) return false;
           event.preventDefault();
-          attach(clipboardFiles);
-          onDraftChangeRef.current?.(true);
+          applyClipboardFilesRef.current(clipboardFiles);
           return true;
         },
       },
@@ -166,6 +222,8 @@ export const TicketRichReplyEditor = forwardRef<TicketRichReplyEditorRef, Ticket
         onDraftChangeRef.current?.(!ed.isEmpty);
       },
     });
+
+    editorRef.current = editor;
 
     useEffect(() => {
       if (editor) {
@@ -236,7 +294,8 @@ export const TicketRichReplyEditor = forwardRef<TicketRichReplyEditorRef, Ticket
         const list = e.target.files;
         e.target.value = '';
         if (!list?.length || !onAttachFiles) return;
-        const files = Array.from(list);
+        const files = Array.from(list).map((file, index) => withPastedFileName(file, index));
+        // Queue only — filmstrip handles preview (no inline editor images).
         onAttachFiles(files);
         if (files.length) onDraftChangeRef.current?.(true);
         editor?.chain().focus().run();
@@ -332,6 +391,14 @@ export const TicketRichReplyEditor = forwardRef<TicketRichReplyEditorRef, Ticket
           )}
         </div>
         <EditorContent editor={editor} />
+
+        {pendingFiles && pendingFiles.length > 0 ? (
+          <PendingAttachmentPreviews
+            files={pendingFiles}
+            onRemove={onRemovePendingFile}
+            variant="embedded"
+          />
+        ) : null}
       </div>
     );
   },

@@ -1,6 +1,7 @@
 import { useState, useId, useRef, type ClipboardEvent } from 'react';
-import { Upload, X, FileIcon, Image as ImageIcon } from 'lucide-react';
+import { Upload } from 'lucide-react';
 import { filesFromClipboardEvent } from '../../utils/clipboardFiles';
+import { PendingAttachmentPreviews } from './PendingAttachmentPreviews';
 
 export interface TicketNewFileUploadProps {
   files: File[];
@@ -8,6 +9,11 @@ export interface TicketNewFileUploadProps {
   maxFiles?: number;
   maxSizeMB?: number;
   accept?: string;
+  /**
+   * When false, skip the filmstrip (previews live under the description editor)
+   * and show a compact queued count — matches ITSTS FileUpload + TicketEditor.
+   */
+  showPreviews?: boolean;
 }
 
 export function TicketNewFileUpload({
@@ -16,6 +22,7 @@ export function TicketNewFileUpload({
   maxFiles = 10,
   maxSizeMB = 15,
   accept = 'image/*,.pdf,.doc,.docx,.txt,.csv,.xlsx',
+  showPreviews = true,
 }: TicketNewFileUploadProps) {
   const inputId = useId();
   const dragDepthRef = useRef(0);
@@ -117,14 +124,6 @@ export function TicketNewFileUpload({
     handleFiles(e.dataTransfer.files);
   };
 
-  const formatFileSize = (bytes: number): string => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  };
-
-  const isImage = (file: File) => file.type.startsWith('image/');
-
   return (
     <div className="space-y-4">
       <div
@@ -178,41 +177,28 @@ export function TicketNewFileUpload({
         </div>
       ) : null}
 
-      {files.length > 0 ? (
-        <div className="space-y-2">
-          <h4 className="text-sm font-medium text-th-text-primary">
-            Attached files ({files.length}/{maxFiles})
-          </h4>
-          <div className="space-y-2">
-            {files.map((file, index) => (
-              <div
-                key={`${file.name}-${file.size}-${file.lastModified}-${index}`}
-                className="flex items-center justify-between p-3 bg-surface-secondary rounded-lg border border-th-border"
-              >
-                <div className="flex items-center space-x-3 flex-1 min-w-0">
-                  <div className="flex-shrink-0">
-                    {isImage(file) ? (
-                      <ImageIcon className="text-th-accent-600" size={20} />
-                    ) : (
-                      <FileIcon className="text-th-text-tertiary" size={20} />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-th-text-primary truncate">{file.name}</p>
-                    <p className="text-xs text-th-text-tertiary">{formatFileSize(file.size)}</p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => removeFile(index)}
-                  className="flex-shrink-0 ml-3 p-1 hover:bg-surface-tertiary rounded transition-colors"
-                  aria-label={`Remove ${file.name}`}
-                >
-                  <X className="text-th-text-tertiary" size={18} aria-hidden />
-                </button>
-              </div>
-            ))}
+      {showPreviews && files.length > 0 ? (
+        <PendingAttachmentPreviews files={files} onRemove={removeFile} />
+      ) : null}
+
+      {!showPreviews && files.length > 0 ? (
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-neutral-200/90 bg-slate-50 px-3.5 py-2.5 dark:border-neutral-700 dark:bg-neutral-900/50">
+          <div className="min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-neutral-500 dark:text-neutral-400">
+              Queued
+            </p>
+            <p className="truncate text-sm font-medium text-neutral-800 dark:text-neutral-100">
+              {files.length} file{files.length === 1 ? '' : 's'} — previews live in the description
+            </p>
           </div>
+          <span
+            className="shrink-0 rounded-md px-2 py-0.5 font-mono text-[11px] font-semibold tabular-nums text-white"
+            style={{
+              background: 'linear-gradient(135deg, rgb(var(--accent-600)), rgb(var(--accent-500)))',
+            }}
+          >
+            {String(files.length).padStart(2, '0')}
+          </span>
         </div>
       ) : null}
     </div>

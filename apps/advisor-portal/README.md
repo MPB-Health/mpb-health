@@ -51,7 +51,7 @@ Standard Vite + React SPA layout with feature-based organization under `src/`.
 - Training modules with completion tracking (MPB, Sedera, Zion)
 - SOP library with document viewer
 - Assigned lead management
-- Support ticket system with rich text editor
+- Support ticket system with rich text editor (paste screenshots/snippets into description or reply to attach)
 - Internal chat and inbox
 - Event management
 - Command palette for quick navigation

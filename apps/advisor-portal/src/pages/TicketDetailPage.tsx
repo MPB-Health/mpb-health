@@ -1,4 +1,12 @@
-import { useState, useEffect, useRef, useCallback, useMemo, type ChangeEvent } from 'react';
+import {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo,
+  type ChangeEvent,
+  type ClipboardEvent,
+} from 'react';
 import { flushSync } from 'react-dom';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -42,6 +50,7 @@ import { useAdvisor } from '../contexts/AdvisorContext';
 import { useAdvisorPageDebugLog } from '../hooks/useAdvisorPageDebugLog';
 import { useAdvisorQueryReady } from '../hooks/useAdvisorQueryReady';
 import { advisorLiveDetailQueryOptions } from '../query/advisorQueryPolicy';
+import { filesFromClipboardEvent } from '../utils/clipboardFiles';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -314,6 +323,7 @@ export default function TicketDetailPage() {
   const mergeReplyAttachments = useCallback((files: File[]) => {
     setReplyAttachments((prev) => {
       const next = [...prev];
+      let added = 0;
       for (const f of files) {
         if (next.length >= MAX_REPLY_ATTACHMENTS) {
           toast.error(`You can attach up to ${MAX_REPLY_ATTACHMENTS} files.`);
@@ -326,7 +336,17 @@ export default function TicketDetailPage() {
         const dup = next.some(
           (x) => x.name === f.name && x.size === f.size && x.lastModified === f.lastModified,
         );
-        if (!dup) next.push(f);
+        if (!dup) {
+          next.push(f);
+          added += 1;
+        }
+      }
+      if (added > 0) {
+        queueMicrotask(() => {
+          toast.success(
+            added === 1 ? 'File added to attachments' : `${added} files added to attachments`,
+          );
+        });
       }
       return next;
     });
@@ -337,6 +357,19 @@ export default function TicketDetailPage() {
       const list = e.target.files;
       if (list?.length) mergeReplyAttachments(Array.from(list));
       e.target.value = '';
+    },
+    [mergeReplyAttachments],
+  );
+
+  const onReplyPaste = useCallback(
+    (e: ClipboardEvent<HTMLTextAreaElement>) => {
+      const clipboardFiles = filesFromClipboardEvent(e.clipboardData);
+      if (!clipboardFiles.length) return;
+      const plain = e.clipboardData.getData('text/plain')?.trim() ?? '';
+      if (!plain) {
+        e.preventDefault();
+      }
+      mergeReplyAttachments(clipboardFiles);
     },
     [mergeReplyAttachments],
   );
@@ -1086,7 +1119,8 @@ export default function TicketDetailPage() {
                     ref={replyTextareaRef}
                     value={replyContent}
                     onChange={(e) => setReplyContent(e.target.value)}
-                    placeholder="Type your message…"
+                    onPaste={onReplyPaste}
+                    placeholder="Type your message… (paste a screenshot to attach)"
                     rows={5}
                     maxLength={10000}
                     disabled={replySending}

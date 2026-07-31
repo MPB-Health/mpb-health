@@ -1,5 +1,6 @@
-import { useState, useId, useRef } from 'react';
+import { useState, useId, useRef, type ClipboardEvent } from 'react';
 import { Upload, X, FileIcon, Image as ImageIcon } from 'lucide-react';
+import { filesFromClipboardEvent } from '../../utils/clipboardFiles';
 
 export interface TicketNewFileUploadProps {
   files: File[];
@@ -29,10 +30,9 @@ export function TicketNewFileUpload({
     return null;
   };
 
-  const handleFiles = (newFiles: FileList | null) => {
-    if (!newFiles) return;
+  const handleFileArray = (filesArray: File[]) => {
+    if (!filesArray.length) return;
 
-    const filesArray = Array.from(newFiles);
     const currentCount = files.length;
 
     if (currentCount + filesArray.length > maxFiles) {
@@ -68,6 +68,18 @@ export function TicketNewFileUpload({
       onFilesChange(deduped);
       setError(null);
     }
+  };
+
+  const handleFiles = (newFiles: FileList | null) => {
+    if (!newFiles) return;
+    handleFileArray(Array.from(newFiles));
+  };
+
+  const handlePaste = (e: ClipboardEvent<HTMLDivElement>) => {
+    const clipboardFiles = filesFromClipboardEvent(e.clipboardData);
+    if (!clipboardFiles.length) return;
+    e.preventDefault();
+    handleFileArray(clipboardFiles);
   };
 
   const removeFile = (index: number) => {
@@ -125,6 +137,9 @@ export function TicketNewFileUpload({
         onDragLeave={handleDragLeave}
         onDragOver={handleDragOver}
         onDrop={handleDrop}
+        onPaste={handlePaste}
+        tabIndex={0}
+        aria-label="Attachment drop zone. Click, drag and drop, or paste a screenshot."
       >
         <input
           id={inputId}
@@ -145,7 +160,7 @@ export function TicketNewFileUpload({
 
           <div className="text-sm">
             <span className="font-medium text-th-accent-600 dark:text-th-accent-400">Click to upload</span>
-            <span className="text-th-text-secondary"> or drag and drop</span>
+            <span className="text-th-text-secondary">, drag and drop, or paste</span>
           </div>
 
           <p className="text-sm text-th-text-tertiary">

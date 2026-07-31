@@ -215,26 +215,34 @@ export default function NewTicket() {
   const mergeEditorAttachments = useCallback(
     (incoming: File[]) => {
       if (incoming.length === 0) return;
+      const maxBytes = MAX_ATTACHMENT_SIZE_MB * 1024 * 1024;
       setFiles((prev) => {
-        const combined = [...prev, ...incoming];
-        if (combined.length > MAX_ATTACHMENT_COUNT) {
-          toast.error(`You can attach up to ${MAX_ATTACHMENT_COUNT} files.`);
-          return prev;
-        }
-        const maxBytes = MAX_ATTACHMENT_SIZE_MB * 1024 * 1024;
+        const accepted: File[] = [];
         for (const f of incoming) {
+          if (prev.length + accepted.length >= MAX_ATTACHMENT_COUNT) {
+            toast.error(`You can attach up to ${MAX_ATTACHMENT_COUNT} files.`);
+            break;
+          }
           if (f.size > maxBytes) {
             toast.error(`"${f.name}" exceeds the ${MAX_ATTACHMENT_SIZE_MB} MB limit.`);
-            return prev;
+            continue;
           }
+          const dup = prev.some(
+            (x) => x.name === f.name && x.size === f.size && x.lastModified === f.lastModified,
+          ) || accepted.some(
+            (x) => x.name === f.name && x.size === f.size && x.lastModified === f.lastModified,
+          );
+          if (!dup) accepted.push(f);
         }
-        const deduped = combined.filter(
-          (file, idx, arr) =>
-            arr.findIndex(
-              (x) => x.name === file.name && x.size === file.size && x.lastModified === file.lastModified,
-            ) === idx,
-        );
-        return deduped;
+        if (accepted.length === 0) return prev;
+        queueMicrotask(() => {
+          toast.success(
+            accepted.length === 1
+              ? 'File added to attachments'
+              : `${accepted.length} files added to attachments`,
+          );
+        });
+        return [...prev, ...accepted];
       });
     },
     [],
@@ -667,7 +675,7 @@ export default function NewTicket() {
                   </label>
                   <TicketRichReplyEditor
                     ref={descriptionEditorRef}
-                    placeholder="Describe your issue — what happened, steps to reproduce, expected vs actual behavior..."
+                    placeholder="Describe your issue — what happened, steps to reproduce, expected vs actual. Paste a screenshot to attach it."
                     onDraftChange={onDescriptionDraftChange}
                     onAttachFiles={mergeEditorAttachments}
                   />

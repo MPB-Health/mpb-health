@@ -12,6 +12,7 @@ import Link from '@tiptap/extension-link';
 import Image from '@tiptap/extension-image';
 import Placeholder from '@tiptap/extension-placeholder';
 import { Bold, Italic, List, Link as LinkIcon, Image as ImageIcon, Paperclip } from 'lucide-react';
+import { filesFromClipboardEvent } from '../../utils/clipboardFiles';
 
 export interface TicketRichReplyEditorRef {
   getHtml: () => string;
@@ -53,6 +54,10 @@ export const TicketRichReplyEditor = forwardRef<TicketRichReplyEditorRef, Ticket
     const fileInputRef = useRef<HTMLInputElement>(null);
     const onDraftChangeRef = useRef(onDraftChange);
     onDraftChangeRef.current = onDraftChange;
+    const uploadImageRef = useRef(uploadImage);
+    uploadImageRef.current = uploadImage;
+    const onAttachFilesRef = useRef(onAttachFiles);
+    onAttachFilesRef.current = onAttachFiles;
 
     const editor = useEditor({
       extensions: [
@@ -84,36 +89,76 @@ export const TicketRichReplyEditor = forwardRef<TicketRichReplyEditorRef, Ticket
               : 'min-h-[120px] px-3 py-2 text-sm text-neutral-900 focus:outline-none prose prose-sm max-w-none [&_.is-editor-empty:first-child::before]:text-neutral-400',
         },
         handlePaste: (_view, event) => {
-          const items = event.clipboardData?.items;
-          if (!items || !uploadImage) return false;
-          for (const item of Array.from(items)) {
-            if (item.type.startsWith('image/')) {
-              const file = item.getAsFile();
-              if (!file) continue;
-              event.preventDefault();
-              uploadImage(file)
-                .then((url) => {
-                  if (url) editor?.chain().focus().setImage({ src: url, alt: file.name || 'pasted image' }).run();
-                })
-                .catch(() => { /* parent may toast */ });
-              return true;
+          const upload = uploadImageRef.current;
+          const attach = onAttachFilesRef.current;
+
+          // Admin path: upload image and embed inline URL.
+          if (upload) {
+            const items = event.clipboardData?.items;
+            if (!items) return false;
+            for (const item of Array.from(items)) {
+              if (item.type.startsWith('image/')) {
+                const file = item.getAsFile();
+                if (!file) continue;
+                event.preventDefault();
+                upload(file)
+                  .then((url) => {
+                    if (url) {
+                      editor?.chain().focus().setImage({ src: url, alt: file.name || 'pasted image' }).run();
+                    }
+                  })
+                  .catch(() => {
+                    /* parent may toast */
+                  });
+                return true;
+              }
             }
+            return false;
           }
+
+          // Advisor create/reply: queue pasted screenshots/snippets as attachments.
+          if (!attach) return false;
+          const clipboardFiles = filesFromClipboardEvent(event.clipboardData);
+          if (!clipboardFiles.length) return false;
+
+          const plain = event.clipboardData?.getData('text/plain')?.trim() ?? '';
+          attach(clipboardFiles);
+          onDraftChangeRef.current?.(true);
+
+          // Image-only / file pastes often leave empty or useless plain text.
+          if (!plain) {
+            event.preventDefault();
+            return true;
+          }
+          // Keep typed/copied text in the editor; files already queued.
           return false;
         },
         handleDrop: (_view, event) => {
-          const files = event.dataTransfer?.files;
-          if (!files?.length || !uploadImage) return false;
-          const imageFiles = Array.from(files).filter((f) => f.type.startsWith('image/'));
-          if (!imageFiles.length) return false;
-          event.preventDefault();
-          for (const file of imageFiles) {
-            uploadImage(file)
-              .then((url) => {
-                if (url) editor?.chain().focus().setImage({ src: url, alt: file.name }).run();
-              })
-              .catch(() => { /* parent may toast */ });
+          const upload = uploadImageRef.current;
+          const attach = onAttachFilesRef.current;
+          const clipboardFiles = filesFromClipboardEvent(event.dataTransfer);
+          if (!clipboardFiles.length) return false;
+
+          if (upload) {
+            const imageFiles = clipboardFiles.filter((f) => f.type.startsWith('image/'));
+            if (!imageFiles.length) return false;
+            event.preventDefault();
+            for (const file of imageFiles) {
+              upload(file)
+                .then((url) => {
+                  if (url) editor?.chain().focus().setImage({ src: url, alt: file.name }).run();
+                })
+                .catch(() => {
+                  /* parent may toast */
+                });
+            }
+            return true;
           }
+
+          if (!attach) return false;
+          event.preventDefault();
+          attach(clipboardFiles);
+          onDraftChangeRef.current?.(true);
           return true;
         },
       },

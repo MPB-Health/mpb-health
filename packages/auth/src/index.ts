@@ -141,6 +141,7 @@ export {
   translateOrgId,
   isUnifiedOrgSlug,
   MPB_HEALTH_SLUG,
+  MPB_ACCOUNTS_SLUG,
   type OrgIdPurpose,
 } from './services/orgIdResolver';
 

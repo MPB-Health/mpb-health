@@ -25,6 +25,7 @@ For a deep dive into the system design, see
 | admin-portal | `apps/admin-portal` | admin.mpb.health | 5176 | Active | Staff admin command center |
 | concierge-portal | `apps/concierge-portal` | concierge.mpb.health | 5179 | Active | Concierge/member services portal |
 | staff-hub | `apps/staff-hub` | (internal) | 5178 | Active | Internal SSO launcher/hub |
+| platform-command-center | `apps/platform-command-center` | (Accounts control plane) | 5180 | Active | ARYX Platform Command Center (Accounts DB only) |
 | crm | `apps/crm` | crm.mpb.health | 5174 | Deprecated | Legacy CRM (replaced by external aryx-crm repo) |
 
 ---

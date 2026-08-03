@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --pcc-ink: #0b1220;
+  --pcc-muted: #5a6577;
+  --pcc-accent: #0f6e56;
+  --pcc-accent-deep: #0a4f3d;
+  --pcc-soft: #d8f3e7;
+  --pcc-paper: #f3f6fa;
+  --pcc-raised: #ffffff;
+  --pcc-line: rgba(11, 18, 32, 0.08);
+  --pcc-ease: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  color: var(--pcc-ink);
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(15, 110, 86, 0.12), transparent 55%),
+    radial-gradient(900px 500px at 100% 0%, rgba(11, 18, 32, 0.06), transparent 50%),
+    var(--pcc-paper);
+}
+
+@keyframes pcc-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pcc-pulse-soft {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.pcc-enter {
+  animation: pcc-fade-up 420ms var(--pcc-ease) both;
+}
+
+.pcc-enter-delay {
+  animation: pcc-fade-up 520ms var(--pcc-ease) 80ms both;
+}

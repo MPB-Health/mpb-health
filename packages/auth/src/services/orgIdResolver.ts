@@ -9,12 +9,22 @@ export type OrgIdPurpose = 'portal' | 'membership';
 
 export const MPB_HEALTH_SLUG = 'mpb-health';
 
-/** Static map — keep in sync with organization_id_map migration. */
+/** Accounts-canonical slug for MPB (ARYX Accounts SoT). */
+export const MPB_ACCOUNTS_SLUG = 'mpb';
+
+const MPB_ORG_IDS: Record<OrgIdPurpose, string> = {
+  portal: 'a0000000-0000-0000-0000-000000000001',
+  membership: '00000000-0000-4000-a000-000000000001',
+};
+
+/**
+ * Static map — keep in sync with organization_id_map migration.
+ * Includes Accounts canonical slug `mpb` as an alias of legacy `mpb-health`.
+ * See docs/aryx-accounts-naming.md.
+ */
 const STATIC_ORG_ID_BY_SLUG: Record<string, Record<OrgIdPurpose, string>> = {
-  [MPB_HEALTH_SLUG]: {
-    portal: 'a0000000-0000-0000-0000-000000000001',
-    membership: '00000000-0000-4000-a000-000000000001',
-  },
+  [MPB_HEALTH_SLUG]: MPB_ORG_IDS,
+  [MPB_ACCOUNTS_SLUG]: MPB_ORG_IDS,
 };
 
 /** Synchronous resolver using the static map only (safe for hot paths). */

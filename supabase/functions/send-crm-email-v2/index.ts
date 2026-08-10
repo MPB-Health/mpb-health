@@ -229,11 +229,21 @@ serve(async (req) => {
     const effectiveFromEmail = from_email || FROM_EMAIL;
     const effectiveFromName = from_name || FROM_NAME;
 
+    // Mint our own RFC 2822 Message-ID and pin it on the outbound message.
+    // `receive-crm-email` matches inbound replies by looking up the reply's
+    // In-Reply-To/References against crm_email_log.message_id; if we never set
+    // (and store) one, that lookup can never hit and every reply spawns a new
+    // thread instead of stitching to its parent. Domain is taken from the
+    // effective sender so the ID stays valid for the sending domain.
+    const messageIdDomain = effectiveFromEmail.split('@')[1] || 'mpb.health';
+    const rfcMessageId = `<${crypto.randomUUID()}@${messageIdDomain}>`;
+
     const resendPayload: Record<string, unknown> = {
       from: `${effectiveFromName} <${effectiveFromEmail}>`,
       to,
       subject,
       html: finalHtml,
+      headers: { 'Message-ID': rfcMessageId },
     };
 
     // Optional fields
@@ -308,6 +318,9 @@ serve(async (req) => {
         body_html: html, // Store original HTML without tracking
         status,
         resend_email_id: resendEmailId,
+        // Persist the Message-ID we pinned above so inbound replies can match
+        // this row via In-Reply-To/References (see receive-crm-email).
+        message_id: rfcMessageId,
         signature_id: signature_id || null,
         has_attachments: (attachments && attachments.length > 0) || (attachment_ids && attachment_ids.length > 0),
         attachment_count: (attachments?.length || 0) + (attachment_ids?.length || 0),

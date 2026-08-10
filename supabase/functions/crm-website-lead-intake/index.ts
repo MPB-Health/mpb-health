@@ -6,8 +6,10 @@
 //
 //   1. Inserts the lead via submit_public_lead (stamps lead_source=website).
 //   2. Sends Email #1 (preliminary quote) from sales@mympb.com using the
-//      master template the Quote Response cadence references. Display name
-//      "MPB.Health Sales" (Round 7 Addendum locked).
+//      master template resolved via system_settings pins
+//      (crm.website_quote_cadence_id / crm.website_quote_email1_template_id),
+//      then Sales Cadence 2026 / Quote Response #1 name fallbacks.
+//      Display name "MPB.Health Sales" (Round 7 Addendum locked).
 //   3. On send success, advances stage `new → quoted` and tags the lead with
 //      `website_auto_response`. The DB quote-cadence trigger enrolls the lead
 //      once (no double cadence with insert-time default).
@@ -53,14 +55,23 @@ interface IntakePayload {
 const FROM_ADDRESS = 'sales@mympb.com';
 const FROM_NAME = 'MPB.Health Sales'; // Round 7 Addendum locked
 const REPLY_TO = 'sales@mympb.com';
-const CADENCE_NAMES = ['Quote Response — 5-touch (Email)', 'Quote Response'] as const;
-const QUOTE_TEMPLATE_NAME = 'Email #1';
+// Keep in sync with crm_lead_start_quote_cadence (Sales Cadence 2026 first).
+const CADENCE_NAMES = [
+  'Sales Cadence 2026',
+  'Quote Response — 5-touch (Email)',
+  'Quote Response',
+] as const;
+// Prefer live name; keep archived legacy name as last resort.
+const QUOTE_TEMPLATE_NAMES = ['Quote Response #1', 'Email #1'] as const;
 const SOURCE_TAG = 'website_auto_response';
 
 // Per-org staff "new lead" notification recipients live in system_settings so
 // each tenant only ever notifies its own people (see migration
 // 20260624160000_aryx_lead_notification_recipients).
 const LEAD_NOTIFY_SETTINGS_KEY = 'crm.lead_notification_recipients';
+// Durable pins — see migration 20260810160000_crm_website_quote_intake_settings.
+const WEBSITE_QUOTE_CADENCE_SETTINGS_KEY = 'crm.website_quote_cadence_id';
+const WEBSITE_QUOTE_EMAIL1_TEMPLATE_SETTINGS_KEY = 'crm.website_quote_email1_template_id';
 const CRM_BASE_URL = 'https://crm.mpb.health';
 
 serve(async (req) => {
@@ -123,9 +134,10 @@ serve(async (req) => {
     );
   }
 
-  // 2. Look up the org's Quote Response cadence + Email #1 master template.
-  //    A missing template / cadence is non-fatal — the lead row exists and
-  //    the rep can still pick it up; we just skip the auto-response.
+  // 2. Look up the org's quote cadence + Email #1 master template.
+  //    Resolution order: system_settings IDs → cadence name list (aligned with
+  //    crm_lead_start_quote_cadence) → template name fallbacks. Archived
+  //    templates are never used. Missing config is non-fatal — lead still lands.
   const orgId: string | null = lead.org_id ?? null;
   let cadenceId: string | null = null;
   let masterTemplateId: string | null = null;
@@ -133,34 +145,57 @@ serve(async (req) => {
   let emailBody: string | null = null;
 
   if (orgId) {
-    const { data: cadenceRows } = await supabase
-      .from('crm_follow_up_cadences')
-      .select('id, steps, name')
-      .eq('org_id', orgId)
-      .in('name', [...CADENCE_NAMES])
-      .eq('is_active', true)
-      .order('created_at', { ascending: true });
+    const pinnedCadenceId = await readSettingsUuid(
+      supabase,
+      WEBSITE_QUOTE_CADENCE_SETTINGS_KEY,
+    );
+    const pinnedTemplateId = await readSettingsUuid(
+      supabase,
+      WEBSITE_QUOTE_EMAIL1_TEMPLATE_SETTINGS_KEY,
+    );
 
-    const cadenceRow = (cadenceRows ?? []).sort((a, b) => {
-      const aIdx = CADENCE_NAMES.indexOf(a.name as (typeof CADENCE_NAMES)[number]);
-      const bIdx = CADENCE_NAMES.indexOf(b.name as (typeof CADENCE_NAMES)[number]);
-      return (aIdx < 0 ? 99 : aIdx) - (bIdx < 0 ? 99 : bIdx);
-    })[0];
-
-    if (cadenceRow) {
-      cadenceId = cadenceRow.id as string;
-      const steps = Array.isArray(cadenceRow.steps) ? cadenceRow.steps : [];
-      // Step 1 is Email #1; pull its template_id if present.
-      const step1 = steps.find(
-        (s: Record<string, unknown>) => s && (s.step === 1 || s.step === '1'),
-      );
-      if (step1 && typeof step1.template_id === 'string') {
-        masterTemplateId = step1.template_id as string;
+    if (pinnedCadenceId) {
+      const { data: pinnedCadence } = await supabase
+        .from('crm_follow_up_cadences')
+        .select('id, steps, name')
+        .eq('id', pinnedCadenceId)
+        .eq('org_id', orgId)
+        .eq('is_active', true)
+        .maybeSingle();
+      if (pinnedCadence) {
+        cadenceId = pinnedCadence.id as string;
+        masterTemplateId = extractStep1TemplateId(pinnedCadence.steps) ?? pinnedTemplateId;
       }
     }
 
-    // Resolve the master template — prefer the cadence-linked one; fall
-    // back to the most recent active "Email #1" by name in this org.
+    if (!cadenceId) {
+      const { data: cadenceRows } = await supabase
+        .from('crm_follow_up_cadences')
+        .select('id, steps, name')
+        .eq('org_id', orgId)
+        .in('name', [...CADENCE_NAMES])
+        .eq('is_active', true)
+        .order('created_at', { ascending: true });
+
+      const cadenceRow = (cadenceRows ?? []).sort((a, b) => {
+        const aIdx = CADENCE_NAMES.indexOf(a.name as (typeof CADENCE_NAMES)[number]);
+        const bIdx = CADENCE_NAMES.indexOf(b.name as (typeof CADENCE_NAMES)[number]);
+        return (aIdx < 0 ? 99 : aIdx) - (bIdx < 0 ? 99 : bIdx);
+      })[0];
+
+      if (cadenceRow) {
+        cadenceId = cadenceRow.id as string;
+        masterTemplateId =
+          extractStep1TemplateId(cadenceRow.steps) ?? pinnedTemplateId ?? masterTemplateId;
+      }
+    }
+
+    if (!masterTemplateId && pinnedTemplateId) {
+      masterTemplateId = pinnedTemplateId;
+    }
+
+    // Resolve the master template — prefer cadence/settings-linked id; fall
+    // back to active template names (Quote Response #1, then Email #1).
     if (masterTemplateId) {
       const { data: tpl } = await supabase
         .from('crm_master_templates')
@@ -171,19 +206,30 @@ serve(async (req) => {
       if (tpl) {
         emailSubject = tpl.subject ?? null;
         emailBody = tpl.body ?? null;
+      } else {
+        masterTemplateId = null;
       }
     }
     if (!emailSubject || !emailBody) {
-      const { data: fallback } = await supabase
+      const { data: fallbackRows } = await supabase
         .from('crm_master_templates')
-        .select('id, subject, body')
+        .select('id, name, subject, body')
         .eq('org_id', orgId)
         .eq('channel', 'email')
-        .eq('name', QUOTE_TEMPLATE_NAME)
+        .in('name', [...QUOTE_TEMPLATE_NAMES])
         .is('archived_at', null)
-        .order('version', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .order('version', { ascending: false });
+
+      const fallback = (fallbackRows ?? []).sort((a, b) => {
+        const aIdx = QUOTE_TEMPLATE_NAMES.indexOf(
+          a.name as (typeof QUOTE_TEMPLATE_NAMES)[number],
+        );
+        const bIdx = QUOTE_TEMPLATE_NAMES.indexOf(
+          b.name as (typeof QUOTE_TEMPLATE_NAMES)[number],
+        );
+        return (aIdx < 0 ? 99 : aIdx) - (bIdx < 0 ? 99 : bIdx);
+      })[0];
+
       if (fallback) {
         masterTemplateId = fallback.id as string;
         emailSubject = fallback.subject ?? null;
@@ -332,6 +378,44 @@ serve(async (req) => {
     { status: 200, headers: jsonHeaders },
   );
 });
+
+// ----------------------------------------------------------------------------
+// Cadence / template resolution helpers
+// ----------------------------------------------------------------------------
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+async function readSettingsUuid(
+  supabase: ReturnType<typeof createClient>,
+  key: string,
+): Promise<string | null> {
+  try {
+    const { data } = await supabase
+      .from('system_settings')
+      .select('value')
+      .eq('key', key)
+      .maybeSingle();
+    const raw = typeof data?.value === 'string' ? data.value.trim() : '';
+    return UUID_RE.test(raw) ? raw : null;
+  } catch {
+    return null;
+  }
+}
+
+function extractStep1TemplateId(steps: unknown): string | null {
+  if (!Array.isArray(steps)) return null;
+  const step1 = steps.find(
+    (s: unknown) =>
+      s &&
+      typeof s === 'object' &&
+      ((s as Record<string, unknown>).step === 1 ||
+        (s as Record<string, unknown>).step === '1'),
+  ) as Record<string, unknown> | undefined;
+  return typeof step1?.template_id === 'string' && UUID_RE.test(step1.template_id)
+    ? step1.template_id
+    : null;
+}
 
 // ----------------------------------------------------------------------------
 // Token merge — supports the site-spec tokens. Keep this fast and lossless;

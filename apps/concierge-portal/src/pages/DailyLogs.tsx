@@ -55,6 +55,10 @@ import {
   subscribeConciergeDailyLogEntries,
   mergeConciergeLogEntry,
   normalizeConciergeInstant,
+  requiresCrmActivityProof,
+  requiresCrmFollowupScreenshot,
+  validateCrmNotesPaste,
+  CRM_ACTIVITY_PROOF_REP,
 } from '../lib/concierge-api';
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -839,6 +843,14 @@ function EditLogEntryModal({
   const [specialProjectDurationMinutes, setSpecialProjectDuration] = useState(
     log.specialProjectDurationMinutes || 0,
   );
+  /** Client-only proof gates — not persisted. */
+  const [crmNotesPaste, setCrmNotesPaste] = useState('');
+  const [proofFile, setProofFile] = useState<File | null>(null);
+  const needsCrmProof = requiresCrmActivityProof(teamMember);
+  const needsFollowupShot =
+    needsCrmProof && requiresCrmFollowupScreenshot(reason);
+  const crmPasteStatus =
+    needsCrmProof && crmNotesPaste.trim() ? validateCrmNotesPaste(crmNotesPaste) : null;
 
   const handleSave = async () => {
     if (!date || !teamMember) {
@@ -856,6 +868,17 @@ function EditLogEntryModal({
       }
     } else if (!memberName.trim()) {
       toast.error('Please fill in Member Name');
+      return;
+    }
+    if (needsCrmProof) {
+      const pasteCheck = validateCrmNotesPaste(crmNotesPaste);
+      if (!pasteCheck.ok) {
+        toast.error(pasteCheck.error);
+        return;
+      }
+    }
+    if (needsFollowupShot && !proofFile) {
+      toast.error('Attach a screenshot of the CRM follow-up task before saving');
       return;
     }
     const memberNameNorm =
@@ -878,8 +901,8 @@ function EditLogEntryModal({
       otherNotes: reason === 'Other' ? otherNotes : '',
       additionalNotes,
       timesSpokeWithMember: reason === 'Special Project' ? log.timesSpokeWithMember : parsedTouches,
-      crmNotes,
-      followUp,
+      crmNotes: needsCrmProof ? true : crmNotes,
+      followUp: needsFollowupShot ? true : followUp,
       reviewLink,
       escalatedIssue,
       specialProjectDescription: reason === 'Special Project' ? specialProjectDescription.trim() : '',
@@ -1077,6 +1100,61 @@ function EditLogEntryModal({
                 className="w-full px-3 py-2 rounded-lg border border-[#A8B8AC]/40 focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm"
               />
             </div>
+            {needsCrmProof && (
+              <div className="sm:col-span-2 space-y-3 rounded-xl border border-amber-200 bg-amber-50/60 p-3">
+                <p className="text-xs font-semibold text-amber-900">
+                  CRM completion check for {CRM_ACTIVITY_PROOF_REP} — for tracking only (not saved)
+                </p>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">
+                    Paste CRM notes <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    value={crmNotesPaste}
+                    onChange={(e) => {
+                      setCrmNotesPaste(e.target.value);
+                      if (e.target.value.trim()) setCrmNotes(true);
+                    }}
+                    rows={4}
+                    placeholder="Copy the note you logged in the CRM and paste it here. Not stored — unlocks Save only."
+                    className="w-full px-3 py-2 rounded-lg border border-[#A8B8AC]/40 focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm"
+                  />
+                  {crmPasteStatus?.ok ? (
+                    <p className="text-[11px] text-emerald-700 mt-1">Looks like a coherent CRM note.</p>
+                  ) : crmPasteStatus && !crmPasteStatus.ok ? (
+                    <p className="text-[11px] text-amber-800 mt-1">{crmPasteStatus.error}</p>
+                  ) : (
+                    <p className="text-[10px] text-slate-500 mt-1">
+                      Must be a real, unique CRM note (not keyboard mash or filler). Not stored.
+                    </p>
+                  )}
+                </div>
+                {needsFollowupShot && (
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">
+                      Screenshot of CRM follow-up task <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/gif"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0] ?? null;
+                        setProofFile(f);
+                        if (f) setFollowUp(true);
+                      }}
+                      className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-[#4A7C8A] file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white"
+                    />
+                    <p className="text-[10px] text-slate-500 mt-1">
+                      Required for Sharing, Rx, Labs, Imaging, and billing issues. Screenshot is for completion
+                      confirmation only — it is not saved.
+                    </p>
+                    {proofFile && (
+                      <p className="text-[11px] text-emerald-700 mt-1">Selected: {proofFile.name}</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           <div className="flex flex-wrap items-center gap-4 pt-1 border-t border-[#A8B8AC]/15">
             <label className="flex items-center gap-2 text-sm cursor-pointer">
@@ -1084,6 +1162,7 @@ function EditLogEntryModal({
                 type="checkbox"
                 checked={crmNotes}
                 onChange={(e) => setCrmNotes(e.target.checked)}
+                disabled={needsCrmProof}
                 className="rounded border-[#A8B8AC] text-[#4A7C8A] focus:ring-[#4A7C8A]/30"
               />
               Notes in CRM?
@@ -1093,6 +1172,7 @@ function EditLogEntryModal({
                 type="checkbox"
                 checked={followUp}
                 onChange={(e) => setFollowUp(e.target.checked)}
+                disabled={needsFollowupShot}
                 className="rounded border-[#A8B8AC] text-[#4A7C8A] focus:ring-[#4A7C8A]/30"
               />
               Follow-up Task?
@@ -1126,7 +1206,7 @@ function EditLogEntryModal({
             </button>
             <button
               type="button"
-              onClick={handleSave}
+              onClick={() => void handleSave()}
               className="px-4 py-2 rounded-lg bg-[#4A7C8A] text-white text-sm font-medium hover:bg-[#3D6773]"
             >
               Save changes
@@ -1181,6 +1261,14 @@ function DailyLogTab({
     specialProjectDescription: '',
     specialProjectDurationMinutes: 0,
   });
+  /** Client-only proof gates — discarded after save; not written to Supabase. */
+  const [crmNotesPaste, setCrmNotesPaste] = useState('');
+  const [proofFile, setProofFile] = useState<File | null>(null);
+  const needsCrmProof = requiresCrmActivityProof(form.teamMember);
+  const needsFollowupShot =
+    needsCrmProof && requiresCrmFollowupScreenshot(form.reason);
+  const crmPasteStatus =
+    needsCrmProof && crmNotesPaste.trim() ? validateCrmNotesPaste(crmNotesPaste) : null;
 
   const handleAdd = async () => {
     if (!form.date || !form.teamMember) {
@@ -1201,6 +1289,17 @@ function DailyLogTab({
       toast.error('Please fill in Date, Team Member, and Member Name');
       return;
     }
+    if (needsCrmProof) {
+      const pasteCheck = validateCrmNotesPaste(crmNotesPaste);
+      if (!pasteCheck.ok) {
+        toast.error(pasteCheck.error);
+        return;
+      }
+    }
+    if (needsFollowupShot && !proofFile) {
+      toast.error('Attach a screenshot of the CRM follow-up task before adding this activity');
+      return;
+    }
     const id = uid();
     const memberNameNorm =
       form.reason === 'Special Project' && !form.memberName.trim()
@@ -1217,6 +1316,8 @@ function DailyLogTab({
         form.reason === 'Special Project'
           ? Math.min(99999, Math.max(1, Math.floor(Number(form.specialProjectDurationMinutes) || 0)))
           : 0,
+      crmNotes: needsCrmProof ? true : form.crmNotes,
+      followUp: needsFollowupShot ? true : form.followUp,
     });
     try {
       const saved = await onAddLog(entry);
@@ -1253,6 +1354,8 @@ function DailyLogTab({
         specialProjectDescription: '',
         specialProjectDurationMinutes: 0,
       }));
+      setCrmNotesPaste('');
+      setProofFile(null);
       const savedOnTodaysSheet = saved.date === today;
       toast.success(
         savedOnTodaysSheet
@@ -1595,6 +1698,63 @@ function DailyLogTab({
               className="w-full px-3 py-2 rounded-lg border border-[#A8B8AC]/40 focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm"
             />
           </div>
+          {needsCrmProof && (
+            <div className="sm:col-span-2 lg:col-span-3 space-y-3 rounded-xl border border-amber-200 bg-amber-50/60 p-4">
+              <p className="text-xs font-semibold text-amber-900">
+                CRM completion check for {CRM_ACTIVITY_PROOF_REP} — for tracking only (not saved)
+              </p>
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">
+                  Paste CRM notes <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={crmNotesPaste}
+                  onChange={(e) => {
+                    setCrmNotesPaste(e.target.value);
+                    if (e.target.value.trim()) {
+                      setForm((f) => ({ ...f, crmNotes: true }));
+                    }
+                  }}
+                  rows={4}
+                  placeholder="Copy the note you logged in the CRM and paste it here. This is not stored — it only unlocks Add Entry."
+                  className="w-full px-3 py-2 rounded-lg border border-[#A8B8AC]/40 focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm bg-white"
+                />
+                {crmPasteStatus?.ok ? (
+                  <p className="text-[11px] text-emerald-700 mt-1">Looks like a coherent CRM note.</p>
+                ) : crmPasteStatus && !crmPasteStatus.ok ? (
+                  <p className="text-[11px] text-amber-800 mt-1">{crmPasteStatus.error}</p>
+                ) : (
+                  <p className="text-[10px] text-slate-500 mt-1">
+                    Must be a real, unique CRM note (not keyboard mash or filler). Not stored.
+                  </p>
+                )}
+              </div>
+              {needsFollowupShot && (
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">
+                    Screenshot of CRM follow-up task <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/gif"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0] ?? null;
+                      setProofFile(f);
+                      if (f) setForm((prev) => ({ ...prev, followUp: true }));
+                    }}
+                    className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-[#4A7C8A] file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white"
+                  />
+                  <p className="text-[10px] text-slate-500 mt-1">
+                    Required for Sharing Requests, Rx, Labs, Imaging, Preventive/Billing, and July Billing Issue.
+                    Screenshot is not uploaded or stored.
+                  </p>
+                  {proofFile && (
+                    <p className="text-[11px] text-emerald-700 mt-1">Selected: {proofFile.name}</p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="flex flex-wrap items-center gap-4 mt-4">
@@ -1603,6 +1763,7 @@ function DailyLogTab({
               type="checkbox"
               checked={form.crmNotes}
               onChange={(e) => setForm((f) => ({ ...f, crmNotes: e.target.checked }))}
+              disabled={needsCrmProof}
               className="rounded border-[#A8B8AC] text-[#4A7C8A] focus:ring-[#4A7C8A]/30"
             />
             Notes in CRM?
@@ -1612,6 +1773,7 @@ function DailyLogTab({
               type="checkbox"
               checked={form.followUp}
               onChange={(e) => setForm((f) => ({ ...f, followUp: e.target.checked }))}
+              disabled={needsFollowupShot}
               className="rounded border-[#A8B8AC] text-[#4A7C8A] focus:ring-[#4A7C8A]/30"
             />
             Follow-up Task?
@@ -1640,7 +1802,7 @@ function DailyLogTab({
             Escalated Member Issue
           </label>
           <button
-            onClick={handleAdd}
+            onClick={() => void handleAdd()}
             className="ml-auto flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#4A7C8A] text-white text-sm font-medium hover:bg-[#3D6773] transition-colors"
           >
             <Plus className="w-4 h-4" />

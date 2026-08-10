@@ -11,6 +11,7 @@ import { HeaderWithAuth } from './components/layout/HeaderWithAuth';
 import { AppDownloadSection } from './components/blocks/AppDownloadSection';
 import { Footer } from './components/layout/Footer';
 import { trackPageView, initializeAnalytics, loadDatabaseSnippets } from './lib/analytics';
+import { captureLeadAttribution } from './lib/leadAttribution';
 import { usePageTracking } from './hooks/usePageTracking';
 import { ScrollToTop } from './components/layout/ScrollToTop';
 import { BackToTop } from './components/layout/BackToTop';
@@ -251,6 +252,14 @@ const AnalyticsTracker: React.FC<{ children: React.ReactNode }> = ({ children })
   React.useEffect(() => {
     trackPageView(location.pathname);
   }, [location.pathname]);
+
+  // Re-capture campaign attribution on every route change. Internal CTAs
+  // propagate utm params into their destination URLs (see buildQuoteURL in
+  // leadRoutingTracker), so a campaign can first become visible mid-session.
+  // First touch still wins; this only records a genuinely new utm_source.
+  React.useEffect(() => {
+    captureLeadAttribution();
+  }, [location.pathname, location.search]);
 
   return <>{children}</>;
 };

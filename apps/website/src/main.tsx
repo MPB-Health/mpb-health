@@ -2,9 +2,15 @@ import React, { StrictMode } from 'react';
 import { createRoot, hydrateRoot } from 'react-dom/client';
 import LazyLoadErrorBoundary from './components/LazyLoadErrorBoundary';
 import { installAuthRefreshGuard } from '@mpbhealth/database';
+import { captureLeadAttribution } from './lib/leadAttribution';
 import './index.css';
 import '@mpbhealth/ui/login-animations.css';
 import App from './App';
+
+// Capture campaign attribution from the landing URL before anything can strip
+// or navigate past it — utm params and the external referrer are only reliably
+// available on this first hit, but the lead is submitted many routes later.
+captureLeadAttribution();
 
 // Detect dead refresh tokens at the network level and redirect to /login.
 // Must run before React renders to catch early Supabase auto-refresh failures.

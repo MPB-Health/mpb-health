@@ -1,4 +1,11 @@
-import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import {
+  useState,
+  useMemo,
+  useCallback,
+  useEffect,
+  useRef,
+  type ClipboardEvent,
+} from 'react';
 import {
   addDays,
   format,
@@ -811,6 +818,102 @@ function ShareModal({
   );
 }
 
+/** File upload + clipboard paste for CRM follow-up screenshot (client gate only). */
+function CrmFollowupProofInput({
+  file,
+  onFile,
+  hint,
+}: {
+  file: File | null;
+  onFile: (file: File | null) => void;
+  hint: string;
+}) {
+  const zoneRef = useRef<HTMLDivElement>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!file) {
+      setPreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
+
+  const acceptImageFile = (next: File | null) => {
+    if (!next) {
+      onFile(null);
+      return;
+    }
+    if (!next.type.startsWith('image/')) {
+      toast.error('Paste or upload an image screenshot (PNG, JPG, or WebP)');
+      return;
+    }
+    onFile(next);
+  };
+
+  const onPaste = (e: ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items?.length) return;
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.type.startsWith('image/')) {
+        e.preventDefault();
+        const pasted = item.getAsFile();
+        if (pasted) {
+          const named =
+            pasted.name && pasted.name !== 'image.png'
+              ? pasted
+              : new File([pasted], `pasted-screenshot-${Date.now()}.png`, {
+                  type: pasted.type || 'image/png',
+                });
+          acceptImageFile(named);
+          toast.success('Screenshot pasted');
+        }
+        return;
+      }
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      <div
+        ref={zoneRef}
+        tabIndex={0}
+        role="button"
+        onClick={() => zoneRef.current?.focus()}
+        onPaste={onPaste}
+        className="rounded-lg border border-dashed border-[#A8B8AC]/60 bg-white px-3 py-3 text-sm text-slate-600 outline-none focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 cursor-text"
+      >
+        <p className="text-xs font-medium text-slate-700">
+          Click here, then paste screenshot (Ctrl/Cmd+V)
+        </p>
+        <p className="text-[10px] text-slate-500 mt-0.5">Or choose a file below</p>
+        {previewUrl ? (
+          <img
+            src={previewUrl}
+            alt="CRM follow-up screenshot preview"
+            className="mt-2 max-h-40 rounded-md border border-[#A8B8AC]/30 object-contain"
+          />
+        ) : null}
+      </div>
+      <input
+        type="file"
+        accept="image/png,image/jpeg,image/webp,image/gif"
+        onChange={(e) => acceptImageFile(e.target.files?.[0] ?? null)}
+        className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-[#4A7C8A] file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white"
+      />
+      <p className="text-[10px] text-slate-500">{hint}</p>
+      {file && (
+        <p className="text-[11px] text-emerald-700">
+          Ready: {file.name.startsWith('pasted-screenshot') ? 'Pasted screenshot' : file.name}
+        </p>
+      )}
+    </div>
+  );
+}
+
 // ── Edit log entry (from Recent Entries) ───────────────────────────────
 
 function EditLogEntryModal({
@@ -1103,7 +1206,7 @@ function EditLogEntryModal({
             {needsCrmProof && (
               <div className="sm:col-span-2 space-y-3 rounded-xl border border-amber-200 bg-amber-50/60 p-3">
                 <p className="text-xs font-semibold text-amber-900">
-                  CRM completion check for {CRM_ACTIVITY_PROOF_REP} — for tracking only (not saved)
+                  CRM completion check for {CRM_ACTIVITY_PROOF_REP}
                 </p>
                 <div>
                   <label className="block text-xs font-medium text-slate-600 mb-1">
@@ -1116,7 +1219,7 @@ function EditLogEntryModal({
                       if (e.target.value.trim()) setCrmNotes(true);
                     }}
                     rows={4}
-                    placeholder="Copy the note you logged in the CRM and paste it here. Not stored — unlocks Save only."
+                    placeholder="Copy the note you logged in the CRM and paste it here."
                     className="w-full px-3 py-2 rounded-lg border border-[#A8B8AC]/40 focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm"
                   />
                   {crmPasteStatus?.ok ? (
@@ -1125,7 +1228,7 @@ function EditLogEntryModal({
                     <p className="text-[11px] text-amber-800 mt-1">{crmPasteStatus.error}</p>
                   ) : (
                     <p className="text-[10px] text-slate-500 mt-1">
-                      Must be a real, unique CRM note (not keyboard mash or filler). Not stored.
+                      Must be a real, unique CRM note (not keyboard mash or filler).
                     </p>
                   )}
                 </div>
@@ -1134,23 +1237,14 @@ function EditLogEntryModal({
                     <label className="block text-xs font-medium text-slate-600 mb-1">
                       Screenshot of CRM follow-up task <span className="text-red-500">*</span>
                     </label>
-                    <input
-                      type="file"
-                      accept="image/png,image/jpeg,image/webp,image/gif"
-                      onChange={(e) => {
-                        const f = e.target.files?.[0] ?? null;
+                    <CrmFollowupProofInput
+                      file={proofFile}
+                      onFile={(f) => {
                         setProofFile(f);
                         if (f) setFollowUp(true);
                       }}
-                      className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-[#4A7C8A] file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white"
+                      hint="Required for Sharing, Rx, Labs, Imaging, and billing issues."
                     />
-                    <p className="text-[10px] text-slate-500 mt-1">
-                      Required for Sharing, Rx, Labs, Imaging, and billing issues. Screenshot is for completion
-                      confirmation only — it is not saved.
-                    </p>
-                    {proofFile && (
-                      <p className="text-[11px] text-emerald-700 mt-1">Selected: {proofFile.name}</p>
-                    )}
                   </div>
                 )}
               </div>
@@ -1701,7 +1795,7 @@ function DailyLogTab({
           {needsCrmProof && (
             <div className="sm:col-span-2 lg:col-span-3 space-y-3 rounded-xl border border-amber-200 bg-amber-50/60 p-4">
               <p className="text-xs font-semibold text-amber-900">
-                CRM completion check for {CRM_ACTIVITY_PROOF_REP} — for tracking only (not saved)
+                CRM completion check for {CRM_ACTIVITY_PROOF_REP}
               </p>
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">
@@ -1716,7 +1810,7 @@ function DailyLogTab({
                     }
                   }}
                   rows={4}
-                  placeholder="Copy the note you logged in the CRM and paste it here. This is not stored — it only unlocks Add Entry."
+                  placeholder="Copy the note you logged in the CRM and paste it here."
                   className="w-full px-3 py-2 rounded-lg border border-[#A8B8AC]/40 focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm bg-white"
                 />
                 {crmPasteStatus?.ok ? (
@@ -1725,7 +1819,7 @@ function DailyLogTab({
                   <p className="text-[11px] text-amber-800 mt-1">{crmPasteStatus.error}</p>
                 ) : (
                   <p className="text-[10px] text-slate-500 mt-1">
-                    Must be a real, unique CRM note (not keyboard mash or filler). Not stored.
+                    Must be a real, unique CRM note (not keyboard mash or filler).
                   </p>
                 )}
               </div>
@@ -1734,23 +1828,14 @@ function DailyLogTab({
                   <label className="block text-xs font-medium text-slate-600 mb-1">
                     Screenshot of CRM follow-up task <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="file"
-                    accept="image/png,image/jpeg,image/webp,image/gif"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0] ?? null;
+                  <CrmFollowupProofInput
+                    file={proofFile}
+                    onFile={(f) => {
                       setProofFile(f);
                       if (f) setForm((prev) => ({ ...prev, followUp: true }));
                     }}
-                    className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-[#4A7C8A] file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white"
+                    hint="Required for Sharing Requests, Rx, Labs, Imaging, Preventive/Billing, and July Billing Issue."
                   />
-                  <p className="text-[10px] text-slate-500 mt-1">
-                    Required for Sharing Requests, Rx, Labs, Imaging, Preventive/Billing, and July Billing Issue.
-                    Screenshot is not uploaded or stored.
-                  </p>
-                  {proofFile && (
-                    <p className="text-[11px] text-emerald-700 mt-1">Selected: {proofFile.name}</p>
-                  )}
                 </div>
               )}
             </div>

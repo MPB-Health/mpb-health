@@ -72,7 +72,7 @@ const PICTURE = [
 
 const WHY: Array<{
   label: string;
-  Icon: React.ComponentType<{ strokeWidth?: number; fill?: string; className?: string }>;
+  Icon: React.ComponentType<{ strokeWidth?: number | string; fill?: string; className?: string }>;
   tint: 'green' | 'blue';
   filled?: boolean;
 }> = [

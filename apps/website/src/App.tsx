@@ -255,14 +255,23 @@ const AnalyticsTracker: React.FC<{ children: React.ReactNode }> = ({ children })
   return <>{children}</>;
 };
 
-// Conditional footer - hide on admin and advisor dashboard routes
+// Conditional chrome — homepage redesign owns its own header/footer
+const isHomePath = (pathname: string) => pathname === '/';
+
+const ConditionalHeader: React.FC = () => {
+  const location = useLocation();
+  if (isHomePath(location.pathname)) return null;
+  return <HeaderWithAuth />;
+};
+
+// Conditional footer - hide on admin, advisor dashboard, and homepage redesign
 const ConditionalFooter: React.FC = () => {
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith('/admin');
   const isAdvisorRoute = location.pathname.startsWith('/advisor');
   
-  // Don't render footer on admin or advisor dashboard
-  if (isAdminRoute || isAdvisorRoute) {
+  // Don't render footer on admin, advisor dashboard, or homepage (owns its footer)
+  if (isAdminRoute || isAdvisorRoute || isHomePath(location.pathname)) {
     return null;
   }
   
@@ -271,6 +280,16 @@ const ConditionalFooter: React.FC = () => {
       <AppDownloadSection />
       <Footer />
     </>
+  );
+};
+
+const AppMain: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const location = useLocation();
+  const home = isHomePath(location.pathname);
+  return (
+    <main className={`flex-1 overflow-x-hidden${home ? '' : ' pt-[104px]'}`}>
+      {children}
+    </main>
   );
 };
 
@@ -336,8 +355,8 @@ const App = () => {
             <ScrollToTop />
             <StateEligibilityBanner />
             <div className="min-h-screen flex flex-col">
-              <HeaderWithAuth />
-            <main className="flex-1 overflow-x-hidden pt-[104px]">
+              <ConditionalHeader />
+            <AppMain>
               <LazyLoadErrorBoundary>
                 <Suspense fallback={<PageSpinner />}>
                   <Routes>
@@ -847,7 +866,7 @@ const App = () => {
                   </Routes>
                 </Suspense>
               </LazyLoadErrorBoundary>
-            </main>
+            </AppMain>
             <ConditionalFooter />
             <BackToTop />
             <DashboardToggle />

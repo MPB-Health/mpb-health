@@ -50,6 +50,16 @@ const PageSpinner = () => (
 export function ManagedSitePage({ path }: { path: string }) {
   const LazyFallback = SITE_PAGE_COMPONENTS[path];
   if (!LazyFallback) return null;
+
+  // Homepage redesign is code-owned during staging; skip CMS override for `/`.
+  if (path === '/') {
+    return (
+      <Suspense fallback={<PageSpinner />}>
+        <LazyFallback />
+      </Suspense>
+    );
+  }
+
   return (
     <Suspense fallback={<PageSpinner />}>
       <ManagedPage path={path} fallback={<LazyFallback />} />

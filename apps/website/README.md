@@ -133,10 +133,15 @@ Authentication is handled via Supabase Auth.
 
 - **Platform:** Vercel
 - **Config:** `apps/website/vercel.json`
-- **Domain:** mpb.health
+- **Production domain:** mpb.health (`main` branch)
+- **Staging domain:** staging.mpb.health (`staging` branch — design review before promoting to `main`)
 - **Strategy:** SPA with catch-all rewrite to `index.html`
 - **Headers:** Content Security Policy headers configured
 - **SEO:** Prerendered HTML for search engine crawlers
+
+### Staging
+
+Push or merge design-only work to the long-lived `staging` branch to update `https://staging.mpb.health`. When approved, open a PR from `staging` into `main` for production. Keep `staging` in sync with `main` after each production ship. See [docs/DEPLOYMENT.md](../../docs/DEPLOYMENT.md).
 
 ## Workspace Dependencies
 

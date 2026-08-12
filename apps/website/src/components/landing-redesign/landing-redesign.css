@@ -1079,6 +1079,24 @@ button.lr-header__link--signin {
   border-left: 1px solid #d9e2ea;
 }
 
+.lr-trust__link {
+  display: flex;
+  align-items: center;
+  gap: clamp(0.6rem, 1vw, 0.9rem);
+  transition: transform 160ms ease;
+}
+
+.lr-trust__link:hover,
+.lr-trust__link:focus-visible {
+  transform: translateY(-2px);
+  outline: none;
+}
+
+.lr-trust__link:hover .lr-trust__label,
+.lr-trust__link:focus-visible .lr-trust__label {
+  color: var(--lr-blue);
+}
+
 .lr-trust__icon {
   width: clamp(2.75rem, 3.4vw, 3.5rem);
   height: clamp(2.75rem, 3.4vw, 3.5rem);

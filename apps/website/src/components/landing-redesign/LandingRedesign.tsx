@@ -30,11 +30,11 @@ import { QuickRateEstimateForm } from './QuickRateEstimateForm';
 import './landing-redesign.css';
 
 const TRUST = [
-  { label: 'Community Powered', Icon: Users },
-  { label: 'Transparent & Simple', Icon: ShieldCheck },
-  { label: 'Preventive Care', Icon: HeartPulse },
-  { label: 'Pharmacy Savings', Icon: RxIcon },
-  { label: 'Personal Concierge', Icon: Headset },
+  { label: 'Community Powered', Icon: Users, to: '/features/health-sharing' },
+  { label: 'Transparent & Simple', Icon: ShieldCheck, to: '/how-it-works' },
+  { label: 'Preventive Care', Icon: HeartPulse, to: '/features/preventive-care' },
+  { label: 'Pharmacy Savings', Icon: RxIcon, to: '/features/rx-benefits' },
+  { label: 'Personal Concierge', Icon: Headset, to: '/features/membership-concierge' },
 ] as const;
 
 const PICTURE = [
@@ -380,12 +380,14 @@ export function LandingRedesign() {
 
       <section className="lr-trust" aria-label="Trust signals">
         <ul className="lr-trust__list">
-          {TRUST.map(({ label, Icon }) => (
+          {TRUST.map(({ label, Icon, to }) => (
             <li key={label} className="lr-trust__item">
-              <span className="lr-trust__icon">
-                <Icon strokeWidth={1.6} />
-              </span>
-              <span className="lr-trust__label">{label}</span>
+              <Link to={to} className="lr-trust__link">
+                <span className="lr-trust__icon">
+                  <Icon strokeWidth={1.6} />
+                </span>
+                <span className="lr-trust__label">{label}</span>
+              </Link>
             </li>
           ))}
         </ul>

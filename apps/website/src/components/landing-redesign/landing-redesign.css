@@ -58,7 +58,9 @@
   margin: 0;
 }
 
-.lr p {
+/* :where() keeps this reset at zero specificity so single-class rules
+   (e.g. .lr-social__sub { margin: 0.75rem auto 0 }) can center/space paragraphs */
+.lr :where(p) {
   margin: 0;
 }
 

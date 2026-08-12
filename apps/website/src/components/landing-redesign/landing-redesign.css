@@ -491,7 +491,8 @@ button.lr-header__link--signin {
   color: #fff;
   font-family: var(--lr-font-display);
   white-space: nowrap;
-  font-size: clamp(3.3rem, 10cqi, 5.6vw);
+  /* Reduced from clamp(3.3rem, 10cqi, 5.6vw) — all three stops scaled by 4.6/5.6 to keep the ratio across screen sizes */
+  font-size: clamp(2.7rem, 8.2cqi, 4.6vw);
   font-weight: 500;
   line-height: 1.05;
   letter-spacing: -1px;

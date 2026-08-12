@@ -402,19 +402,23 @@ export function LandingRedesign() {
                   <card.Icon strokeWidth={1.6} />
                 </span>
                 <div>
-                  <h3 className="lr-picture__title">{card.title}</h3>
+                  <h3 className="lr-picture__title">
+                    <Link to={card.to}>{card.title}</Link>
+                  </h3>
                   <p className="lr-picture__text">{card.text}</p>
                 </div>
               </div>
-              <img
-                className="lr-picture__img"
-                src={card.image}
-                alt=""
-                width={card.width}
-                height={card.height}
-                loading="lazy"
-                decoding="async"
-              />
+              <Link to={card.to} className="lr-picture__img-link" aria-label={`${card.title} Learn more`}>
+                <img
+                  className="lr-picture__img"
+                  src={card.image}
+                  alt=""
+                  width={card.width}
+                  height={card.height}
+                  loading="lazy"
+                  decoding="async"
+                />
+              </Link>
               <Link to={card.to} className={`lr-picture__link lr-picture__link--${card.tint}`}>
                 Learn more <ArrowRight />
               </Link>

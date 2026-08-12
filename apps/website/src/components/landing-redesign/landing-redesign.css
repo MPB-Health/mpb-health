@@ -1215,12 +1215,31 @@ button.lr-header__link--signin {
   margin-top: 0.25rem;
 }
 
+.lr-picture__title a:hover,
+.lr-picture__title a:focus-visible {
+  color: var(--lr-blue);
+  outline: none;
+}
+
+/* Anchor takes over the flex "push to bottom" role from the image */
+.lr-picture__img-link {
+  display: block;
+  margin-top: auto;
+  border-radius: 0.85rem;
+}
+
 .lr-picture__img {
   width: 100%;
   aspect-ratio: 3 / 2;
   object-fit: cover;
   border-radius: 0.85rem;
-  margin-top: auto;
+  display: block;
+  transition: filter 160ms ease;
+}
+
+.lr-picture__img-link:hover .lr-picture__img,
+.lr-picture__img-link:focus-visible .lr-picture__img {
+  filter: brightness(1.06);
 }
 
 .lr-picture__link {

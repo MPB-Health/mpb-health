@@ -293,7 +293,7 @@ export function QuickRateEstimateForm() {
         </div>
         <div className="qre__trust">
           <span>
-            <Users size={16} /> 50,000+ families
+            <Users size={16} /> Over 12,000+ members served
           </span>
           <span>
             <ShieldCheck size={16} /> Secure & Private

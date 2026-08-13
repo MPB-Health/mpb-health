@@ -406,14 +406,6 @@ export function useSiteNav(): SiteNav {
               href: '/cancel-membership',
               external: false,
             },
-            {
-              id: 'webinar-questionnaire-public',
-              label: 'Welcome Call Webinar Questionnaire',
-              description: 'Complete your welcome call webinar questionnaire',
-              icon: 'ClipboardList',
-              href: '/forms/webinar-questionnaire',
-              external: false,
-            },
             // Add dynamic request/scheduling forms from database
             ...requestsFormsFromDB,
           ],
@@ -539,14 +531,6 @@ export function useSiteNav(): SiteNav {
             description: 'Share feedback on your welcome experience',
             icon: 'ClipboardList',
             href: '/member/forms/welcome-survey',
-            external: false,
-          },
-          {
-            id: 'webinar-questionnaire',
-            label: 'Welcome Call Webinar Questionnaire',
-            description: 'Complete your welcome call webinar questionnaire',
-            icon: 'ClipboardList',
-            href: '/forms/webinar-questionnaire',
             external: false,
           },
           // Add dynamic onboarding forms from database

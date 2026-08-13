@@ -192,7 +192,9 @@ const HeaderWithAuth = () => {
     'Welcome Call Webinar Questionnaire', 'Schedule Welcome Call', 'Welcome Call Survey',
     'Authorization to Share Information', 'Update Form of Payment',
     'Dependent Over 18 Information', 'Request RX Quote', 'Request to Schedule an Appointment',
-    'Advisor Directory', 'Review or Change Advisor'
+    'Advisor Directory', 'Review or Change Advisor',
+    // DB menu forms that duplicate the static HIPAA Authorization / RX, Labs, Imaging links
+    'Permission to Discuss Plan', 'Request Pharmacy Quote'
   ]);
 
   // Get forms for a specific menu section, filtering out duplicates of static items

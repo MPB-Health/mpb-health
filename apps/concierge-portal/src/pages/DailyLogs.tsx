@@ -67,6 +67,11 @@ import {
   validateCrmNotesPaste,
   CRM_ACTIVITY_PROOF_REP,
 } from '../lib/concierge-api';
+import {
+  dailyLogsPathWithoutCrmPrefill,
+  hasCrmDailyLogPrefill,
+  memberNameFromCrmSearch,
+} from '../lib/crmDeepLinkPrefill';
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -1333,31 +1338,47 @@ function DailyLogTab({
   currentUserId: string | null;
   onRefresh: () => Promise<void>;
 }) {
+  const location = useLocation();
+  const navigate = useConciergeNavigate();
   const today = formatLocalYmd(new Date());
   /** Roster row matching the logged-in user (when linked); falls back to roster[0]. */
   const defaultTeamMemberName =
     (currentUserId && rosterTeam.find((m) => m.userId === currentUserId)?.name) ||
     rosterTeam[0]?.name ||
     '';
-  const [form, setForm] = useState<Omit<LogEntry, 'id'>>({
-    date: today,
-    teamMember: defaultTeamMemberName,
-    channel: 'Phone',
-    memberName: '',
-    reason: 'Sharing Requests',
-    otherNotes: '',
-    crmNotes: false,
-    followUp: false,
-    reviewLink: false,
-    additionalNotes: '',
-    timesSpokeWithMember: 1,
-    escalatedIssue: false,
-    specialProjectDescription: '',
-    specialProjectDurationMinutes: 0,
+  const [form, setForm] = useState<Omit<LogEntry, 'id'>>(() => {
+    const prefilledName =
+      typeof window !== 'undefined' ? memberNameFromCrmSearch(window.location.search) : '';
+    return {
+      date: today,
+      teamMember: defaultTeamMemberName,
+      channel: 'Phone',
+      memberName: prefilledName,
+      reason: 'Sharing Requests',
+      otherNotes: '',
+      crmNotes: false,
+      followUp: false,
+      reviewLink: false,
+      additionalNotes: '',
+      timesSpokeWithMember: 1,
+      escalatedIssue: false,
+      specialProjectDescription: '',
+      specialProjectDurationMinutes: 0,
+    };
   });
   /** Client-only proof gates — discarded after save; not written to Supabase. */
   const [crmNotesPaste, setCrmNotesPaste] = useState('');
   const [proofFile, setProofFile] = useState<File | null>(null);
+
+  // Prefill Member Name from CRM deep-link params, then strip them from the URL.
+  useEffect(() => {
+    if (!hasCrmDailyLogPrefill(location.search)) return;
+    const name = memberNameFromCrmSearch(location.search);
+    if (name) {
+      setForm((f) => (f.memberName.trim() ? f : { ...f, memberName: name }));
+    }
+    navigate(dailyLogsPathWithoutCrmPrefill(location.search), { replace: true });
+  }, [location.search, navigate]);
   const needsCrmProof = requiresCrmActivityProof(form.teamMember);
   const needsFollowupShot =
     needsCrmProof && requiresCrmFollowupScreenshot(form.reason);

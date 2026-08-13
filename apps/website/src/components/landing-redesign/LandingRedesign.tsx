@@ -50,7 +50,7 @@ const PICTURE = [
   },
   {
     title: 'Physical.',
-    text: 'Stay active, set well, and get the care you need to fuel your best every day.',
+    text: 'Enjoy 30% off supplements and vitamins as part of your membership to support your overall health and wellness.',
     Icon: Dumbbell,
     tint: 'blue' as const,
     image: '/assets/runnervibeD.png',

@@ -97,14 +97,16 @@
   display: block;
 }
 
-/* Nav fills the space between the logo and the right padding edge, so the
-   pill's right side lines up with the quote form's right edge on all sizes */
+/* Nav fills the space between the logo and the right edge, then pulls back so
+   the pill ends at the horizontal middle of the quote form (28rem wide → half
+   is 14rem). The pull-back fades to 0 near 1150px where there's no room. */
 .lr-header__nav {
   position: relative; /* anchor for dropdown panels */
   flex: 1 1 auto;
   width: 100%;
   min-width: 0;
   display: block;
+  margin-right: clamp(0px, calc((100vw - 1150px) * 0.42), 14rem);
 }
 
 .lr-header__list {
@@ -128,14 +130,14 @@
   font-family: var(--lr-font-sans);
   /* Scales with the full-width pill; low end kept small enough that wider
      macOS font rendering still fits every item (incl. Sign In) at ~1024px */
-  font-size: clamp(0.78rem, 1.05vw, 1.28rem);
+  font-size: clamp(0.78rem, 1.05vw, 1.1rem);
   font-weight: 600;
   letter-spacing: 0.01em;
   white-space: nowrap;
   text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
   /* Steep vw slope: tight at ~1024px (Mac font-width safety) and generous on
      wide screens where the pill stretches to the form's right edge */
-  padding: clamp(0.55rem, 0.65vw, 0.8rem) clamp(0.3rem, calc(1.6vw - 0.6rem), 1.3rem);
+  padding: clamp(0.55rem, 0.65vw, 0.8rem) clamp(0.3rem, calc(1.6vw - 0.6rem), 1rem);
   border-radius: 999px;
   display: inline-block;
   transition: background 180ms ease, color 180ms ease, transform 180ms ease, text-shadow 180ms ease, filter 180ms ease, box-shadow 180ms ease;

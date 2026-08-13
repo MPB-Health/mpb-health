@@ -18,12 +18,12 @@
   --lr-pale-green: #e7f4ea;
   --lr-font-sans: 'Segoe UI', system-ui, sans-serif;
   --lr-font-display: Georgia, 'Times New Roman', serif;
-  --lr-max: 1920px;
   --lr-inner: 1440px;
   --lr-pad-x: clamp(1rem, 3vw, 3.25rem);
 
+  /* Full-bleed on any screen size (no 1920px cap) — sections keep content
+     centered via --lr-inner, and the hero photo spans edge to edge on 4K */
   width: 100%;
-  max-width: var(--lr-max);
   margin: 0 auto;
   color: var(--lr-text);
   font-family: var(--lr-font-sans);
@@ -454,14 +454,15 @@ button.lr-header__link--signin {
 /* ——— Hero ——— */
 .lr-hero {
   width: 100%;
-  max-width: var(--lr-max);
   margin: 0 auto;
 }
 
 .lr-hero__stage {
   position: relative;
   overflow: hidden;
-  height: min(calc(min(100vw, 1920px) * 1357 / 1920), 100svh);
+  /* Scales with the full viewport width (no 1920px clamp) so 4K screens get a
+     proportional, full-bleed hero; viewport height still caps it */
+  height: min(calc(100vw * 1357 / 1920), 100svh);
   min-height: max-content;
   --hero-side-pad: clamp(1.25rem, 3vw, 3.25rem);
   --hero-form-width: min(28rem, calc(100% - 2.5rem));

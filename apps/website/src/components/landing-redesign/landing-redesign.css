@@ -557,8 +557,8 @@ button.lr-header__link--signin {
   }
   .lr-hero__estimate {
     max-width: 32.5rem;
-    /* Menubar pill bottom sits at ~102px; 102 + 230 = 332px */
-    margin-top: 332px;
+    /* 160px below the menubar pill (pill bottom ~102px) */
+    margin-top: 262px;
   }
   .lr-hero__estimate .qre {
     width: 100%;

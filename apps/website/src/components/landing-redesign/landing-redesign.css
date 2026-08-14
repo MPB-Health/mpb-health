@@ -20,9 +20,17 @@
   --lr-font-display: Georgia, 'Times New Roman', serif;
   --lr-inner: 1440px;
   --lr-pad-x: clamp(1rem, 3vw, 3.25rem);
-  /* On big screens the quote form (and the menubar with it) slides left by up
-     to half the form width (14rem); fades to 0 near 1150px where space runs out */
-  --hero-form-shift: clamp(0px, calc((100vw - 1150px) * 0.3), 14rem);
+  /* On big screens the quote form (and the menubar with it) slides left:
+     first term ramps to half the form width (14rem) by ~1900px, second keeps
+     it growing proportionally beyond 1920px so 4K stays balanced (form's
+     right edge lands around 77% of the viewport) */
+  --hero-form-shift: calc(
+    clamp(0px, calc((100vw - 1150px) * 0.3), 14rem) +
+    clamp(0px, calc((100vw - 1920px) * 0.3), 45rem)
+  );
+  /* Aligns the headline copy with the menubar pill's left edge:
+     logo width + header gap (the header side padding is added separately) */
+  --hero-copy-inset: calc(clamp(10.5rem, 14.5vw, 16.5rem) + clamp(1.25rem, 2.2vw, 2.75rem));
 
   /* Full-bleed on any screen size (no 1920px cap) — sections keep content
      centered via --lr-inner, and the hero photo spans edge to edge on 4K */
@@ -100,17 +108,16 @@
   display: block;
 }
 
-/* Nav fills the space between the logo and the right edge, then pulls back so
-   the pill ends at the horizontal middle of the quote form. The form itself
-   slides left by --hero-form-shift on big screens, so the pill pulls back by
-   double that: once to follow the form, once to stop at its center. */
+/* Nav fills the space between the logo and the right edge, then pulls back by
+   the same shift as the quote form, so the pill's right side stays aligned
+   with the form's right edge at every size */
 .lr-header__nav {
   position: relative; /* anchor for dropdown panels */
   flex: 1 1 auto;
   width: 100%;
   min-width: 0;
   display: block;
-  margin-right: calc(2 * var(--hero-form-shift));
+  margin-right: var(--hero-form-shift);
 }
 
 .lr-header__list {
@@ -451,6 +458,10 @@ button.lr-header__link--signin {
 }
 
 @media (max-width: 1023px) {
+  .lr {
+    /* No pill to align with — copy returns to the page edge */
+    --hero-copy-inset: 0px;
+  }
   .lr-header__nav {
     display: none;
   }
@@ -491,7 +502,8 @@ button.lr-header__link--signin {
   top: 49.8%;
   left: 0;
   right: 0;
-  padding: 0 calc(var(--hero-side-pad) + var(--hero-form-shift) + var(--hero-form-width) + var(--hero-copy-gap)) 0 var(--hero-side-pad);
+  padding: 0 calc(var(--hero-side-pad) + var(--hero-form-shift) + var(--hero-form-width) + var(--hero-copy-gap)) 0
+    calc(var(--hero-side-pad) + var(--hero-copy-inset));
 }
 
 .lr-hero__copy {
@@ -527,6 +539,23 @@ button.lr-header__link--signin {
 
 .lr-hero__estimate .qre {
   max-height: none;
+}
+
+/* Big screens (>1920px): larger form (520x650) sitting 230px below the menubar */
+@media (min-width: 1921px) {
+  .lr-hero__stage {
+    --hero-form-width: 32.5rem; /* 520px */
+  }
+  .lr-hero__estimate {
+    max-width: 32.5rem;
+    /* Menubar pill bottom sits at ~102px; 102 + 230 = 332px */
+    margin-top: 332px;
+  }
+  .lr-hero__estimate .qre {
+    width: 100%;
+    max-width: 32.5rem;
+    min-height: 40.625rem; /* 650px */
+  }
 }
 
 @media (min-width: 769px) and (max-width: 1100px) {

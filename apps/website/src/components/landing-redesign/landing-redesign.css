@@ -536,9 +536,9 @@ button.lr-header__link--signin {
 }
 
 .lr-hero__uplift {
-  /* Sized off the same formula as the headline font (x4.34) so the two keep
+  /* Sized off the same formula as the headline font (x5.79) so the two keep
      identical proportions at every screen size */
-  width: calc(clamp(2.7rem, 8.2cqi, 4.6vw) * 4.34);
+  width: calc(clamp(2.7rem, 8.2cqi, 4.6vw) * 5.79);
   max-width: 95%;
   margin: 0.1em 0 0;
   mix-blend-mode: screen;
@@ -636,8 +636,8 @@ button.lr-header__link--signin {
     font-size: clamp(2.1rem, 14.6cqi, 12vw);
   }
   .lr-hero__uplift {
-    /* Same x4.34 headline ratio as desktop */
-    width: calc(clamp(2.1rem, 14.6cqi, 12vw) * 4.34);
+    /* Same x5.79 headline ratio as desktop */
+    width: calc(clamp(2.1rem, 14.6cqi, 12vw) * 5.79);
     max-width: 85%;
   }
   .lr-hero__estimate {

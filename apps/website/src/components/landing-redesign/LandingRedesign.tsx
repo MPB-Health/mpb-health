@@ -20,10 +20,7 @@ import {
   Phone,
   Mail,
   MapPin,
-  CheckCircle,
-  AlertCircle,
 } from 'lucide-react';
-import { subscribeToNewsletter } from '../../lib/newsletterService';
 import { AgentIcon, GoogleGIcon, RxIcon } from './icons';
 import { LandingHeader } from './LandingHeader';
 import { QuickRateEstimateForm } from './QuickRateEstimateForm';
@@ -176,29 +173,6 @@ function TestimonialCard({
 }
 
 function LandingFooter() {
-  const [email, setEmail] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-
-  const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || !email.includes('@')) {
-      setMessage({ type: 'error', text: 'Please enter a valid email address' });
-      return;
-    }
-    setIsSubmitting(true);
-    setMessage(null);
-    try {
-      const result = await subscribeToNewsletter(email, 'footer');
-      setMessage({ type: result.success ? 'success' : 'error', text: result.message });
-      if (result.success) setEmail('');
-    } catch {
-      setMessage({ type: 'error', text: 'An unexpected error occurred. Please try again.' });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   return (
     <footer className="lr-footer">
       <div className="lr-footer__hairline" />
@@ -234,7 +208,7 @@ function LandingFooter() {
             MPB Health is your gateway to qualified Health Share Programs. While MPB Health is not a
             Health Share Organization or a Health Care Sharing Ministry (HCSM), we provide the
             membership services and support that give you access to organizations that share in
-            members' medical expenses. Through MPB Health, you can experience affordable,
+            members medical expenses. Through MPB Health, you can experience affordable,
             community-based healthcare that works as an alternative to traditional insurance.
           </p>
         </div>
@@ -299,36 +273,6 @@ function LandingFooter() {
                 <Link to="/download-app">App Download</Link>
               </li>
             </ul>
-          </div>
-
-          <div>
-            <h4 className="lr-footer__heading">Subscribe to Our Blog</h4>
-            <p className="lr-footer__subscribe-copy">
-              Stay informed and empowered—subscribe to our blog for expert tips, wellness insights,
-              and updates on smarter, more affordable healthcare solutions.
-            </p>
-            <form className="lr-footer__form" onSubmit={(e) => void onSubmit(e)}>
-              <input
-                className="lr-footer__input"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Email address"
-                aria-label="Email address"
-              />
-              <button className="lr-footer__submit" type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Subscribing…' : 'Subscribe'}
-              </button>
-              {message ? (
-                <div
-                  className={`lr-footer__status lr-footer__status--${message.type === 'success' ? 'ok' : 'err'}`}
-                  role="status"
-                >
-                  {message.type === 'success' ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
-                  {message.text}
-                </div>
-              ) : null}
-            </form>
           </div>
         </div>
       </div>

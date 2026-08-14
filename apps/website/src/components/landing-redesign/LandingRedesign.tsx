@@ -29,7 +29,7 @@ import './landing-redesign.css';
 const TRUST = [
   { label: 'Community Powered', Icon: Users, to: '/features/health-sharing' },
   { label: 'Transparent & Simple', Icon: ShieldCheck, to: '/how-it-works' },
-  { label: 'Preventive Care', Icon: HeartPulse, to: '/features/preventive-care' },
+  { label: 'Affordable Healthcare', Icon: HeartPulse, to: '/features/preventive-care' },
   { label: 'Pharmacy Savings', Icon: RxIcon, to: '/features/rx-benefits' },
   { label: 'Personal Concierge', Icon: Headset, to: '/features/membership-concierge' },
 ] as const;

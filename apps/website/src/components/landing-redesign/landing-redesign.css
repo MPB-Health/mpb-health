@@ -196,6 +196,19 @@ button.lr-header__link--signin {
   gap: 0.3rem;
 }
 
+/* Big screens: Sign In stretches toward the About item to fill the pill's end */
+@media (min-width: 1921px) {
+  .lr-header__list li:last-child {
+    flex: 1 1 auto;
+    max-width: 20rem;
+    display: flex;
+  }
+  .lr-header__list li:last-child .lr-header__link--signin {
+    width: 100%;
+    text-align: center;
+  }
+}
+
 .lr-header__chevron {
   transition: transform 180ms ease;
   flex: 0 0 auto;

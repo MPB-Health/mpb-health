@@ -523,7 +523,9 @@ button.lr-header__link--signin {
 }
 
 .lr-hero__uplift {
-  width: clamp(10rem, 28vw, 28rem);
+  /* Sized off the same formula as the headline font (x4.34) so the two keep
+     identical proportions at every screen size */
+  width: calc(clamp(2.7rem, 8.2cqi, 4.6vw) * 4.34);
   max-width: 95%;
   margin: 0.1em 0 0;
   mix-blend-mode: screen;
@@ -562,6 +564,19 @@ button.lr-header__link--signin {
     width: 100%;
     max-width: 32.5rem;
     min-height: 40.625rem; /* 650px */
+  }
+  /* Distribute the extra height through the step content instead of leaving
+     dead space under the Continue button */
+  .lr-hero__estimate .qre__body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  .lr-hero__estimate .qre__step {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
   }
 }
 
@@ -608,7 +623,8 @@ button.lr-header__link--signin {
     font-size: clamp(2.1rem, 14.6cqi, 12vw);
   }
   .lr-hero__uplift {
-    width: clamp(11rem, 70vw, 18rem);
+    /* Same x4.34 headline ratio as desktop */
+    width: calc(clamp(2.1rem, 14.6cqi, 12vw) * 4.34);
     max-width: 85%;
   }
   .lr-hero__estimate {

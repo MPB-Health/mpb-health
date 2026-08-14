@@ -541,6 +541,13 @@ button.lr-header__link--signin {
   max-height: none;
 }
 
+/* Tablet/desktop up to 1920px: form sits 130px lower (mobile keeps the stacked layout) */
+@media (min-width: 769px) and (max-width: 1920px) {
+  .lr-hero__estimate {
+    margin-top: calc(clamp(5.75rem, 7.5vw, 7.5rem) + 130px);
+  }
+}
+
 /* Big screens (>1920px): larger form (520x650) sitting 230px below the menubar */
 @media (min-width: 1921px) {
   .lr-hero__stage {

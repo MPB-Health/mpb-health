@@ -642,6 +642,8 @@ button.lr-header__link--signin {
   }
   .lr-hero__estimate {
     width: calc(100% - 2rem);
+    /* Match the card's 28rem cap so wrapper and card center together */
+    max-width: 28rem;
     margin: 1rem auto 0;
   }
 }

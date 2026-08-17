@@ -30,7 +30,7 @@ export const membershipPriorities: MembershipPriority[] = [
   {
     id: 'medical-cost-sharing',
     label: 'Medical Cost Sharing',
-    shortLabel: 'Hospital & surgery coverage',
+    shortLabel: 'Hospital & surgery care',
     icon: Shield,
     description: 'Hospital, surgery, major medical — community shares eligible expenses',
     keywords: ['hospital', 'surgery', 'major medical', 'catastrophic', 'medical cost sharing'],
@@ -46,7 +46,7 @@ export const membershipPriorities: MembershipPriority[] = [
   {
     id: 'aca-compliance',
     label: 'ACA Employer Compliance',
-    shortLabel: 'Small business / employer coverage',
+    shortLabel: 'Small business / employer care',
     icon: Building2,
     description: 'Minimum Essential Care — satisfies employer mandate',
     keywords: ['ACA', 'MEC', 'employer mandate', 'small business', 'compliance'],

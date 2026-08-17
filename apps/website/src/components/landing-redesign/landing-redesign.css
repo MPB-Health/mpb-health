@@ -530,8 +530,8 @@ button.lr-header__link--signin {
   color: #fff;
   font-family: var(--lr-font-display);
   white-space: nowrap;
-  /* Enlarged: preferred stop bumped 8.2cqi → 9.9cqi (mobile scaled by the same 9.9/8.2 factor) */
-  font-size: clamp(2.7rem, 9.9cqi, 4.6vw);
+  /* Enlarged: preferred stop bumped 8.2cqi → 10.5cqi (mobile scaled by the same 10.5/8.2 factor) */
+  font-size: clamp(2.7rem, 10.5cqi, 4.6vw);
   font-weight: 500;
   line-height: 1.05;
   letter-spacing: -1px;
@@ -542,7 +542,7 @@ button.lr-header__link--signin {
   /* Follows the headline formula (x5.0) but never upscales past the PNG's
      native 817px (zoom 1) so it stays sharp; no blend mode — the green would
      dissolve into the hero photo behind it */
-  width: min(calc(clamp(2.7rem, 9.9cqi, 4.6vw) * 5.0), 817px);
+  width: min(calc(clamp(2.7rem, 10.5cqi, 4.6vw) * 5.0), 817px);
   margin: 0.1em 0 0;
 }
 
@@ -635,12 +635,12 @@ button.lr-header__link--signin {
     padding: 0 1rem;
   }
   .lr-hero__headline {
-    /* 14.6cqi scaled by the same 9.9/8.2 factor as desktop */
-    font-size: clamp(2.1rem, 17.6cqi, 12vw);
+    /* 14.6cqi scaled by the same 10.5/8.2 factor as desktop */
+    font-size: clamp(2.1rem, 18.7cqi, 12vw);
   }
   .lr-hero__uplift {
     /* Same x5.0 headline ratio as desktop */
-    width: calc(clamp(2.1rem, 17.6cqi, 12vw) * 5.0);
+    width: calc(clamp(2.1rem, 18.7cqi, 12vw) * 5.0);
     max-width: 85%;
   }
   .lr-hero__estimate {

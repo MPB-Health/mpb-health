@@ -12,14 +12,14 @@ All applications are deployed as **Vite single-page applications (SPAs) on Verce
 
 ## Domain Map
 
-| App | Production Domain | Dev Port | Notes |
-|-----|-------------------|----------|-------|
-| `website` | mpb.health | 5173 | Public marketing site |
-| `crm` | crm.mpb.health | 5174 | DEPRECATED — migrated to external CRM |
-| `advisor-portal` | advisor.mpb.health | 5175 | Advisor-facing portal |
-| `admin-portal` | admin.mpb.health | 5176 | Internal admin dashboard |
-| `concierge-portal` | concierge.mpb.health | 5179 | Concierge team portal |
-| `staff-hub` | (no production domain documented) | 5178 | Internal staff tools |
+| App | Production Domain | Staging Domain | Dev Port | Notes |
+|-----|-------------------|----------------|----------|-------|
+| `website` | mpb.health | staging.mpb.health | 5173 | Public marketing site |
+| `crm` | crm.mpb.health | — | 5174 | DEPRECATED — migrated to external CRM |
+| `advisor-portal` | advisor.mpb.health | — | 5175 | Advisor-facing portal |
+| `admin-portal` | admin.mpb.health | — | 5176 | Internal admin dashboard |
+| `concierge-portal` | concierge.mpb.health | — | 5179 | Concierge team portal |
+| `staff-hub` | (no production domain documented) | — | 5178 | Internal staff tools |
 
 ### Additional Domains
 
@@ -28,6 +28,18 @@ All applications are deployed as **Vite single-page applications (SPAs) on Verce
 | app.mpb.health | Mobile PWA (member-facing) |
 | support.mpb.health | ITSTS support ticket portal |
 | training.mpb.health | Training content delivery |
+| staging.mpb.health | Website design/review staging (`staging` git branch on the `website` Vercel project) |
+
+### Website staging workflow
+
+The `website` project has a long-lived `staging` git branch that deploys to `https://staging.mpb.health` (Vercel custom environment `staging`, same production env vars). Use it for design review before production:
+
+1. Land design work on `staging` (direct push or short PR).
+2. Review at `https://staging.mpb.health`.
+3. Open a PR `staging` → `main` when approved; production still deploys only from `main`.
+4. After production ships, merge `main` back into `staging` so the next review pass does not drift.
+
+Treat staging as read-mostly against production data: browse UI changes; do not publish CMS content, submit real leads, or exercise password-reset from the staging host.
 
 ---
 

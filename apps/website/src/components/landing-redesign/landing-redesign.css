@@ -1036,8 +1036,8 @@ select.qre__input {
   transition: opacity 0.16s, transform 0.16s, box-shadow 0.16s;
 }
 
+/* Keep full brightness even while disabled so Continue matches the Sign In pill */
 .qre__btn:disabled {
-  opacity: 0.65;
   cursor: not-allowed;
 }
 

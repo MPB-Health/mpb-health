@@ -121,7 +121,9 @@ const staticFormLabels = new Set([
   'Welcome Call Webinar Questionnaire', 'Schedule Welcome Call', 'Welcome Call Survey',
   'Authorization to Share Information', 'Update Form of Payment',
   'Dependent Over 18 Information', 'Request RX Quote', 'Request to Schedule an Appointment',
-  'Advisor Directory', 'Review or Change Advisor'
+  'Advisor Directory', 'Review or Change Advisor',
+  // DB rows that duplicate static links above (ported from main's HeaderWithAuth fix)
+  'Permission to Discuss Plan', 'Request Pharmacy Quote'
 ]);
 
 // Helper function to convert form records to menu items

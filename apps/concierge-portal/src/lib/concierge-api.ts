@@ -77,10 +77,10 @@ export interface LogEntry {
   updatedAt?: string;
 }
 
-/** @deprecated Acelyn CRM paste/screenshot gates retired — kept for call-site compatibility. */
+/** Roster name that must complete CRM proof steps before logging (client gate only — not stored). */
 export const CRM_ACTIVITY_PROOF_REP = 'Acelyn Calderon';
 
-/** Reasons that previously required a CRM follow-up screenshot for the proof-gated rep. */
+/** Reasons that require acknowledging a CRM follow-up screenshot for the proof-gated rep. */
 export const CRM_FOLLOWUP_PROOF_REASONS = [
   'Sharing Requests',
   'Rx Request',
@@ -90,14 +90,12 @@ export const CRM_FOLLOWUP_PROOF_REASONS = [
   'July Billing Issue',
 ] as const;
 
-/** CRM notes-paste gate — disabled (no longer required for any rep). */
-export function requiresCrmActivityProof(_teamMemberName: string): boolean {
-  return false;
+export function requiresCrmActivityProof(teamMemberName: string): boolean {
+  return teamMemberName.trim().toLowerCase() === CRM_ACTIVITY_PROOF_REP.toLowerCase();
 }
 
-/** CRM follow-up screenshot gate — disabled with activity proof. */
-export function requiresCrmFollowupScreenshot(_reason: string): boolean {
-  return false;
+export function requiresCrmFollowupScreenshot(reason: string): boolean {
+  return (CRM_FOLLOWUP_PROOF_REASONS as readonly string[]).includes(reason);
 }
 
 const KEYBOARD_SMASH =

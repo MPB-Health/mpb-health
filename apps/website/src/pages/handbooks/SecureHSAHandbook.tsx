@@ -7,12 +7,12 @@ const SecureHSAHandbook: React.FC = () => {
     <>
       <SEOHead
         title="Secure HSA Handbook | MPB Health"
-        description="View and download the MPB Health Secure HSA plan member handbook"
+        description="View and download the MPB Health Secure HSA membership handbook"
       />
       <HandbookViewer
         title="Secure HSA Handbook"
         pdfPath="/docs/Secure HSA Handbook-New Members.pdf"
-        description="Complete guide for Secure HSA plan members"
+        description="Complete guide for Secure HSA members"
       />
     </>
   );

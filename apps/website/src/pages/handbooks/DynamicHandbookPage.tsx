@@ -90,7 +90,7 @@ const DynamicHandbookPage: React.FC = () => {
           name="description"
           content={
             handbook.description ||
-            `Download the ${handbook.name} from MPB Health. View plan benefits, member guidelines, provider resources, and enrollment details in this member handbook.`
+            `Download the ${handbook.name} from MPB Health. View membership benefits, member guidelines, provider resources, and enrollment details in this member handbook.`
           }
         />
       </Helmet>

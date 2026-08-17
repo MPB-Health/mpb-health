@@ -7,12 +7,12 @@ const EssentialsHandbook: React.FC = () => {
     <>
       <SEOHead
         title="Essentials Handbook | MPB Health"
-        description="View and download the MPB Health Essentials plan member handbook"
+        description="View and download the MPB Health Essentials membership handbook"
       />
       <HandbookViewer
         title="Essentials Handbook"
         pdfPath="/docs/Essentials Handbook-New Members 1.pdf"
-        description="Complete guide for Essentials plan members"
+        description="Complete guide for Essentials members"
       />
     </>
   );

@@ -83,7 +83,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
     faqs: [
       {
         question: 'What is the Initial Unshareable Amount (IUA)?',
-        answer: 'The IUA is similar to a deductible—it\'s the amount you pay out-of-pocket (per medical need) before the community begins sharing your eligible expenses. Different plans have different IUA levels, ranging from $1,250 to $5,000 per person.'
+        answer: 'The IUA is similar to a deductible—it\'s the amount you pay out-of-pocket (per medical need) before the community begins sharing your eligible expenses. Different memberships have different IUA levels, ranging from $1,250 to $5,000 per person.'
       },
       {
         question: 'How quickly are expenses shared?',
@@ -140,7 +140,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
       'Pay for medical services directly at the time of treatment',
       'Keep all receipts, medical records, and documentation of your emergency treatment',
       'Submit your medical expenses through your member portal upon returning home',
-      'Eligible emergency expenses are reviewed and shared according to your plan benefits'
+      'Eligible emergency expenses are reviewed and shared according to your membership benefits'
     ],
     eligiblePlans: ['Care Plus', 'Direct', 'Secure HSA'],
     membership: [
@@ -491,9 +491,9 @@ export const healthcareFeatures: HealthcareFeature[] = [
     name: 'Health Savings Account (HSA) Compatibility',
     icon: Wallet,
     tagline: 'Triple tax advantages for healthcare savings',
-    shortDescription: 'HSA-qualified plans that let you save pre-tax dollars for current and future healthcare expenses',
+    shortDescription: 'HSA-qualified memberships that let you save pre-tax dollars for current and future healthcare expenses',
     heroImage: 'https://images.pexels.com/photos/259200/pexels-photo-259200.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-    detailedDescription: 'Health Savings Accounts provide powerful tax advantages when paired with HSA-qualified health sharing plans. Contribute pre-tax dollars, grow your savings tax-free, and withdraw funds tax-free for qualified medical expenses. It\'s like a 401(k) for healthcare that you own and control forever.',
+    detailedDescription: 'Health Savings Accounts provide powerful tax advantages when paired with HSA-qualified health sharing memberships. Contribute pre-tax dollars, grow your savings tax-free, and withdraw funds tax-free for qualified medical expenses. It\'s like a 401(k) for healthcare that you own and control forever.',
     keyPoints: [
       {
         title: 'Triple Tax Benefits',
@@ -501,7 +501,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
       },
       {
         title: 'You Own It Forever',
-        description: 'HSA funds are yours to keep regardless of employment or plan changes'
+        description: 'HSA funds are yours to keep regardless of employment or membership changes'
       },
       {
         title: 'Investment Options',
@@ -513,7 +513,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
       }
     ],
     howItWorks: [
-      'Enroll in an HSA-qualified health sharing plan (Secure HSA)',
+      'Enroll in an HSA-qualified health sharing membership (Secure HSA)',
       'Open an HSA account through a bank, credit union, or HSA administrator of your choice',
       'Contribute pre-tax dollars up to annual IRS limits ($4,150 individual, $8,300 family for 2025)',
       'Use your HSA debit card or checks to pay for qualified medical expenses tax-free',
@@ -540,12 +540,12 @@ export const healthcareFeatures: HealthcareFeature[] = [
         answer: 'For 2025, individuals can contribute up to $4,150 and families up to $8,300. Those age 55+ can add an extra $1,000 catch-up contribution. These limits are set by the IRS and typically increase annually.'
       },
       {
-        question: 'What makes a plan HSA-qualified?',
-        answer: 'HSA-qualified plans must meet IRS requirements including minimum deductibles and maximum out-of-pocket limits. Our Secure HSA plan is specifically designed to meet these requirements for HSA eligibility.'
+        question: 'What makes a membership HSA-qualified?',
+        answer: 'HSA-qualified memberships must meet IRS requirements including minimum deductibles and maximum out-of-pocket limits. Our Secure HSA membership is specifically designed to meet these requirements for HSA eligibility.'
       },
       {
-        question: 'Can I take my HSA with me if I change plans?',
-        answer: 'Yes! Your HSA is yours forever. Even if you change health plans, employers, or retire, your HSA stays with you. The funds never expire and continue growing tax-free throughout your lifetime.'
+        question: 'Can I take my HSA with me if I change memberships?',
+        answer: 'Yes! Your HSA is yours forever. Even if you change health memberships, employers, or retire, your HSA stays with you. The funds never expire and continue growing tax-free throughout your lifetime.'
       },
       {
         question: 'What if I use HSA funds for non-medical expenses?',
@@ -630,11 +630,11 @@ export const healthcareFeatures: HealthcareFeature[] = [
       },
       {
         question: 'Are immunizations for international travel covered?',
-        answer: 'Routine immunizations are included. Travel-specific vaccines (yellow fever, typhoid, etc.) may not be included in preventative care benefits. Check with your plan about membership for travel vaccinations.'
+        answer: 'Routine immunizations are included. Travel-specific vaccines (yellow fever, typhoid, etc.) may not be included in preventative care benefits. Check your membership details about travel vaccinations.'
       },
       {
         question: 'What if something is found during preventative screening?',
-        answer: 'The preventative screening itself has no cost-sharing. However, if the screening finds something requiring further testing or treatment, those follow-up services may have cost-sharing according to your plan\'s medical benefits.'
+        answer: 'The preventative screening itself has no cost-sharing. However, if the screening finds something requiring further testing or treatment, those follow-up services may have cost-sharing according to your membership\'s medical benefits.'
       }
     ],
     color: 'text-cyan-600',
@@ -786,7 +786,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
       },
       {
         question: 'Do I need to be a pet insurance customer?',
-        answer: 'No, pet telehealth is included as a membership benefit on eligible plans. You don\'t need separate pet insurance to access virtual vet consultations. This benefit is in addition to any pet insurance you may have.'
+        answer: 'No, pet telehealth is included as a membership benefit on eligible memberships. You don\'t need separate pet insurance to access virtual vet consultations. This benefit is in addition to any pet insurance you may have.'
       }
     ],
     color: 'text-violet-600',

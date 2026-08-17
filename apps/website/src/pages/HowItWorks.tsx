@@ -320,7 +320,7 @@ const HowItWorksPage: React.FC = () => {
                 <p className="text-neutral-700 leading-relaxed">
                   When included, these services are available at no additional
                   cost when received from an in-network provider, in accordance
-                  with plan guidelines.
+                  with membership guidelines.
                 </p>
               </div>
 

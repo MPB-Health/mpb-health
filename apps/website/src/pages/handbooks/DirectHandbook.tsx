@@ -7,12 +7,12 @@ const DirectHandbook: React.FC = () => {
     <>
       <SEOHead
         title="Direct Handbook | MPB Health"
-        description="View and download the MPB Health Direct plan member handbook"
+        description="View and download the MPB Health Direct membership handbook"
       />
       <HandbookViewer
         title="Direct Handbook"
         pdfPath="/docs/Direct Handbook-New Members (2).pdf"
-        description="Complete guide for Direct plan members"
+        description="Complete guide for Direct members"
       />
     </>
   );

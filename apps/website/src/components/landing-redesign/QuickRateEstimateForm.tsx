@@ -288,7 +288,7 @@ export function QuickRateEstimateForm() {
           </div>
           <div>
             <h2 className="qre__title">{step === 4 ? 'Your Rate Comparison' : 'Quick Rate Estimate'}</h2>
-            <p className="qre__subtitle">Compare all plans in 30 seconds</p>
+            <p className="qre__subtitle">Compare all memberships in 30 seconds</p>
           </div>
         </div>
         <div className="qre__trust">
@@ -421,9 +421,9 @@ export function QuickRateEstimateForm() {
           <div className="qre__step">
             <div className="qre__eyebrow">STEP 2 OF 4</div>
             <h3 className="qre__step-title">What matters most?</h3>
-            <p className="qre__helper">We'll match you to your best plan</p>
+            <p className="qre__helper">We'll match you to your best membership</p>
             <p className="qre__helper">
-              Tap to select — pick 1–3 that matter most. All plans include $0 virtual care.
+              Tap to select — pick 1–3 that matter most. All memberships include $0 virtual care.
             </p>
             <div className="qre__chips">
               {membershipPriorities.map((p) => {

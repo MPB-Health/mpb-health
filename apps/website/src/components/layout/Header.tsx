@@ -145,7 +145,7 @@ const Header = () => {
         {
           id: 'individuals-families',
           label: 'Individuals & Families',
-          description: 'Comprehensive health sharing plans for you and your loved ones',
+          description: 'Comprehensive health sharing memberships for you and your loved ones',
           icon: 'Users',
           href: '/individuals-and-families',
           external: false,
@@ -162,7 +162,7 @@ const Header = () => {
         {
           id: 'businesses-organizations',
           label: 'Businesses & Organizations',
-          description: 'Health Plan with Health Savings Account',
+          description: 'Health Membership with Health Savings Account',
           icon: 'Building2',
           href: '/businesses-and-organizations',
           external: false,

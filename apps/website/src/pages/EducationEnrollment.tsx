@@ -12,7 +12,7 @@ const EducationEnrollment: React.FC = () => {
     {
       step: 1,
       title: 'Learn About Health Sharing',
-      description: 'Explore our interactive guides and videos to understand how medical cost sharing works and which plan fits your needs.',
+      description: 'Explore our interactive guides and videos to understand how medical cost sharing works and which membership fits your needs.',
       icon: BookOpen,
       duration: '10-15 minutes'
     },
@@ -26,7 +26,7 @@ const EducationEnrollment: React.FC = () => {
     {
       step: 3,
       title: 'Choose Your Membership',
-      description: 'Compare plan features side-by-side with clear explanations of coverage, IUA levels, and monthly contributions.',
+      description: 'Compare membership features side-by-side with clear explanations of coverage, IUA levels, and monthly contributions.',
       icon: Shield,
       duration: '10 minutes'
     },

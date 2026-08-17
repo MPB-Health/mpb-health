@@ -158,7 +158,7 @@ const MembershipBenefits: React.FC = () => {
         <div className="mt-12 text-center">
           <div className="inline-flex items-center gap-2 px-5 py-3 bg-gray-50 rounded-full border border-gray-200">
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-sm text-gray-600 font-medium">All features subject to plan eligibility</span>
+            <span className="text-sm text-gray-600 font-medium">All features subject to membership eligibility</span>
           </div>
         </div>
       </div>

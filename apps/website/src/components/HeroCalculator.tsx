@@ -380,7 +380,7 @@ export default function HeroCalculator() {
               {step === 4 && inlineResults ? 'Your Rate Comparison' : 'Quick Rate Estimate'}
             </h3>
             <p className="text-white/90 text-sm">
-              {step === 4 && inlineResults ? `${inlineResults.estimates.plans.length} plans compared instantly` : 'Compare all plans in 30 seconds'}
+              {step === 4 && inlineResults ? `${inlineResults.estimates.plans.length} memberships compared instantly` : 'Compare all memberships in 30 seconds'}
             </p>
           </div>
         </div>
@@ -515,7 +515,7 @@ export default function HeroCalculator() {
               <div>
                 <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider mb-1">Step 2 of 4</p>
                 <h4 className="text-base font-bold text-gray-900">What matters most?</h4>
-                <p className="text-sm text-gray-500 mt-0.5">We&apos;ll match you to your best plan</p>
+                <p className="text-sm text-gray-500 mt-0.5">We&apos;ll match you to your best membership</p>
               </div>
 
               <CompactMembershipPrioritySelector
@@ -580,7 +580,7 @@ export default function HeroCalculator() {
               {isCalculating ? (
                 <div className="flex flex-col items-center justify-center py-8">
                   <span className="h-8 w-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin mb-3" />
-                  <p className="text-sm font-medium text-gray-700">Comparing plans...</p>
+                  <p className="text-sm font-medium text-gray-700">Comparing memberships...</p>
                 </div>
               ) : inlineResults ? (
                 <>
@@ -610,7 +610,7 @@ export default function HeroCalculator() {
                       <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider">Your Results</p>
                     </div>
                     <h4 className="text-base font-bold text-gray-900">
-                      {inlineResults.estimates.plans.length} plans compared
+                      {inlineResults.estimates.plans.length} memberships compared
                     </h4>
                   </div>
 

@@ -133,7 +133,7 @@ export const maternityDetails: MaternityDetails = {
   ],
   sharingInfo: {
     prenatalCare: 'Prenatal visits and routine care eligible after waiting period',
-    deliveryHospital: 'Hospital delivery and associated costs shared according to plan terms',
+    deliveryHospital: 'Hospital delivery and associated costs shared according to membership terms',
     postnatalCare: 'Mother and newborn care covered for standard recovery period',
     additionalBenefits: [
       'Complications during pregnancy are eligible immediately',

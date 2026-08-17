@@ -22,7 +22,7 @@ export default function EmployerFormsIndex() {
     <>
       <Helmet>
         <title>Employer Forms | MPB Health</title>
-        <meta name="description" content="Access all employer forms for managing your organization's health sharing plan with MPB Health." />
+        <meta name="description" content="Access all employer forms for managing your organization's health sharing membership with MPB Health." />
         <link rel="canonical" href="https://mpb.health/employer-forms/" />
       </Helmet>
 
@@ -44,7 +44,7 @@ export default function EmployerFormsIndex() {
               </h1>
 
               <p className="text-xl sm:text-2xl text-white/90 max-w-3xl mx-auto leading-relaxed">
-                Manage your organization's health sharing plan with our streamlined employer forms
+                Manage your organization's health sharing membership with our streamlined employer forms
               </p>
             </div>
           </div>

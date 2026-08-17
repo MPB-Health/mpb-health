@@ -14,7 +14,7 @@ const BusinessesOrganizations = () => {
   // Generate structured data for business plans
   const mecEssentialsSchema = generateHealthSharePlanSchema(
     'MEC+ Essentials',
-    'Minimum Essential Care plan satisfying ACA employer mandate requirements. Affordable preventive care solution for businesses.',
+    'Minimum Essential Care membership satisfying ACA employer mandate requirements. Affordable preventive care solution for businesses.',
     125,
     195,
     ['ACA Compliant', 'Employer Mandate Satisfaction', 'Preventive Care', 'Telemedicine', 'Business Solution']
@@ -269,10 +269,10 @@ const BusinessesOrganizations = () => {
                 <GitCompare className="w-8 h-8 text-white" />
               </div>
               <h2 className="text-3xl md:text-4xl font-bold text-primary-900">
-                Need Help Comparing Plans?
+                Need Help Comparing Memberships?
               </h2>
               <p className="text-lg text-neutral-600 max-w-2xl mx-auto">
-                View all plans side-by-side to find the perfect fit for your business healthcare needs.
+                View all memberships side-by-side to find the perfect fit for your business healthcare needs.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
                 <Link
@@ -280,7 +280,7 @@ const BusinessesOrganizations = () => {
                   className="inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-primary-600 to-primary-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl hover:from-primary-700 hover:to-primary-800 transition-all duration-300 transform hover:scale-105"
                 >
                   <GitCompare className="w-5 h-5 mr-2" />
-                  Compare Plans Online
+                  Compare Memberships Online
                 </Link>
                 <a
                   href="/docs/plan-comparison-guide.html"
@@ -299,8 +299,8 @@ const BusinessesOrganizations = () => {
 
       {/* Embedded Plan Comparison Guide */}
       <PlanComparisonGuide 
-        title="Compare All Plans Side-by-Side"
-        subtitle="See exactly what each plan offers to find the perfect fit for your business"
+        title="Compare All Memberships Side-by-Side"
+        subtitle="See exactly what each membership offers to find the perfect fit for your business"
       />
 
       {/* Business Rate Calculator */}

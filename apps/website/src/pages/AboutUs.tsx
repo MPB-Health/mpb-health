@@ -370,7 +370,7 @@ const AboutUs: React.FC = () => {
               href="/plans"
               className="inline-flex items-center justify-center px-8 py-4 bg-white/10 backdrop-blur-sm border-2 border-white/30 text-white font-semibold rounded-xl hover:bg-white/20 transition-all duration-300"
             >
-              View Plans
+              View Memberships
             </a>
           </div>
         </div>

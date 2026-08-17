@@ -10,20 +10,20 @@
     "robots": "index, follow"
   },
   "/enrollment": {
-    "title": "Enroll Now | MPB Health Sharing Plans",
-    "description": "Enroll in MPB Health today. Simple online enrollment, flexible plans, and savings up to 60%. No medical underwriting required.",
-    "keywords": "enroll health sharing, health sharing enrollment, sign up health plan, join MPB Health",
+    "title": "Enroll Now | MPB Health Sharing Memberships",
+    "description": "Enroll in MPB Health today. Simple online enrollment, flexible memberships, and savings up to 60%. No medical underwriting required.",
+    "keywords": "enroll health sharing, health sharing enrollment, sign up health membership, join MPB Health",
     "ogTitle": "Enroll in MPB Health",
     "ogDescription": "Simple enrollment process. Start saving on healthcare today.",
     "canonicalUrl": "https://mpb.health/enrollment",
     "robots": "index, follow"
   },
   "/plans": {
-    "title": "Affordable Healthcare Memberships | Health Sharing Plans | MPB",
-    "description": "Compare affordable healthcare memberships and health sharing plans with HSA options, preventive care, and flexible monthly costs at MPB Health.",
-    "keywords": "affordable healthcare memberships, health sharing plans, healthcare pricing, plan comparison, essentials plan, care plus, secure HSA, medical cost sharing options",
-    "ogTitle": "Affordable Healthcare Memberships | Health Sharing Plans | MPB",
-    "ogDescription": "Compare affordable healthcare memberships and health sharing plans with HSA options, preventive care, and flexible monthly costs at MPB Health.",
+    "title": "Affordable Healthcare Memberships | Health Sharing Memberships | MPB",
+    "description": "Compare affordable healthcare memberships and health sharing memberships with HSA options, preventive care, and flexible monthly costs at MPB Health.",
+    "keywords": "affordable healthcare memberships, health sharing memberships, healthcare pricing, membership comparison, essentials membership, care plus, secure HSA, medical cost sharing options",
+    "ogTitle": "Affordable Healthcare Memberships | Health Sharing Memberships | MPB",
+    "ogDescription": "Compare affordable healthcare memberships and health sharing memberships with HSA options, preventive care, and flexible monthly costs at MPB Health.",
     "canonicalUrl": "https://mpb.health/plans",
     "robots": "index, follow"
   },
@@ -56,7 +56,7 @@
   },
   "/contact": {
     "title": "Contact MPB Health - Get Help & Support | (855) 816-4650",
-    "description": "Contact MPB Health for questions about health sharing plans, enrollment, or member support. Call (855) 816-4650 or message us online.",
+    "description": "Contact MPB Health for questions about health sharing memberships, enrollment, or member support. Call (855) 816-4650 or message us online.",
     "keywords": "contact MPB Health, customer support, enrollment help, health sharing questions, phone number",
     "ogTitle": "Contact MPB Health",
     "ogDescription": "Get answers to your health sharing questions. Call us at (855) 816-4650.",
@@ -65,10 +65,10 @@
   },
   "/faq": {
     "title": "Healthcare Sharing Membership FAQ | Pros, Cons & More | MPB",
-    "description": "Get answers about healthcare sharing memberships, medical cost sharing, plan benefits, enrollment timing, and pros and cons of health share plans.",
+    "description": "Get answers about healthcare sharing memberships, medical cost sharing, membership benefits, enrollment timing, and pros and cons of health share memberships.",
     "keywords": "healthcare sharing membership FAQ, health share pros cons, medical cost sharing FAQ, health sharing answers, enrollment questions, membership FAQ",
     "ogTitle": "Healthcare Sharing Membership FAQ | Pros, Cons & More | MPB",
-    "ogDescription": "Get answers about healthcare sharing memberships, medical cost sharing, plan benefits, enrollment timing, and pros and cons of health share plans.",
+    "ogDescription": "Get answers about healthcare sharing memberships, medical cost sharing, membership benefits, enrollment timing, and pros and cons of health share memberships.",
     "canonicalUrl": "https://mpb.health/faq",
     "robots": "index, follow"
   },
@@ -84,25 +84,25 @@
   "/individuals-and-families": {
     "title": "Alternatives to Traditional Insurance for Families | MPB",
     "description": "Explore alternatives to traditional insurance for families with affordable health coverage, provider freedom, and flexible healthsharing memberships.",
-    "keywords": "alternatives to traditional insurance, family health sharing, individual health plan, family healthcare, affordable health membership, healthsharing memberships",
+    "keywords": "alternatives to traditional insurance, family health sharing, individual health membership, family healthcare, affordable health membership, healthsharing memberships",
     "ogTitle": "Alternatives to Traditional Insurance for Families | MPB",
     "ogDescription": "Explore alternatives to traditional insurance for families with affordable health coverage, provider freedom, and flexible healthsharing memberships.",
     "canonicalUrl": "https://mpb.health/individuals-and-families",
     "robots": "index, follow"
   },
   "/businesses-and-organizations": {
-    "title": "HSA Compatible Health Sharing Plans for Self Employed | MPB",
-    "description": "Discover HSA compatible health sharing plans and medical cost sharing for self employed professionals, 1099 contractors, and small businesses.",
-    "keywords": "HSA compatible health sharing plans, self employed health sharing, 1099 health plan, small business health sharing, medical cost sharing, employer healthcare",
-    "ogTitle": "HSA Compatible Health Sharing Plans for Self Employed | MPB",
-    "ogDescription": "Discover HSA compatible health sharing plans and medical cost sharing for self employed professionals, 1099 contractors, and small businesses.",
+    "title": "HSA Compatible Health Sharing Memberships for Self Employed | MPB",
+    "description": "Discover HSA compatible health sharing memberships and medical cost sharing for self employed professionals, 1099 contractors, and small businesses.",
+    "keywords": "HSA compatible health sharing memberships, self employed health sharing, 1099 health membership, small business health sharing, medical cost sharing, employer healthcare",
+    "ogTitle": "HSA Compatible Health Sharing Memberships for Self Employed | MPB",
+    "ogDescription": "Discover HSA compatible health sharing memberships and medical cost sharing for self employed professionals, 1099 contractors, and small businesses.",
     "canonicalUrl": "https://mpb.health/businesses-and-organizations",
     "robots": "index, follow"
   },
   "/advisor-directory": {
     "title": "Find a Health Sharing Advisor Near You | MPB Health",
-    "description": "Connect with experienced health sharing advisors in your area. Get personalized guidance on plans, enrollment, and healthcare solutions.",
-    "keywords": "health sharing advisor, healthcare advisor, insurance agent, health plan consultant, find advisor",
+    "description": "Connect with experienced health sharing advisors in your area. Get personalized guidance on memberships, enrollment, and healthcare solutions.",
+    "keywords": "health sharing advisor, healthcare advisor, insurance agent, health membership consultant, find advisor",
     "ogTitle": "Find a Health Sharing Advisor | MPB Health",
     "ogDescription": "Connect with experienced advisors in your area.",
     "canonicalUrl": "https://mpb.health/advisor-directory",
@@ -118,11 +118,11 @@
     "robots": "index, follow"
   },
   "/compare-plans": {
-    "title": "Compare Health Sharing Plans vs Traditional Insurance | MPB",
-    "description": "Compare health sharing plans side by side and see how they differ from traditional insurance in cost, benefits, HSA options, and provider flexibility.",
-    "keywords": "compare health sharing plans, health sharing vs insurance, plan comparison, health sharing comparison, essentials vs care plus, plan pricing",
-    "ogTitle": "Compare Health Sharing Plans vs Traditional Insurance | MPB",
-    "ogDescription": "Compare health sharing plans side by side and see how they differ from traditional insurance in cost, benefits, HSA options, and provider flexibility.",
+    "title": "Compare Health Sharing Memberships vs Traditional Insurance | MPB",
+    "description": "Compare health sharing memberships side by side and see how they differ from traditional insurance in cost, benefits, HSA options, and provider flexibility.",
+    "keywords": "compare health sharing memberships, health sharing vs insurance, membership comparison, health sharing comparison, essentials vs care plus, membership pricing",
+    "ogTitle": "Compare Health Sharing Memberships vs Traditional Insurance | MPB",
+    "ogDescription": "Compare health sharing memberships side by side and see how they differ from traditional insurance in cost, benefits, HSA options, and provider flexibility.",
     "canonicalUrl": "https://mpb.health/compare-plans",
     "robots": "index, follow"
   },
@@ -137,7 +137,7 @@
   },
   "/advisors-and-brokers": {
     "title": "Health Sharing for Advisors & Brokers | Partner with MPB Health",
-    "description": "Grow your practice with MPB Health. Offer clients affordable health sharing plans. Competitive commissions, training, and dedicated support for advisors.",
+    "description": "Grow your practice with MPB Health. Offer clients affordable health sharing memberships. Competitive commissions, training, and dedicated support for advisors.",
     "keywords": "health sharing advisor, insurance broker, health sharing commissions, advisor partnership, broker program",
     "ogTitle": "Advisor & Broker Program | MPB Health",
     "ogDescription": "Partner with MPB Health. Competitive commissions, dedicated support.",
@@ -200,7 +200,7 @@
   },
   "/3d-flip-book/premium-care": {
     "title": "Premium Care Member Handbook | MPB Health",
-    "description": "View the Premium Care member handbook with plan benefits, Sedera guidelines, provider resources, and member forms.",
+    "description": "View the Premium Care member handbook with membership benefits, Sedera guidelines, provider resources, and member forms.",
     "keywords": "Premium Care handbook, member handbook, health sharing, MPB Health, medical cost sharing",
     "ogTitle": "Premium Care Member Handbook | MPB Health",
     "ogDescription": "Premium Care member handbook with benefits, guidelines, and member resources.",
@@ -209,7 +209,7 @@
   },
   "/3d-flip-book/premium-hsa": {
     "title": "Premium HSA Member Handbook | MPB Health",
-    "description": "View the Premium HSA member handbook with HSA-compatible plan benefits, guidelines, and member resources.",
+    "description": "View the Premium HSA member handbook with HSA-compatible membership benefits, guidelines, and member resources.",
     "keywords": "Premium HSA handbook, HSA health sharing, member handbook, MPB Health",
     "ogTitle": "Premium HSA Member Handbook | MPB Health",
     "ogDescription": "Premium HSA member handbook with benefits, guidelines, and member resources.",

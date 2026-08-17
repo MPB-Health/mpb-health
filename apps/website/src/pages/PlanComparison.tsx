@@ -241,8 +241,8 @@ export default function PlanComparison() {
           {/* Static Care+/Direct/Essentials guide — omit when entire catalog is selected (full dynamic matrix replaces it). */}
           {!allPlansSelected && (
             <PlanComparisonGuide
-              title="Complete Plan Comparison Guide"
-              subtitle="View all plans and features at a glance"
+              title="Complete Membership Comparison Guide"
+              subtitle="View all memberships and features at a glance"
             />
           )}
         </div>

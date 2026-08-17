@@ -7,12 +7,12 @@ const CarePlusHandbook: React.FC = () => {
     <>
       <SEOHead
         title="Care+ Handbook | MPB Health"
-        description="View and download the MPB Health Care+ plan member handbook"
+        description="View and download the MPB Health Care+ membership handbook"
       />
       <HandbookViewer
         title="Care+ Handbook"
         pdfPath="/docs/Care+ Handbook-New Members (3).pdf"
-        description="Complete guide for Care+ plan members"
+        description="Complete guide for Care+ members"
       />
     </>
   );

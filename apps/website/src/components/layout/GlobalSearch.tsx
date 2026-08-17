@@ -114,7 +114,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ className, onResultC
       ];
 
       const staticPages: SearchResult[] = [
-        { id: 'plans', title: 'Plans & Pricing', href: '/plans', type: 'page' as const },
+        { id: 'plans', title: 'Memberships & Pricing', href: '/plans', type: 'page' as const },
         { id: 'how-it-works', title: 'How It Works', href: '/how-it-works', type: 'page' as const },
         { id: 'features', title: 'Features', href: '/features', type: 'page' as const },
         { id: 'individuals', title: 'Individuals & Families', href: '/individuals-and-families', type: 'page' as const },

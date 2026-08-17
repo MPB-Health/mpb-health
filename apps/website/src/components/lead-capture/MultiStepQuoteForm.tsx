@@ -342,7 +342,7 @@ export const MultiStepQuoteForm: React.FC = () => {
             </span>
           </label>
           <p className="text-xs text-neutral-600 mt-2 ml-8">
-            Don't worry - this won't disqualify you. It helps us recommend the best plan.
+            Don't worry - this won't disqualify you. It helps us recommend the best membership.
           </p>
         </div>
       </div>
@@ -439,7 +439,7 @@ export const MultiStepQuoteForm: React.FC = () => {
 
       <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
         <p className="text-sm text-blue-900">
-          By submitting, you agree to be contacted about MPB Health plans. Your information is secure and will never be sold.
+          By submitting, you agree to be contacted about MPB Health memberships. Your information is secure and will never be sold.
         </p>
       </div>
     </div>

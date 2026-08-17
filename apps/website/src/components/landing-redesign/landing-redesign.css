@@ -62,9 +62,10 @@
 }
 
 /* :where() keeps heading defaults overridable by single-class rules
-   (e.g. .qre__title uses the sans font like the reference site) */
+   (e.g. .qre__title uses the sans font like the reference site).
+   Sans below the hero; the hero headline keeps the display serif via its own rule */
 .lr :where(h1, h2, h3) {
-  font-family: var(--lr-font-display);
+  font-family: var(--lr-font-sans);
   line-height: 1.15;
   margin: 0;
 }
@@ -1411,7 +1412,7 @@ select.qre__input {
 
 .lr-why__sub {
   margin-top: 0.5rem;
-  font-family: var(--lr-font-display);
+  font-family: var(--lr-font-sans);
   font-size: clamp(0.95rem, 1.3vw, 1.2rem);
   font-weight: 800;
   color: var(--lr-navy);

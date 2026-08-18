@@ -17,7 +17,7 @@ const compat = new FlatCompat({
 const sharedConfig = compat.extends('@mpbhealth/eslint-config');
 
 export default [
-  { ignores: ['**/node_modules/**', '**/dist/**', '**/build/**', '**/.next/**', '**/coverage/**', '**/public/sw.js'] },
+  { ignores: ['**/node_modules/**', '**/dist/**', '**/build/**', '**/.next/**', '**/coverage/**', '**/public/sw.js', '**/.vercel/**'] },
   ...sharedConfig,
   // Node globals for config files (vite.config.js, etc.) and Node-run scripts
   {

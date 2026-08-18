@@ -12,7 +12,7 @@
     "optimize-images": "node scripts/optimize-images.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "vitest",
+    "test": "vitest run",
     "test:ui": "vitest --ui",
     "typecheck": "tsc --noEmit"
   },
@@ -75,7 +75,7 @@
     "@vitejs/plugin-react": "catalog:",
     "@vitest/ui": "^3.2.4",
     "autoprefixer": "catalog:",
-    "jsdom": "^27.4.0",
+    "jsdom": "^25.0.1",
     "postcss": "catalog:",
     "sharp": "^0.34.5",
     "tailwindcss": "catalog:",

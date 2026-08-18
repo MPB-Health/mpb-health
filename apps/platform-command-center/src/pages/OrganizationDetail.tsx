@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ExternalLink, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -32,7 +32,7 @@ export default function OrganizationDetail() {
     return map;
   }, [licenses]);
 
-  const reload = async () => {
+  const reload = useCallback(async () => {
     const [organization, appRows, licRows, memRows, invRows] = await Promise.all([
       getOrganization(orgId),
       listApps(),
@@ -45,7 +45,7 @@ export default function OrganizationDetail() {
     setLicenses(licRows);
     setMembers(memRows);
     setInvites(invRows);
-  };
+  }, [orgId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -61,7 +61,7 @@ export default function OrganizationDetail() {
     return () => {
       cancelled = true;
     };
-  }, [orgId]);
+  }, [reload]);
 
   const onInvite = async (e: FormEvent) => {
     e.preventDefault();

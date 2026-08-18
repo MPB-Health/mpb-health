@@ -33,7 +33,7 @@ declare global {
         widgetcode?: string;
         values?: Record<string, any>;
         /** Zoho may call ready() with no args; our monitor also accepts a callback. */
-        ready: ((callback?: () => void) => void) | (() => void);
+        ready: (callback?: () => void) => void;
         visitor?: {
           info: (fields: Record<string, string>) => void;
         };
@@ -112,8 +112,8 @@ class ZohoSalesIQManager {
       window.$zoho.salesiq = {
         widgetcode: this.widgetCode,
         values: {},
-        ready: (callback: () => void) => {
-          this.readyCallbacks.push(callback);
+        ready: (callback?: () => void) => {
+          if (callback) this.readyCallbacks.push(callback);
         },
       };
     } else {

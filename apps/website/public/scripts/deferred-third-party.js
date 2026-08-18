@@ -4,8 +4,21 @@
  */
 (function () {
   window.$zoho = window.$zoho || {};
-  window.$zoho.salesiq = window.$zoho.salesiq || { ready: function () {} };
+  window.$zoho.salesiq = window.$zoho.salesiq || {};
   window.$zoho.salesiq.values = window.$zoho.salesiq.values || {};
+
+  // Stamp visitor field before the widget script loads (Zoho calls ready() once).
+  window.$zoho.salesiq.ready = function () {
+    try {
+      if (window.$zoho.salesiq.visitor && typeof window.$zoho.salesiq.visitor.info === 'function') {
+        window.$zoho.salesiq.visitor.info({
+          'Portal Source': 'MPB Health',
+        });
+      }
+    } catch (_err) {
+      // Non-fatal — chat widget should still load if info() fails.
+    }
+  };
 
   function isProductionHostname() {
     var hostname = window.location.hostname;

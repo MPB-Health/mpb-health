@@ -40,8 +40,9 @@ export const Features: React.FC = () => {
     <>
       <MarketingHydrationSeo />
 
-      {/* Hero Section */}
-      <section className="relative pt-28 pb-32 overflow-hidden">
+      {/* Hero Section — min-height scales with viewport width (57vw = 584px at
+          1024px) so object-cover keeps the same photo framing on all screens */}
+      <section className="relative pt-28 pb-32 overflow-hidden lg:flex lg:items-center lg:min-h-[57vw]">
         <img
           src="/assets/featureHero.jpg"
           alt=""
@@ -54,7 +55,7 @@ export const Features: React.FC = () => {
         {/* Dark scrim for text legibility over the photo */}
         <div className="absolute inset-0 bg-gradient-to-b from-gray-900/75 via-gray-900/55 to-gray-900/75" />
 
-        <div className="relative mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 text-center">
+        <div className="relative w-full mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 text-white tracking-tight">
             Membership Features
             <span

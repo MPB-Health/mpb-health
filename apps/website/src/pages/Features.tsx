@@ -51,13 +51,14 @@ export const Features: React.FC = () => {
           fetchPriority="high"
           decoding="async"
           className="absolute inset-0 w-full h-full object-cover"
+          style={{ objectPosition: 'center calc(50% - 100px)' }}
         />
         {/* Dark scrim for text legibility over the photo */}
         <div className="absolute inset-0 bg-gradient-to-b from-gray-900/75 via-gray-900/55 to-gray-900/75" />
 
         <div className="relative w-full mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 text-white tracking-tight">
-            <span className="block text-base">Membership Features</span>
+            <span className="block text-[2rem]">Membership Features</span>
             <span
               className="block text-transparent bg-clip-text"
               style={{ backgroundImage: 'linear-gradient(90deg, #8be356 0%, #2fd0c0 55%, #1fa6e8 100%)' }}

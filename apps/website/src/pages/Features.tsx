@@ -62,12 +62,12 @@ export const Features: React.FC = () => {
               className="block text-transparent bg-clip-text"
               style={{ backgroundImage: 'linear-gradient(90deg, #8be356 0%, #2fd0c0 55%, #1fa6e8 100%)' }}
             >
-              Discover the range of features available with MPB Health, from virtual care and prescription savings to global access and everyday support.
+              Everything your membership can include
             </span>
           </h1>
 
           <p className="text-lg sm:text-xl text-gray-100 max-w-2xl mx-auto leading-relaxed">
-            Our health sharing program provides protection against large medical expenses. When you face major expenses like hospitalizations, surgeries, or serious illnesses, your healthcare costs are shared by our community of members. This is the foundation of health sharing: standing together when it matters most.
+            Discover the range of features available with MPB Health, from virtual care and prescription savings to global access and everyday support.
           </p>
         </div>
       </section>

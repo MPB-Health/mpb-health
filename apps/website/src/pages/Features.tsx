@@ -42,7 +42,7 @@ export const Features: React.FC = () => {
 
       {/* Hero Section — min-height scales with viewport width (57vw = 584px at
           1024px) so object-cover keeps the same photo framing on all screens */}
-      <section className="relative pt-28 pb-32 overflow-hidden lg:flex lg:items-center lg:min-h-[57vw]">
+      <section className="relative pt-28 pb-32 overflow-hidden lg:flex lg:items-start lg:pt-[250px] lg:min-h-[57vw]">
         <img
           src="/assets/featureHero.jpg"
           alt=""

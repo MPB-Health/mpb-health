@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MarketingHydrationSeo } from '../components/MarketingHydrationSeo';
-import { ArrowRight, Phone, Search, ChevronDown, Sparkles, Award, X } from 'lucide-react';
+import { ArrowRight, Phone, Search, ChevronDown, Award } from 'lucide-react';
 import { Badge } from '../components/ui/Badge';
 import { healthcareFeatures } from '../data/healthcareFeaturesData';
 
 export const Features: React.FC = () => {
-  const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [showMobileFilter, setShowMobileFilter] = useState(false);
 
@@ -31,15 +30,9 @@ export const Features: React.FC = () => {
     return 'all';
   };
 
-  const filteredFeatures = healthcareFeatures.filter((feature) => {
-    const matchesSearch = feature.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         feature.shortDescription.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         feature.tagline.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchesCategory = selectedCategory === 'all' || getCategoryForFeature(feature.id) === selectedCategory;
-
-    return matchesSearch && matchesCategory;
-  });
+  const filteredFeatures = healthcareFeatures.filter(
+    (feature) => selectedCategory === 'all' || getCategoryForFeature(feature.id) === selectedCategory
+  );
 
   const selectedCategoryName = categories.find(c => c.id === selectedCategory)?.name || 'All Benefits';
 
@@ -48,48 +41,33 @@ export const Features: React.FC = () => {
       <MarketingHydrationSeo />
 
       {/* Hero Section */}
-      <section className="relative pt-16 pb-20 overflow-hidden bg-gradient-to-b from-slate-50 to-white">
-        {/* Subtle background pattern */}
-        <div className="absolute inset-0 opacity-[0.03]" style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-        }} />
+      <section className="relative pt-28 pb-32 overflow-hidden">
+        <img
+          src="/assets/featureHero.jpg"
+          alt=""
+          width={1920}
+          height={1280}
+          fetchPriority="high"
+          decoding="async"
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+        {/* Dark scrim for text legibility over the photo */}
+        <div className="absolute inset-0 bg-gradient-to-b from-gray-900/75 via-gray-900/55 to-gray-900/75" />
 
         <div className="relative mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 text-center">
-          <Badge className="mb-6 bg-blue-100 text-blue-700 border-0 px-4 py-1.5">
-            <Sparkles className="w-3.5 h-3.5 mr-1.5" />
-            Membership Benefits
-          </Badge>
-
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 text-gray-900 tracking-tight">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 text-white tracking-tight">
             Protection Against
-            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-600">
+            <span
+              className="block text-transparent bg-clip-text"
+              style={{ backgroundImage: 'linear-gradient(90deg, #8be356 0%, #2fd0c0 55%, #1fa6e8 100%)' }}
+            >
               Large Medical Expenses
             </span>
           </h1>
 
-          <p className="text-lg sm:text-xl text-gray-600 mb-10 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-lg sm:text-xl text-gray-100 max-w-2xl mx-auto leading-relaxed">
             Our health sharing program provides protection against large medical expenses. When you face major expenses like hospitalizations, surgeries, or serious illnesses, your healthcare costs are shared by our community of members. This is the foundation of health sharing: standing together when it matters most.
           </p>
-
-          {/* Search Bar - Clean, Centered */}
-          <div className="max-w-xl mx-auto relative">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
-              type="text"
-              placeholder="Search benefits..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-4 text-base border border-gray-200 rounded-2xl bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all"
-            />
-            {searchTerm && (
-              <button
-                onClick={() => setSearchTerm('')}
-                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            )}
-          </div>
         </div>
       </section>
 
@@ -149,7 +127,6 @@ export const Features: React.FC = () => {
           <div className="mt-6 text-center text-sm text-gray-500">
             Showing {filteredFeatures.length} benefit{filteredFeatures.length !== 1 ? 's' : ''}
             {selectedCategory !== 'all' && ` in ${selectedCategoryName}`}
-            {searchTerm && ` matching "${searchTerm}"`}
           </div>
         </div>
       </section>
@@ -163,12 +140,9 @@ export const Features: React.FC = () => {
                 <Search className="h-8 w-8 text-gray-400" />
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-2">No benefits found</h3>
-              <p className="text-gray-600 mb-6">Try adjusting your search or filter</p>
+              <p className="text-gray-600 mb-6">Try adjusting your filter</p>
               <button
-                onClick={() => {
-                  setSearchTerm('');
-                  setSelectedCategory('all');
-                }}
+                onClick={() => setSelectedCategory('all')}
                 className="text-blue-600 font-medium hover:text-blue-700"
               >
                 Clear filters

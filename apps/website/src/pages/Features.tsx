@@ -40,9 +40,9 @@ export const Features: React.FC = () => {
     <>
       <MarketingHydrationSeo />
 
-      {/* Hero Section — min-height scales with viewport width (57vw = 584px at
-          1024px) so object-cover keeps the same photo framing on all screens */}
-      <section className="relative pt-28 pb-32 overflow-hidden lg:flex lg:items-start lg:pt-[150px] lg:min-h-[57vw]">
+      {/* Hero Section — fills the first screen (100svh minus the 104px top bar +
+          header) so the features content starts right at the first scroll */}
+      <section className="relative pt-28 pb-32 overflow-hidden min-h-[calc(100svh-104px)] lg:flex lg:items-start lg:pt-[150px]">
         <img
           src="/assets/featureHero.jpg"
           alt=""
@@ -51,7 +51,6 @@ export const Features: React.FC = () => {
           fetchPriority="high"
           decoding="async"
           className="absolute inset-0 w-full h-full object-cover"
-          style={{ objectPosition: 'center calc(50% - 100px)' }}
         />
         {/* Dark scrim for text legibility over the photo */}
         <div className="absolute inset-0 bg-gradient-to-b from-gray-900/75 via-gray-900/55 to-gray-900/75" />
@@ -63,7 +62,7 @@ export const Features: React.FC = () => {
               className="block text-transparent bg-clip-text"
               style={{ backgroundImage: 'linear-gradient(90deg, #8be356 0%, #2fd0c0 55%, #1fa6e8 100%)' }}
             >
-              Everything your membership can include
+              Discover the range of features available with MPB Health, from virtual care and prescription savings to global access and everyday support.
             </span>
           </h1>
 

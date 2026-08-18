@@ -39,7 +39,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
     icon: Heart,
     tagline: 'Community support when you need it most',
     shortDescription: 'Protection from major medical needs including hospitalizations, surgeries, and serious illnesses',
-    heroImage: '/assets/Health Sharing for Large Medical Expenses.png',
+    heroImage: '/assets/Health Sharing for Large Medical Expenses.jpg',
     detailedDescription: 'Our health sharing program provides robust financial support for significant medical needs. When you face major expenses like hospitalizations, surgeries, or serious illnesses, your healthcare costs are shared by our caring community of members. This is the foundation of health sharing—standing together when it matters most.',
     keyPoints: [
       {
@@ -114,7 +114,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
     icon: Stethoscope,
     tagline: 'Protection while traveling',
     shortDescription: 'Protection for acute or emergency medical needs that occur while traveling outside the United States or Puerto Rico',
-    heroImage: '/assets/Worldwide Protection.png',
+    heroImage: '/assets/Worldwide Protection.jpg',
     detailedDescription: 'Travel with confidence knowing you\'re protected worldwide. Our Worldwide Protection benefit provides sharing for acute or emergency medical needs that occur while traveling outside the United States or Puerto Rico. Whether you\'re on vacation, business travel, or studying abroad, receive care anywhere in the world with financial protection from unexpected medical emergencies.',
     keyPoints: [
       {
@@ -191,7 +191,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
     icon: Ambulance,
     tagline: '24/7/365 virtual care for urgent needs',
     shortDescription: '$0, unlimited 24/7/365 virtual urgent care visits for non-emergency health concerns',
-    heroImage: '/assets/Virtual Urgent Care.png',
+    heroImage: '/assets/Virtual Urgent Care.jpg',
     detailedDescription: 'Virtual urgent care visits are available 24/7/365 and are accessed through the MPB Health app. Members can connect with a licensed provider by phone or video for urgent, non-emergency health concerns. All MPB Health memberships include unlimited $0 virtual urgent care services.',
     keyPoints: [
       {
@@ -269,7 +269,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
     icon: Brain,
     tagline: 'Professional virtual support for emotional wellness',
     shortDescription: 'Virtual-only access to licensed counselors and therapists for virtual behavioral health support and emotional wellness',
-    heroImage: '/assets/Virtual Behavioral Health.png',
+    heroImage: '/assets/Virtual Behavioral Health.jpg',
     detailedDescription: 'Your emotional wellness is just as important as physical health. Our virtual behavioral health benefit connects you with licensed therapists, counselors, and psychiatric professionals via secure video or phone sessions for anxiety, depression, stress management, and other emotional wellness needs. All sessions are delivered virtually for your convenience and privacy.',
     keyPoints: [
       {
@@ -344,7 +344,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
     icon: Baby,
     tagline: 'Supporting your journey to parenthood',
     shortDescription: 'Comprehensive sharing for pregnancy, delivery, and newborn care for growing families',
-    heroImage: '/assets/Maternity Care.png',
+    heroImage: '/assets/Maternity Care.jpg',
     detailedDescription: 'Pregnancy is a beautiful journey that deserves comprehensive support. Our maternity care benefit covers prenatal visits, delivery, postpartum care, and newborn medical needs. From your first ultrasound to bringing baby home, we share the costs of this life-changing experience with you.',
     keyPoints: [
       {
@@ -421,7 +421,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
     icon: Pill,
     tagline: 'Save on medications you need',
     shortDescription: 'Significant discounts on prescription medications at thousands of pharmacies nationwide',
-    heroImage: '/assets/Prescription Benefits & Discounts.png',
+    heroImage: '/assets/Prescription Benefits & Discounts.jpg',
     detailedDescription: 'Prescription medications shouldn\'t break your budget. Our pharmacy benefit provides substantial discounts on both generic and brand-name medications at over 65,000 pharmacies nationwide. Save on the medications you need to stay healthy without insurance-style formularies or prior authorizations.',
     keyPoints: [
       {

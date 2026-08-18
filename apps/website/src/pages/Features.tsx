@@ -56,12 +56,12 @@ export const Features: React.FC = () => {
 
         <div className="relative mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 text-white tracking-tight">
-            Protection Against
+            Membership Features
             <span
               className="block text-transparent bg-clip-text"
               style={{ backgroundImage: 'linear-gradient(90deg, #8be356 0%, #2fd0c0 55%, #1fa6e8 100%)' }}
             >
-              Large Medical Expenses
+              Everything your membership can include
             </span>
           </h1>
 

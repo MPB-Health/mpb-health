@@ -21,6 +21,14 @@ const T_OFF = 'concierge_member_off_days';
 const T_ESC = 'concierge_escalations';
 const T_WEEK = 'concierge_weekly_report_extras';
 
+const TEAM_COLUMNS = 'id, org_id, name, status, role, part_time, display_order, user_id';
+const LOG_COLUMNS =
+  'id, org_id, log_date, team_member_name, team_member_id, channel, member_name, reason, other_notes, crm_notes, follow_up, review_link, additional_notes, times_spoke_with_member, escalated_issue, special_project_description, special_project_duration_minutes, touch_override, created_at, updated_at, created_by';
+const ESC_COLUMNS =
+  'id, org_id, member_name, summary, opened_at, log_entry_id, status, completed_at';
+const WEEK_COLUMNS =
+  'org_id, report_key, call_times_by_member_id, sales_hours_by_member_id, team_members_helped';
+
 /**
  * Concierge is MPB-only — all data is scoped to the MPB Health organization
  * (organizations.id used by org_portal_access + the concierge RLS policies).
@@ -280,7 +288,7 @@ function escRowToItem(r: Record<string, unknown>): EscalationItem {
 export async function fetchTeamMembers(): Promise<TeamMember[]> {
   const { data, error } = await db
     .from(T_TEAM)
-    .select('*')
+    .select(TEAM_COLUMNS)
     .eq('org_id', orgScope())
     .order('display_order', { ascending: true });
   if (error) throw error;
@@ -290,7 +298,7 @@ export async function fetchTeamMembers(): Promise<TeamMember[]> {
 export async function fetchLogEntries(): Promise<LogEntry[]> {
   const { data, error } = await db
     .from(T_LOGS)
-    .select('*')
+    .select(LOG_COLUMNS)
     .eq('org_id', orgScope())
     .order('created_at', { ascending: false })
     .order('id', { ascending: false });
@@ -320,7 +328,7 @@ export async function fetchMemberOffDays(): Promise<Record<string, string[]>> {
 export async function fetchEscalations(): Promise<EscalationItem[]> {
   const { data, error } = await db
     .from(T_ESC)
-    .select('*')
+    .select(ESC_COLUMNS)
     .eq('org_id', orgScope())
     .order('created_at', { ascending: false });
   if (error) throw error;
@@ -328,7 +336,7 @@ export async function fetchEscalations(): Promise<EscalationItem[]> {
 }
 
 export async function fetchWeeklyReportExtrasMap(): Promise<Record<string, WeeklyReportExtras>> {
-  const { data, error } = await db.from(T_WEEK).select('*').eq('org_id', orgScope());
+  const { data, error } = await db.from(T_WEEK).select(WEEK_COLUMNS).eq('org_id', orgScope());
   if (error) throw error;
   const map: Record<string, WeeklyReportExtras> = {};
   for (const row of data ?? []) {
@@ -364,7 +372,7 @@ export async function insertTeamMember(
       part_time: m.partTime === true,
       display_order: displayOrder,
     })
-    .select('*')
+    .select(TEAM_COLUMNS)
     .single();
   if (error) throw error;
   return teamRowToMember(data);
@@ -424,7 +432,7 @@ export async function insertLogEntry(entry: LogEntry): Promise<LogEntry> {
   } = await supabase.auth.getUser();
   const base = await logEntryToInsert({ ...entry, id }, id);
   const payload = { ...base, org_id: orgScope(), created_by: user?.id ?? null };
-  const { data, error } = await db.from(T_LOGS).insert(payload).select('*').single();
+  const { data, error } = await db.from(T_LOGS).insert(payload).select(LOG_COLUMNS).single();
   if (error) throw error;
   return patchMissingConciergeTimestamps(logRowToEntry(data));
 }
@@ -438,7 +446,7 @@ export async function updateLogEntry(entry: LogEntry): Promise<LogEntry> {
     .update(payload)
     .eq('id', id)
     .eq('org_id', orgScope())
-    .select('*')
+    .select(LOG_COLUMNS)
     .single();
   if (error) throw error;
   return patchMissingConciergeTimestamps(logRowToEntry(data));
@@ -487,7 +495,7 @@ export async function insertEscalation(item: EscalationItem): Promise<Escalation
       status: item.status,
       completed_at: item.completedAt ? item.completedAt.slice(0, 10) : null,
     })
-    .select('*')
+    .select(ESC_COLUMNS)
     .single();
   if (error) throw error;
   return escRowToItem(data);

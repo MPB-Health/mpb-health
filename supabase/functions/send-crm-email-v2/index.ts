@@ -296,6 +296,15 @@ serve(async (req) => {
       .trim()
       .substring(0, 200);
 
+    // crm_email_log.template_id FK → crm_templates. Never store a master
+    // template UUID there (callers historically did; insert failed after Resend
+    // already accepted the send → empty CRM timeline).
+    let logTemplateId = template_id || null;
+    let logMasterTemplateId = master_template_id || null;
+    if (logTemplateId && logMasterTemplateId && logTemplateId === logMasterTemplateId) {
+      logTemplateId = null;
+    }
+
     // Log to crm_email_log with enhanced fields
     const { data: emailLog, error: logError } = await supabase
       .from('crm_email_log')
@@ -303,8 +312,8 @@ serve(async (req) => {
         org_id: org_id || null,
         lead_id: lead_id || null,
         recruit_id: recruit_id || null,
-        template_id: template_id || null,
-        master_template_id: master_template_id || null,
+        template_id: logTemplateId,
+        master_template_id: logMasterTemplateId,
         thread_id: thread_id || null,
         direction: 'outbound',
         from_address: effectiveFromEmail,

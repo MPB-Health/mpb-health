@@ -39,7 +39,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
     icon: Heart,
     tagline: 'Community support when you need it most',
     shortDescription: 'Protection from major medical needs including hospitalizations, surgeries, and serious illnesses',
-    heroImage: '/assets/Health Sharing for Large Medical Expenses.jpg',
+    heroImage: '/assets/hsa.png',
     detailedDescription: 'Our health sharing program provides robust financial support for significant medical needs. When you face major expenses like hospitalizations, surgeries, or serious illnesses, your healthcare costs are shared by our caring community of members. This is the foundation of health sharing—standing together when it matters most.',
     keyPoints: [
       {
@@ -114,7 +114,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
     icon: Stethoscope,
     tagline: 'Protection while traveling',
     shortDescription: 'Protection for acute or emergency medical needs that occur while traveling outside the United States or Puerto Rico',
-    heroImage: '/assets/Worldwide Protection.jpg',
+    heroImage: '/assets/travel.png',
     detailedDescription: 'Travel with confidence knowing you\'re protected worldwide. Our Worldwide Protection benefit provides sharing for acute or emergency medical needs that occur while traveling outside the United States or Puerto Rico. Whether you\'re on vacation, business travel, or studying abroad, receive care anywhere in the world with financial protection from unexpected medical emergencies.',
     keyPoints: [
       {
@@ -570,7 +570,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
     icon: ShieldCheck,
     tagline: 'Proactive health screening and wellness',
     shortDescription: 'No-cost preventative care services as mandated by the Affordable Care Act including screenings, immunizations, and wellness visits',
-    heroImage: 'https://images.pexels.com/photos/4173239/pexels-photo-4173239.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
+    heroImage: '/assets/preventiceCare.png',
     detailedDescription: 'Prevention is the best medicine. Our preventative care benefit includes comprehensive screenings, immunizations, and wellness visits at no additional cost. Stay ahead of health problems by catching them early and maintaining good health through regular preventative services as mandated by the ACA.',
     keyPoints: [
       {
@@ -655,7 +655,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
     icon: Headphones,
     tagline: 'Personal support for all your healthcare needs',
     shortDescription: '24/7 access to knowledgeable support staff who help you navigate healthcare and maximize your benefits',
-    heroImage: 'https://images.pexels.com/photos/7129713/pexels-photo-7129713.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
+    heroImage: '/assets/concierge.png',
     detailedDescription: 'Healthcare can be confusing. Our membership concierge team is here to help you understand your benefits, find providers, submit sharing requests, and answer any questions. Think of us as your personal healthcare guide—available whenever you need assistance navigating the system.',
     keyPoints: [
       {

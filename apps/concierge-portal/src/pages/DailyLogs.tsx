@@ -43,6 +43,7 @@ import {
 import toast from 'react-hot-toast';
 import { useLocation } from 'react-router-dom';
 import { useConciergeNavigate } from '../hooks/useConciergeNavigate';
+import { useConciergeAccess } from '../hooks/useConciergeAccess';
 import { safeRemoveChannel } from '@mpbhealth/database';
 import {
   loadConciergeWorkspace,
@@ -240,6 +241,16 @@ const REPORTS_URL_TAB_IDS = ['weekly', 'performance', 'analytics', 'julyBilling'
 function isReportsUrlTab(tab: TabId): tab is (typeof REPORTS_URL_TAB_IDS)[number] {
   return (REPORTS_URL_TAB_IDS as readonly string[]).includes(tab);
 }
+
+/** Concierge feature key gating each tab (deny-list). 'log' is always available. */
+const TAB_FEATURE: Partial<Record<TabId, string>> = {
+  weekly: 'reports.weekly',
+  performance: 'reports.performance',
+  analytics: 'reports.analytics',
+  julyBilling: 'reports.july_billing',
+  trends: 'reports.member_issues',
+  team: 'team.view',
+};
 
 function tabIdFromLocation(pathname: string, search: string): TabId {
   const q = new URLSearchParams(search).get('tab');
@@ -1323,6 +1334,10 @@ function DailyLogTab({
   onEscalationFromLog,
   currentUserId,
   onRefresh,
+  canWrite = true,
+  canEditAny = true,
+  canDeleteAny = true,
+  canImport = true,
 }: {
   logs: LogEntry[];
   onAddLog: (entry: LogEntry) => Promise<LogEntry>;
@@ -1332,7 +1347,15 @@ function DailyLogTab({
   onEscalationFromLog: (item: EscalationItem) => Promise<void>;
   currentUserId: string | null;
   onRefresh: () => Promise<void>;
+  /** Feature gates (deny-list). Managers/unrestricted reps pass all as true. */
+  canWrite?: boolean;
+  canEditAny?: boolean;
+  canDeleteAny?: boolean;
+  canImport?: boolean;
 }) {
+  /** Roster name of the signed-in rep — used to decide row ownership for gating. */
+  const myRosterName =
+    (currentUserId && rosterTeam.find((m) => m.userId === currentUserId)?.name) || null;
   const today = formatLocalYmd(new Date());
   /** Roster row matching the logged-in user (when linked); falls back to roster[0]. */
   const defaultTeamMemberName =
@@ -1888,7 +1911,9 @@ function DailyLogTab({
           </label>
           <button
             onClick={() => void handleAdd()}
-            className="ml-auto flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#4A7C8A] text-white text-sm font-medium hover:bg-[#3D6773] transition-colors"
+            disabled={!canWrite}
+            title={canWrite ? undefined : 'Logging new entries has been restricted for your account'}
+            className="ml-auto flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#4A7C8A] text-white text-sm font-medium hover:bg-[#3D6773] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Plus className="w-4 h-4" />
             Add Entry
@@ -1922,7 +1947,7 @@ function DailyLogTab({
               </span>
             </h3>
             <div className="flex items-center gap-2 flex-wrap">
-              {legacyState.rawLogCount > 0 && (
+              {canImport && legacyState.rawLogCount > 0 && (
                 <button
                   type="button"
                   onClick={handleForceImport}
@@ -1936,15 +1961,17 @@ function DailyLogTab({
                     : `Recover ${legacyState.rawLogCount} from this browser`}
                 </button>
               )}
-              <button
-                type="button"
-                onClick={() => setShowJsonImport(true)}
-                title="Paste a rep's localStorage JSON dump and attribute every entry to them"
-                className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[#4A7C8A]/40 bg-[#4A7C8A]/5 text-[#2F3E2F] text-sm font-medium hover:bg-[#4A7C8A]/10 transition-colors"
-              >
-                <Upload className="w-4 h-4" />
-                Import JSON for rep
-              </button>
+              {canImport && (
+                <button
+                  type="button"
+                  onClick={() => setShowJsonImport(true)}
+                  title="Paste a rep's localStorage JSON dump and attribute every entry to them"
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[#4A7C8A]/40 bg-[#4A7C8A]/5 text-[#2F3E2F] text-sm font-medium hover:bg-[#4A7C8A]/10 transition-colors"
+                >
+                  <Upload className="w-4 h-4" />
+                  Import JSON for rep
+                </button>
+              )}
               <button
                 type="button"
                 onClick={handleRefresh}
@@ -2147,22 +2174,26 @@ function DailyLogTab({
                       </td>
                       <td className="px-3 py-2.5 align-top">
                         <div className="flex items-center justify-end gap-0.5">
-                          <button
-                            type="button"
-                            onClick={() => setEditingLog(log)}
-                            className="p-1 hover:bg-[#4A7C8A]/10 rounded text-slate-400 hover:text-[#4A7C8A] transition-colors"
-                            aria-label="Edit entry"
-                          >
-                            <Pencil className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDelete(log.id)}
-                            className="p-1 hover:bg-red-50 rounded text-slate-400 hover:text-red-500 transition-colors"
-                            aria-label="Delete entry"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          {(canEditAny || (myRosterName != null && log.teamMember === myRosterName)) && (
+                            <button
+                              type="button"
+                              onClick={() => setEditingLog(log)}
+                              className="p-1 hover:bg-[#4A7C8A]/10 rounded text-slate-400 hover:text-[#4A7C8A] transition-colors"
+                              aria-label="Edit entry"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                          {(canDeleteAny || (myRosterName != null && log.teamMember === myRosterName)) && (
+                            <button
+                              type="button"
+                              onClick={() => handleDelete(log.id)}
+                              className="p-1 hover:bg-red-50 rounded text-slate-400 hover:text-red-500 transition-colors"
+                              aria-label="Delete entry"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -3909,10 +3940,19 @@ function TeamTab({
 export default function DailyLogs() {
   const navigate = useConciergeNavigate();
   const location = useLocation();
+  const { can } = useConciergeAccess();
   const activeTab = useMemo(
     () => tabIdFromLocation(location.pathname, location.search),
     [location.pathname, location.search],
   );
+  const canSeeTab = useCallback(
+    (id: TabId) => {
+      const key = TAB_FEATURE[id];
+      return !key || can(key);
+    },
+    [can],
+  );
+  const visibleTabs = useMemo(() => TABS.filter((t) => canSeeTab(t.id)), [canSeeTab]);
   const [showShare, setShowShare] = useState(false);
   const [weekNumber, setWeekNumber] = useState(() => getISOWeek(new Date()));
   const [hydrated, setHydrated] = useState(false);
@@ -4261,15 +4301,18 @@ export default function DailyLogs() {
               )}
             </div>
 
-            <button
-              type="button"
-              onClick={() => setShowShare(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#4A7C8A] text-white text-sm font-medium hover:bg-[#3D6773] transition-colors"
-            >
-              <Send className="w-4 h-4" />
-              Share Report
-            </button>
+            {can('reports.share') && (
+              <button
+                type="button"
+                onClick={() => setShowShare(true)}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#4A7C8A] text-white text-sm font-medium hover:bg-[#3D6773] transition-colors"
+              >
+                <Send className="w-4 h-4" />
+                Share Report
+              </button>
+            )}
 
+            {can('data.export') && (
             <button
               type="button"
               onClick={() => {
@@ -4327,6 +4370,7 @@ export default function DailyLogs() {
               <Download className="w-4 h-4" />
               Export All
             </button>
+            )}
           </div>
         </div>
 
@@ -4338,7 +4382,7 @@ export default function DailyLogs() {
 
       {/* Tabs */}
       <div className="flex gap-1 overflow-x-auto border-b border-[#A8B8AC]/30 pb-px">
-        {TABS.map((tab) => {
+        {visibleTabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
           return (
@@ -4360,6 +4404,11 @@ export default function DailyLogs() {
       </div>
 
       {/* Tab Content */}
+      {!canSeeTab(activeTab) && (
+        <div className="text-center py-16 bg-white rounded-2xl border border-dashed border-[#A8B8AC]/40">
+          <p className="text-sm text-slate-500">This section has been restricted for your account.</p>
+        </div>
+      )}
       {activeTab === 'log' && (
         <DailyLogTab
           logs={logs}
@@ -4370,9 +4419,13 @@ export default function DailyLogs() {
           onEscalationFromLog={onEscalationFromLog}
           currentUserId={currentUserId}
           onRefresh={onRefreshLogs}
+          canWrite={can('daily_log.write')}
+          canEditAny={can('daily_log.edit_any')}
+          canDeleteAny={can('daily_log.delete_any')}
+          canImport={can('data.import')}
         />
       )}
-      {activeTab === 'weekly' && (
+      {activeTab === 'weekly' && canSeeTab('weekly') && (
         <WeeklyReportTab
           reportLogs={reportLogs}
           allLogsCount={logs.length}
@@ -4387,10 +4440,10 @@ export default function DailyLogs() {
           setWeeklyExtras={setWeeklyExtras}
         />
       )}
-      {activeTab === 'performance' && (
+      {activeTab === 'performance' && canSeeTab('performance') && (
         <PerformanceTab logs={logs} team={team} weekNumber={weekNumber} />
       )}
-      {activeTab === 'analytics' && (
+      {activeTab === 'analytics' && canSeeTab('analytics') && (
         <AnalyticsTab
           team={team}
           weekLogs={reportLogs}
@@ -4398,11 +4451,11 @@ export default function DailyLogs() {
           periodLabel={periodLabel}
         />
       )}
-      {activeTab === 'julyBilling' && <JulyBillingReportTab logs={logs} />}
-      {activeTab === 'trends' && (
+      {activeTab === 'julyBilling' && canSeeTab('julyBilling') && <JulyBillingReportTab logs={logs} />}
+      {activeTab === 'trends' && canSeeTab('trends') && (
         <TrendsTab logs={logs} escalations={escalations} onSaveEscalation={onSaveEscalation} />
       )}
-      {activeTab === 'team' && <TeamTab team={team} setTeam={setTeam} />}
+      {activeTab === 'team' && canSeeTab('team') && <TeamTab team={team} setTeam={setTeam} />}
 
       {/* Share Modal */}
       {showShare && (

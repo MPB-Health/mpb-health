@@ -3,6 +3,7 @@ import { Navigate, Route } from 'react-router-dom';
 import { supabase } from '@mpbhealth/database';
 import { useTenantPath } from '@mpbhealth/auth';
 import { Loader2 } from 'lucide-react';
+import { useConciergeAccess } from '../hooks/useConciergeAccess';
 
 const Login = lazy(() => import('../pages/Login'));
 const ForgotPassword = lazy(() => import('../pages/ForgotPassword'));
@@ -11,6 +12,7 @@ const Dashboard = lazy(() => import('../pages/Dashboard'));
 const Tickets = lazy(() => import('../pages/Tickets'));
 const NewTicket = lazy(() => import('../pages/NewTicket'));
 const Profile = lazy(() => import('../pages/Profile'));
+const ManagementCenter = lazy(() => import('../pages/ManagementCenter'));
 const MainLayout = lazy(() => import('../layouts/MainLayout'));
 const ConciergeDailyLogsShell = lazy(() => import('../layouts/ConciergeDailyLogsShell'));
 
@@ -106,6 +108,19 @@ export function AuthGuard({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
+/**
+ * Restricts a route to concierge managers (super_admin, admin, or an explicit
+ * is_manager grant). Non-managers are redirected to the portal home. This is a
+ * UX guard only — RLS and the edge function enforce the real boundary.
+ */
+export function ManagerGuard({ children }: { children: ReactNode }) {
+  const toPath = useTenantPath();
+  const { loading, isManager } = useConciergeAccess();
+  if (loading) return <FullPageLoader />;
+  if (!isManager) return <Navigate to={toPath('/')} replace />;
+  return <>{children}</>;
+}
+
 export function GuestGuard({ children }: { children: ReactNode }) {
   const toPath = useTenantPath();
   const [state, setState] = useState<'loading' | 'authenticated' | 'unauthenticated'>('loading');
@@ -185,6 +200,16 @@ export function appRouteElements() {
       <Route path="tickets" element={<Suspense fallback={<PageLoader />}><Tickets /></Suspense>} />
       <Route path="tickets/new" element={<Suspense fallback={<PageLoader />}><NewTicket /></Suspense>} />
       <Route path="profile" element={<Suspense fallback={<PageLoader />}><Profile /></Suspense>} />
+      <Route
+        path="management"
+        element={
+          <Suspense fallback={<PageLoader />}>
+            <ManagerGuard>
+              <ManagementCenter />
+            </ManagerGuard>
+          </Suspense>
+        }
+      />
     </>
   );
 }

@@ -39,7 +39,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
     icon: Heart,
     tagline: 'Community support when you need it most',
     shortDescription: 'Protection from major medical needs including hospitalizations, surgeries, and serious illnesses',
-    heroImage: '/assets/hsa.png',
+    heroImage: '/assets/Health Sharing for Large Medical Expenses.jpg',
     detailedDescription: 'Our health sharing program provides robust financial support for significant medical needs. When you face major expenses like hospitalizations, surgeries, or serious illnesses, your healthcare costs are shared by our caring community of members. This is the foundation of health sharing—standing together when it matters most.',
     keyPoints: [
       {
@@ -492,7 +492,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
     icon: Wallet,
     tagline: 'Triple tax advantages for healthcare savings',
     shortDescription: 'HSA-qualified memberships that let you save pre-tax dollars for current and future healthcare expenses',
-    heroImage: 'https://images.pexels.com/photos/259200/pexels-photo-259200.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
+    heroImage: '/assets/hsa.png',
     detailedDescription: 'Health Savings Accounts provide powerful tax advantages when paired with HSA-qualified health sharing memberships. Contribute pre-tax dollars, grow your savings tax-free, and withdraw funds tax-free for qualified medical expenses. It\'s like a 401(k) for healthcare that you own and control forever.',
     keyPoints: [
       {
@@ -728,7 +728,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
     icon: PawPrint,
     tagline: '24/7/365 veterinary care for your furry family members',
     shortDescription: '$0, unlimited 24/7/365 access to virtual pet telehealth for your pets',
-    heroImage: '/assets/image copy copy copy copy copy copy copy.png',
+    heroImage: '/assets/preventive Care2.png',
     detailedDescription: 'Your pets are family too. Our pet telehealth benefit provides $0, unlimited 24/7/365 access to licensed veterinarians via phone or video for health questions, concerns, and minor issues. Get professional advice about your dogs, cats, and other household pets without the stress and expense of an office visit.',
     keyPoints: [
       {

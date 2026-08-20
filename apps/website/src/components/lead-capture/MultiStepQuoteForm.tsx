@@ -145,7 +145,7 @@ export const MultiStepQuoteForm: React.FC = () => {
       <div className="text-center mb-8">
         <Users className="h-12 w-12 text-blue-600 mx-auto mb-4" />
         <h3 className="text-2xl font-bold text-neutral-900 mb-2">
-          Who needs coverage?
+          Who's included?
         </h3>
         <p className="text-neutral-600">
           Select your household type to get started

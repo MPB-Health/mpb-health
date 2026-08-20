@@ -25,10 +25,10 @@ const IndividualsAndFamilies = () => {
 
   const directSchema = generateHealthSharePlanSchema(
     'Direct',
-    'Enhanced health sharing membership with direct provider payment and comprehensive family coverage options.',
+    'Enhanced health sharing membership with direct provider payment and comprehensive family membership options.',
     201,
     1006,
-    ['Direct Provider Payment', 'Lower IUA Options', 'Family Coverage', 'Specialist Access', 'Comprehensive Benefits']
+    ['Direct Provider Payment', 'Lower IUA Options', 'Family Memberships', 'Specialist Access', 'Comprehensive Benefits']
   );
 
   const secureHSASchema = generateHealthSharePlanSchema(

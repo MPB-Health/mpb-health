@@ -309,7 +309,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
     ],
     faqs: [
       {
-        question: 'How many therapy sessions are covered?',
+        question: 'How many therapy sessions are included?',
         answer: 'An intake clinician will determine a baseline for the number of sessions pending assessment. Sessions can be extended at the providers discretion, with no annual limit of use.'
       },
       {
@@ -345,7 +345,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
     tagline: 'Supporting your journey to parenthood',
     shortDescription: 'Comprehensive sharing for pregnancy, delivery, and newborn care for growing families',
     heroImage: '/assets/Maternity Care.jpg',
-    detailedDescription: 'Pregnancy is a beautiful journey that deserves comprehensive support. Our maternity care benefit covers prenatal visits, delivery, postpartum care, and newborn medical needs. From your first ultrasound to bringing baby home, we share the costs of this life-changing experience with you.',
+    detailedDescription: 'Pregnancy is a beautiful journey that deserves comprehensive support. Our maternity care benefit shares the costs of prenatal visits, delivery, postpartum care, and newborn medical needs. From your first ultrasound to bringing baby home, we share the costs of this life-changing experience with you.',
     keyPoints: [
       {
         title: 'Full Pregnancy Journey',
@@ -395,8 +395,8 @@ export const healthcareFeatures: HealthcareFeature[] = [
         answer: 'If you\'re already pregnant when you join, that pregnancy would be considered a pre-membership condition. You may still enroll for future pregnancies after satisfying the maternity waiting period. Check with our team about your specific situation.'
       },
       {
-        question: 'Are prenatal vitamins and classes covered?',
-        answer: 'Prescription prenatal vitamins are covered under pharmacy benefits. Educational childbirth classes are typically not shared but are often available at discounted rates through community resources.'
+        question: 'Are prenatal vitamins and classes included?',
+        answer: 'Prescription prenatal vitamins are eligible for sharing under pharmacy benefits. Educational childbirth classes are typically not shared but are often available at discounted rates through community resources.'
       },
       {
         question: 'What about NICU care for the baby?',
@@ -594,8 +594,8 @@ export const healthcareFeatures: HealthcareFeature[] = [
       'Schedule your preventive care appointments with any licensed provider within the PHCS Network.',
       'Confirm with your provider that services are preventive (not diagnostic or treatment)',
       'Receive your preventive care services with no cost-sharing',
-      'Provider bills according to preventive care codes for covered services',
-      'No need to submit expenses - services are covered directly',
+      'Provider bills according to preventive care codes for eligible services',
+      'No need to submit expenses - services are shared directly',
       'Repeat annually or per recommended schedules for ongoing preventive care'
     ],
     eligiblePlans: ['MEC+Essentials', 'Direct', 'Secure HSA'],
@@ -629,7 +629,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
         answer: 'Frequency depends on the service and your age/risk factors. Annual physicals are yearly, mammograms typically start at age 40, colonoscopies every 10 years starting at age 45-50. Your doctor will recommend appropriate schedules based on guidelines.'
       },
       {
-        question: 'Are immunizations for international travel covered?',
+        question: 'Are immunizations for international travel included?',
         answer: 'Routine immunizations are included. Travel-specific vaccines (yellow fever, typhoid, etc.) may not be included in preventive care benefits. Check your membership details about travel vaccinations.'
       },
       {
@@ -664,7 +664,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
       },
       {
         title: 'Benefit Guidance',
-        description: 'Understand what\'s covered and how to maximize your benefits'
+        description: 'Understand what\'s shareable and how to maximize your benefits'
       },
       {
         title: 'Provider Assistance',

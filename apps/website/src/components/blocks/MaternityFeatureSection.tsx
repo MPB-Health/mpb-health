@@ -179,7 +179,7 @@ export const MaternityFeatureSection: React.FC = () => {
             Ready to Start Your Family's Health Journey?
           </h3>
           <p className="text-xl mb-8 text-primary-50 max-w-2xl mx-auto">
-            Join thousands of families who trust MPB Health for comprehensive maternity coverage with transparent sharing and nationwide provider access.
+            Join thousands of families who trust MPB Health for comprehensive maternity support with transparent sharing and nationwide provider access.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button

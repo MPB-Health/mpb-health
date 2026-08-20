@@ -458,7 +458,7 @@ export const generateAllPlansSchema = () => {
   const plans = [
     {
       name: 'Essentials',
-      description: 'Basic health sharing membership with preventive care, telemedicine, and prescription discounts. Perfect for individuals seeking affordable healthcare coverage.',
+      description: 'Basic health sharing membership with preventive care, telemedicine, and prescription discounts. Perfect for individuals seeking affordable healthcare.',
       lowPrice: 49.95,
       highPrice: 69.95,
       features: ['Preventive Care', 'Telemedicine', 'Prescription Discounts', 'Vision & Dental Discounts'],
@@ -468,21 +468,21 @@ export const generateAllPlansSchema = () => {
       description: 'Comprehensive health sharing with medical cost sharing for accidents, illnesses, and hospital stays. Includes maternity sharing after waiting period.',
       lowPrice: 166,
       highPrice: 947,
-      features: ['Medical Cost Sharing', 'Hospital Coverage', 'Maternity Sharing', 'Prescription Sharing', 'Virtual Behavioral Health Support'],
+      features: ['Medical Cost Sharing', 'Hospital Sharing', 'Maternity Sharing', 'Prescription Sharing', 'Virtual Behavioral Health Support'],
     },
     {
       name: 'Direct',
-      description: 'Enhanced health sharing membership with lower IUA options and comprehensive coverage for families. Includes direct provider payment options.',
+      description: 'Enhanced health sharing membership with lower IUA options and comprehensive sharing for families. Includes direct provider payment options.',
       lowPrice: 201,
       highPrice: 1006,
-      features: ['Direct Provider Payment', 'Lower IUA Options', 'Comprehensive Coverage', 'Family Memberships', 'Specialist Access'],
+      features: ['Direct Provider Payment', 'Lower IUA Options', 'Comprehensive Sharing', 'Family Memberships', 'Specialist Access'],
     },
     {
       name: 'Secure HSA',
       description: 'HSA-compatible health sharing membership allowing tax-advantaged savings. Perfect for those wanting to combine health sharing with HSA benefits.',
       lowPrice: 239,
       highPrice: 1070,
-      features: ['HSA Compatible', 'Tax Advantages', 'Medical Cost Sharing', 'Flexible IUA Options', 'Family Coverage'],
+      features: ['HSA Compatible', 'Tax Advantages', 'Medical Cost Sharing', 'Flexible IUA Options', 'Family Memberships'],
     },
     {
       name: 'MEC+ Essentials',
@@ -853,7 +853,7 @@ export const plansFaqQuestions = [
   {
     question: 'Can families use health sharing memberships?',
     answer:
-      'Yes. Many health sharing memberships are designed specifically for families seeking affordable healthcare coverage alternatives with flexible monthly sharing options.',
+      'Yes. Many health sharing memberships are designed specifically for families seeking affordable healthcare alternatives with flexible monthly sharing options.',
   },
 ];
 
@@ -882,9 +882,9 @@ export const businessesFaqQuestions = [
       'HSA compatible health sharing memberships allow eligible members to combine medical cost sharing with a Health Savings Account for additional tax advantages and healthcare budgeting flexibility.',
   },
   {
-    question: 'What expenses can an HSA cover with a health sharing membership?',
+    question: 'What expenses can an HSA pay for with a health sharing membership?',
     answer:
-      'HSAs can typically cover qualified medical expenses including doctor visits, prescriptions, diagnostics, dental care, and hospital-related costs that may not be fully shared through the membership.',
+      'HSAs can typically pay for qualified medical expenses including doctor visits, prescriptions, diagnostics, dental care, and hospital-related costs that may not be fully shared through the membership.',
   },
   {
     question: 'Are health sharing memberships good for small businesses?',
@@ -897,7 +897,7 @@ export const howItWorksFaqQuestions = [
   {
     question: 'How does health sharing work?',
     answer:
-      'Health sharing works through a community-based system where members contribute monthly amounts that help cover eligible medical expenses for other members. MPB Health simplifies the process with member support and online tools.',
+      'Health sharing works through a community-based system where members contribute monthly amounts that help pay eligible medical expenses for other members. MPB Health simplifies the process with member support and online tools.',
   },
   {
     question: 'What medical expenses are eligible for sharing?',
@@ -970,7 +970,7 @@ export const generatePlansPageSchemaBundle = () => [
     [
       { name: 'Assess Your Needs', text: 'Consider your healthcare usage, family size, and budget requirements.' },
       { name: 'Compare IUA Levels', text: 'Lower IUA means higher monthly contribution but lower out-of-pocket costs.' },
-      { name: 'Review Membership Features', text: 'Compare telemedicine, prescription sharing, and specialty coverage options.' },
+      { name: 'Review Membership Features', text: 'Compare telemedicine, prescription sharing, and specialty sharing options.' },
       { name: 'Calculate Total Cost', text: 'Factor in monthly contribution plus expected medical expenses.' },
     ]
   ),

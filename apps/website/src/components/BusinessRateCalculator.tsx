@@ -305,7 +305,7 @@ export default function BusinessRateCalculator() {
                 </div>
 
                 <div className="space-y-3">
-                  <Label className="text-base font-semibold text-gray-900">Who's Covered? (Per Membership) *</Label>
+                  <Label className="text-base font-semibold text-gray-900">Who's Included? (Per Membership) *</Label>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     {householdTypes.map((type) => (
                       <button
@@ -410,7 +410,7 @@ export default function BusinessRateCalculator() {
                       Oldest child/dependent age *
                     </Label>
                     <p className="text-xs text-gray-500">
-                      Per membership, pricing uses the oldest age among all covered members.
+                      Per membership, pricing uses the oldest age among all included members.
                     </p>
                     <Input
                       id="oldestDependentAge"

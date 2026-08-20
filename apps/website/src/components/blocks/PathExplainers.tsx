@@ -37,7 +37,7 @@ const pathExplainers: PathExplainerData[] = [
     whatYouDont: [
       "Limited sharing for major medical events",
       "Higher out-of-pocket for hospital stays",
-      "May not cover all specialist visits",
+      "May not include all specialist visits",
       "Not suitable for chronic conditions requiring frequent care"
     ],
     bestFor: "Individuals and families who prioritize everyday wellness, preventive care, and virtual access while keeping monthly costs low.",

@@ -2,13 +2,13 @@ export const accordionItems = [
   {
     title: "Early Roots of Health Sharing",
     contentHtml: `
-      <p>Long before health insurance existed, communities relied on a system of mutual aid. Friends, neighbors, and religious communities would contribute money to help members cover medical expenses. This system emphasized <strong>community support, trust, and shared responsibility</strong>—the core principles that <a href="https://mpb.health/2025/07/02/medical-cost-sharing-alternative-health-insurance/">health sharing</a> still embodies today.</p>
+      <p>Long before health insurance existed, communities relied on a system of mutual aid. Friends, neighbors, and religious communities would contribute money to help members pay medical expenses. This system emphasized <strong>community support, trust, and shared responsibility</strong>—the core principles that <a href="https://mpb.health/2025/07/02/medical-cost-sharing-alternative-health-insurance/">health sharing</a> still embodies today.</p>
     `
   },
   {
     title: "The Rise of Formal Health Sharing Programs",
     contentHtml: `
-      <p>In the 20th century, formal <a href="https://mpb.health/2025/07/02/medical-cost-sharing-alternative-health-insurance/">health sharing</a> programs began to appear. Members could voluntarily contribute a set amount each month to a shared fund that helped cover medical costs for the group. These programs focused on:</p>
+      <p>In the 20th century, formal <a href="https://mpb.health/2025/07/02/medical-cost-sharing-alternative-health-insurance/">health sharing</a> programs began to appear. Members could voluntarily contribute a set amount each month to a shared fund that helped pay medical costs for the group. These programs focused on:</p>
       <ul>
         <li>Financial support for unexpected medical costs</li>
         <li>Encouraging preventive care and healthy habits</li>

@@ -220,7 +220,7 @@ const HowItWorksPage: React.FC = () => {
                 </h2>
                 <p className="text-lg text-neutral-700 leading-relaxed mb-4">
                   A healthshare is a member-driven, nonprofit community where
-                  participants pool resources to cover each other&rsquo;s medical
+                  participants pool resources to share each other&rsquo;s medical
                   expenses. Instead of premiums and policies, the model runs on
                   shared responsibility&mdash;everyone contributes a monthly amount,
                   and those funds go toward eligible healthcare costs across the
@@ -285,10 +285,10 @@ const HowItWorksPage: React.FC = () => {
                   the relevant documentation.
                 </p>
                 <p className="text-lg text-neutral-700 leading-relaxed mb-4">
-                  Before sharing kicks in, you cover your Initial Unshareable
+                  Before sharing kicks in, you pay your Initial Unshareable
                   Amount (IUA)&mdash;the personal portion of each eligible need.
                   After that threshold is met, the community pools together to
-                  cover the remainder based on the member guidelines. Payments
+                  share the remainder based on the member guidelines. Payments
                   can go directly to your provider or be reimbursed to you, and
                   every sharing summary spells out exactly how the funds were
                   applied.

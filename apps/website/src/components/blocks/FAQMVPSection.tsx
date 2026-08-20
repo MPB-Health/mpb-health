@@ -21,7 +21,7 @@ const faqs: FAQItem[] = [
     a: 'Maternity sharing options are available. Review the specific program guidelines for waiting periods and inclusions.',
   },
   {
-    q: 'Am I covered when traveling?',
+    q: 'Am I eligible for sharing when traveling?',
     a: 'Worldwide sharing options are available; see guidelines for details on eligible services while abroad.',
   },
   {

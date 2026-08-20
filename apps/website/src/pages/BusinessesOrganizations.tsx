@@ -25,7 +25,7 @@ const BusinessesOrganizations = () => {
     'HSA-compatible health sharing for businesses seeking tax-advantaged healthcare solutions for employees.',
     239,
     1070,
-    ['HSA Compatible', 'Tax Advantages', 'Employee Benefits', 'Medical Cost Sharing', 'Family Coverage Options']
+    ['HSA Compatible', 'Tax Advantages', 'Employee Benefits', 'Medical Cost Sharing', 'Family Membership Options']
   );
 
   const orgSchema = generateOrganizationSchema();

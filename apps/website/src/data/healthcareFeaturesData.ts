@@ -39,7 +39,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
     icon: Heart,
     tagline: 'Community support when you need it most',
     shortDescription: 'Protection from major medical needs including hospitalizations, surgeries, and serious illnesses',
-    heroImage: '/assets/Health Sharing for Large Medical Expenses.jpg',
+    heroImage: '/assets/health sharing.png',
     detailedDescription: 'Our health sharing program provides robust financial support for significant medical needs. When you face major expenses like hospitalizations, surgeries, or serious illnesses, your healthcare costs are shared by our caring community of members. This is the foundation of health sharing—standing together when it matters most.',
     keyPoints: [
       {
@@ -808,7 +808,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
     icon: Scale,
     tagline: 'Provider-guided prescriptions for GLP-1 medications',
     shortDescription: 'MPB Health members can access medical weight loss support including GLP-1 medication prescriptions through virtual care visits with licensed providers. Secure HSA members get additional Rx Valet access.',
-    heroImage: '/assets/BLOG IMAGES (29).png',
+    heroImage: '/assets/Medical Weight Loss Support.png',
     detailedDescription: 'MPB Health members have access to medical weight loss support, including provider-guided prescriptions for GLP-1 medications. Schedule a virtual visit with a licensed provider who can evaluate your health and determine whether weight loss medications are right for you — all from the MPB Health app.',
     keyPoints: [
       {

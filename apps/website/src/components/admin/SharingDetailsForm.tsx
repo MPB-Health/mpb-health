@@ -184,7 +184,7 @@ export const SharingDetailsForm: React.FC<SharingDetailsFormProps> = ({
             {/* Caps */}
             <div>
               <h4 className="text-sm font-semibold text-neutral-500 uppercase tracking-wider mb-3">
-                Sharing Caps
+                Sharing Maximums
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <label className="flex items-center gap-3 cursor-pointer">
@@ -194,7 +194,7 @@ export const SharingDetailsForm: React.FC<SharingDetailsFormProps> = ({
                     onChange={e => setForm(prev => ({ ...prev, has_annual_cap: e.target.checked }))}
                     className="h-4 w-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
                   />
-                  <span className="text-sm text-neutral-700">Has Annual Cap</span>
+                  <span className="text-sm text-neutral-700">Has Annual Sharing Maximum</span>
                 </label>
                 <label className="flex items-center gap-3 cursor-pointer">
                   <input
@@ -203,7 +203,7 @@ export const SharingDetailsForm: React.FC<SharingDetailsFormProps> = ({
                     onChange={e => setForm(prev => ({ ...prev, has_lifetime_cap: e.target.checked }))}
                     className="h-4 w-4 rounded border-neutral-300 text-blue-600 focus:ring-blue-500"
                   />
-                  <span className="text-sm text-neutral-700">Has Lifetime Cap</span>
+                  <span className="text-sm text-neutral-700">Has Lifetime Sharing Maximum</span>
                 </label>
               </div>
             </div>

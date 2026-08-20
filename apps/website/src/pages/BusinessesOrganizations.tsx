@@ -91,7 +91,7 @@ const BusinessesOrganizations = () => {
     },
     {
       icon: InfinityIcon,
-      title: 'No Annual or Lifetime Caps',
+      title: 'No Annual or Lifetime Sharing Maximums',
       description:
         "Unlike many traditional plans, MPB Health's cost-sharing programs don't impose yearly or lifetime maximums on eligible expenses.",
       color: 'text-primary',

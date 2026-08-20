@@ -258,10 +258,10 @@ export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
                   </td>
                 </tr>
 
-                {/* Lifetime Cap Row */}
+                {/* Lifetime Sharing Maximum Row */}
                 <tr className="bg-white hover:bg-primary-50/50 transition-colors">
                   <td className="py-4 px-6 text-sm font-medium text-neutral-800 sticky left-0 z-20 bg-white shadow-[4px_0_8px_-4px_rgba(0,0,0,0.06)]">
-                    Lifetime Cap
+                    Lifetime Sharing Maximum
                   </td>
                   {plans.map(plan => (
                     <td key={`lifetime-${plan.id}`} className="py-4 px-4 text-center">
@@ -271,14 +271,14 @@ export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
                             <div className="w-6 h-6 rounded-full bg-amber-200 flex items-center justify-center flex-shrink-0">
                               <X className="h-4 w-4 text-amber-600" />
                             </div>
-                            <span className="text-sm text-amber-700 font-medium">Has cap</span>
+                            <span className="text-sm text-amber-700 font-medium">Has maximum</span>
                           </div>
                         ) : (
                           <div className="flex items-center justify-center gap-2">
                             <div className="w-6 h-6 rounded-full bg-gradient-to-br from-success-500 to-success-600 flex items-center justify-center shadow-sm flex-shrink-0">
                               <Check className="h-4 w-4 text-white" />
                             </div>
-                            <span className="text-sm font-bold text-success-600">No cap</span>
+                            <span className="text-sm font-bold text-success-600">No maximum</span>
                           </div>
                         )
                       ) : (
@@ -293,10 +293,10 @@ export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
                   ))}
                 </tr>
 
-                {/* Annual Cap Row */}
+                {/* Annual Sharing Maximum Row */}
                 <tr className="bg-neutral-50 hover:bg-primary-50/50 transition-colors">
                   <td className="py-4 px-6 text-sm font-medium text-neutral-800 sticky left-0 z-20 bg-neutral-50 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.06)]">
-                    Annual Cap
+                    Annual Sharing Maximum
                   </td>
                   {plans.map(plan => (
                     <td key={`annual-${plan.id}`} className="py-4 px-4 text-center">
@@ -306,14 +306,14 @@ export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
                             <div className="w-6 h-6 rounded-full bg-amber-200 flex items-center justify-center flex-shrink-0">
                               <X className="h-4 w-4 text-amber-600" />
                             </div>
-                            <span className="text-sm text-amber-700 font-medium">Has cap</span>
+                            <span className="text-sm text-amber-700 font-medium">Has maximum</span>
                           </div>
                         ) : (
                           <div className="flex items-center justify-center gap-2">
                             <div className="w-6 h-6 rounded-full bg-gradient-to-br from-success-500 to-success-600 flex items-center justify-center shadow-sm flex-shrink-0">
                               <Check className="h-4 w-4 text-white" />
                             </div>
-                            <span className="text-sm font-bold text-success-600">No cap</span>
+                            <span className="text-sm font-bold text-success-600">No maximum</span>
                           </div>
                         )
                       ) : (

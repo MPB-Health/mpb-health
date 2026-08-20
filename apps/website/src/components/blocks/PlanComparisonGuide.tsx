@@ -32,7 +32,7 @@ const comparisonData: ComparisonCategory[] = [
       { feature: 'Emergency Room Visits', carePlus: true, direct: true, essentials: false },
       { feature: 'Diagnostic Imaging (MRI, CT, X-ray)', carePlus: true, direct: true, essentials: false },
       { feature: 'Lab Work', carePlus: true, direct: true, essentials: false },
-      { feature: 'Lifetime Sharing Limit', carePlus: 'None', direct: 'None', essentials: 'N/A' },
+      { feature: 'Lifetime Sharing Maximum', carePlus: 'None', direct: 'None', essentials: 'N/A' },
     ],
   },
   {

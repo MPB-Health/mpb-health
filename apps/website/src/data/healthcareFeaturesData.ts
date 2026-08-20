@@ -90,8 +90,8 @@ export const healthcareFeatures: HealthcareFeature[] = [
         answer: 'Once your submission is reviewed and approved, sharing typically occurs within 45-60 days (or as little as 2 weeks). Emergency situations may receive expedited processing. You can always check the status of your requests in your member portal.'
       },
       {
-        question: 'Are there sharing limits?',
-        answer: 'There are no lifetime limits or annual caps.'
+        question: 'Are there sharing maximums?',
+        answer: 'There are no lifetime or annual sharing maximums.'
       },
       {
         question: 'What if I need care for a pre-membership condition?',

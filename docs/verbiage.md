@@ -2,7 +2,7 @@
 
 **Date:** August 18, 2026
 **Scope:** `apps/website/src` — public marketing pages, member portal pages, and shared copy/data files. Blog/CMS content stored in Supabase and third-party embeds were not scanned (see [Scope notes](#scope-notes)).
-**Status:** In progress — step 1 (Preventative → Preventive) completed August 20, 2026; remaining steps pending.
+**Status:** In progress — steps 1 (Preventative → Preventive) and 2 (sharing caps/limits → sharing maximums) completed August 20, 2026; remaining steps pending.
 
 ---
 
@@ -219,7 +219,7 @@ If strict compliance is preferred, replace the analogy sentences with: "The IUA 
 ## Suggested execution order
 
 1. ~~**Preventative → Preventive** (mechanical, zero ambiguity, ~19 replacements).~~ ✅ Done — 19 replacements (18 in `healthcareFeaturesData.ts`, 1 in `FAQAccordion.tsx`).
-2. **Sharing caps/limits → sharing maximums** (~10 replacements).
+2. ~~**Sharing caps/limits → sharing maximums** (~10 replacements).~~ ✅ Done — all locations in section 3 plus strays the report missed (`PlanComparisonTable.tsx` "Lifetime/Annual Cap" rows, `AllPlansComparisonTable.tsx` "no lifetime limits", hero compliance note in `mpb_hero_radial_benefits_and_advisors_mvp_react_tailwind.jsx`) and the admin screens.
 3. **Cover/coverage/covered** in the copy locations listed in section 4 (~15 hand-tailored rewrites).
 4. **Pre-existing → pre-membership** (~6 replacements).
 5. **Plan stragglers → membership** (~6 replacements).

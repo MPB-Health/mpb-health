@@ -48,7 +48,7 @@ export const accordionItems = [
       <p>MPB Health takes the long-standing principles of <a href="https://mpb.health/2025/07/02/medical-cost-sharing-alternative-health-insurance/">health sharing</a> and combines them with modern, flexible membership-based healthcare solutions. Here's how our memberships work:</p>
       <ul>
         <li><strong>Shared Medical Cost Pool:</strong> Members contribute a monthly share into a collective pool. When a member has an eligible medical need, funds from the pool are used to help pay for those expenses.</li>
-        <li><strong>Comprehensive membership options:</strong> By combining flexibility, member empowerment, and plan diversity, members can gain access to urgent, preventive, virtual behavioral health, telehealth, and pharmacy benefits, all with no lifetime caps and lower costs compared to traditional insurance.</li>
+        <li><strong>Comprehensive membership options:</strong> By combining flexibility, member empowerment, and plan diversity, members can gain access to urgent, preventive, virtual behavioral health, telehealth, and pharmacy benefits, all with no lifetime sharing maximums and lower costs compared to traditional insurance.</li>
         <li><strong>Virtual Care Integration:</strong> Members can consult with healthcare professionals online, making doctor visits easier and more convenient.</li>
         <li><strong>Supportive Member Community:</strong> MPB Health fosters a network of members who share similar goals of wellness and cost-conscious healthcare, keeping the spirit of mutual support alive.</li>
       </ul>

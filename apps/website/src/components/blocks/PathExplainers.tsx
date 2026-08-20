@@ -63,7 +63,7 @@ const pathExplainers: PathExplainerData[] = [
       "Pre-membership conditions have waiting periods",
       "Initial Unshareable Amount (IUA) applies first",
       "Some elective procedures may not be shared",
-      "Sharing limits apply per medical need"
+      "Sharing maximums apply per medical need"
     ],
     bestFor: "Members who want strong protection against large medical bills while maintaining affordable monthly contributions and community-based sharing.",
   },

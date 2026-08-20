@@ -304,11 +304,11 @@ export const PlanDetail: React.FC<PlanDetailProps> = ({
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                 <div>
-                  <span className="text-neutral-500">Annual Cap</span>
+                  <span className="text-neutral-500">Annual Sharing Maximum</span>
                   <p className="font-medium">{plan.sharing_details.has_annual_cap ? 'Yes' : 'No'}</p>
                 </div>
                 <div>
-                  <span className="text-neutral-500">Lifetime Cap</span>
+                  <span className="text-neutral-500">Lifetime Sharing Maximum</span>
                   <p className="font-medium">{plan.sharing_details.has_lifetime_cap ? 'Yes' : 'No'}</p>
                 </div>
                 <div>

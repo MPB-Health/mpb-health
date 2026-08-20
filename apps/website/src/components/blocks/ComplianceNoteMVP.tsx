@@ -10,7 +10,7 @@ export function ComplianceNoteMVP() {
           </h2>
           MPB Health provides access to qualified Health Sharing Programs. Health sharing is not
           insurance and does not guarantee payment of medical expenses. Program eligibility,
-          waiting periods, and sharing limits apply. Always review the official guidelines and
+          waiting periods, and sharing maximums apply. Always review the official guidelines and
           price sheets before enrolling.
           <div className="mt-2">
             <a

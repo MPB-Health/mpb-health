@@ -61,7 +61,7 @@ const PLAN_SELL: Record<string, { tagline: string; bullets: { lead: string; deta
     tagline: 'Complete peace of mind for families',
     bullets: [
       { lead: '$0 unlimited virtual care', detail: '24/7 urgent, primary, and behavioral health — included in every plan' },
-      { lead: 'Full medical cost sharing', detail: 'Hospital, surgery, no lifetime limits' },
+      { lead: 'Full medical cost sharing', detail: 'Hospital, surgery, no lifetime sharing maximums' },
       { lead: 'Maternity sharing', detail: 'Real support after 6 months when you need it' },
       { lead: 'Any doctor, any hospital', detail: 'No network restrictions — your choice' },
     ],

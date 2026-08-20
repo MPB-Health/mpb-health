@@ -100,11 +100,11 @@ export function formatSharingDetails(plan: PlanWithDetails): string[] {
   if (!sharing) return details;
 
   if (!sharing.has_lifetime_cap) {
-    details.push('No lifetime caps');
+    details.push('No lifetime sharing maximums');
   }
 
   if (!sharing.has_annual_cap) {
-    details.push('No annual caps');
+    details.push('No annual sharing maximums');
   }
 
   if (sharing.preexisting_lookback_months) {

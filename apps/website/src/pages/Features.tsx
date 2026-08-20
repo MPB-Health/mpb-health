@@ -236,10 +236,10 @@ export const Features: React.FC = () => {
           </Badge>
           
           <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
-            Need help choosing the right benefits?
+            Need help choosing the right membership?
           </h2>
           <p className="text-lg text-gray-300 mb-8 max-w-xl mx-auto">
-            Our specialists can help you understand which benefits best fit your healthcare needs.
+            Our specialists can help you explore your options and find the membership that fits your healthcare needs.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">

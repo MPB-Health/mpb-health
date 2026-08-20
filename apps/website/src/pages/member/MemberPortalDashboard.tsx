@@ -214,7 +214,7 @@ const MemberPortalDashboard: React.FC = () => {
                     {dashboardData.profile.membership_status}
                   </div>
                   <div className="mt-2 text-sm text-neutral-600">
-                    {dashboardData.coverage?.plan_name || 'No active plan'}
+                    {dashboardData.coverage?.plan_name || 'No active membership'}
                   </div>
                 </div>
               </div>

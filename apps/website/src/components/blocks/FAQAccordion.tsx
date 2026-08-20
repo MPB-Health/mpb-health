@@ -13,7 +13,7 @@ const FAQAccordion: React.FC = () => {
     },
     {
       question: "Is there a waiting period for sharing?",
-      answer: "Yes, most health sharing plans have waiting periods for certain conditions. Accidents and new illnesses are typically eligible immediately after your effective date. Pre-membership conditions usually have a 12-month waiting period. Maternity requests are ineligible for sharing during the first six months of membership. (If you are managing Diabetes, High Blood Pressure, or High Cholesterol and haven't been hospitalized for it in the last year, you are eligible for sharing related to these needs from Day One of your membership.)"
+      answer: "Yes, most health sharing memberships have waiting periods for certain conditions. Accidents and new illnesses are typically eligible immediately after your effective date. Pre-membership conditions usually have a 12-month waiting period. Maternity requests are ineligible for sharing during the first six months of membership. (If you are managing Diabetes, High Blood Pressure, or High Cholesterol and haven't been hospitalized for it in the last year, you are eligible for sharing related to these needs from Day One of your membership.)"
     },
     {
       question: "Can I use any doctor or hospital?",

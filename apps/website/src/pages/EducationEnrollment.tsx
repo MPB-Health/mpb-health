@@ -54,8 +54,8 @@ const EducationEnrollment: React.FC = () => {
     },
     {
       name: 'Emily Rodriguez',
-      role: 'Family Plan Member',
-      content: 'I appreciated being able to compare plans side-by-side and see exactly what each option covered. The transparency made choosing the right plan easy.',
+      role: 'Family Membership Holder',
+      content: 'I appreciated being able to compare memberships side-by-side and see exactly what each option included. The transparency made choosing the right membership easy.',
       avatar: '/assets/womenHealth.jpg'
     }
   ];

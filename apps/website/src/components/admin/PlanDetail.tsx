@@ -316,7 +316,7 @@ export const PlanDetail: React.FC<PlanDetailProps> = ({
                   <p className="font-medium">{plan.sharing_details.has_international_coverage ? 'Yes' : 'No'}</p>
                 </div>
                 <div>
-                  <span className="text-neutral-500">Pre-existing Lookback</span>
+                  <span className="text-neutral-500">Pre-membership Lookback</span>
                   <p className="font-medium">{plan.sharing_details.preexisting_lookback_months != null ? `${plan.sharing_details.preexisting_lookback_months} months` : 'N/A'}</p>
                 </div>
                 <div>

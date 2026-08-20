@@ -57,8 +57,8 @@ const faqsForSchema = [
     answer: 'Yes. Emergency or urgent care expenses incurred outside the United States or Puerto Rico may be eligible for sharing, subject to the Member Guidelines. If a medical need arises while you are traveling, the community is designed to support you.',
   },
   {
-    question: 'What if I have a pre-existing condition?',
-    answer: 'MPB Health does not turn anyone away based on medical history. While brand-new medical needs qualify for sharing immediately, pre-existing conditions typically follow a 12-month phase-in window. However, certain managed conditions\u2014like diabetes or high blood pressure\u2014may be eligible for sharing from Day One, provided there has been no related hospitalization in the past year.',
+    question: 'What if I have a pre-membership condition?',
+    answer: 'MPB Health does not turn anyone away based on medical history. While brand-new medical needs qualify for sharing immediately, pre-membership conditions typically follow a 12-month phase-in window. However, certain managed conditions\u2014like diabetes or high blood pressure\u2014may be eligible for sharing from Day One, provided there has been no related hospitalization in the past year.',
   },
   {
     question: 'Can MPB Health be offered to employees?',
@@ -114,7 +114,7 @@ const whatToKnow = [
     icon: Hourglass,
     title: 'Phase-In Periods',
     description:
-      'New eligible medical needs may be shared from day one. Pre-existing conditions are subject to a phase-in period. Managed conditions such as diabetes, high blood pressure, and high cholesterol may be eligible sooner if there has been no related hospitalization within the past year.',
+      'New eligible medical needs may be shared from day one. Pre-membership conditions are subject to a phase-in period. Managed conditions such as diabetes, high blood pressure, and high cholesterol may be eligible sooner if there has been no related hospitalization within the past year.',
   },
 ];
 

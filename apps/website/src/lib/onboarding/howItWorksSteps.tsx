@@ -87,7 +87,7 @@ export const HOW_IT_WORKS_STEPS: HowItWorksStep[] = [
           </li>
           <li className="flex items-start gap-2">
             <span className="text-teal-600 font-bold">&bull;</span>
-            <span>Understand phase-in periods for pre-existing conditions.</span>
+            <span>Understand phase-in periods for pre-membership conditions.</span>
           </li>
         </ul>
       </>

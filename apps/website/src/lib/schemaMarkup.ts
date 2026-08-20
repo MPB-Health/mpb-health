@@ -920,7 +920,7 @@ export const faqPagePaaQuestions = [
   {
     question: 'What are the pros and cons of health share memberships?',
     answer:
-      'Pros may include affordability, flexibility, and lower monthly costs, while limitations may include sharing restrictions, pre-existing condition guidelines, and non-insurance status.',
+      'Pros may include affordability, flexibility, and lower monthly costs, while limitations may include sharing restrictions, pre-membership condition guidelines, and non-insurance status.',
   },
   {
     question: 'Can I use any doctor with a health sharing membership?',

@@ -2,7 +2,7 @@
 
 **Date:** August 18, 2026
 **Scope:** `apps/website/src` — public marketing pages, member portal pages, and shared copy/data files. Blog/CMS content stored in Supabase and third-party embeds were not scanned (see [Scope notes](#scope-notes)).
-**Status:** In progress — steps 1 (Preventative → Preventive), 2 (sharing caps/limits → sharing maximums), and 3 (cover/coverage/covered) completed August 20, 2026; remaining steps pending.
+**Status:** In progress — steps 1 (Preventative → Preventive), 2 (sharing caps/limits → sharing maximums), 3 (cover/coverage/covered), and 4 (pre-existing → pre-membership) completed August 20, 2026; remaining steps pending.
 
 ---
 
@@ -221,7 +221,7 @@ If strict compliance is preferred, replace the analogy sentences with: "The IUA 
 1. ~~**Preventative → Preventive** (mechanical, zero ambiguity, ~19 replacements).~~ ✅ Done — 19 replacements (18 in `healthcareFeaturesData.ts`, 1 in `FAQAccordion.tsx`).
 2. ~~**Sharing caps/limits → sharing maximums** (~10 replacements).~~ ✅ Done — all locations in section 3 plus strays the report missed (`PlanComparisonTable.tsx` "Lifetime/Annual Cap" rows, `AllPlansComparisonTable.tsx` "no lifetime limits", hero compliance note in `mpb_hero_radial_benefits_and_advisors_mvp_react_tailwind.jsx`) and the admin screens.
 3. ~~**Cover/coverage/covered** in the copy locations listed in section 4 (~15 hand-tailored rewrites).~~ ✅ Done — all section 4 locations, plus strays the report missed: quote/rate calculators ("Who's Covered?", "oldest covered age"), `MultiStepQuoteForm.tsx` ("Who needs coverage?"), `FAQMVPSection.tsx` ("Am I covered when traveling?"), IUA tooltip in `howItWorksSteps.tsx`, CTA copy in `AboutUs.tsx` / `MaternityFeatureSection.tsx` / `HealthcareFeaturesSection.tsx` / `BlogCTA.tsx`, and SEO copy in `schemaMarkup.ts`, `page-seo-data.json`, `IndividualsAndFamilies.tsx`, `BusinessesOrganizations.tsx`. Left exempt: voluntary-benefits (insurance) pages incl. `BenefitDetail.tsx`, "Minimum Essential Coverage" (official ACA term), CSS `object-cover`, admin/CRM screens, code identifiers and routes, and the `migrate-articles.ts` seed (out of scope).
-4. **Pre-existing → pre-membership** (~6 replacements).
+4. ~~**Pre-existing → pre-membership** (~6 replacements).~~ ✅ Done — all section 5 locations, plus display labels in `leadNotificationFormat.ts` and the admin screens (`SharingDetailsForm.tsx`, `PlanDetail.tsx`). Code identifiers (`preexisting_lookback_months`, `preexistingConditions`, etc.) and the "pre-existing drift" code comments (unrelated sense) kept as-is.
 5. **Plan stragglers → membership** (~6 replacements).
 6. **Member portal Claims → Sharing Requests** (biggest job: page copy, routes with redirects, dashboard widgets; admin screens can follow).
 7. Review the two "satisfaction guarantee" mentions and the voluntary-benefits wording with compliance.

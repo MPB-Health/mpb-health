@@ -2,7 +2,7 @@
 
 **Date:** August 18, 2026
 **Scope:** `apps/website/src` — public marketing pages, member portal pages, and shared copy/data files. Blog/CMS content stored in Supabase and third-party embeds were not scanned (see [Scope notes](#scope-notes)).
-**Status:** Report only — no copy has been changed yet.
+**Status:** In progress — step 1 (Preventative → Preventive) completed August 20, 2026; remaining steps pending.
 
 ---
 
@@ -218,7 +218,7 @@ If strict compliance is preferred, replace the analogy sentences with: "The IUA 
 
 ## Suggested execution order
 
-1. **Preventative → Preventive** (mechanical, zero ambiguity, ~19 replacements).
+1. ~~**Preventative → Preventive** (mechanical, zero ambiguity, ~19 replacements).~~ ✅ Done — 19 replacements (18 in `healthcareFeaturesData.ts`, 1 in `FAQAccordion.tsx`).
 2. **Sharing caps/limits → sharing maximums** (~10 replacements).
 3. **Cover/coverage/covered** in the copy locations listed in section 4 (~15 hand-tailored rewrites).
 4. **Pre-existing → pre-membership** (~6 replacements).

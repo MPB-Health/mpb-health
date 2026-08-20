@@ -17,7 +17,7 @@ const FAQAccordion: React.FC = () => {
     },
     {
       question: "Can I use any doctor or hospital?",
-      answer: "Yes! Unlike traditional insurance, health sharing has no network restrictions for Medical Cost Sharing injury or illness. You can visit any licensed healthcare provider, specialist, or hospital in the United States. This freedom of choice is one of the key benefits of health sharing over traditional insurance plans. For preventative care services, there is a network of providers."
+      answer: "Yes! Unlike traditional insurance, health sharing has no network restrictions for Medical Cost Sharing injury or illness. You can visit any licensed healthcare provider, specialist, or hospital in the United States. This freedom of choice is one of the key benefits of health sharing over traditional insurance plans. For preventive care services, there is a network of providers."
     },
     {
       question: "How do I submit medical expenses for sharing?",

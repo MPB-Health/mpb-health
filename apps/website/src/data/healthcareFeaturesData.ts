@@ -566,20 +566,20 @@ export const healthcareFeatures: HealthcareFeature[] = [
   },
   {
     id: 'preventive-care',
-    name: 'Preventative Care (ACA-Mandated)',
+    name: 'Preventive Care (ACA-Mandated)',
     icon: ShieldCheck,
     tagline: 'Proactive health screening and wellness',
-    shortDescription: 'No-cost preventative care services as mandated by the Affordable Care Act including screenings, immunizations, and wellness visits',
+    shortDescription: 'No-cost preventive care services as mandated by the Affordable Care Act including screenings, immunizations, and wellness visits',
     heroImage: '/assets/preventiceCare.png',
-    detailedDescription: 'Prevention is the best medicine. Our preventative care benefit includes comprehensive screenings, immunizations, and wellness visits at no additional cost. Stay ahead of health problems by catching them early and maintaining good health through regular preventative services as mandated by the ACA.',
+    detailedDescription: 'Prevention is the best medicine. Our preventive care benefit includes comprehensive screenings, immunizations, and wellness visits at no additional cost. Stay ahead of health problems by catching them early and maintaining good health through regular preventive services as mandated by the ACA.',
     keyPoints: [
       {
         title: 'No-Cost Screenings',
-        description: 'Preventative services with no cost-sharing'
+        description: 'Preventive services with no cost-sharing'
       },
       {
         title: 'Comprehensive Membership',
-        description: 'Wide range of age-appropriate preventative care services'
+        description: 'Wide range of age-appropriate preventive care services'
       },
       {
         title: 'Early Detection',
@@ -591,12 +591,12 @@ export const healthcareFeatures: HealthcareFeature[] = [
       }
     ],
     howItWorks: [
-      'Schedule your preventative care appointments with any licensed provider within the PHCS Network.',
-      'Confirm with your provider that services are preventative (not diagnostic or treatment)',
-      'Receive your preventative care services with no cost-sharing',
-      'Provider bills according to preventative care codes for covered services',
+      'Schedule your preventive care appointments with any licensed provider within the PHCS Network.',
+      'Confirm with your provider that services are preventive (not diagnostic or treatment)',
+      'Receive your preventive care services with no cost-sharing',
+      'Provider bills according to preventive care codes for covered services',
       'No need to submit expenses - services are covered directly',
-      'Repeat annually or per recommended schedules for ongoing preventative care'
+      'Repeat annually or per recommended schedules for ongoing preventive care'
     ],
     eligiblePlans: ['MEC+Essentials', 'Direct', 'Secure HSA'],
     membership: [
@@ -621,20 +621,20 @@ export const healthcareFeatures: HealthcareFeature[] = [
         answer: 'On the Direct membership, screening mammography and colonoscopy (colorectal screening) are subject to a 6-month waiting period. Refer to your Member Guidelines for the latest rules.'
       },
       {
-        question: 'What\'s the difference between preventative and diagnostic care?',
-        answer: 'Preventative care is routine screening when you have no symptoms (like an annual physical). Diagnostic care investigates symptoms or known conditions. Preventative services have no cost-sharing; diagnostic care may apply to your IUA.'
+        question: 'What\'s the difference between preventive and diagnostic care?',
+        answer: 'Preventive care is routine screening when you have no symptoms (like an annual physical). Diagnostic care investigates symptoms or known conditions. Preventive services have no cost-sharing; diagnostic care may apply to your IUA.'
       },
       {
-        question: 'How often can I get preventative screenings?',
+        question: 'How often can I get preventive screenings?',
         answer: 'Frequency depends on the service and your age/risk factors. Annual physicals are yearly, mammograms typically start at age 40, colonoscopies every 10 years starting at age 45-50. Your doctor will recommend appropriate schedules based on guidelines.'
       },
       {
         question: 'Are immunizations for international travel covered?',
-        answer: 'Routine immunizations are included. Travel-specific vaccines (yellow fever, typhoid, etc.) may not be included in preventative care benefits. Check your membership details about travel vaccinations.'
+        answer: 'Routine immunizations are included. Travel-specific vaccines (yellow fever, typhoid, etc.) may not be included in preventive care benefits. Check your membership details about travel vaccinations.'
       },
       {
-        question: 'What if something is found during preventative screening?',
-        answer: 'The preventative screening itself has no cost-sharing. However, if the screening finds something requiring further testing or treatment, those follow-up services may have cost-sharing according to your membership\'s medical benefits.'
+        question: 'What if something is found during preventive screening?',
+        answer: 'The preventive screening itself has no cost-sharing. However, if the screening finds something requiring further testing or treatment, those follow-up services may have cost-sharing according to your membership\'s medical benefits.'
       }
     ],
     color: 'text-cyan-600',

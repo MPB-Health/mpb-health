@@ -37,11 +37,11 @@
     "robots": "index, follow"
   },
   "/how-it-works": {
-    "title": "How Health Sharing Works | Medical Cost Sharing Explained | MPB",
-    "description": "Learn how health sharing works, how medical cost sharing works, what an IUA is, and how members share eligible healthcare costs through MPB Health.",
-    "keywords": "how health sharing works, medical cost sharing explained, IUA, community health, healthcare alternative, health sharing process",
-    "ogTitle": "How Health Sharing Works | Medical Cost Sharing Explained | MPB",
-    "ogDescription": "Learn how health sharing works, how medical cost sharing works, what an IUA is, and how members share eligible healthcare costs through MPB Health.",
+    "title": "How Health Sharing Works | MPB Health",
+    "description": "Learn how health sharing works with MPB Health, including monthly contributions, eligible medical expenses, member responsibilities, and how the community shares healthcare costs.",
+    "keywords": "how health sharing works, medical cost sharing explained, IUA, member responsibility amount, community health, healthcare alternative, health sharing process",
+    "ogTitle": "How Health Sharing Works | MPB Health",
+    "ogDescription": "Learn how health sharing works with MPB Health, including monthly contributions, eligible medical expenses, member responsibilities, and how the community shares healthcare costs.",
     "canonicalUrl": "https://mpb.health/how-it-works",
     "robots": "index, follow"
   },

@@ -289,18 +289,30 @@ const HowItWorksPage: React.FC = () => {
         <section className="hiw-hero" aria-label="How health sharing works">
           <LandingHeader />
           <div className="hiw-hero__content">
-            <h1 className="hiw-hero__title">How Health Sharing Works</h1>
-            <p className="hiw-hero__sub">
-              A simple, transparent approach to managing eligible healthcare expenses together.
-            </p>
-            <p className="hiw-hero__lede">
-              MPB Health uses a member-driven health sharing model where members contribute monthly
-              and the community shares eligible medical expenses according to membership guidelines.
-            </p>
-            <p className="hiw-hero__note">
-              Health sharing is not health insurance. Memberships are subject to eligibility
-              requirements and member guidelines.
-            </p>
+            <div className="hiw-hero__copy">
+              <h1 className="hiw-hero__title">How Health Sharing Works</h1>
+              <p className="hiw-hero__sub">
+                A simple, transparent approach to managing eligible healthcare expenses together.
+              </p>
+              <p className="hiw-hero__lede">
+                MPB Health uses a member-driven health sharing model where members contribute
+                monthly and the community shares eligible medical expenses according to membership
+                guidelines.
+              </p>
+              <p className="hiw-hero__note">
+                Health sharing is not health insurance. Memberships are subject to eligibility
+                requirements and member guidelines.
+              </p>
+            </div>
+            <img
+              className="hiw-hero__img"
+              src="/assets/howitworks.png"
+              alt="Three members relaxing and talking together in a sunlit living room"
+              width={1600}
+              height={1066}
+              fetchPriority="high"
+              decoding="async"
+            />
           </div>
         </section>
 

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
 import { SEOHead } from '../components/SEOHead';
 import { LandingHeader } from '../components/landing-redesign/LandingHeader';
+import { LandingFooter } from '../components/landing-redesign/LandingFooter';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '../components/ui/Accordion';
 import {
   ArrowRight,
@@ -591,6 +592,9 @@ const HowItWorksPage: React.FC = () => {
             </p>
           </div>
         </section>
+
+        {/* ── Footer (same as landing page) ────────────────────────── */}
+        <LandingFooter />
       </div>
     </>
   );

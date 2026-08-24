@@ -274,8 +274,8 @@ const ConditionalFooter: React.FC = () => {
   const isAdminRoute = location.pathname.startsWith('/admin');
   const isAdvisorRoute = location.pathname.startsWith('/advisor');
   
-  // Don't render footer on admin, advisor dashboard, or homepage (owns its footer)
-  if (isAdminRoute || isAdvisorRoute || isHomePath(location.pathname)) {
+  // Don't render footer on admin, advisor dashboard, or landing-chrome pages (they own their footer)
+  if (isAdminRoute || isAdvisorRoute || usesLandingChrome(location.pathname)) {
     return null;
   }
   

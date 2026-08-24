@@ -656,6 +656,8 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: clamp(1.5rem, 3vw, 2.75rem) clamp(1.25rem, 2.5vw, 2.5rem);
+  /* Inset to match the padded content width of .hiw-everyday__card */
+  padding: 0 clamp(1.5rem, 3vw, 3rem);
 }
 
 .hiw-choose__item {

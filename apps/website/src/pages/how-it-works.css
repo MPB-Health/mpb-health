@@ -722,9 +722,12 @@
 /* ——— Final banner ——— */
 .hiw-final {
   position: relative;
-  background-image: url('/assets/how-it-works-family.png');
-  background-size: cover;
-  background-position: center 60%;
+  /* The hero gradient is multiplied over the photo so the picture picks up the
+     same green/teal/periwinkle light as the hero and the front-page images */
+  background-image: url('/assets/gradient.png'), url('/assets/how-it-works-family.png');
+  background-size: cover, cover;
+  background-position: center, center 60%;
+  background-blend-mode: multiply, normal;
   padding: clamp(3.5rem, 8vw, 7.5rem) var(--hiw-pad-x);
 }
 
@@ -732,7 +735,8 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, rgba(15, 39, 64, 0.72) 0%, rgba(15, 39, 64, 0.45) 55%, rgba(15, 39, 64, 0.2) 100%);
+  /* Lighter scrim than before — the gradient wash does most of the toning now */
+  background: linear-gradient(90deg, rgba(15, 39, 64, 0.42) 0%, rgba(15, 39, 64, 0.18) 55%, rgba(15, 39, 64, 0) 100%);
 }
 
 .hiw-final__content {

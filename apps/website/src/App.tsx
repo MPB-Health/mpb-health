@@ -258,9 +258,13 @@ const AnalyticsTracker: React.FC<{ children: React.ReactNode }> = ({ children })
 // Conditional chrome — homepage redesign owns its own header/footer
 const isHomePath = (pathname: string) => pathname === '/';
 
+// Pages that render the landing-redesign header themselves (no global header, no top padding)
+const usesLandingChrome = (pathname: string) =>
+  isHomePath(pathname) || pathname === '/how-it-works';
+
 const ConditionalHeader: React.FC = () => {
   const location = useLocation();
-  if (isHomePath(location.pathname)) return null;
+  if (usesLandingChrome(location.pathname)) return null;
   return <HeaderWithAuth />;
 };
 
@@ -270,8 +274,8 @@ const ConditionalFooter: React.FC = () => {
   const isAdminRoute = location.pathname.startsWith('/admin');
   const isAdvisorRoute = location.pathname.startsWith('/advisor');
   
-  // Don't render footer on admin, advisor dashboard, or homepage (owns its footer)
-  if (isAdminRoute || isAdvisorRoute || isHomePath(location.pathname)) {
+  // Don't render footer on admin, advisor dashboard, or landing-chrome pages (they own their footer)
+  if (isAdminRoute || isAdvisorRoute || usesLandingChrome(location.pathname)) {
     return null;
   }
   
@@ -285,9 +289,9 @@ const ConditionalFooter: React.FC = () => {
 
 const AppMain: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
-  const home = isHomePath(location.pathname);
+  const landingChrome = usesLandingChrome(location.pathname);
   return (
-    <main className={`flex-1 overflow-x-hidden${home ? '' : ' pt-[104px]'}`}>
+    <main className={`flex-1 overflow-x-hidden${landingChrome ? '' : ' pt-[104px]'}`}>
       {children}
     </main>
   );

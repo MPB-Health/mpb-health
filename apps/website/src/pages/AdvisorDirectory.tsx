@@ -122,21 +122,32 @@ export const AdvisorDirectory: React.FC = () => {
         <section className="ad-hero" aria-label="Find a health advisor">
           <LandingHeader />
           <div className="ad-hero__content">
-            <h1 className="ad-hero__title">Find a Health Advisor</h1>
-            <p className="ad-hero__sub">
-              Connect with licensed advisors ready to help you find the right health sharing
-              membership
-            </p>
-            <div className="ad-hero__stats">
-              <span className="ad-stat">
-                <Users aria-hidden="true" />
-                {advisors.length} Advisors
-              </span>
-              <span className="ad-stat">
-                <MapPin aria-hidden="true" />
-                {states.length} States
-              </span>
+            <div className="ad-hero__copy">
+              <h1 className="ad-hero__title">Find a Health Advisor</h1>
+              <p className="ad-hero__sub">
+                Connect with licensed advisors ready to help you find the right health sharing
+                membership
+              </p>
+              <div className="ad-hero__stats">
+                <span className="ad-stat">
+                  <Users aria-hidden="true" />
+                  {advisors.length} Advisors
+                </span>
+                <span className="ad-stat">
+                  <MapPin aria-hidden="true" />
+                  {states.length} States
+                </span>
+              </div>
             </div>
+            <img
+              className="ad-hero__img"
+              src="/assets/advisorDirectory.png"
+              alt="A team of MPB Health advisors meeting together around a table"
+              width={1600}
+              height={1066}
+              fetchPriority="high"
+              decoding="async"
+            />
           </div>
         </section>
 

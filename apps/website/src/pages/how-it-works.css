@@ -13,7 +13,9 @@
   --hiw-pale-blue: #e8f1fb;
   --hiw-pale-blue-2: #e6eefb;
   --hiw-pale-green: #e7f4ea;
-  --hiw-card-gradient: linear-gradient(105deg, #eaf6ef 0%, #eaf6ef 18%, #f2f9f6 45%, #e9f0fb 82%, #e9f0fb 100%);
+  /* Hero-hue wash (periwinkle → sky → aqua → citrus), softened halfway
+     between the old near-white card and a full-vivid take */
+  --hiw-card-gradient: linear-gradient(105deg, #cbd3f1 0%, #c3e6f4 32%, #c2eedd 62%, #edf5c2 100%);
   --hiw-font-sans: 'Segoe UI', system-ui, sans-serif;
   --hiw-font-display: Georgia, 'Times New Roman', serif;
   --hiw-inner: 1440px;

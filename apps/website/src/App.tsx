@@ -260,7 +260,10 @@ const isHomePath = (pathname: string) => pathname === '/';
 
 // Pages that render the landing-redesign header themselves (no global header, no top padding)
 const usesLandingChrome = (pathname: string) =>
-  isHomePath(pathname) || pathname === '/how-it-works' || pathname === '/advisor-directory';
+  isHomePath(pathname) ||
+  pathname === '/how-it-works' ||
+  pathname === '/advisor-directory' ||
+  pathname === '/features';
 
 const ConditionalHeader: React.FC = () => {
   const location = useLocation();

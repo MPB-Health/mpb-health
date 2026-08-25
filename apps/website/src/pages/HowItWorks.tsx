@@ -47,6 +47,10 @@ const JOURNEY = [
     text: 'Visit the healthcare providers you choose and use the healthcare resources available through your membership.',
   },
   {
+    title: 'Meet Your IUA/MRA',
+    text: 'This is the amount you are responsible for paying before eligible expenses can be shared.',
+  },
+  {
     title: 'Submit Your Medical Expense',
     text: 'When you have a medical expense that may be eligible for sharing, submit the required information for review according to your membership guidelines.',
   },
@@ -363,7 +367,7 @@ const HowItWorksPage: React.FC = () => {
           <div className="hiw-inner">
             <div className="hiw-section__header">
               <h2 className="hiw-title">How Does MPB Health Sharing Work?</h2>
-              <p className="hiw-kicker">Five steps from joining to sharing.</p>
+              <p className="hiw-kicker">Six steps from joining to sharing.</p>
             </div>
             <JourneyFlow />
           </div>

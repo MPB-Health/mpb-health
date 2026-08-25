@@ -342,7 +342,7 @@ export function LandingRedesign() {
               <div className="lr-social__stat-sub">To friends and family</div>
             </div>
             <div>
-              <div className="lr-social__stat-value">50,000+</div>
+              <div className="lr-social__stat-value">12,000+</div>
               <div className="lr-social__stat-label">Families Served</div>
               <div className="lr-social__stat-sub">Historical enrollment</div>
             </div>

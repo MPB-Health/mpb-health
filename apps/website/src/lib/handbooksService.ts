@@ -278,6 +278,29 @@ function resolveHandbookSlug(slug: string): string {
 }
 
 // ============================================================================
+// Local PDF Preference
+// ============================================================================
+
+const STATIC_PDF_BY_SLUG = new Map(STATIC_HANDBOOKS.map((h) => [h.slug, h.pdf_path]));
+
+/** Same-origin paths render in the native browser viewer (see HandbookViewer). */
+function isLocalPdfPath(pdfPath: string): boolean {
+  return pdfPath.startsWith('/docs/') || pdfPath.startsWith('/assets/');
+}
+
+/**
+ * Prefer the bundled same-origin PDF over remote URLs stored in the database.
+ * Remote embeds (e.g. Google Drive) can 403 or break in-document links, so a
+ * DB row only wins when it points at a local path itself.
+ */
+function preferLocalPdfPath(slug: string, pdfPath: string): string {
+  if (isLocalPdfPath(pdfPath)) {
+    return pdfPath;
+  }
+  return STATIC_PDF_BY_SLUG.get(slug) ?? pdfPath;
+}
+
+// ============================================================================
 // Read Operations
 // ============================================================================
 
@@ -322,6 +345,7 @@ export async function getAllHandbooks(): Promise<HandbookRecord[]> {
     // Parse features from JSONB if it's a string
     const handbooks = data.map((h) => ({
       ...h,
+      pdf_path: preferLocalPdfPath(h.slug, h.pdf_path),
       features: Array.isArray(h.features) ? h.features : JSON.parse(h.features || '[]'),
     }));
 

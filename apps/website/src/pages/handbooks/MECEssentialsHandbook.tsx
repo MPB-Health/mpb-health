@@ -7,12 +7,12 @@ const MECEssentialsHandbook: React.FC = () => {
     <>
       <SEOHead
         title="MEC+ Essentials Handbook | MPB Health"
-        description="View and download the MPB Health MEC+ Essentials plan member handbook"
+        description="View and download the MPB Health MEC+ Essentials membership handbook"
       />
       <HandbookViewer
         title="MEC+ Essentials Handbook"
         pdfPath="/docs/MEC+Essentials Handbook-New Members 1.pdf"
-        description="Complete guide for MEC+ Essentials plan members"
+        description="Complete guide for MEC+ Essentials members"
       />
     </>
   );

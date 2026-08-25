@@ -21,7 +21,7 @@ const MemberPortal = () => {
               Member Portal Access
             </h1>
             <p className="text-xl text-neutral-600 max-w-3xl mx-auto leading-relaxed">
-              Access your member dashboard to manage your healthcare benefits, view your coverage details, and stay connected with your care.
+              Access your member dashboard to manage your healthcare benefits, view your membership details, and stay connected with your care.
             </p>
           </div>
 

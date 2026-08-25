@@ -43,7 +43,7 @@ export default function Hero() {
                 href="#plans"
                 className="inline-flex items-center justify-center rounded-xl px-5 py-3 text-sm md:text-base font-medium bg-white text-gray-900 shadow ring-1 ring-gray-200 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
               >
-                Compare Plans
+                Compare Memberships
               </a>
               <Link
                 to="/advisors"
@@ -437,7 +437,7 @@ export default function PlanCards() {
             <h2 id="plans-title" className="text-2xl md:text-4xl font-semibold tracking-tight text-gray-900">Plans at a Glance</h2>
             <p className="mt-2 text-gray-600">Choose the option that fits your needs. See details before you enroll.</p>
           </div>
-          <a href="/compare" className="hidden md:inline-flex items-center rounded-xl px-4 py-2 text-sm font-medium ring-1 ring-gray-200 hover:bg-gray-50">Compare plans →</a>
+          <a href="/compare" className="hidden md:inline-flex items-center rounded-xl px-4 py-2 text-sm font-medium ring-1 ring-gray-200 hover:bg-gray-50">Compare memberships →</a>
         </div>
 
         <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -456,7 +456,7 @@ export default function PlanCards() {
         </ul>
 
         <div className="mt-4 md:hidden">
-          <a href="/compare" className="inline-flex items-center rounded-xl px-4 py-2 text-sm font-medium ring-1 ring-gray-200 hover:bg-gray-50">Compare plans →</a>
+          <a href="/compare" className="inline-flex items-center rounded-xl px-4 py-2 text-sm font-medium ring-1 ring-gray-200 hover:bg-gray-50">Compare memberships →</a>
         </div>
 
         {/* 2026 rates notice widget */}
@@ -477,7 +477,7 @@ type Step = { id: number; title: string; blurb: string; detail: string; cta?: { 
 
 const steps: Step[] = [
   { id: 1, title: "Get your estimate", blurb: "Answer a few questions.", detail: "Start with a quick estimate of your monthly share based on household and state.", cta: { label: "Get My Quote", href: "#quote" } },
-  { id: 2, title: "Choose your plan", blurb: "Pick the right tier.", detail: "Compare Essentials, Direct, Care+, and Secure HSA with clear benefits and costs." },
+  { id: 2, title: "Choose your membership", blurb: "Pick the right tier.", detail: "Compare Essentials, Direct, Care+, and Secure HSA with clear benefits and costs." },
   { id: 3, title: "Enroll online", blurb: "Simple and secure.", detail: "Complete your membership application with secure e‑sign and quick confirmation." },
   { id: 4, title: "Use any provider", blurb: "No networks.", detail: "Visit any licensed provider in the U.S. and submit eligible bills for sharing." }
 ];
@@ -521,7 +521,7 @@ export default function HowItWorks() {
                 {s.cta && (
                   <a href={s.cta.href} className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">{s.cta.label}</a>
                 )}
-                <a href="#plans" className="rounded-xl px-4 py-2 text-sm font-medium ring-1 ring-gray-200 hover:bg-gray-50">Compare plans</a>
+                <a href="#plans" className="rounded-xl px-4 py-2 text-sm font-medium ring-1 ring-gray-200 hover:bg-gray-50">Compare memberships</a>
               </div>
             </div>
           ))}
@@ -586,7 +586,7 @@ export default function ComplianceNote() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="rounded-xl bg-gray-50 p-5 text-sm text-gray-700 ring-1 ring-gray-200">
           <h2 id="compliance-title" className="sr-only">Compliance and disclosures</h2>
-          MPB Health provides access to qualified Health Sharing Programs. Health sharing is not insurance and does not guarantee payment of medical expenses. Program eligibility, waiting periods, and sharing limits apply. Always review the official guidelines and price sheets before enrolling.
+          MPB Health provides access to qualified Health Sharing Programs. Health sharing is not insurance and does not guarantee payment of medical expenses. Program eligibility, waiting periods, and sharing maximums apply. Always review the official guidelines and price sheets before enrolling.
           <div className="mt-2">
             <a className="underline" href="https://mpb.health/wp-content/uploads/2025/10/2026-prices-Care-Direct-Secure-HSA.pdf" target="_blank" rel="noopener noreferrer">Official price sheets</a>
           </div>

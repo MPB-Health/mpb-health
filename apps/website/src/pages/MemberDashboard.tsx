@@ -179,7 +179,7 @@ const MemberDashboard: React.FC = () => {
 
             <div className="space-y-8">
               <div className="bg-gradient-to-br from-blue-600 to-cyan-600 text-white rounded-xl p-6">
-                <h3 className="text-lg font-bold mb-4">Your Plan</h3>
+                <h3 className="text-lg font-bold mb-4">Your Membership</h3>
                 <div className="space-y-3">
                   <div className="flex justify-between">
                     <span className="text-blue-100">Status</span>

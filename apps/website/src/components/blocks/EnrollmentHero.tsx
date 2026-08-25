@@ -26,7 +26,7 @@ export function EnrollmentHero({ onComparePlans, onHowItWorks }: EnrollmentHeroP
               className="w-full sm:w-auto text-base px-8 py-6"
               onClick={onComparePlans}
             >
-              Compare Plans
+              Compare Memberships
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
 

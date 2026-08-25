@@ -82,7 +82,7 @@ export function EnrollmentMembership() {
 
         <div className="mt-8 text-center">
           <p className="text-sm text-gray-600 max-w-3xl mx-auto">
-            <strong>Note:</strong> Sharing guidelines apply. Pre-membership conditions may have waiting periods. Refer to your plan's sharing guidelines for complete details on eligible expenses.
+            <strong>Note:</strong> Sharing guidelines apply. Pre-membership conditions may have waiting periods. Refer to your membership's sharing guidelines for complete details on eligible expenses.
           </p>
         </div>
       </div>

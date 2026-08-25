@@ -13,11 +13,11 @@ const FAQAccordion: React.FC = () => {
     },
     {
       question: "Is there a waiting period for sharing?",
-      answer: "Yes, most health sharing plans have waiting periods for certain conditions. Accidents and new illnesses are typically eligible immediately after your effective date. Pre-membership conditions usually have a 12-month waiting period. Maternity requests are ineligible for sharing during the first six months of membership. (If you are managing Diabetes, High Blood Pressure, or High Cholesterol and haven't been hospitalized for it in the last year, you are eligible for sharing related to these needs from Day One of your membership.)"
+      answer: "Yes, most health sharing memberships have waiting periods for certain conditions. Accidents and new illnesses are typically eligible immediately after your effective date. Pre-membership conditions usually have a 12-month waiting period. Maternity requests are ineligible for sharing during the first six months of membership. (If you are managing Diabetes, High Blood Pressure, or High Cholesterol and haven't been hospitalized for it in the last year, you are eligible for sharing related to these needs from Day One of your membership.)"
     },
     {
       question: "Can I use any doctor or hospital?",
-      answer: "Yes! Unlike traditional insurance, health sharing has no network restrictions for Medical Cost Sharing injury or illness. You can visit any licensed healthcare provider, specialist, or hospital in the United States. This freedom of choice is one of the key benefits of health sharing over traditional insurance plans. For preventative care services, there is a network of providers."
+      answer: "Yes! Unlike traditional insurance, health sharing has no network restrictions for Medical Cost Sharing injury or illness. You can visit any licensed healthcare provider, specialist, or hospital in the United States. This freedom of choice is one of the key benefits of health sharing over traditional insurance plans. For preventive care services, there is a network of providers."
     },
     {
       question: "How do I submit medical expenses for sharing?",

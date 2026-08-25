@@ -197,7 +197,7 @@ export function useSiteNav(): SiteNav {
         {
           id: 'individuals-families',
           label: 'Individuals & Families',
-          description: 'Comprehensive health sharing plans for you and your loved ones',
+          description: 'Comprehensive health sharing memberships for you and your loved ones',
           icon: 'Users',
           href: '/individuals-and-families',
           external: false,
@@ -214,7 +214,7 @@ export function useSiteNav(): SiteNav {
         {
           id: 'businesses-organizations',
           label: 'Businesses & Organizations',
-          description: 'Health Plan with Health Savings Account',
+          description: 'Health Membership with Health Savings Account',
           icon: 'Building2',
           href: '/businesses-and-organizations',
           external: false,
@@ -371,7 +371,7 @@ export function useSiteNav(): SiteNav {
             {
               id: 'hipaa-auth-public',
               label: 'HIPAA Authorization',
-              description: 'Grant permission to discuss your plan details',
+              description: 'Grant permission to discuss your membership details',
               icon: 'Shield',
               href: '/permission-to-discuss-plan',
               external: false,
@@ -549,7 +549,7 @@ export function useSiteNav(): SiteNav {
           {
             id: 'careplus-handbook',
             label: 'Care+ Handbook',
-            description: 'View the Care+ plan member handbook',
+            description: 'View the Care+ membership handbook',
             icon: 'FileText',
             href: '/3d-flip-book/careplus',
             external: false,
@@ -557,7 +557,7 @@ export function useSiteNav(): SiteNav {
           {
             id: 'direct-handbook',
             label: 'Direct Handbook',
-            description: 'View the Direct plan member handbook',
+            description: 'View the Direct membership handbook',
             icon: 'FileText',
             href: '/3d-flip-book/direct-handbook',
             external: false,
@@ -565,7 +565,7 @@ export function useSiteNav(): SiteNav {
           {
             id: 'secure-hsa-handbook',
             label: 'Secure HSA Handbook',
-            description: 'View the Secure HSA plan member handbook',
+            description: 'View the Secure HSA membership handbook',
             icon: 'FileText',
             href: '/3d-flip-book/secure-hsa',
             external: false,
@@ -573,7 +573,7 @@ export function useSiteNav(): SiteNav {
           {
             id: 'premium-care-handbook',
             label: 'Premium Care Handbook',
-            description: 'View the Premium Care plan member handbook',
+            description: 'View the Premium Care membership handbook',
             icon: 'FileText',
             href: '/3d-flip-book/premium-care',
             external: false,
@@ -581,7 +581,7 @@ export function useSiteNav(): SiteNav {
           {
             id: 'premium-hsa-handbook',
             label: 'Premium HSA Handbook',
-            description: 'View the Premium HSA plan member handbook',
+            description: 'View the Premium HSA membership handbook',
             icon: 'FileText',
             href: '/3d-flip-book/premium-hsa',
             external: false,
@@ -589,7 +589,7 @@ export function useSiteNav(): SiteNav {
           {
             id: 'essentials-handbook',
             label: 'Essentials Handbook',
-            description: 'View the Essentials plan member handbook',
+            description: 'View the Essentials membership handbook',
             icon: 'FileText',
             href: '/3d-flip-book/essentials',
             external: false,
@@ -597,7 +597,7 @@ export function useSiteNav(): SiteNav {
           {
             id: 'mec-essentials-handbook',
             label: 'MEC+ Essentials Handbook',
-            description: 'View the MEC+ Essentials plan member handbook',
+            description: 'View the MEC+ Essentials membership handbook',
             icon: 'FileText',
             href: '/3d-flip-book/mecessentials-handbook',
             external: false,

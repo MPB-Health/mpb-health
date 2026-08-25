@@ -100,7 +100,7 @@ export function HowItWorksMVP() {
                   href="#plans"
                   className="rounded-xl px-4 py-2 text-sm font-medium ring-1 ring-gray-200 hover:bg-gray-50 transition-colors"
                 >
-                  Compare plans
+                  Compare memberships
                 </a>
               </div>
             </div>

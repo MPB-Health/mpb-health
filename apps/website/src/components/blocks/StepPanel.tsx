@@ -165,9 +165,9 @@ export function StepPanel({ step, stepIndex, reduceMotion, onCTAClick }: StepPan
               }}
               variant="outline"
               className="flex-1 sm:flex-initial border-2 border-neutral-300 text-neutral-700 hover:bg-neutral-50 hover:border-neutral-400 font-semibold transition-all duration-300"
-              aria-label="Compare available plans"
+              aria-label="Compare available memberships"
             >
-              Compare Plans
+              Compare Memberships
             </Button>
           </motion.div>
         </div>

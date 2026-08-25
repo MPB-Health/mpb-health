@@ -56,7 +56,7 @@ const FIELD_LABELS: Record<string, string> = {
   oldest_dependent_age: 'Oldest Dependent Age',
   primary_tobacco: 'Primary Tobacco Use',
   spouse_tobacco: 'Spouse Tobacco Use',
-  preexisting_conditions: 'Pre-existing Conditions',
+  preexisting_conditions: 'Pre-membership Conditions',
   membership_priorities: 'Membership Priorities',
   priorities_matched: 'Priorities Matched',
   traditional_cost_estimate: 'Traditional Insurance Estimate',

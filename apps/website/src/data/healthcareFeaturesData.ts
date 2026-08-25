@@ -39,7 +39,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
     icon: Heart,
     tagline: 'Community support when you need it most',
     shortDescription: 'Protection from major medical needs including hospitalizations, surgeries, and serious illnesses',
-    heroImage: 'https://images.pexels.com/photos/6129507/pexels-photo-6129507.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
+    heroImage: '/assets/health sharing.png',
     detailedDescription: 'Our health sharing program provides robust financial support for significant medical needs. When you face major expenses like hospitalizations, surgeries, or serious illnesses, your healthcare costs are shared by our caring community of members. This is the foundation of health sharing—standing together when it matters most.',
     keyPoints: [
       {
@@ -83,15 +83,15 @@ export const healthcareFeatures: HealthcareFeature[] = [
     faqs: [
       {
         question: 'What is the Initial Unshareable Amount (IUA)?',
-        answer: 'The IUA is similar to a deductible—it\'s the amount you pay out-of-pocket (per medical need) before the community begins sharing your eligible expenses. Different plans have different IUA levels, ranging from $1,250 to $5,000 per person.'
+        answer: 'The IUA is similar to a deductible—it\'s the amount you pay out-of-pocket (per medical need) before the community begins sharing your eligible expenses. Different memberships have different IUA levels, ranging from $1,250 to $5,000 per person.'
       },
       {
         question: 'How quickly are expenses shared?',
         answer: 'Once your submission is reviewed and approved, sharing typically occurs within 45-60 days (or as little as 2 weeks). Emergency situations may receive expedited processing. You can always check the status of your requests in your member portal.'
       },
       {
-        question: 'Are there sharing limits?',
-        answer: 'There are no lifetime limits or annual caps.'
+        question: 'Are there sharing maximums?',
+        answer: 'There are no lifetime or annual sharing maximums.'
       },
       {
         question: 'What if I need care for a pre-membership condition?',
@@ -114,7 +114,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
     icon: Stethoscope,
     tagline: 'Protection while traveling',
     shortDescription: 'Protection for acute or emergency medical needs that occur while traveling outside the United States or Puerto Rico',
-    heroImage: 'https://images.pexels.com/photos/4559592/pexels-photo-4559592.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
+    heroImage: '/assets/travel.png',
     detailedDescription: 'Travel with confidence knowing you\'re protected worldwide. Our Worldwide Protection benefit provides sharing for acute or emergency medical needs that occur while traveling outside the United States or Puerto Rico. Whether you\'re on vacation, business travel, or studying abroad, receive care anywhere in the world with financial protection from unexpected medical emergencies.',
     keyPoints: [
       {
@@ -140,7 +140,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
       'Pay for medical services directly at the time of treatment',
       'Keep all receipts, medical records, and documentation of your emergency treatment',
       'Submit your medical expenses through your member portal upon returning home',
-      'Eligible emergency expenses are reviewed and shared according to your plan benefits'
+      'Eligible emergency expenses are reviewed and shared according to your membership benefits'
     ],
     eligiblePlans: ['Care Plus', 'Direct', 'Secure HSA'],
     membership: [
@@ -191,7 +191,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
     icon: Ambulance,
     tagline: '24/7/365 virtual care for urgent needs',
     shortDescription: '$0, unlimited 24/7/365 virtual urgent care visits for non-emergency health concerns',
-    heroImage: 'https://images.pexels.com/photos/5863389/pexels-photo-5863389.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
+    heroImage: '/assets/Virtual Urgent Care.jpg',
     detailedDescription: 'Virtual urgent care visits are available 24/7/365 and are accessed through the MPB Health app. Members can connect with a licensed provider by phone or video for urgent, non-emergency health concerns. All MPB Health memberships include unlimited $0 virtual urgent care services.',
     keyPoints: [
       {
@@ -269,7 +269,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
     icon: Brain,
     tagline: 'Professional virtual support for emotional wellness',
     shortDescription: 'Virtual-only access to licensed counselors and therapists for virtual behavioral health support and emotional wellness',
-    heroImage: 'https://images.pexels.com/photos/4101143/pexels-photo-4101143.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
+    heroImage: '/assets/Virtual Behavioral Health.jpg',
     detailedDescription: 'Your emotional wellness is just as important as physical health. Our virtual behavioral health benefit connects you with licensed therapists, counselors, and psychiatric professionals via secure video or phone sessions for anxiety, depression, stress management, and other emotional wellness needs. All sessions are delivered virtually for your convenience and privacy.',
     keyPoints: [
       {
@@ -309,7 +309,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
     ],
     faqs: [
       {
-        question: 'How many therapy sessions are covered?',
+        question: 'How many therapy sessions are included?',
         answer: 'An intake clinician will determine a baseline for the number of sessions pending assessment. Sessions can be extended at the providers discretion, with no annual limit of use.'
       },
       {
@@ -344,8 +344,8 @@ export const healthcareFeatures: HealthcareFeature[] = [
     icon: Baby,
     tagline: 'Supporting your journey to parenthood',
     shortDescription: 'Comprehensive sharing for pregnancy, delivery, and newborn care for growing families',
-    heroImage: 'https://images.pexels.com/photos/1556652/pexels-photo-1556652.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-    detailedDescription: 'Pregnancy is a beautiful journey that deserves comprehensive support. Our maternity care benefit covers prenatal visits, delivery, postpartum care, and newborn medical needs. From your first ultrasound to bringing baby home, we share the costs of this life-changing experience with you.',
+    heroImage: '/assets/Maternity Care.jpg',
+    detailedDescription: 'Pregnancy is a beautiful journey that deserves comprehensive support. Our maternity care benefit shares the costs of prenatal visits, delivery, postpartum care, and newborn medical needs. From your first ultrasound to bringing baby home, we share the costs of this life-changing experience with you.',
     keyPoints: [
       {
         title: 'Full Pregnancy Journey',
@@ -395,8 +395,8 @@ export const healthcareFeatures: HealthcareFeature[] = [
         answer: 'If you\'re already pregnant when you join, that pregnancy would be considered a pre-membership condition. You may still enroll for future pregnancies after satisfying the maternity waiting period. Check with our team about your specific situation.'
       },
       {
-        question: 'Are prenatal vitamins and classes covered?',
-        answer: 'Prescription prenatal vitamins are covered under pharmacy benefits. Educational childbirth classes are typically not shared but are often available at discounted rates through community resources.'
+        question: 'Are prenatal vitamins and classes included?',
+        answer: 'Prescription prenatal vitamins are eligible for sharing under pharmacy benefits. Educational childbirth classes are typically not shared but are often available at discounted rates through community resources.'
       },
       {
         question: 'What about NICU care for the baby?',
@@ -421,7 +421,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
     icon: Pill,
     tagline: 'Save on medications you need',
     shortDescription: 'Significant discounts on prescription medications at thousands of pharmacies nationwide',
-    heroImage: 'https://images.pexels.com/photos/208512/pexels-photo-208512.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
+    heroImage: '/assets/Prescription Benefits & Discounts.jpg',
     detailedDescription: 'Prescription medications shouldn\'t break your budget. Our pharmacy benefit provides substantial discounts on both generic and brand-name medications at over 65,000 pharmacies nationwide. Save on the medications you need to stay healthy without insurance-style formularies or prior authorizations.',
     keyPoints: [
       {
@@ -491,9 +491,9 @@ export const healthcareFeatures: HealthcareFeature[] = [
     name: 'Health Savings Account (HSA) Compatibility',
     icon: Wallet,
     tagline: 'Triple tax advantages for healthcare savings',
-    shortDescription: 'HSA-qualified plans that let you save pre-tax dollars for current and future healthcare expenses',
-    heroImage: 'https://images.pexels.com/photos/259200/pexels-photo-259200.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-    detailedDescription: 'Health Savings Accounts provide powerful tax advantages when paired with HSA-qualified health sharing plans. Contribute pre-tax dollars, grow your savings tax-free, and withdraw funds tax-free for qualified medical expenses. It\'s like a 401(k) for healthcare that you own and control forever.',
+    shortDescription: 'HSA-qualified memberships that let you save pre-tax dollars for current and future healthcare expenses',
+    heroImage: '/assets/hsa.png',
+    detailedDescription: 'Health Savings Accounts provide powerful tax advantages when paired with HSA-qualified health sharing memberships. Contribute pre-tax dollars, grow your savings tax-free, and withdraw funds tax-free for qualified medical expenses. It\'s like a 401(k) for healthcare that you own and control forever.',
     keyPoints: [
       {
         title: 'Triple Tax Benefits',
@@ -501,7 +501,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
       },
       {
         title: 'You Own It Forever',
-        description: 'HSA funds are yours to keep regardless of employment or plan changes'
+        description: 'HSA funds are yours to keep regardless of employment or membership changes'
       },
       {
         title: 'Investment Options',
@@ -513,7 +513,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
       }
     ],
     howItWorks: [
-      'Enroll in an HSA-qualified health sharing plan (Secure HSA)',
+      'Enroll in an HSA-qualified health sharing membership (Secure HSA)',
       'Open an HSA account through a bank, credit union, or HSA administrator of your choice',
       'Contribute pre-tax dollars up to annual IRS limits ($4,150 individual, $8,300 family for 2025)',
       'Use your HSA debit card or checks to pay for qualified medical expenses tax-free',
@@ -540,12 +540,12 @@ export const healthcareFeatures: HealthcareFeature[] = [
         answer: 'For 2025, individuals can contribute up to $4,150 and families up to $8,300. Those age 55+ can add an extra $1,000 catch-up contribution. These limits are set by the IRS and typically increase annually.'
       },
       {
-        question: 'What makes a plan HSA-qualified?',
-        answer: 'HSA-qualified plans must meet IRS requirements including minimum deductibles and maximum out-of-pocket limits. Our Secure HSA plan is specifically designed to meet these requirements for HSA eligibility.'
+        question: 'What makes a membership HSA-qualified?',
+        answer: 'HSA-qualified memberships must meet IRS requirements including minimum deductibles and maximum out-of-pocket limits. Our Secure HSA membership is specifically designed to meet these requirements for HSA eligibility.'
       },
       {
-        question: 'Can I take my HSA with me if I change plans?',
-        answer: 'Yes! Your HSA is yours forever. Even if you change health plans, employers, or retire, your HSA stays with you. The funds never expire and continue growing tax-free throughout your lifetime.'
+        question: 'Can I take my HSA with me if I change memberships?',
+        answer: 'Yes! Your HSA is yours forever. Even if you change health memberships, employers, or retire, your HSA stays with you. The funds never expire and continue growing tax-free throughout your lifetime.'
       },
       {
         question: 'What if I use HSA funds for non-medical expenses?',
@@ -566,20 +566,20 @@ export const healthcareFeatures: HealthcareFeature[] = [
   },
   {
     id: 'preventive-care',
-    name: 'Preventative Care (ACA-Mandated)',
+    name: 'Preventive Care (ACA-Mandated)',
     icon: ShieldCheck,
     tagline: 'Proactive health screening and wellness',
-    shortDescription: 'No-cost preventative care services as mandated by the Affordable Care Act including screenings, immunizations, and wellness visits',
-    heroImage: 'https://images.pexels.com/photos/4173239/pexels-photo-4173239.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
-    detailedDescription: 'Prevention is the best medicine. Our preventative care benefit includes comprehensive screenings, immunizations, and wellness visits at no additional cost. Stay ahead of health problems by catching them early and maintaining good health through regular preventative services as mandated by the ACA.',
+    shortDescription: 'No-cost preventive care services as mandated by the Affordable Care Act including screenings, immunizations, and wellness visits',
+    heroImage: '/assets/preventiceCare.png',
+    detailedDescription: 'Prevention is the best medicine. Our preventive care benefit includes comprehensive screenings, immunizations, and wellness visits at no additional cost. Stay ahead of health problems by catching them early and maintaining good health through regular preventive services as mandated by the ACA.',
     keyPoints: [
       {
         title: 'No-Cost Screenings',
-        description: 'Preventative services with no cost-sharing'
+        description: 'Preventive services with no cost-sharing'
       },
       {
         title: 'Comprehensive Membership',
-        description: 'Wide range of age-appropriate preventative care services'
+        description: 'Wide range of age-appropriate preventive care services'
       },
       {
         title: 'Early Detection',
@@ -591,12 +591,12 @@ export const healthcareFeatures: HealthcareFeature[] = [
       }
     ],
     howItWorks: [
-      'Schedule your preventative care appointments with any licensed provider within the PHCS Network.',
-      'Confirm with your provider that services are preventative (not diagnostic or treatment)',
-      'Receive your preventative care services with no cost-sharing',
-      'Provider bills according to preventative care codes for covered services',
-      'No need to submit expenses - services are covered directly',
-      'Repeat annually or per recommended schedules for ongoing preventative care'
+      'Schedule your preventive care appointments with any licensed provider within the PHCS Network.',
+      'Confirm with your provider that services are preventive (not diagnostic or treatment)',
+      'Receive your preventive care services with no cost-sharing',
+      'Provider bills according to preventive care codes for eligible services',
+      'No need to submit expenses - services are shared directly',
+      'Repeat annually or per recommended schedules for ongoing preventive care'
     ],
     eligiblePlans: ['MEC+Essentials', 'Direct', 'Secure HSA'],
     membership: [
@@ -621,20 +621,20 @@ export const healthcareFeatures: HealthcareFeature[] = [
         answer: 'On the Direct membership, screening mammography and colonoscopy (colorectal screening) are subject to a 6-month waiting period. Refer to your Member Guidelines for the latest rules.'
       },
       {
-        question: 'What\'s the difference between preventative and diagnostic care?',
-        answer: 'Preventative care is routine screening when you have no symptoms (like an annual physical). Diagnostic care investigates symptoms or known conditions. Preventative services have no cost-sharing; diagnostic care may apply to your IUA.'
+        question: 'What\'s the difference between preventive and diagnostic care?',
+        answer: 'Preventive care is routine screening when you have no symptoms (like an annual physical). Diagnostic care investigates symptoms or known conditions. Preventive services have no cost-sharing; diagnostic care may apply to your IUA.'
       },
       {
-        question: 'How often can I get preventative screenings?',
+        question: 'How often can I get preventive screenings?',
         answer: 'Frequency depends on the service and your age/risk factors. Annual physicals are yearly, mammograms typically start at age 40, colonoscopies every 10 years starting at age 45-50. Your doctor will recommend appropriate schedules based on guidelines.'
       },
       {
-        question: 'Are immunizations for international travel covered?',
-        answer: 'Routine immunizations are included. Travel-specific vaccines (yellow fever, typhoid, etc.) may not be included in preventative care benefits. Check with your plan about membership for travel vaccinations.'
+        question: 'Are immunizations for international travel included?',
+        answer: 'Routine immunizations are included. Travel-specific vaccines (yellow fever, typhoid, etc.) may not be included in preventive care benefits. Check your membership details about travel vaccinations.'
       },
       {
-        question: 'What if something is found during preventative screening?',
-        answer: 'The preventative screening itself has no cost-sharing. However, if the screening finds something requiring further testing or treatment, those follow-up services may have cost-sharing according to your plan\'s medical benefits.'
+        question: 'What if something is found during preventive screening?',
+        answer: 'The preventive screening itself has no cost-sharing. However, if the screening finds something requiring further testing or treatment, those follow-up services may have cost-sharing according to your membership\'s medical benefits.'
       }
     ],
     color: 'text-cyan-600',
@@ -655,7 +655,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
     icon: Headphones,
     tagline: 'Personal support for all your healthcare needs',
     shortDescription: '24/7 access to knowledgeable support staff who help you navigate healthcare and maximize your benefits',
-    heroImage: 'https://images.pexels.com/photos/7129713/pexels-photo-7129713.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
+    heroImage: '/assets/concierge.png',
     detailedDescription: 'Healthcare can be confusing. Our membership concierge team is here to help you understand your benefits, find providers, submit sharing requests, and answer any questions. Think of us as your personal healthcare guide—available whenever you need assistance navigating the system.',
     keyPoints: [
       {
@@ -664,7 +664,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
       },
       {
         title: 'Benefit Guidance',
-        description: 'Understand what\'s covered and how to maximize your benefits'
+        description: 'Understand what\'s shareable and how to maximize your benefits'
       },
       {
         title: 'Provider Assistance',
@@ -728,7 +728,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
     icon: PawPrint,
     tagline: '24/7/365 veterinary care for your furry family members',
     shortDescription: '$0, unlimited 24/7/365 access to virtual pet telehealth for your pets',
-    heroImage: '/assets/image copy copy copy copy copy copy copy.png',
+    heroImage: '/assets/preventive Care2.png',
     detailedDescription: 'Your pets are family too. Our pet telehealth benefit provides $0, unlimited 24/7/365 access to licensed veterinarians via phone or video for health questions, concerns, and minor issues. Get professional advice about your dogs, cats, and other household pets without the stress and expense of an office visit.',
     keyPoints: [
       {
@@ -786,7 +786,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
       },
       {
         question: 'Do I need to be a pet insurance customer?',
-        answer: 'No, pet telehealth is included as a membership benefit on eligible plans. You don\'t need separate pet insurance to access virtual vet consultations. This benefit is in addition to any pet insurance you may have.'
+        answer: 'No, pet telehealth is included as a membership benefit on eligible memberships. You don\'t need separate pet insurance to access virtual vet consultations. This benefit is in addition to any pet insurance you may have.'
       }
     ],
     color: 'text-violet-600',
@@ -808,7 +808,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
     icon: Scale,
     tagline: 'Provider-guided prescriptions for GLP-1 medications',
     shortDescription: 'MPB Health members can access medical weight loss support including GLP-1 medication prescriptions through virtual care visits with licensed providers. Secure HSA members get additional Rx Valet access.',
-    heroImage: '/assets/BLOG IMAGES (29).png',
+    heroImage: '/assets/Medical Weight Loss Support.png',
     detailedDescription: 'MPB Health members have access to medical weight loss support, including provider-guided prescriptions for GLP-1 medications. Schedule a virtual visit with a licensed provider who can evaluate your health and determine whether weight loss medications are right for you — all from the MPB Health app.',
     keyPoints: [
       {

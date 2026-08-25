@@ -123,7 +123,7 @@ export const AdvisorDirectory: React.FC = () => {
               Find a Health Advisor
             </h1>
             <p className="text-blue-100 text-lg max-w-2xl mx-auto">
-              Connect with licensed advisors ready to help you find the right health sharing plan
+              Connect with licensed advisors ready to help you find the right health sharing membership
             </p>
             <div className="flex items-center justify-center gap-6 mt-5 text-sm text-blue-200">
               <span className="flex items-center gap-1.5">

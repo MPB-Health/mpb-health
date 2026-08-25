@@ -41,13 +41,13 @@ export const PlanComparison: React.FC<PlanComparisonProps> = ({
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-6xl my-8 animate-in slide-in-from-bottom duration-300">
             <div className="sticky top-0 z-10 bg-white border-b border-neutral-200 rounded-t-2xl px-6 py-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-neutral-900">Compare Plans</h2>
+                <h2 className="text-2xl font-bold text-neutral-900">Compare Memberships</h2>
                 <Button variant="ghost" size="sm" onClick={onClose}>
                   <X className="w-5 h-5" />
                 </Button>
               </div>
               <p className="text-sm text-neutral-600 mt-1">
-                Side-by-side comparison of {selectedPlans.length} selected plan
+                Side-by-side comparison of {selectedPlans.length} selected membership
                 {selectedPlans.length > 1 ? 's' : ''}
               </p>
             </div>

@@ -8,7 +8,7 @@ const TailoredJourney: React.FC = () => {
     {
       icon: Target,
       title: 'Personalized Recommendations',
-      description: 'Get matched with plans that fit your unique needs and budget',
+      description: 'Get matched with memberships that fit your unique needs and budget',
       color: 'from-blue-500 to-cyan-500',
     },
     {
@@ -20,7 +20,7 @@ const TailoredJourney: React.FC = () => {
     {
       icon: Sparkles,
       title: 'Compare Your Options',
-      description: 'See side-by-side comparisons of plans tailored to you',
+      description: 'See side-by-side comparisons of memberships tailored to you',
       color: 'from-purple-500 to-pink-500',
     },
     {
@@ -44,10 +44,10 @@ const TailoredJourney: React.FC = () => {
             <span className="text-blue-600 font-semibold tracking-wide">YOUR PERSONALIZED JOURNEY</span>
           </div>
           <h2 className="text-5xl sm:text-6xl font-bold text-gray-900 mb-6 tracking-tight">
-            Find Your Perfect Plan in Minutes
+            Find Your Perfect Membership in Minutes
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed mb-8">
-            Skip the confusion of comparing dozens of plans. Answer a few quick questions and we'll recommend the perfect health sharing solution for your family.
+            Skip the confusion of comparing dozens of memberships. Answer a few quick questions and we'll recommend the perfect health sharing solution for your family.
             <span className="block mt-3 text-lg font-medium text-blue-600">Personalized. Simple. Fast.</span>
           </p>
 
@@ -113,7 +113,7 @@ const TailoredJourney: React.FC = () => {
               <div className="text-left">
                 <h4 className="font-bold text-gray-900 mb-1">Why Start Your Journey?</h4>
                 <p className="text-sm text-gray-700">
-                  Our interactive journey asks targeted questions about your health needs, lifestyle, and budget to match you with the ideal plan. No more guessing or comparing endless options—we do the work for you.
+                  Our interactive journey asks targeted questions about your health needs, lifestyle, and budget to match you with the ideal membership. No more guessing or comparing endless options—we do the work for you.
                 </p>
               </div>
             </div>

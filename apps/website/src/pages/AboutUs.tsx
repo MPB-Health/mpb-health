@@ -353,7 +353,7 @@ const AboutUs: React.FC = () => {
             Ready to Experience Better Healthcare?
           </h2>
           <p className="text-lg text-white/95 mb-8 max-w-2xl mx-auto leading-relaxed">
-            Join thousands of members who are saving on healthcare while getting the coverage they need. Let's talk about your options.
+            Join thousands of members who are saving on healthcare while getting the care they need. Let's talk about your options.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -370,7 +370,7 @@ const AboutUs: React.FC = () => {
               href="/plans"
               className="inline-flex items-center justify-center px-8 py-4 bg-white/10 backdrop-blur-sm border-2 border-white/30 text-white font-semibold rounded-xl hover:bg-white/20 transition-all duration-300"
             >
-              View Plans
+              View Memberships
             </a>
           </div>
         </div>

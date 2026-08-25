@@ -58,7 +58,7 @@ const ObjectionBlocks: React.FC = () => {
       answerPoints: [
         "No membership denial based on medical history",
         "New medical needs eligible for sharing immediately",
-        "Pre-existing conditions subject to a phase-in period",
+        "Pre-membership conditions subject to a phase-in period",
         "Diabetes, High Blood Pressure, High Cholesterol eligible from Day One (if no hospitalization in last year)"
       ],
       stats: "No membership denial • Phase-in period applies",

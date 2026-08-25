@@ -81,13 +81,13 @@ export const HOW_IT_WORKS_STEPS: HowItWorksStep[] = [
             <span className="text-teal-600 font-bold">&bull;</span>
             <span>
               Choose your{" "}
-              <GlossaryTooltip term="IUA" definition="Initial Unshareable Amount -- the portion you cover per eligible need before community sharing begins." />{" "}
+              <GlossaryTooltip term="IUA" definition="Initial Unshareable Amount -- the portion you pay per eligible need before community sharing begins." />{" "}
               tier ($1,250, $2,500, or $5,000).
             </span>
           </li>
           <li className="flex items-start gap-2">
             <span className="text-teal-600 font-bold">&bull;</span>
-            <span>Understand phase-in periods for pre-existing conditions.</span>
+            <span>Understand phase-in periods for pre-membership conditions.</span>
           </li>
         </ul>
       </>

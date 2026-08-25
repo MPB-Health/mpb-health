@@ -418,14 +418,14 @@ export const generateHealthSharePlanSchema = (
     '@context': 'https://schema.org',
     '@type': 'Product',
     '@id': `https://mpb.health/plans#${planName.toLowerCase().replace(/\s+/g, '-')}`,
-    name: `${planName} Health Sharing Plan`,
+    name: `${planName} Health Sharing Membership`,
     description,
     brand: {
       '@type': 'Organization',
       name: 'MPB Health',
       url: 'https://mpb.health',
     },
-    category: 'Health Sharing Plan',
+    category: 'Health Sharing Membership',
     offers: {
       '@type': 'AggregateOffer',
       priceCurrency: 'USD',
@@ -458,7 +458,7 @@ export const generateAllPlansSchema = () => {
   const plans = [
     {
       name: 'Essentials',
-      description: 'Basic health sharing plan with preventive care, telemedicine, and prescription discounts. Perfect for individuals seeking affordable healthcare coverage.',
+      description: 'Basic health sharing membership with preventive care, telemedicine, and prescription discounts. Perfect for individuals seeking affordable healthcare.',
       lowPrice: 49.95,
       highPrice: 69.95,
       features: ['Preventive Care', 'Telemedicine', 'Prescription Discounts', 'Vision & Dental Discounts'],
@@ -468,25 +468,25 @@ export const generateAllPlansSchema = () => {
       description: 'Comprehensive health sharing with medical cost sharing for accidents, illnesses, and hospital stays. Includes maternity sharing after waiting period.',
       lowPrice: 166,
       highPrice: 947,
-      features: ['Medical Cost Sharing', 'Hospital Coverage', 'Maternity Sharing', 'Prescription Sharing', 'Virtual Behavioral Health Support'],
+      features: ['Medical Cost Sharing', 'Hospital Sharing', 'Maternity Sharing', 'Prescription Sharing', 'Virtual Behavioral Health Support'],
     },
     {
       name: 'Direct',
-      description: 'Enhanced health sharing plan with lower IUA options and comprehensive coverage for families. Includes direct provider payment options.',
+      description: 'Enhanced health sharing membership with lower IUA options and comprehensive sharing for families. Includes direct provider payment options.',
       lowPrice: 201,
       highPrice: 1006,
-      features: ['Direct Provider Payment', 'Lower IUA Options', 'Comprehensive Coverage', 'Family Plans', 'Specialist Access'],
+      features: ['Direct Provider Payment', 'Lower IUA Options', 'Comprehensive Sharing', 'Family Memberships', 'Specialist Access'],
     },
     {
       name: 'Secure HSA',
-      description: 'HSA-compatible health sharing plan allowing tax-advantaged savings. Perfect for those wanting to combine health sharing with HSA benefits.',
+      description: 'HSA-compatible health sharing membership allowing tax-advantaged savings. Perfect for those wanting to combine health sharing with HSA benefits.',
       lowPrice: 239,
       highPrice: 1070,
-      features: ['HSA Compatible', 'Tax Advantages', 'Medical Cost Sharing', 'Flexible IUA Options', 'Family Coverage'],
+      features: ['HSA Compatible', 'Tax Advantages', 'Medical Cost Sharing', 'Flexible IUA Options', 'Family Memberships'],
     },
     {
       name: 'MEC+ Essentials',
-      description: 'Minimum Essential Care plan satisfying ACA employer mandate requirements. Ideal for businesses seeking compliant, affordable options.',
+      description: 'Minimum Essential Care membership satisfying ACA employer mandate requirements. Ideal for businesses seeking compliant, affordable options.',
       lowPrice: 125,
       highPrice: 195,
       features: ['ACA Compliant', 'Employer Mandate Satisfaction', 'Preventive Care', 'Affordable Business Solution'],
@@ -575,21 +575,21 @@ export const generateServiceSchema = (): ServiceSchema => ({
   },
   hasOfferCatalog: {
     '@type': 'OfferCatalog',
-    name: 'Health Sharing Plans',
+    name: 'Health Sharing Memberships',
     itemListElement: [
       {
         '@type': 'Offer',
         itemOffered: {
           '@type': 'Service',
-          name: 'Individual & Family Plans',
-          description: 'Health sharing plans for individuals and families seeking affordable healthcare solutions.',
+          name: 'Individual & Family Memberships',
+          description: 'Health sharing memberships for individuals and families seeking affordable healthcare solutions.',
         },
       },
       {
         '@type': 'Offer',
         itemOffered: {
           '@type': 'Service',
-          name: 'Business & Organization Plans',
+          name: 'Business & Organization Memberships',
           description: 'Group health sharing solutions for businesses and organizations.',
         },
       },
@@ -654,7 +654,7 @@ export const generateWebSiteSchema = (): WebSiteSchema => ({
   '@id': 'https://mpb.health/#website',
   name: 'MPB Health',
   url: 'https://mpb.health',
-  description: 'Affordable health sharing plans for individuals, families, and businesses. Save up to 60% compared to traditional health insurance.',
+  description: 'Affordable health sharing memberships for individuals, families, and businesses. Save up to 60% compared to traditional health insurance.',
   publisher: {
     '@id': 'https://mpb.health/#organization',
   },
@@ -758,21 +758,21 @@ export const generateHowToSchema = (
 export const generateEnrollmentHowToSchema = (): HowToSchema =>
   generateHowToSchema(
     'How to Enroll in MPB Health Sharing',
-    'Step-by-step guide to enrolling in an affordable health sharing plan with MPB Health.',
+    'Step-by-step guide to enrolling in an affordable health sharing membership with MPB Health.',
     [
       {
         name: 'Get a Free Quote',
-        text: 'Enter your ZIP code and household information to see personalized plan options and pricing.',
+        text: 'Enter your ZIP code and household information to see personalized membership options and pricing.',
         url: '/quote',
       },
       {
-        name: 'Compare Plans',
-        text: 'Review available health sharing plans including Essentials, Care Plus, Direct, and Secure HSA options.',
+        name: 'Compare Memberships',
+        text: 'Review available health sharing memberships including Essentials, Care Plus, Direct, and Secure HSA options.',
         url: '/plans',
       },
       {
-        name: 'Select Your Plan',
-        text: 'Choose the plan that best fits your healthcare needs and budget. Select your IUA (Initial Unshareable Amount) level.',
+        name: 'Select Your Membership',
+        text: 'Choose the membership that best fits your healthcare needs and budget. Select your IUA (Initial Unshareable Amount) level.',
         url: '/enrollment',
       },
       {
@@ -846,14 +846,14 @@ export const plansFaqQuestions = [
       'Affordable healthcare memberships provide community-based medical cost sharing options that help reduce healthcare expenses without relying on traditional insurance structures.',
   },
   {
-    question: 'What types of health sharing plans are available?',
+    question: 'What types of health sharing memberships are available?',
     answer:
       'MPB Health offers multiple health sharing membership options including large medical expense protection, family healthcare sharing, and HSA-compatible memberships for self-employed individuals.',
   },
   {
-    question: 'Can families use health sharing plans?',
+    question: 'Can families use health sharing memberships?',
     answer:
-      'Yes. Many health sharing memberships are designed specifically for families seeking affordable healthcare coverage alternatives with flexible monthly sharing options.',
+      'Yes. Many health sharing memberships are designed specifically for families seeking affordable healthcare alternatives with flexible monthly sharing options.',
   },
 ];
 
@@ -869,7 +869,7 @@ export const individualsAndFamiliesFaqQuestions = [
       'Many families choose health sharing memberships because they may offer lower monthly costs, flexible healthcare access, and community-based medical expense sharing.',
   },
   {
-    question: 'Can self-employed individuals use health sharing plans?',
+    question: 'Can self-employed individuals use health sharing memberships?',
     answer:
       'Yes. Health sharing memberships are commonly used by freelancers, entrepreneurs, contractors, and self-employed professionals seeking affordable healthcare alternatives.',
   },
@@ -877,17 +877,17 @@ export const individualsAndFamiliesFaqQuestions = [
 
 export const businessesFaqQuestions = [
   {
-    question: 'What are HSA compatible health sharing plans?',
+    question: 'What are HSA compatible health sharing memberships?',
     answer:
-      'HSA compatible health sharing plans allow eligible members to combine medical cost sharing with a Health Savings Account for additional tax advantages and healthcare budgeting flexibility.',
+      'HSA compatible health sharing memberships allow eligible members to combine medical cost sharing with a Health Savings Account for additional tax advantages and healthcare budgeting flexibility.',
   },
   {
-    question: 'What expenses can an HSA cover with a health sharing plan?',
+    question: 'What expenses can an HSA pay for with a health sharing membership?',
     answer:
-      'HSAs can typically cover qualified medical expenses including doctor visits, prescriptions, diagnostics, dental care, and hospital-related costs that may not be fully shared through the membership.',
+      'HSAs can typically pay for qualified medical expenses including doctor visits, prescriptions, diagnostics, dental care, and hospital-related costs that may not be fully shared through the membership.',
   },
   {
-    question: 'Are health sharing plans good for small businesses?',
+    question: 'Are health sharing memberships good for small businesses?',
     answer:
       'Many small businesses and 1099 workers choose health sharing memberships because they can reduce healthcare costs while providing flexible healthcare support options.',
   },
@@ -897,7 +897,7 @@ export const howItWorksFaqQuestions = [
   {
     question: 'How does health sharing work?',
     answer:
-      'Health sharing works through a community-based system where members contribute monthly amounts that help cover eligible medical expenses for other members. MPB Health simplifies the process with member support and online tools.',
+      'Health sharing works through a community-based system where members contribute monthly amounts that help pay eligible medical expenses for other members. MPB Health simplifies the process with member support and online tools.',
   },
   {
     question: 'What medical expenses are eligible for sharing?',
@@ -918,12 +918,12 @@ export const faqPagePaaQuestions = [
       'A healthcare sharing membership is a program where members contribute monthly amounts to help share eligible healthcare expenses across a community-based network.',
   },
   {
-    question: 'What are the pros and cons of health share plans?',
+    question: 'What are the pros and cons of health share memberships?',
     answer:
-      'Pros may include affordability, flexibility, and lower monthly costs, while limitations may include sharing restrictions, pre-existing condition guidelines, and non-insurance status.',
+      'Pros may include affordability, flexibility, and lower monthly costs, while limitations may include sharing restrictions, pre-membership condition guidelines, and non-insurance status.',
   },
   {
-    question: 'Can I use any doctor with a health sharing plan?',
+    question: 'Can I use any doctor with a health sharing membership?',
     answer:
       'Many health sharing memberships offer flexible provider access without strict network restrictions, though reimbursement and sharing eligibility may vary by program.',
   },
@@ -931,14 +931,14 @@ export const faqPagePaaQuestions = [
 
 export const comparePlansFaqQuestions = [
   {
-    question: 'Are health sharing plans considered insurance?',
+    question: 'Are health sharing memberships considered insurance?',
     answer:
-      'No. Health sharing plans are membership-based healthcare sharing programs rather than traditional insurance policies regulated by insurance companies.',
+      'No. Health sharing memberships are membership-based healthcare sharing programs rather than traditional insurance policies regulated by insurance companies.',
   },
   {
     question: 'What is the difference between health share and health insurance?',
     answer:
-      'Health sharing plans operate through community medical expense sharing, while traditional insurance uses a regulated risk-based coverage model with premiums and policy contracts.',
+      'Health sharing memberships operate through community medical expense sharing, while traditional insurance uses a regulated risk-based coverage model with premiums and policy contracts.',
   },
   {
     question: 'Which is more affordable: health sharing or insurance?',
@@ -965,12 +965,12 @@ export const generatePlansPageSchemaBundle = () => [
   generateOrganizationSchema(),
   ...generateAllPlansSchema(),
   generateHowToSchema(
-    'How to Choose a Health Sharing Plan',
-    'Guide to selecting the right MPB Health sharing plan for your needs.',
+    'How to Choose a Health Sharing Membership',
+    'Guide to selecting the right MPB Health sharing membership for your needs.',
     [
       { name: 'Assess Your Needs', text: 'Consider your healthcare usage, family size, and budget requirements.' },
       { name: 'Compare IUA Levels', text: 'Lower IUA means higher monthly contribution but lower out-of-pocket costs.' },
-      { name: 'Review Plan Features', text: 'Compare telemedicine, prescription sharing, and specialty coverage options.' },
+      { name: 'Review Membership Features', text: 'Compare telemedicine, prescription sharing, and specialty sharing options.' },
       { name: 'Calculate Total Cost', text: 'Factor in monthly contribution plus expected medical expenses.' },
     ]
   ),

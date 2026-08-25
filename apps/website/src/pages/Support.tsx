@@ -120,7 +120,7 @@ const Support: React.FC = () => {
               <div className="flex items-center gap-3 mb-6">
                 <div className="h-1 w-12 bg-gradient-to-r from-primary to-accent rounded-full" />
                 <h2 className="text-3xl sm:text-4xl font-bold text-neutral-900">
-                  Employers & Plan Administrators
+                  Employers & Membership Administrators
                 </h2>
               </div>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">

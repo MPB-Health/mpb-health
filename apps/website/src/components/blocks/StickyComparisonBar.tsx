@@ -69,7 +69,7 @@ export const StickyComparisonBar: React.FC<StickyComparisonBarProps> = ({
           <div className="flex items-start justify-between mb-3">
             <div>
               <div className="text-sm font-semibold text-neutral-900 mb-1">
-                Compare Plans
+                Compare Memberships
               </div>
               <div className="text-xs text-neutral-600">
                 {selectedPlans.length} of {maxPlans} selected
@@ -100,12 +100,12 @@ export const StickyComparisonBar: React.FC<StickyComparisonBarProps> = ({
             className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 text-white"
           >
             <GitCompare className="w-4 h-4 mr-2" />
-            Compare Plans
+            Compare Memberships
           </Button>
 
           {selectedPlans.length < 2 && (
             <p className="text-xs text-neutral-500 text-center mt-2">
-              Select at least 2 plans to compare
+              Select at least 2 memberships to compare
             </p>
           )}
         </div>

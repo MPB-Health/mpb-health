@@ -83,9 +83,9 @@ const ELIGIBILITY_FACTORS = [
   { label: 'The type of medical service', Icon: Stethoscope },
   { label: 'The reason for the service', Icon: ClipboardList },
   { label: 'Membership requirements', Icon: FileText },
-  { label: 'Pre-existing conditions', Icon: History },
+  { label: 'Pre-membership conditions', Icon: History },
   { label: 'Waiting or phase-in provisions', Icon: Hourglass },
-  { label: 'Applicable limits and exclusions', Icon: Scale },
+  { label: 'Applicable sharing maximums and exclusions', Icon: Scale },
   { label: 'Documentation and submission requirements', Icon: FileCheck },
 ];
 
@@ -200,9 +200,9 @@ const FAQS = [
       'No. Health sharing is not health insurance. MPB Health uses a voluntary medical cost sharing model governed by membership guidelines rather than an insurance policy.',
   },
   {
-    question: 'Does MPB Health cover medical expenses?',
+    question: 'Does MPB Health pay for medical expenses?',
     answer:
-      'MPB Health does not provide insurance coverage. Eligible medical expenses may be shared among members according to the guidelines of the selected membership.',
+      'MPB Health is not insurance and does not guarantee payment of medical expenses. Eligible medical expenses may be shared among members according to the guidelines of the selected membership.',
   },
   {
     question: 'Do I have to use a specific doctor or hospital?',

@@ -225,7 +225,9 @@
   color: var(--hiw-blue);
 }
 
-.ftr-card__tagline {
+/* .ftr prefix (0,2,0) so margins beat the .hiw h/p margin reset (0,1,0)
+   regardless of the CSS bundle order in the production build */
+.ftr .ftr-card__tagline {
   margin-top: 0.3rem;
   font-size: 0.75rem;
   font-weight: 800;
@@ -234,7 +236,7 @@
   color: var(--hiw-blue);
 }
 
-.ftr-card__text {
+.ftr .ftr-card__text {
   margin: 0.7rem 0 1rem;
   font-size: clamp(0.9rem, 1vw, 0.98rem);
   line-height: 1.55;
@@ -316,7 +318,7 @@
   color: var(--hiw-navy);
 }
 
-.ftr-empty__text {
+.ftr .ftr-empty__text {
   margin-top: 0.4rem;
   color: var(--hiw-gray);
 }
@@ -357,7 +359,7 @@
   color: var(--hiw-green-why);
 }
 
-.ftr-cta__title {
+.ftr .ftr-cta__title {
   margin: 0.6rem auto 0;
   max-width: 24ch;
   font-size: clamp(1.65rem, 2.8vw, 2.6rem);
@@ -366,7 +368,7 @@
   color: var(--hiw-navy);
 }
 
-.ftr-cta__text {
+.ftr .ftr-cta__text {
   margin: 0.9rem auto 0;
   max-width: 36rem;
   font-size: clamp(1rem, 1.2vw, 1.15rem);

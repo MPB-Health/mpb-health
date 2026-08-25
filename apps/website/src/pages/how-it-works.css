@@ -139,14 +139,6 @@
   --hero-copy-inset: 0px;
 }
 
-/* On big screens, cap the header at the content width (inner + its own side
-   padding) so the logo and menu pill align with the hero title and sections
-   below instead of hugging the viewport edges */
-.hiw .lr-header {
-  max-width: calc(var(--hiw-inner) + 2 * clamp(1.25rem, 3vw, 3.25rem));
-  margin: 0 auto;
-}
-
 .hiw .lr-header__list {
   background: rgba(10, 42, 74, 0.5);
 }

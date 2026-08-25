@@ -325,6 +325,15 @@ const HowItWorksPage: React.FC = () => {
         <section className="hiw-section" aria-label="What is health sharing">
           <div className="hiw-inner">
             <div className="hiw-what__grid">
+              <img
+                className="hiw-what__img"
+                src="/assets/how-it-works-community.png"
+                alt="A group of people placing their hands together, symbolizing the MPB Health sharing community"
+                width={800}
+                height={600}
+                loading="lazy"
+                decoding="async"
+              />
               <div>
                 <h2 className="hiw-title">What Is Health Sharing?</h2>
                 <p className="hiw-kicker">Healthcare built around community.</p>
@@ -341,15 +350,6 @@ const HowItWorksPage: React.FC = () => {
                   contributes toward the eligible expense according to those guidelines.
                 </p>
               </div>
-              <img
-                className="hiw-what__img"
-                src="/assets/how-it-works-community.png"
-                alt="A group of people placing their hands together, symbolizing the MPB Health sharing community"
-                width={800}
-                height={600}
-                loading="lazy"
-                decoding="async"
-              />
             </div>
 
             <div className="hiw-simple">

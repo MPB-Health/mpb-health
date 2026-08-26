@@ -8,7 +8,7 @@ import { Card } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/Label';
-import { Shield, HeartPulse, Building2, Briefcase, Heart, Printer, FileText } from 'lucide-react';
+import { Shield, HeartPulse, Building2, Briefcase, Heart } from 'lucide-react';
 
 const planIcons: Record<string, React.ElementType> = {
   essentials: Shield,
@@ -189,28 +189,6 @@ export default function PlanComparison() {
                           }}
                         ></div>
                       </div>
-                    </div>
-                    <div className="flex gap-3 print:hidden">
-                      <Button
-                        variant="outline"
-                        size="md"
-                        onClick={() => window.print()}
-                        className="border-2 border-primary-300 hover:border-primary-500 hover:bg-gradient-to-r hover:from-primary-50 hover:to-primary-100 transition-all duration-300"
-                      >
-                        <Printer className="w-4 h-4 mr-2" />
-                        Print / Save PDF
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="md"
-                        asChild
-                        className="border-2 border-success-300 hover:border-success-500 hover:bg-gradient-to-r hover:from-success-50 hover:to-success-100 transition-all duration-300"
-                      >
-                        <a href="/docs/plan-comparison-guide.html" target="_blank" rel="noopener noreferrer">
-                          <FileText className="w-4 h-4 mr-2" />
-                          Full Comparison Guide
-                        </a>
-                      </Button>
                     </div>
                   </div>
                 </div>

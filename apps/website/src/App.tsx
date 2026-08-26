@@ -263,7 +263,8 @@ const usesLandingChrome = (pathname: string) =>
   isHomePath(pathname) ||
   pathname === '/how-it-works' ||
   pathname === '/advisor-directory' ||
-  pathname === '/features';
+  pathname === '/features' ||
+  pathname === '/resources';
 
 const ConditionalHeader: React.FC = () => {
   const location = useLocation();

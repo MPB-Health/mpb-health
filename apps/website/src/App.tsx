@@ -265,7 +265,8 @@ const usesLandingChrome = (pathname: string) =>
   pathname === '/advisor-directory' ||
   pathname === '/features' ||
   pathname === '/resources' ||
-  pathname === '/blog';
+  pathname === '/blog' ||
+  pathname === '/events';
 
 const ConditionalHeader: React.FC = () => {
   const location = useLocation();

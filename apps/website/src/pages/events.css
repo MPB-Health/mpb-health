@@ -1,0 +1,255 @@
+/* Events — landing-style page pieces layered on the hiw/landing token system.
+   The wrapper is `.lr.hiw.evt`, so hiw-* hero/section/type classes apply and
+   these evt-* classes cover what is unique to this page.
+
+   Margin rules on headings/paragraphs are prefixed with `.evt` (0,2,0) so they
+   beat the .hiw h/p margin reset (0,1,0) regardless of CSS bundle order. */
+
+/* ——— Shared bits ——— */
+.evt .evt-label {
+  font-size: clamp(0.85rem, 1vw, 0.95rem);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--hiw-green-why);
+}
+
+/* ——— Hero stat pills (frosted, like Blog / Advisor Directory) ——— */
+.evt-hero__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: clamp(1.5rem, 2.5vw, 2.25rem);
+}
+
+.evt-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.1rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: inset 0 0 0 1px rgba(24, 51, 146, 0.12), 0 8px 18px -12px rgba(15, 39, 64, 0.35);
+  backdrop-filter: blur(4px);
+  color: var(--hiw-navy);
+  font-size: clamp(0.88rem, 1vw, 0.98rem);
+  font-weight: 700;
+}
+
+.evt-stat svg {
+  width: 1.05rem;
+  height: 1.05rem;
+  color: var(--hiw-green-why);
+}
+
+/* ——— Event cards grid ——— */
+.evt-grid {
+  margin-top: clamp(1.75rem, 3vw, 2.5rem);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(1.25rem, 2.2vw, 2rem);
+}
+
+@media (max-width: 1023px) {
+  .evt-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .evt-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.evt-card {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--hiw-radius);
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  box-shadow: var(--hiw-shadow);
+  overflow: hidden;
+  transition: transform 250ms ease, box-shadow 250ms ease;
+}
+
+.evt-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 18px 40px -18px rgba(15, 39, 64, 0.35);
+}
+
+.evt-card__media {
+  position: relative;
+  height: 12rem;
+  overflow: hidden;
+  background: var(--hiw-pale-blue);
+  display: grid;
+  place-items: center;
+}
+
+.evt-card__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 500ms ease;
+}
+
+.evt-card:hover .evt-card__media img {
+  transform: scale(1.05);
+}
+
+.evt-card__media-fallback {
+  width: 3rem;
+  height: 3rem;
+  color: rgba(24, 51, 146, 0.3);
+}
+
+.evt-card__body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: clamp(1.1rem, 1.8vw, 1.5rem);
+}
+
+.evt-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.83rem;
+  color: var(--hiw-gray);
+}
+
+.evt-card__meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.evt-card__meta-item svg {
+  flex: 0 0 auto;
+  width: 0.95rem;
+  height: 0.95rem;
+  color: var(--hiw-blue);
+}
+
+.evt-card__meta-item span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 10rem;
+}
+
+.evt .evt-card__title {
+  margin-top: 0.7rem;
+  font-size: clamp(1.05rem, 1.25vw, 1.2rem);
+  font-weight: 800;
+  line-height: 1.3;
+  color: var(--hiw-navy);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  transition: color 180ms ease;
+}
+
+.evt-card:hover .evt-card__title {
+  color: var(--hiw-blue);
+}
+
+.evt .evt-card__excerpt {
+  margin: 0.6rem 0 1rem;
+  font-size: clamp(0.9rem, 1vw, 0.98rem);
+  line-height: 1.55;
+  color: var(--hiw-gray);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.evt-card__type {
+  margin-top: auto;
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  background: var(--hiw-pale-blue);
+  color: var(--hiw-navy);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+/* ——— Loading / empty states ——— */
+.evt-state {
+  margin-top: clamp(1.75rem, 3vw, 2.5rem);
+  padding: clamp(2.5rem, 5vw, 4.5rem) 1.5rem;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--hiw-radius);
+  box-shadow: var(--hiw-shadow);
+  text-align: center;
+}
+
+.evt-state__icon {
+  width: 4.5rem;
+  height: 4.5rem;
+  margin: 0 auto 1.25rem;
+  border-radius: 1.25rem;
+  display: grid;
+  place-items: center;
+  background: var(--hiw-pale-blue);
+  color: var(--hiw-blue);
+}
+
+.evt-state__icon svg {
+  width: 2.1rem;
+  height: 2.1rem;
+}
+
+.evt .evt-state__title {
+  font-size: clamp(1.25rem, 1.7vw, 1.6rem);
+  font-weight: 800;
+  color: var(--hiw-navy);
+}
+
+.evt .evt-state__text {
+  margin-top: 0.5rem;
+  color: var(--hiw-gray);
+  line-height: 1.6;
+}
+
+.evt-skeleton {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--hiw-radius);
+  box-shadow: var(--hiw-shadow);
+  overflow: hidden;
+  animation: evt-pulse 1.6s ease-in-out infinite;
+}
+
+.evt-skeleton__img {
+  height: 12rem;
+  background: #e8eef5;
+}
+
+.evt-skeleton__body {
+  padding: 1.25rem;
+}
+
+.evt-skeleton__bar {
+  border-radius: 999px;
+  background: #e8eef5;
+}
+
+@keyframes evt-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}

@@ -2,10 +2,14 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { BookOpen, TrendingUp, Heart, Calendar, Clock, ArrowRight } from 'lucide-react';
-import { Badge } from '../components/ui/Badge';
+import { LandingHeader } from '../components/landing-redesign/LandingHeader';
+import { LandingFooter } from '../components/landing-redesign/LandingFooter';
 import { supabase, BlogArticle } from '../lib/supabase';
 import { useCmsLive } from '../hooks/useCmsLive';
 import { NewsletterSubscribe } from '../components/blocks/NewsletterSubscribe';
+import '../components/landing-redesign/landing-redesign.css';
+import './how-it-works.css';
+import './blog.css';
 
 const Blog: React.FC = () => {
   // Live data: Realtime + focus refetch so newly published posts appear
@@ -49,133 +53,111 @@ const Blog: React.FC = () => {
         />
       </Helmet>
 
-      <section className="relative pt-20 pb-10 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-cyan-50/50" />
-        <div className="absolute inset-0 opacity-30">
-          <img
-            src="/assets/newsletter-blog-images-2.jpg"
-            alt="Healthcare Blog"
-            className="w-full h-full object-cover"
-          />
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-r from-white/95 via-white/90 to-white/80" />
-
-        <div className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-          <div className="max-w-2xl">
-            <Badge className="mb-4 bg-blue-100 text-blue-700 border-0">
-              <BookOpen className="w-3 h-3 mr-1" />
-              Healthcare Blog
-            </Badge>
-
-            <h1 className="text-4xl sm:text-5xl font-bold mb-4 text-gray-900 text-balance">
-              Healthcare Insights & Wellness Tips
-            </h1>
-
-            <p className="text-lg text-gray-600 mb-6 leading-relaxed">
-              Expert insights on healthcare, wellness, and living your healthiest life.
-            </p>
-
-            <div className="inline-flex items-center gap-4 text-sm text-gray-600">
-              <span className="flex items-center gap-1">
-                <BookOpen className="w-4 h-4 text-blue-600" />
-                {blogPosts.length}+ Articles
-              </span>
-              <span className="flex items-center gap-1">
-                <TrendingUp className="w-4 h-4 text-green-600" />
-                Weekly Updates
-              </span>
-              <span className="flex items-center gap-1">
-                <Heart className="w-4 h-4 text-rose-600" />
-                Expert Advice
-              </span>
+      <div className="lr hiw blg">
+        {/* ── Hero ─────────────────────────────────────────────────── */}
+        <section className="hiw-hero" aria-label="Healthcare blog">
+          <LandingHeader />
+          <div className="hiw-hero__content">
+            <div className="hiw-hero__copy">
+              <p className="blg-label">Healthcare Blog</p>
+              <h1 className="hiw-hero__title">Healthcare Insights &amp; Wellness Tips</h1>
+              <p className="hiw-hero__lede">
+                Expert insights on healthcare, wellness, and living your healthiest life.
+              </p>
+              <div className="blg-hero__stats">
+                <span className="blg-stat">
+                  <BookOpen aria-hidden="true" />
+                  {blogPosts.length}+ Articles
+                </span>
+                <span className="blg-stat">
+                  <TrendingUp aria-hidden="true" />
+                  Weekly Updates
+                </span>
+                <span className="blg-stat">
+                  <Heart aria-hidden="true" />
+                  Expert Advice
+                </span>
+              </div>
             </div>
+            <img
+              className="hiw-hero__img"
+              src="/assets/newsletter-blog-images-2.jpg"
+              alt="A group of hands holding a red heart together"
+              width={500}
+              height={378}
+              fetchPriority="high"
+              decoding="async"
+            />
           </div>
-        </div>
-      </section>
+        </section>
 
-      <div className="bg-gradient-to-b from-white to-gray-50">
-        <section className="py-24">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16">
-              <Badge className="mb-4 bg-blue-100 text-blue-700 border-0">
-                <BookOpen className="w-3 h-3 mr-1" />
-                Latest Articles
-              </Badge>
-              <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
-                Healthcare Insights & Updates
-              </h2>
-              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+        {/* ── Latest articles ──────────────────────────────────────── */}
+        <section className="hiw-section" aria-label="Latest articles">
+          <div className="hiw-inner">
+            <div className="hiw-section__header">
+              <p className="blg-label">Latest Articles</p>
+              <h2 className="hiw-title">Healthcare Insights &amp; Updates</h2>
+              <p className="hiw-body">
                 Explore our complete collection of healthcare insights and wellness tips
               </p>
             </div>
 
             {loading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <div className="blg-grid">
                 {[1, 2, 3, 4, 5, 6].map((i) => (
-                  <div key={i} className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-200 animate-pulse">
-                    <div className="h-56 bg-gray-200"></div>
-                    <div className="p-6">
-                      <div className="h-4 bg-gray-200 rounded w-24 mb-4"></div>
-                      <div className="h-6 bg-gray-200 rounded mb-3"></div>
-                      <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                      <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+                  <div key={i} className="blg-skeleton">
+                    <div className="blg-skeleton__img" />
+                    <div className="blg-skeleton__body">
+                      <div className="blg-skeleton__bar" style={{ height: '0.8rem', width: '30%', marginBottom: '0.9rem' }} />
+                      <div className="blg-skeleton__bar" style={{ height: '1.1rem', width: '90%', marginBottom: '0.7rem' }} />
+                      <div className="blg-skeleton__bar" style={{ height: '0.8rem', width: '100%', marginBottom: '0.5rem' }} />
+                      <div className="blg-skeleton__bar" style={{ height: '0.8rem', width: '70%' }} />
                     </div>
                   </div>
                 ))}
               </div>
             ) : blogPosts.length === 0 ? (
-              <div className="text-center py-20 bg-white rounded-3xl shadow-lg">
-                <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-cyan-100 rounded-3xl flex items-center justify-center mx-auto mb-6">
-                  <BookOpen className="h-10 w-10 text-blue-600" />
+              <div className="blg-state">
+                <div className="blg-state__icon">
+                  <BookOpen aria-hidden="true" />
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-3">No articles available yet</h3>
-                <p className="text-lg text-gray-600">Check back soon for new content!</p>
+                <h3 className="blg-state__title">No articles available yet</h3>
+                <p className="blg-state__text">Check back soon for new content!</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <div className="blg-grid">
                 {blogPosts.map((post) => (
-                  <Link
-                    key={post.id}
-                    to={`/blog/${post.slug}`}
-                    className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-200 hover:border-blue-400"
-                  >
-                    <div className="relative h-56 overflow-hidden bg-gradient-to-br from-blue-100 to-cyan-100">
+                  <Link key={post.id} to={`/blog/${post.slug}`} className="blg-card">
+                    <div className="blg-card__media">
                       <img
                         src={post.featured_image_url.startsWith('http') ? post.featured_image_url : `/${post.featured_image_url.replace(/^\//, '')}`}
                         alt={post.title}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        loading="lazy"
+                        decoding="async"
                         onError={(e) => {
                           e.currentTarget.style.display = 'none';
                         }}
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-gray-900/40 to-transparent" />
-                      <Badge className="absolute top-4 left-4 bg-white/90 text-gray-900 border-0 backdrop-blur-sm">
-                        {post.category}
-                      </Badge>
+                      <span className="blg-card__category">{post.category}</span>
                     </div>
-                    <div className="p-6">
-                      <div className="flex items-center gap-4 text-sm text-gray-500 mb-3">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-4 h-4" />
-                          <span>{formatDate(post.published_date)}</span>
-                        </div>
+                    <div className="blg-card__body">
+                      <div className="blg-card__meta">
+                        <span className="blg-card__meta-item">
+                          <Calendar aria-hidden="true" />
+                          {formatDate(post.published_date)}
+                        </span>
                         {post.read_time && (
-                          <div className="flex items-center gap-1">
-                            <Clock className="w-4 h-4" />
-                            <span>{post.read_time} min</span>
-                          </div>
+                          <span className="blg-card__meta-item">
+                            <Clock aria-hidden="true" />
+                            {post.read_time} min
+                          </span>
                         )}
                       </div>
-                      <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors line-clamp-2">
-                        {post.title}
-                      </h3>
-                      <p className="text-gray-600 line-clamp-3 mb-4">
-                        {post.excerpt}
-                      </p>
-                      <div className="flex items-center text-blue-600 font-semibold group-hover:gap-2 transition-all">
-                        Read Article
-                        <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
-                      </div>
+                      <h3 className="blg-card__title">{post.title}</h3>
+                      <p className="blg-card__excerpt">{post.excerpt}</p>
+                      <span className="blg-card__link">
+                        Read Article <ArrowRight />
+                      </span>
                     </div>
                   </Link>
                 ))}
@@ -184,11 +166,15 @@ const Blog: React.FC = () => {
           </div>
         </section>
 
-        <section className="py-24">
-          <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+        {/* ── Newsletter ───────────────────────────────────────────── */}
+        <section className="blg-newsletter" aria-label="Subscribe to the newsletter">
+          <div className="blg-newsletter__inner">
             <NewsletterSubscribe source="blog" variant="default" />
           </div>
         </section>
+
+        {/* ── Footer (same as landing page) ────────────────────────── */}
+        <LandingFooter />
       </div>
     </>
   );

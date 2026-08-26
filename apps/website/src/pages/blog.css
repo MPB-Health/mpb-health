@@ -1,0 +1,270 @@
+/* Blog — landing-style page pieces layered on the hiw/landing token system.
+   The wrapper is `.lr.hiw.blg`, so hiw-* hero/section/type classes apply and
+   these blg-* classes cover what is unique to this page.
+
+   Margin rules on headings/paragraphs are prefixed with `.blg` (0,2,0) so they
+   beat the .hiw h/p margin reset (0,1,0) regardless of CSS bundle order. */
+
+/* ——— Shared bits ——— */
+.blg .blg-label {
+  font-size: clamp(0.85rem, 1vw, 0.95rem);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--hiw-green-why);
+}
+
+/* ——— Hero stat pills (frosted, like the Advisor Directory hero) ——— */
+.blg-hero__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: clamp(1.5rem, 2.5vw, 2.25rem);
+}
+
+.blg-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.1rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: inset 0 0 0 1px rgba(24, 51, 146, 0.12), 0 8px 18px -12px rgba(15, 39, 64, 0.35);
+  backdrop-filter: blur(4px);
+  color: var(--hiw-navy);
+  font-size: clamp(0.88rem, 1vw, 0.98rem);
+  font-weight: 700;
+}
+
+.blg-stat svg {
+  width: 1.05rem;
+  height: 1.05rem;
+  color: var(--hiw-green-why);
+}
+
+/* ——— Article cards grid ——— */
+.blg-grid {
+  margin-top: clamp(1.75rem, 3vw, 2.5rem);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(1.25rem, 2.2vw, 2rem);
+}
+
+@media (max-width: 1023px) {
+  .blg-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .blg-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.blg-card {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--hiw-radius);
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  box-shadow: var(--hiw-shadow);
+  overflow: hidden;
+  transition: transform 250ms ease, box-shadow 250ms ease;
+}
+
+.blg-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 18px 40px -18px rgba(15, 39, 64, 0.35);
+}
+
+.blg-card__media {
+  position: relative;
+  height: 13rem;
+  overflow: hidden;
+  background: var(--hiw-pale-blue);
+}
+
+.blg-card__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 500ms ease;
+}
+
+.blg-card:hover .blg-card__media img {
+  transform: scale(1.05);
+}
+
+.blg-card__category {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(4px);
+  color: var(--hiw-navy);
+  font-size: 0.78rem;
+  font-weight: 800;
+  box-shadow: 0 8px 18px -10px rgba(15, 39, 64, 0.4);
+}
+
+.blg-card__body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: clamp(1.1rem, 1.8vw, 1.5rem);
+}
+
+.blg-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.83rem;
+  color: var(--hiw-gray);
+}
+
+.blg-card__meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.blg-card__meta-item svg {
+  width: 0.95rem;
+  height: 0.95rem;
+  color: var(--hiw-blue);
+}
+
+.blg .blg-card__title {
+  margin-top: 0.7rem;
+  font-size: clamp(1.05rem, 1.25vw, 1.2rem);
+  font-weight: 800;
+  line-height: 1.3;
+  color: var(--hiw-navy);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  transition: color 180ms ease;
+}
+
+.blg-card:hover .blg-card__title {
+  color: var(--hiw-blue);
+}
+
+.blg .blg-card__excerpt {
+  margin: 0.6rem 0 1rem;
+  font-size: clamp(0.9rem, 1vw, 0.98rem);
+  line-height: 1.55;
+  color: var(--hiw-gray);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.blg-card__link {
+  margin-top: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--hiw-blue);
+}
+
+.blg-card__link svg {
+  width: 1em;
+  height: 1em;
+  transition: transform 160ms ease;
+}
+
+.blg-card:hover .blg-card__link svg {
+  transform: translateX(3px);
+}
+
+/* ——— Loading / empty states ——— */
+.blg-state {
+  margin-top: clamp(1.75rem, 3vw, 2.5rem);
+  padding: clamp(2.5rem, 5vw, 4.5rem) 1.5rem;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--hiw-radius);
+  box-shadow: var(--hiw-shadow);
+  text-align: center;
+}
+
+.blg-state__icon {
+  width: 4.5rem;
+  height: 4.5rem;
+  margin: 0 auto 1.25rem;
+  border-radius: 1.25rem;
+  display: grid;
+  place-items: center;
+  background: var(--hiw-pale-blue);
+  color: var(--hiw-blue);
+}
+
+.blg-state__icon svg {
+  width: 2.1rem;
+  height: 2.1rem;
+}
+
+.blg .blg-state__title {
+  font-size: clamp(1.25rem, 1.7vw, 1.6rem);
+  font-weight: 800;
+  color: var(--hiw-navy);
+}
+
+.blg .blg-state__text {
+  margin-top: 0.5rem;
+  color: var(--hiw-gray);
+  line-height: 1.6;
+}
+
+.blg-skeleton {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--hiw-radius);
+  box-shadow: var(--hiw-shadow);
+  overflow: hidden;
+  animation: blg-pulse 1.6s ease-in-out infinite;
+}
+
+.blg-skeleton__img {
+  height: 13rem;
+  background: #e8eef5;
+}
+
+.blg-skeleton__body {
+  padding: 1.25rem;
+}
+
+.blg-skeleton__bar {
+  border-radius: 999px;
+  background: #e8eef5;
+}
+
+@keyframes blg-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+/* ——— Newsletter section wrapper ——— */
+.blg-newsletter {
+  padding: clamp(2rem, 4.5vw, 4.25rem) var(--hiw-pad-x) clamp(2.75rem, 5.5vw, 5rem);
+  background: #fff;
+}
+
+.blg-newsletter__inner {
+  max-width: 56rem;
+  margin: 0 auto;
+}

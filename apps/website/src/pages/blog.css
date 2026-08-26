@@ -257,14 +257,3 @@
     opacity: 0.55;
   }
 }
-
-/* ——— Newsletter section wrapper ——— */
-.blg-newsletter {
-  padding: clamp(2rem, 4.5vw, 4.25rem) var(--hiw-pad-x) clamp(2.75rem, 5.5vw, 5rem);
-  background: #fff;
-}
-
-.blg-newsletter__inner {
-  max-width: 56rem;
-  margin: 0 auto;
-}

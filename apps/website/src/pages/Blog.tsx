@@ -6,7 +6,6 @@ import { LandingHeader } from '../components/landing-redesign/LandingHeader';
 import { LandingFooter } from '../components/landing-redesign/LandingFooter';
 import { supabase, BlogArticle } from '../lib/supabase';
 import { useCmsLive } from '../hooks/useCmsLive';
-import { NewsletterSubscribe } from '../components/blocks/NewsletterSubscribe';
 import '../components/landing-redesign/landing-redesign.css';
 import './how-it-works.css';
 import './blog.css';
@@ -163,13 +162,6 @@ const Blog: React.FC = () => {
                 ))}
               </div>
             )}
-          </div>
-        </section>
-
-        {/* ── Newsletter ───────────────────────────────────────────── */}
-        <section className="blg-newsletter" aria-label="Subscribe to the newsletter">
-          <div className="blg-newsletter__inner">
-            <NewsletterSubscribe source="blog" variant="default" />
           </div>
         </section>
 

@@ -3440,6 +3440,7 @@ function JulyBillingReportTab({ logs }: { logs: LogEntry[] }) {
   const exportDetailCsv = () => {
     const headers = [
       'Date',
+      'Entered At',
       'Member Name',
       'Team Member',
       'Channel',
@@ -3462,6 +3463,7 @@ function JulyBillingReportTab({ logs }: { logs: LogEntry[] }) {
       })
       .map((l) => [
         l.date,
+        formatEnteredAt(l)?.full ?? '',
         l.memberName,
         l.teamMember,
         l.channel,
@@ -4342,6 +4344,7 @@ export default function DailyLogs() {
                 const headers = [
                   'Week',
                   'Date',
+                  'Entered At',
                   'Team Member',
                   'Channel',
                   'Member Name',
@@ -4361,6 +4364,7 @@ export default function DailyLogs() {
                   return [
                   String(isNaN(pd.getTime()) ? '' : getISOWeek(pd)),
                   l.date,
+                  formatEnteredAt(l)?.full ?? '',
                   l.teamMember,
                   l.channel,
                   l.memberName,

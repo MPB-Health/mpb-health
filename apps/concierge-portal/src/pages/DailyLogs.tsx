@@ -509,6 +509,17 @@ function logCreatedMs(entry: LogEntry): number | null {
   return Number.isFinite(t) ? t : null;
 }
 
+/** Display when the row was saved (`created_at`). Falls back to — if missing/legacy. */
+function formatEnteredAt(entry: LogEntry): { short: string; full: string } | null {
+  const ms = logCreatedMs(entry);
+  if (ms === null) return null;
+  const d = new Date(ms);
+  return {
+    short: format(d, 'h:mm a'),
+    full: format(d, 'PPpp'),
+  };
+}
+
 /**
  * Newest save first (`created_at` DESC).
  * Stable for equal timestamps via **input order**: keep fetch order (already newest-first) and prepend
@@ -698,6 +709,7 @@ function ShareModal({
     const headers = [
       'Period',
       'Date',
+      'Entered At',
       'Team Member',
       'Channel',
       'Member Name',
@@ -715,6 +727,7 @@ function ShareModal({
     const rows = weekLogs.map((l) => [
       periodTitle,
       l.date,
+      formatEnteredAt(l)?.full ?? '',
       l.teamMember,
       l.channel,
       l.memberName,
@@ -2102,6 +2115,9 @@ function DailyLogTab({
                 <tr className="bg-[#A8B8AC]/10 text-left text-xs font-medium text-[#2F3E2F] uppercase tracking-wide">
                   <th className="px-3 py-3 whitespace-nowrap">Wk</th>
                   <th className="px-3 py-3 whitespace-nowrap">Date</th>
+                  <th className="px-3 py-3 whitespace-nowrap" title="When this entry was saved">
+                    Entered
+                  </th>
                   <th className="px-3 py-3 whitespace-nowrap">Rep</th>
                   <th className="px-3 py-3 whitespace-nowrap">Channel</th>
                   <th className="px-3 py-3 whitespace-nowrap min-w-[7rem]">Member</th>
@@ -2118,10 +2134,17 @@ function DailyLogTab({
                 {filteredLogs.map((log) => {
                   const pd = parseLogDate(log.date);
                   const wk = !isNaN(pd.getTime()) ? String(getISOWeek(pd)) : '—';
+                  const entered = formatEnteredAt(log);
                   return (
                     <tr key={log.id} className="hover:bg-[#A8B8AC]/5 transition-colors">
                       <td className="px-3 py-2.5 text-slate-500 tabular-nums whitespace-nowrap align-top">{wk}</td>
                       <td className="px-3 py-2.5 text-slate-600 tabular-nums whitespace-nowrap align-top">{log.date}</td>
+                      <td
+                        className="px-3 py-2.5 text-slate-600 tabular-nums whitespace-nowrap align-top"
+                        title={entered?.full}
+                      >
+                        {entered?.short ?? '—'}
+                      </td>
                       <td className="px-3 py-2.5 font-medium text-[#2F3E2F] align-top min-w-[7rem]">
                         <div className="flex flex-col items-start gap-0.5">
                           <span>{log.teamMember}</span>

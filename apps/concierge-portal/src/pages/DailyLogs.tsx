@@ -68,6 +68,11 @@ import {
   validateCrmNotesPaste,
   CRM_ACTIVITY_PROOF_REP,
 } from '../lib/concierge-api';
+import {
+  dailyLogsPathWithoutCrmPrefill,
+  hasCrmDailyLogPrefill,
+  memberNameFromCrmSearch,
+} from '../lib/crmDeepLinkPrefill';
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -509,6 +514,17 @@ function logCreatedMs(entry: LogEntry): number | null {
   return Number.isFinite(t) ? t : null;
 }
 
+/** Display when the row was saved (`created_at`). Falls back to — if missing/legacy. */
+function formatEnteredAt(entry: LogEntry): { short: string; full: string } | null {
+  const ms = logCreatedMs(entry);
+  if (ms === null) return null;
+  const d = new Date(ms);
+  return {
+    short: format(d, 'h:mm a'),
+    full: format(d, 'PPpp'),
+  };
+}
+
 /**
  * Newest save first (`created_at` DESC).
  * Stable for equal timestamps via **input order**: keep fetch order (already newest-first) and prepend
@@ -698,6 +714,7 @@ function ShareModal({
     const headers = [
       'Period',
       'Date',
+      'Entered At',
       'Team Member',
       'Channel',
       'Member Name',
@@ -715,6 +732,7 @@ function ShareModal({
     const rows = weekLogs.map((l) => [
       periodTitle,
       l.date,
+      formatEnteredAt(l)?.full ?? '',
       l.teamMember,
       l.channel,
       l.memberName,
@@ -1353,6 +1371,8 @@ function DailyLogTab({
   canDeleteAny?: boolean;
   canImport?: boolean;
 }) {
+  const location = useLocation();
+  const navigate = useConciergeNavigate();
   /** Roster name of the signed-in rep — used to decide row ownership for gating. */
   const myRosterName =
     (currentUserId && rosterTeam.find((m) => m.userId === currentUserId)?.name) || null;
@@ -1362,25 +1382,39 @@ function DailyLogTab({
     (currentUserId && rosterTeam.find((m) => m.userId === currentUserId)?.name) ||
     rosterTeam[0]?.name ||
     '';
-  const [form, setForm] = useState<Omit<LogEntry, 'id'>>({
-    date: today,
-    teamMember: defaultTeamMemberName,
-    channel: 'Phone',
-    memberName: '',
-    reason: 'Sharing Requests',
-    otherNotes: '',
-    crmNotes: false,
-    followUp: false,
-    reviewLink: false,
-    additionalNotes: '',
-    timesSpokeWithMember: 1,
-    escalatedIssue: false,
-    specialProjectDescription: '',
-    specialProjectDurationMinutes: 0,
+  const [form, setForm] = useState<Omit<LogEntry, 'id'>>(() => {
+    const prefilledName =
+      typeof window !== 'undefined' ? memberNameFromCrmSearch(window.location.search) : '';
+    return {
+      date: today,
+      teamMember: defaultTeamMemberName,
+      channel: 'Phone',
+      memberName: prefilledName,
+      reason: 'Sharing Requests',
+      otherNotes: '',
+      crmNotes: false,
+      followUp: false,
+      reviewLink: false,
+      additionalNotes: '',
+      timesSpokeWithMember: 1,
+      escalatedIssue: false,
+      specialProjectDescription: '',
+      specialProjectDurationMinutes: 0,
+    };
   });
   /** Client-only proof gates — discarded after save; not written to Supabase. */
   const [crmNotesPaste, setCrmNotesPaste] = useState('');
   const [proofFile, setProofFile] = useState<File | null>(null);
+
+  // Prefill Member Name from CRM deep-link params, then strip them from the URL.
+  useEffect(() => {
+    if (!hasCrmDailyLogPrefill(location.search)) return;
+    const name = memberNameFromCrmSearch(location.search);
+    if (name) {
+      setForm((f) => (f.memberName.trim() ? f : { ...f, memberName: name }));
+    }
+    navigate(dailyLogsPathWithoutCrmPrefill(location.search), { replace: true });
+  }, [location.search, navigate]);
   const needsCrmProof = requiresCrmActivityProof(form.teamMember);
   const needsFollowupShot =
     needsCrmProof && requiresCrmFollowupScreenshot(form.reason);
@@ -2102,6 +2136,9 @@ function DailyLogTab({
                 <tr className="bg-[#A8B8AC]/10 text-left text-xs font-medium text-[#2F3E2F] uppercase tracking-wide">
                   <th className="px-3 py-3 whitespace-nowrap">Wk</th>
                   <th className="px-3 py-3 whitespace-nowrap">Date</th>
+                  <th className="px-3 py-3 whitespace-nowrap" title="When this entry was saved">
+                    Entered
+                  </th>
                   <th className="px-3 py-3 whitespace-nowrap">Rep</th>
                   <th className="px-3 py-3 whitespace-nowrap">Channel</th>
                   <th className="px-3 py-3 whitespace-nowrap min-w-[7rem]">Member</th>
@@ -2118,10 +2155,17 @@ function DailyLogTab({
                 {filteredLogs.map((log) => {
                   const pd = parseLogDate(log.date);
                   const wk = !isNaN(pd.getTime()) ? String(getISOWeek(pd)) : '—';
+                  const entered = formatEnteredAt(log);
                   return (
                     <tr key={log.id} className="hover:bg-[#A8B8AC]/5 transition-colors">
                       <td className="px-3 py-2.5 text-slate-500 tabular-nums whitespace-nowrap align-top">{wk}</td>
                       <td className="px-3 py-2.5 text-slate-600 tabular-nums whitespace-nowrap align-top">{log.date}</td>
+                      <td
+                        className="px-3 py-2.5 text-slate-600 tabular-nums whitespace-nowrap align-top"
+                        title={entered?.full}
+                      >
+                        {entered?.short ?? '—'}
+                      </td>
                       <td className="px-3 py-2.5 font-medium text-[#2F3E2F] align-top min-w-[7rem]">
                         <div className="flex flex-col items-start gap-0.5">
                           <span>{log.teamMember}</span>
@@ -3417,6 +3461,7 @@ function JulyBillingReportTab({ logs }: { logs: LogEntry[] }) {
   const exportDetailCsv = () => {
     const headers = [
       'Date',
+      'Entered At',
       'Member Name',
       'Team Member',
       'Channel',
@@ -3439,6 +3484,7 @@ function JulyBillingReportTab({ logs }: { logs: LogEntry[] }) {
       })
       .map((l) => [
         l.date,
+        formatEnteredAt(l)?.full ?? '',
         l.memberName,
         l.teamMember,
         l.channel,
@@ -4319,6 +4365,7 @@ export default function DailyLogs() {
                 const headers = [
                   'Week',
                   'Date',
+                  'Entered At',
                   'Team Member',
                   'Channel',
                   'Member Name',
@@ -4338,6 +4385,7 @@ export default function DailyLogs() {
                   return [
                   String(isNaN(pd.getTime()) ? '' : getISOWeek(pd)),
                   l.date,
+                  formatEnteredAt(l)?.full ?? '',
                   l.teamMember,
                   l.channel,
                   l.memberName,

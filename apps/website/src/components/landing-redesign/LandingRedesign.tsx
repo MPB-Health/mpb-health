@@ -1,24 +1,33 @@
 import React, { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
+  AnimatePresence,
+  motion,
+  useInView,
+  useMotionTemplate,
+  useMotionValue,
+  useMotionValueEvent,
+  useReducedMotion,
+  useScroll,
+  useSpring,
+  useTransform,
+} from 'framer-motion';
+import {
   Users,
   ShieldCheck,
   HeartPulse,
   Headset,
-  Brain,
-  Dumbbell,
-  Leaf,
   ArrowRight,
-  Stethoscope,
-  Globe,
-  Heart,
   Star,
-  Quote,
   ChevronLeft,
   ChevronRight,
   ExternalLink,
+  Plus,
+  Video,
 } from 'lucide-react';
-import { AgentIcon, GoogleGIcon, RxIcon } from './icons';
+import { GoogleGIcon, RxIcon } from './icons';
+import { AuroraFlow } from './AuroraFlow';
+import { homepageFaqQuestions } from '../../lib/schemaMarkup';
 import { LandingHeader } from './LandingHeader';
 import { LandingFooter } from './LandingFooter';
 import { QuickRateEstimateForm } from './QuickRateEstimateForm';
@@ -32,52 +41,53 @@ const TRUST = [
   { label: 'Personal Concierge', Icon: Headset, to: '/features/membership-concierge' },
 ] as const;
 
-const PICTURE = [
+const INTRO_FEATURES = [
+  {
+    title: 'Community powered',
+    body: 'Members contribute monthly amounts to help share eligible medical expenses, so care stays affordable.',
+    Icon: Users,
+  },
+  {
+    title: 'A personal concierge',
+    body: 'A real person helps you schedule visits, navigate sharing requests, and get clear answers fast.',
+    Icon: Headset,
+  },
+  {
+    title: 'Pharmacy savings',
+    body: 'Prescription discounts, plus 30% off supplements and vitamins as part of your membership.',
+    Icon: RxIcon,
+  },
+] as const;
+
+const PILLARS = [
   {
     title: 'Mental.',
     text: 'Access support for your mental and emotional well being.',
-    Icon: Brain,
-    tint: 'green' as const,
     image: '/assets/vibegirlD.png',
-    width: 1512,
-    height: 1040,
     to: '/features/mental-health',
   },
   {
     title: 'Physical.',
-    text: 'Enjoy 30% off supplements and vitamins as part of your membership to support your overall health and wellness.',
-    Icon: Dumbbell,
-    tint: 'blue' as const,
+    text: 'Enjoy 30% off supplements and vitamins to support your overall health and wellness.',
     image: '/assets/runnervibeD.png',
-    width: 1448,
-    height: 1086,
     to: '/features/preventive-care',
   },
   {
     title: 'Balance.',
     text: 'Modern healthcare and real life working together so you can thrive.',
-    Icon: Leaf,
-    tint: 'green' as const,
     image: '/assets/silouhettevibeD.png',
-    width: 1672,
-    height: 941,
     to: '/how-it-works',
   },
 ] as const;
 
-const WHY: Array<{
-  label: string;
-  Icon: React.ComponentType<{ strokeWidth?: number | string; fill?: string; className?: string }>;
-  tint: 'green' | 'blue';
-  filled?: boolean;
-}> = [
-  { label: 'Community\nPowered', Icon: Users, tint: 'green' },
-  { label: 'Modern Healthcare\nAccess', Icon: Stethoscope, tint: 'blue' },
-  { label: 'Worldwide\nProtection', Icon: Globe, tint: 'blue' },
-  { label: 'Preventive\nCare', Icon: Heart, tint: 'blue', filled: true },
-  { label: 'Pharmacy\nSavings', Icon: RxIcon, tint: 'blue' },
-  { label: 'Personal\nConcierge', Icon: AgentIcon, tint: 'blue' },
-];
+const WHY_CHIPS = [
+  'Community Powered',
+  'Modern Healthcare Access',
+  'Worldwide Protection',
+  'Preventive Care',
+  'Pharmacy Savings',
+  'Personal Concierge',
+] as const;
 
 const TESTIMONIALS = [
   {
@@ -124,6 +134,31 @@ const TESTIMONIALS = [
   },
 ] as const;
 
+const easeOut = [0.16, 1, 0.3, 1] as const;
+
+function Reveal({
+  children,
+  delay = 0,
+  className,
+}: {
+  children: React.ReactNode;
+  delay?: number;
+  className?: string;
+}) {
+  const reduce = useReducedMotion();
+  return (
+    <motion.div
+      className={className}
+      initial={reduce ? false : { opacity: 0, y: 26 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.2 }}
+      transition={{ duration: 0.7, delay, ease: easeOut }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
 function TestimonialCard({
   name,
   location,
@@ -145,18 +180,21 @@ function TestimonialCard({
           <Star key={i} />
         ))}
       </div>
-      <div className="lr-social__name">{name}</div>
-      <div className="lr-social__meta">
-        {location} • {family}
-      </div>
       <div className="lr-social__quote-wrap">
-        <Quote className="lr-social__quote-glyph" size={18} />
-        <p className={`lr-social__quote${long && !expanded ? ' is-clamped' : ''}`}>"{quote}"</p>
+        <p className={`lr-social__quote${long && !expanded ? ' is-clamped' : ''}`}>
+          &ldquo;{quote}&rdquo;
+        </p>
         {long ? (
           <button type="button" className="lr-social__more" onClick={() => setExpanded((v) => !v)}>
             {expanded ? 'Read less' : 'Read more'}
           </button>
         ) : null}
+      </div>
+      <div>
+        <div className="lr-social__name">{name}</div>
+        <div className="lr-social__meta">
+          {location} · {family}
+        </div>
       </div>
       <a
         className="lr-social__source"
@@ -172,6 +210,44 @@ function TestimonialCard({
 
 export function LandingRedesign() {
   const trackRef = useRef<HTMLDivElement>(null);
+  const heroRef = useRef<HTMLElement>(null);
+  const estimateRef = useRef<HTMLElement>(null);
+  const reduce = useReducedMotion();
+
+  const heroInView = useInView(heroRef, { amount: 0.25 });
+  const estimateInView = useInView(estimateRef, { amount: 0.2 });
+  const showOrderBar = !heroInView && !estimateInView;
+
+  const [navFloating, setNavFloating] = useState(false);
+  const { scrollY } = useScroll();
+  useMotionValueEvent(scrollY, 'change', (y) => {
+    setNavFloating(y > window.innerHeight * 0.72);
+  });
+
+  const { scrollYProgress: heroProgress } = useScroll({
+    target: heroRef,
+    offset: ['start start', 'end start'],
+  });
+  const heroContentY = useTransform(heroProgress, [0, 1], [0, 90]);
+  const heroContentOpacity = useTransform(heroProgress, [0, 0.65], [1, 0]);
+
+  const pointerX = useMotionValue(-600);
+  const pointerY = useMotionValue(-600);
+  const springX = useSpring(pointerX, { stiffness: 140, damping: 22, mass: 0.6 });
+  const springY = useSpring(pointerY, { stiffness: 140, damping: 22, mass: 0.6 });
+  const dotsMask = useMotionTemplate`radial-gradient(340px at ${springX}px ${springY}px, rgba(0, 0, 0, 0.95), transparent 72%)`;
+  const pointerGlow = useMotionTemplate`radial-gradient(480px at ${springX}px ${springY}px, rgba(255, 255, 255, 0.2), transparent 70%)`;
+
+  const onHeroPointerMove = (e: React.PointerEvent<HTMLElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    pointerX.set(e.clientX - rect.left);
+    pointerY.set(e.clientY - rect.top);
+  };
+
+  const onHeroPointerLeave = () => {
+    pointerX.set(-600);
+    pointerY.set(-600);
+  };
 
   const scrollTrack = (dir: 1 | -1) => {
     const el = trackRef.current;
@@ -179,144 +255,242 @@ export function LandingRedesign() {
     el.scrollBy({ left: dir * el.clientWidth * 0.92, behavior: 'smooth' });
   };
 
+  const heroStagger = {
+    hidden: {},
+    show: { transition: { staggerChildren: 0.14, delayChildren: 0.15 } },
+  };
+  const heroItem = {
+    hidden: reduce ? {} : { opacity: 0, y: 24 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.9, ease: easeOut } },
+  };
+
   return (
     <div className="lr">
-      <section className="lr-hero" aria-label="Hero">
-        <div className="lr-hero__stage">
-          <img
-            className="lr-hero__image"
-            src="/assets/hero.png"
-            alt=""
-            width={1920}
-            height={1357}
-            fetchPriority="high"
-            decoding="async"
-          />
-          <LandingHeader />
-          <div className="lr-hero__content">
-            <div className="lr-hero__copy">
-              <h1 className="lr-hero__headline">Healthcare that</h1>
-              <img
-                className="lr-hero__uplift"
-                src="/assets/upliftyou.png"
-                alt="uplifts you"
-                width={817}
-                height={370}
-                decoding="async"
-              />
-            </div>
-          </div>
-          <div className="lr-hero__estimate">
-            <QuickRateEstimateForm />
-          </div>
+      <LandingHeader floating={navFloating} />
+
+      <section
+        className="lr-hero"
+        aria-label="Hero"
+        ref={heroRef}
+        onPointerMove={reduce ? undefined : onHeroPointerMove}
+        onPointerLeave={reduce ? undefined : onHeroPointerLeave}
+      >
+        <div className="lr-hero__media">
+          <AuroraFlow className="lr-hero__shader" speed={0.55} />
         </div>
+        {reduce ? null : (
+          <>
+            <motion.div
+              className="lr-hero__dots"
+              aria-hidden="true"
+              style={{ maskImage: dotsMask, WebkitMaskImage: dotsMask }}
+            />
+            <motion.div
+              className="lr-hero__glow"
+              aria-hidden="true"
+              style={{ background: pointerGlow }}
+            />
+          </>
+        )}
+        <motion.div
+          className="lr-hero__content"
+          variants={heroStagger}
+          initial="hidden"
+          animate="show"
+          style={reduce ? undefined : { y: heroContentY, opacity: heroContentOpacity }}
+        >
+          <motion.p variants={heroItem} className="lr-hero__kicker">
+            The community-based alternative to traditional insurance.
+          </motion.p>
+          <motion.h1 variants={heroItem} className="lr-hero__headline">
+            Healthcare that uplifts you
+          </motion.h1>
+          <motion.div variants={heroItem} className="lr-hero__actions">
+            <a className="lr-btn lr-btn--white" href="#estimate">
+              Get Your Quote
+            </a>
+            <p className="lr-hero__micro">Compare all memberships in 30 seconds.</p>
+          </motion.div>
+        </motion.div>
       </section>
 
-      <section className="lr-trust" aria-label="Trust signals">
-        <ul className="lr-trust__list">
-          {TRUST.map(({ label, Icon, to }) => (
-            <li key={label} className="lr-trust__item">
-              <Link to={to} className="lr-trust__link">
-                <span className="lr-trust__icon">
-                  <Icon strokeWidth={1.6} />
-                </span>
-                <span className="lr-trust__label">{label}</span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <section className="lr-picture" aria-label="Mental, Physical, Balance">
-        <div className="lr-picture__card">
-          {PICTURE.map((card) => (
-            <div key={card.title} className="lr-picture__col">
-              <div className="lr-picture__head">
-                <span className={`lr-picture__icon lr-picture__icon--${card.tint}`}>
-                  <card.Icon strokeWidth={1.6} />
-                </span>
-                <div>
-                  <h3 className="lr-picture__title">
-                    <Link to={card.to}>{card.title}</Link>
-                  </h3>
-                  <p className="lr-picture__text">{card.text}</p>
-                </div>
-              </div>
-              <Link to={card.to} className="lr-picture__img-link" aria-label={`${card.title} Learn more`}>
+      <section className="lr-intro" aria-label="Introducing MPB Health">
+        <div className="lr-inner">
+          <div className="lr-intro__grid">
+            <Reveal>
+              <div className="lr-intro__media">
                 <img
-                  className="lr-picture__img"
-                  src={card.image}
+                  src="/assets/vibegirlD.png"
                   alt=""
-                  width={card.width}
-                  height={card.height}
+                  width={1512}
+                  height={1040}
                   loading="lazy"
                   decoding="async"
                 />
-              </Link>
-              <Link to={card.to} className={`lr-picture__link lr-picture__link--${card.tint}`}>
-                Learn more <ArrowRight />
-              </Link>
-            </div>
-          ))}
+                <div className="lr-intro__quote">
+                  <p>
+                    &ldquo;MPB Health has given our family the freedom to live fully knowing we have
+                    a community that&rsquo;s there when it matters most.&rdquo;
+                  </p>
+                  <footer>
+                    <strong>Sarah M.</strong>, MPB Health Member
+                  </footer>
+                </div>
+              </div>
+            </Reveal>
+            <Reveal delay={0.1}>
+              <h2 className="lr-intro__title">
+                Introducing,
+                <br />
+                MPB Health.
+              </h2>
+              <p className="lr-twotone">
+                Your gateway to qualified health share programs{' '}
+                <span>
+                  where affordable, community-based healthcare works as an alternative to
+                  traditional insurance.
+                </span>
+              </p>
+              <ul className="lr-intro__features">
+                {INTRO_FEATURES.map(({ title, body, Icon }) => (
+                  <li key={title} className="lr-intro__feature">
+                    <span className="lr-intro__tile">
+                      <Icon strokeWidth={1.8} />
+                    </span>
+                    <div>
+                      <h3>{title}</h3>
+                      <p>{body}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </Reveal>
+          </div>
         </div>
       </section>
 
-      <section className="lr-why" aria-label="Why MPB Health">
-        <div className="lr-why__card">
-          <h2 className="lr-why__title">Why MPB Health?</h2>
-          <p className="lr-why__sub">Health sharing that goes beyond the unexpected.</p>
-          <div className="lr-why__grid">
-            {WHY.map(({ label, Icon, tint, filled }) => (
-              <div key={label} className="lr-why__item">
-                <span className={`lr-why__icon lr-why__icon--${tint}`}>
-                  <Icon strokeWidth={1.6} {...(filled ? { fill: 'currentColor' } : {})} />
-                </span>
-                <div className="lr-why__label">
-                  {label.split('\n').map((line) => (
-                    <div key={line}>{line}</div>
-                  ))}
-                </div>
-              </div>
+      <section className="lr-strip" aria-label="Trust signals">
+        <div className="lr-inner">
+          <Reveal>
+            <div className="lr-strip__grid">
+              {TRUST.map(({ label, Icon, to }) => (
+                <Link key={label} to={to} className="lr-strip__cell">
+                  <Icon strokeWidth={1.7} />
+                  <span>{label}</span>
+                </Link>
+              ))}
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      <section className="lr-estimate" aria-label="Quick rate estimate" id="estimate" ref={estimateRef}>
+        <div className="lr-inner">
+          <div className="lr-estimate__grid">
+            <div className="lr-estimate__media">
+              <img
+                src="/assets/runnervibeD.png"
+                alt=""
+                width={1448}
+                height={1086}
+                loading="lazy"
+                decoding="async"
+              />
+            </div>
+            <Reveal>
+              <QuickRateEstimateForm />
+            </Reveal>
+          </div>
+          <div className="lr-estimate__trust">
+            <span>
+              <ShieldCheck /> Secure &amp; Private
+            </span>
+            <span>
+              <Users /> Over 12,000 members served
+            </span>
+            <span>
+              <Video /> $0 virtual care included
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <section className="lr-gallery" aria-label="Mental, Physical, Balance">
+        <div className="lr-inner">
+          <Reveal className="lr-gallery__head">
+            <h2 className="lr-gallery__title">
+              Mental. Physical.
+              <br />
+              Balance.
+            </h2>
+            <p className="lr-twotone">
+              Modern healthcare and real life working together{' '}
+              <span>so you can thrive in every part of your well being.</span>
+            </p>
+          </Reveal>
+          <div className="lr-gallery__grid">
+            {PILLARS.map((card, i) => (
+              <Reveal key={card.title} delay={i * 0.08}>
+                <Link to={card.to} className="lr-gallery__card">
+                  <div className="lr-gallery__imgwrap">
+                    <img src={card.image} alt="" loading="lazy" decoding="async" />
+                  </div>
+                  <div className="lr-gallery__body">
+                    <h3 className="lr-gallery__name">{card.title}</h3>
+                    <p className="lr-gallery__text">{card.text}</p>
+                    <span className="lr-gallery__link">
+                      Learn more <ArrowRight />
+                    </span>
+                  </div>
+                </Link>
+              </Reveal>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="lr-quote" aria-label="Member quote">
-        <div className="lr-inner">
-          <blockquote className="lr-quote__block">
-            <p className="lr-quote__text">
-              “MPB Health has given our family the freedom to live fully knowing we have a community
-              that’s there when it matters most.”
-            </p>
-            <footer className="lr-quote__author">
-              <div className="lr-quote__name">-Sarah M.</div>
-              <div className="lr-quote__role">MPB Health Member</div>
-            </footer>
-          </blockquote>
+      <section className="lr-statement" aria-label="Why MPB Health">
+        <div className="lr-statement__flow" aria-hidden="true" />
+        <AuroraFlow />
+        <div className="lr-inner lr-statement__inner">
+          <Reveal>
+            <h2 className="lr-statement__title">
+              Health sharing that goes beyond the unexpected.
+            </h2>
+          </Reveal>
+          <Reveal delay={0.12} className="lr-statement__stats">
+            <div>
+              <div className="lr-statement__value">4.9/5</div>
+              <div className="lr-statement__label">Average rating on Google Reviews</div>
+            </div>
+            <div>
+              <div className="lr-statement__value">96%</div>
+              <div className="lr-statement__label">Would recommend to friends and family</div>
+            </div>
+            <div>
+              <div className="lr-statement__value">12,000+</div>
+              <div className="lr-statement__label">Families served historically</div>
+            </div>
+          </Reveal>
+          <Reveal delay={0.2}>
+            <div className="lr-statement__chips">
+              {WHY_CHIPS.map((chip) => (
+                <span key={chip} className="lr-statement__chip">
+                  {chip}
+                </span>
+              ))}
+            </div>
+          </Reveal>
         </div>
       </section>
 
-      <section className="lr-cta" aria-label="Call to action">
-        <div className="lr-cta__inner">
-          <h2 className="lr-cta__title">
-            Ready to experience
-            <br />
-            healthcare differently?
-          </h2>
-          <a className="lr-cta__btn" href="#estimate">
-            Get Your Quote <ArrowRight />
-          </a>
-        </div>
-      </section>
-
-      <section className="lr-social" aria-label="Social proof">
+      <section className="lr-social" aria-label="Member testimonials">
         <div className="lr-inner">
-          <div className="lr-social__header">
-            <h2 className="lr-social__title">What Our Members Say</h2>
-            <p className="lr-social__sub">
-              Join thousands of satisfied families who've discovered a better way to manage
-              healthcare costs.
+          <Reveal className="lr-social__head">
+            <h2 className="lr-social__title">What our members say</h2>
+            <p className="lr-twotone">
+              Thousands of families have found a better way{' '}
+              <span>to manage their healthcare costs with MPB Health.</span>
             </p>
             <a
               className="lr-social__reviews-link"
@@ -326,27 +500,9 @@ export function LandingRedesign() {
             >
               <GoogleGIcon width={18} height={18} />
               View all Google Reviews
-              <ExternalLink size={16} />
+              <ExternalLink size={15} />
             </a>
-          </div>
-
-          <div className="lr-social__stats">
-            <div>
-              <div className="lr-social__stat-value">4.9/5</div>
-              <div className="lr-social__stat-label">Average Rating</div>
-              <div className="lr-social__stat-sub">Google Reviews</div>
-            </div>
-            <div>
-              <div className="lr-social__stat-value">96%</div>
-              <div className="lr-social__stat-label">Would Recommend</div>
-              <div className="lr-social__stat-sub">To friends and family</div>
-            </div>
-            <div>
-              <div className="lr-social__stat-value">12,000+</div>
-              <div className="lr-social__stat-label">Families Served</div>
-              <div className="lr-social__stat-sub">Historical enrollment</div>
-            </div>
-          </div>
+          </Reveal>
 
           <div className="lr-social__carousel-wrap">
             <button
@@ -374,7 +530,54 @@ export function LandingRedesign() {
         </div>
       </section>
 
+      <section className="lr-faq" aria-label="Frequently asked questions">
+        <div className="lr-inner">
+          <div className="lr-faq__grid">
+            <Reveal>
+              <h2 className="lr-faq__title">
+                Frequently
+                <br />
+                Asked Questions
+              </h2>
+            </Reveal>
+            <Reveal delay={0.1}>
+              <div className="lr-faq__list">
+                {homepageFaqQuestions.map(({ question, answer }) => (
+                  <details key={question} className="lr-faq__item">
+                    <summary>
+                      {question}
+                      <Plus className="lr-faq__plus" strokeWidth={1.8} />
+                    </summary>
+                    <p className="lr-faq__answer">{answer}</p>
+                  </details>
+                ))}
+              </div>
+            </Reveal>
+          </div>
+        </div>
+      </section>
+
       <LandingFooter />
+
+      <AnimatePresence>
+        {showOrderBar ? (
+          <motion.div
+            className="lr-orderbar"
+            initial={reduce ? false : { opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={reduce ? undefined : { opacity: 0, y: 24 }}
+            transition={{ duration: 0.4, ease: easeOut }}
+          >
+            <div className="lr-orderbar__text">
+              <div className="lr-orderbar__title">Quick Rate Estimate</div>
+              <div className="lr-orderbar__sub">Compare all memberships in 30 seconds</div>
+            </div>
+            <a className="lr-orderbar__btn" href="#estimate">
+              Get Your Quote
+            </a>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </div>
   );
 }

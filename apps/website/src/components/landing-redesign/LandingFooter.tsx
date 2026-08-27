@@ -11,10 +11,10 @@ export function LandingFooter() {
           <div>
             <img
               className="lr-footer__logo"
-              src="/assets/logo.png"
+              src="/assets/MPB-Health-No-background.webp"
               alt="MPB Health"
-              width={500}
-              height={120}
+              width={1101}
+              height={231}
               decoding="async"
               loading="lazy"
             />

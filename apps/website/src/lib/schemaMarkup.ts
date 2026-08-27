@@ -485,7 +485,7 @@ export const generateAllPlansSchema = () => {
       features: ['HSA Compatible', 'Tax Advantages', 'Medical Cost Sharing', 'Flexible IUA Options', 'Family Memberships'],
     },
     {
-      name: 'MEC+ Essentials',
+      name: 'HSA Essentials',
       description: 'Minimum Essential Care membership satisfying ACA employer mandate requirements. Ideal for businesses seeking compliant, affordable options.',
       lowPrice: 125,
       highPrice: 195,

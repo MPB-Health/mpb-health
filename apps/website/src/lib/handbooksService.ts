@@ -156,7 +156,7 @@ const STATIC_HANDBOOKS: HandbookRecord[] = [
   {
     id: 'static-mec',
     slug: 'mecessentials-handbook',
-    name: 'MEC+ Essentials Handbook',
+    name: 'HSA Essentials Handbook',
     description: 'Minimum Essential Care plus additional benefits for comprehensive protection.',
     pdf_path: '/docs/MEC+Essentials Handbook-New Members 1.pdf',
     plan_type: 'employer',

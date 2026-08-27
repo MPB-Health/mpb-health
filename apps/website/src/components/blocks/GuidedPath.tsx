@@ -17,7 +17,7 @@ const pathOptions: PathOption[] = [
     id: "routine-virtual-care",
     title: "Routine & Virtual Care",
     subtitle: "Everyday care with 24/7 virtual visits.",
-    recommendations: "Recommends: Essentials / MEC+Essentials",
+    recommendations: "Recommends: Essentials / HSA Essentials",
     icon: Video,
     gradient: "from-blue-500 to-cyan-500",
     iconBg: "bg-blue-100"

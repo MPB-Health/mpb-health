@@ -198,7 +198,7 @@ const entries = [
   handbook('direct', 'Direct Member Handbook', 'Direct plan member handbook with benefits overview, guidelines, and enrollment information.'),
   handbook('secure-hsa', 'Secure HSA Member Handbook', 'Secure HSA member handbook with HSA-compatible plan benefits, guidelines, and tax-advantaged savings details.'),
   handbook('essentials', 'Essentials Member Handbook', 'Essentials plan member handbook with core health sharing benefits, guidelines, and member forms.'),
-  handbook('mecessentials-handbook', 'MEC Essentials Handbook', 'MEC Essentials handbook with minimum essential coverage details and member benefit guidelines.'),
+  handbook('mecessentials-handbook', 'HSA Essentials Handbook', 'HSA Essentials handbook with minimum essential coverage details and member benefit guidelines.'),
   handbook('zion-guidelines', 'Zion HealthShare Guidelines', 'Zion HealthShare member guidelines handbook with sharing rules, eligibility, and program details.'),
 
   // ── Legal & informational ──────────────────────────────────────────────
@@ -310,10 +310,10 @@ const entries = [
     robots: 'noindex, follow',
   }),
   entry('/enroll/mec-essentials', {
-    title: 'Enroll in MEC+ Essentials | MPB Health',
-    h1: 'Enroll in MEC+ Essentials',
+    title: 'Enroll in HSA Essentials | MPB Health',
+    h1: 'Enroll in HSA Essentials',
     description:
-      'Enroll your business or 1099 team in MEC+ Essentials on MPB Health. ACA MEC coverage with debt dismissal and HSA options.',
+      'Enroll your business or 1099 team in HSA Essentials on MPB Health. ACA MEC coverage with debt dismissal and HSA options.',
     robots: 'noindex, follow',
   }),
   entry('/enroll/secure-hsa', {

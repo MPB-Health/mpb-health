@@ -86,7 +86,7 @@ const MemberPortal = () => {
                   Available for these membership types:
                 </p>
                 <ul className="space-y-2">
-                  {['MEC+Essentials', 'Secure HSA'].map((plan, index) => (
+                  {['HSA Essentials', 'Secure HSA'].map((plan, index) => (
                     <li key={index} className="flex items-center text-neutral-700">
                       <div className="w-2 h-2 bg-primary rounded-full mr-3"></div>
                       {plan}

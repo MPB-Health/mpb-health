@@ -596,8 +596,8 @@ export function useSiteNav(): SiteNav {
           },
           {
             id: 'mec-essentials-handbook',
-            label: 'MEC+ Essentials Handbook',
-            description: 'View the MEC+ Essentials membership handbook',
+            label: 'HSA Essentials Handbook',
+            description: 'View the HSA Essentials membership handbook',
             icon: 'FileText',
             href: '/3d-flip-book/mecessentials-handbook',
             external: false,

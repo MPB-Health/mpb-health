@@ -58,7 +58,7 @@ const businessTypes = [
 ];
 
 const plans = [
-  { value: 'mec-essentials', label: 'MEC+ Essentials', description: 'ACA compliant, cost-effective', icon: Shield },
+  { value: 'mec-essentials', label: 'HSA Essentials', description: 'ACA compliant, cost-effective', icon: Shield },
   { value: 'secure-hsa', label: 'Secure HSA', description: 'HSA-compatible, tax advantages', icon: TrendingDown },
 ];
 
@@ -183,7 +183,7 @@ export default function BusinessRateCalculator() {
           </h2>
           <p className={`${typography.body.large} text-gray-600 max-w-3xl mx-auto`}>
             Get an estimate for your small business or 1099 team in just 60 seconds.
-            <span className="block mt-2 text-lg font-medium text-blue-600">Compare MEC+ Essentials and Secure HSA plans.</span>
+            <span className="block mt-2 text-lg font-medium text-blue-600">Compare HSA Essentials and Secure HSA plans.</span>
           </p>
 
           <div className="flex flex-wrap justify-center gap-6 mt-8">

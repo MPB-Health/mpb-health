@@ -219,7 +219,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
       'Get prescriptions sent directly to your pharmacy when needed',
       'Use this benefit as often as needed at no cost - it\'s included in all memberships'
     ],
-    eligiblePlans: ['Essentials', 'MEC+Essentials', 'Care Plus', 'Direct', 'Secure HSA'],
+    eligiblePlans: ['Essentials', 'HSA Essentials', 'Care Plus', 'Direct', 'Secure HSA'],
     membership: [
       'Treatment for minor injuries and sprains',
       'Illness care (fever, flu, cold, strep throat, ear infections)',
@@ -296,7 +296,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
       'Attend sessions by phone or via secure video platform',
       'Continue therapy as needed with ongoing virtual sessions and support'
     ],
-    eligiblePlans: ['Essentials', 'MEC+Essentials', 'Care Plus', 'Direct', 'Secure HSA'],
+    eligiblePlans: ['Essentials', 'HSA Essentials', 'Care Plus', 'Direct', 'Secure HSA'],
     membership: [
       'Individual counseling and therapy sessions',
       'Psychiatric evaluation and medication management',
@@ -449,7 +449,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
       'Use at any participating pharmacy - national chains, local stores, and mail-order',
       'Check prices at different pharmacies using our price comparison tool to find the best deal'
     ],
-    eligiblePlans: ['Essentials', 'MEC+Essentials', 'Care Plus', 'Direct', 'Secure HSA'],
+    eligiblePlans: ['Essentials', 'HSA Essentials', 'Care Plus', 'Direct', 'Secure HSA'],
     membership: [
       'Generic medications at deeply discounted rates',
       'Brand-name prescription drugs when no generic available',
@@ -598,7 +598,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
       'No need to submit expenses - services are shared directly',
       'Repeat annually or per recommended schedules for ongoing preventive care'
     ],
-    eligiblePlans: ['MEC+Essentials', 'Direct', 'Secure HSA'],
+    eligiblePlans: ['HSA Essentials', 'Direct', 'Secure HSA'],
     membership: [
       'Annual wellness visits and physical exams',
       'Blood pressure, diabetes, and cholesterol screening',
@@ -683,7 +683,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
       'Follow up as needed - we\'re here throughout your healthcare journey',
       'Access our self-service resources and FAQs 24/7 through your member portal'
     ],
-    eligiblePlans: ['Essentials', 'MEC+Essentials', 'Care Plus', 'Direct', 'Secure HSA'],
+    eligiblePlans: ['Essentials', 'HSA Essentials', 'Care Plus', 'Direct', 'Secure HSA'],
     membership: [
       '24/7 phone support from knowledgeable team members',
       'Benefit explanation and membership questions',
@@ -756,7 +756,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
       'Receive advice on whether in-person care is needed',
       'Get follow-up support and ongoing guidance as needed'
     ],
-    eligiblePlans: ['Care Plus', 'Direct', 'Secure HSA', 'Essentials', 'MEC+Essentials'],
+    eligiblePlans: ['Care Plus', 'Direct', 'Secure HSA', 'Essentials', 'HSA Essentials'],
     membership: [
       'Unlimited 24/7 consultations with licensed veterinarians',
       'Advice for dogs, cats, and other household pets',
@@ -834,7 +834,7 @@ export const healthcareFeatures: HealthcareFeature[] = [
       'Fill your prescription at the pharmacy of your choice',
       'Manage follow-ups directly with your provider'
     ],
-    eligiblePlans: ['Essentials', 'MEC+Essentials', 'Care Plus', 'Direct', 'Secure HSA'],
+    eligiblePlans: ['Essentials', 'HSA Essentials', 'Care Plus', 'Direct', 'Secure HSA'],
     membership: [
       'Virtual provider evaluation',
       'Prescription eligibility determination',

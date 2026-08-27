@@ -88,7 +88,7 @@ function scoreMECEssentials(answers: OnboardingAnswers): ScoredPlan {
 
   return {
     planId: 'mec-essentials',
-    planName: 'MEC+ Essentials',
+    planName: 'HSA Essentials',
     score,
     rationale: rationale.slice(0, 3),
   };

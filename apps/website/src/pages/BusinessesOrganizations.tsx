@@ -13,7 +13,7 @@ import { generateHealthSharePlanSchema, generateOrganizationSchema, generateServ
 const BusinessesOrganizations = () => {
   // Generate structured data for business plans
   const mecEssentialsSchema = generateHealthSharePlanSchema(
-    'MEC+ Essentials',
+    'HSA Essentials',
     'Minimum Essential Care membership satisfying ACA employer mandate requirements. Affordable preventive care solution for businesses.',
     125,
     195,

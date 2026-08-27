@@ -137,7 +137,7 @@ const planDetails: Record<string, { name: string; tagline: string; bestFor: stri
     bestFor: ['Those with existing medical debt', 'Debt Dismissal Program eligible', 'Virtual care + discounts only'],
   },
   'mec-essentials': {
-    name: 'MEC+ Essentials',
+    name: 'HSA Essentials',
     tagline: 'ACA MEC + Debt Dismissal + HSA',
     bestFor: ['Small businesses (2–50 employees)', 'ACA employer mandate', 'Self-employed needing HSA + debt relief'],
   },

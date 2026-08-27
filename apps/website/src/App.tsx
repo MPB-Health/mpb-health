@@ -267,7 +267,8 @@ const usesLandingChrome = (pathname: string) =>
   pathname === '/resources' ||
   pathname === '/blog' ||
   pathname === '/events' ||
-  pathname === '/member-stories';
+  pathname === '/member-stories' ||
+  pathname === '/podcast';
 
 const ConditionalHeader: React.FC = () => {
   const location = useLocation();

@@ -51,7 +51,7 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
       { label: 'Sedera', url: 'https://assets.ctfassets.net/01zqqfy0bb2m/BdCi3f2zO5AcFTHBLcNkJ/3cdf28f268d4186cc7550e11b11664c7/SELECT__Guidelines_-_Community_20231001.pdf' },
       {
         label: 'Zion vs Sedera',
-        url: 'https://netorg6712533-my.sharepoint.com/:x:/g/personal/julia_mympb_com/IQD4GvNM8LwXQKzAX6zyyT-jAdAVEGVRvYXfohBdzTCvAyY?rtime=ye2RGwim3kg',
+        url: 'https://netorg6712533-my.sharepoint.com/:x:/g/personal/julia_mympb_com/IQD4GvNM8LwXQKzAX6zyyT-jAdAVEGVRvYXfohBdzTCvAyY?e=agDkKk',
       },
       {
         label: 'HSA HealthShare vs Secure HSA',

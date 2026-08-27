@@ -1,0 +1,408 @@
+/* About Us — landing-style page pieces layered on the hiw/landing token
+   system. The wrapper is `.lr.hiw.abt`, so hiw-* hero/section/type classes
+   apply and these abt-* classes cover what is unique to this page.
+
+   Margin rules on headings/paragraphs are prefixed with `.abt` (0,2,0) so
+   they beat the .hiw h/p margin reset (0,1,0) regardless of bundle order. */
+
+/* ——— Shared bits ——— */
+.abt .abt-label {
+  font-size: clamp(0.85rem, 1vw, 0.95rem);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--hiw-green-why);
+}
+
+/* ——— Hero stat pills (frosted, like the other landing pages) ——— */
+.abt-hero__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: clamp(1.5rem, 2.5vw, 2.25rem);
+}
+
+.abt-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.1rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: inset 0 0 0 1px rgba(24, 51, 146, 0.12), 0 8px 18px -12px rgba(15, 39, 64, 0.35);
+  backdrop-filter: blur(4px);
+  color: var(--hiw-navy);
+  font-size: clamp(0.88rem, 1vw, 0.98rem);
+  font-weight: 700;
+}
+
+.abt-stat svg {
+  width: 1.05rem;
+  height: 1.05rem;
+  color: var(--hiw-green-why);
+}
+
+.abt-stat strong {
+  font-weight: 800;
+}
+
+/* ——— Buttons ——— */
+.abt-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.95rem 2rem;
+  border-radius: 999px;
+  font-size: clamp(0.98rem, 1.15vw, 1.1rem);
+  font-weight: 700;
+  transition: transform 250ms ease, filter 250ms ease, box-shadow 250ms ease;
+}
+
+.abt-btn svg {
+  width: 1.1em;
+  height: 1.1em;
+}
+
+.abt-btn--primary {
+  background: var(--hiw-cta);
+  color: #fff;
+  box-shadow: 0 12px 22px -8px rgba(31, 166, 232, 0.55);
+}
+
+.abt-btn--primary:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.06);
+  box-shadow: 0 16px 26px -8px rgba(31, 166, 232, 0.6);
+}
+
+.abt-btn--ghost {
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--hiw-navy);
+  box-shadow: inset 0 0 0 1.5px rgba(24, 51, 146, 0.3);
+}
+
+.abt-btn--ghost:hover {
+  transform: translateY(-2px);
+  background: #fff;
+}
+
+/* ——— Our story ——— */
+.abt-story {
+  margin-top: clamp(1.75rem, 3vw, 2.5rem);
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: clamp(1.75rem, 4vw, 4rem);
+  align-items: center;
+}
+
+@media (max-width: 900px) {
+  .abt-story {
+    grid-template-columns: 1fr;
+  }
+}
+
+.abt .abt-story__title {
+  font-size: clamp(1.6rem, 2.6vw, 2.3rem);
+  font-weight: 800;
+  color: var(--hiw-navy);
+  line-height: 1.2;
+}
+
+.abt .abt-story__lede {
+  margin-top: 1rem;
+  font-size: clamp(1.05rem, 1.3vw, 1.2rem);
+  font-weight: 600;
+  color: var(--hiw-navy);
+  line-height: 1.6;
+}
+
+.abt .abt-story__text {
+  margin-top: 0.9rem;
+  color: var(--hiw-gray);
+  line-height: 1.65;
+}
+
+.abt .abt-checklist {
+  margin-top: 1.4rem;
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.abt-checklist li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  color: var(--hiw-navy);
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.abt-checklist__check {
+  flex: 0 0 auto;
+  width: 1.35rem;
+  height: 1.35rem;
+  margin-top: 0.1rem;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: var(--hiw-green-why);
+  color: #fff;
+}
+
+.abt-checklist__check svg {
+  width: 0.8rem;
+  height: 0.8rem;
+}
+
+.abt-story__actions {
+  margin-top: 1.6rem;
+}
+
+.abt-story__img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: var(--hiw-radius);
+  box-shadow: 0 18px 40px -20px rgba(15, 39, 64, 0.45);
+}
+
+/* ——— Our mission (soft gradient card) ——— */
+.abt-mission {
+  margin-top: clamp(1.75rem, 3vw, 2.5rem);
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+  gap: clamp(1.5rem, 3vw, 3rem);
+  align-items: center;
+  padding: clamp(1.75rem, 3.5vw, 3rem);
+  border-radius: var(--hiw-radius);
+  background: var(--hiw-card-gradient);
+  box-shadow: var(--hiw-shadow);
+}
+
+@media (max-width: 900px) {
+  .abt-mission {
+    grid-template-columns: 1fr;
+  }
+}
+
+.abt-mission__img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: calc(var(--hiw-radius) * 0.75);
+  box-shadow: 0 18px 40px -18px rgba(15, 39, 64, 0.45);
+}
+
+.abt .abt-mission__title {
+  font-size: clamp(1.5rem, 2.4vw, 2.1rem);
+  font-weight: 800;
+  color: var(--hiw-navy);
+  line-height: 1.2;
+}
+
+.abt .abt-mission__text {
+  margin-top: 0.9rem;
+  color: var(--hiw-navy);
+  opacity: 0.85;
+  line-height: 1.6;
+  font-size: clamp(1rem, 1.2vw, 1.15rem);
+}
+
+.abt .abt-mission__list {
+  margin-top: 1.4rem;
+  list-style: none;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+@media (max-width: 640px) {
+  .abt .abt-mission__list {
+    grid-template-columns: 1fr;
+  }
+}
+
+.abt-mission__list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  color: var(--hiw-navy);
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+/* ——— Values ——— */
+.abt-values-grid {
+  margin-top: clamp(1.75rem, 3vw, 2.5rem);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(1.25rem, 2.2vw, 2rem);
+}
+
+@media (max-width: 900px) {
+  .abt-values-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.abt-value-card {
+  padding: clamp(1.5rem, 2.5vw, 2.25rem);
+  border-radius: var(--hiw-radius);
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  box-shadow: var(--hiw-shadow);
+  transition: transform 250ms ease, box-shadow 250ms ease;
+}
+
+.abt-value-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 18px 40px -18px rgba(15, 39, 64, 0.35);
+}
+
+.abt-value-card__icon {
+  width: 3.25rem;
+  height: 3.25rem;
+  margin-bottom: 1.1rem;
+  border-radius: 1rem;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, var(--hiw-blue), #2f6fd8);
+  color: #fff;
+  box-shadow: 0 12px 26px -14px rgba(24, 51, 146, 0.7);
+}
+
+.abt-value-card__icon--green {
+  background: linear-gradient(135deg, var(--hiw-green-why), #7fb432);
+  box-shadow: 0 12px 26px -14px rgba(127, 180, 50, 0.7);
+}
+
+.abt-value-card__icon--teal {
+  background: linear-gradient(135deg, #0e9db4, #2fd0c0);
+  box-shadow: 0 12px 26px -14px rgba(47, 208, 192, 0.7);
+}
+
+.abt-value-card__icon svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.abt .abt-value-card__title {
+  font-size: clamp(1.15rem, 1.4vw, 1.35rem);
+  font-weight: 800;
+  color: var(--hiw-navy);
+}
+
+.abt .abt-value-card__text {
+  margin-top: 0.6rem;
+  color: var(--hiw-gray);
+  line-height: 1.6;
+}
+
+/* ——— FAQ ——— */
+.abt-faq-list {
+  margin: clamp(1.75rem, 3vw, 2.5rem) auto 0;
+  max-width: 52rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.abt-faq {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: calc(var(--hiw-radius) * 0.7);
+  box-shadow: var(--hiw-shadow);
+  overflow: hidden;
+  transition: box-shadow 250ms ease;
+}
+
+.abt-faq:hover {
+  box-shadow: 0 18px 40px -18px rgba(15, 39, 64, 0.3);
+}
+
+.abt-faq__btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: clamp(1.1rem, 1.8vw, 1.5rem) clamp(1.25rem, 2vw, 1.75rem);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+}
+
+.abt .abt-faq__q {
+  font-size: clamp(1rem, 1.2vw, 1.15rem);
+  font-weight: 800;
+  color: var(--hiw-navy);
+  transition: color 180ms ease;
+}
+
+.abt-faq__btn:hover .abt-faq__q {
+  color: var(--hiw-blue);
+}
+
+.abt-faq__chevron {
+  flex: 0 0 auto;
+  width: 1.25rem;
+  height: 1.25rem;
+  color: var(--hiw-blue);
+}
+
+.abt-faq__body {
+  padding: 0 clamp(1.25rem, 2vw, 1.75rem) clamp(1.1rem, 1.8vw, 1.5rem);
+}
+
+.abt .abt-faq__body p {
+  color: var(--hiw-gray);
+  line-height: 1.65;
+}
+
+.abt .abt-faq__body p + p {
+  margin-top: 0.9rem;
+}
+
+/* ——— Final CTA ——— */
+.abt-cta {
+  padding: clamp(3rem, 6vw, 5rem) 1.5rem;
+}
+
+.abt-cta__card {
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: clamp(2.5rem, 5vw, 4rem) clamp(1.5rem, 4vw, 3.5rem);
+  border-radius: var(--hiw-radius);
+  background: var(--hiw-card-gradient);
+  box-shadow: var(--hiw-shadow);
+  text-align: center;
+}
+
+.abt .abt-cta__title {
+  max-width: 34ch;
+  margin: 0 auto;
+  font-size: clamp(1.6rem, 2.6vw, 2.3rem);
+  font-weight: 800;
+  color: var(--hiw-navy);
+}
+
+.abt .abt-cta__text {
+  max-width: 56ch;
+  margin: 1rem auto 0;
+  color: var(--hiw-navy);
+  opacity: 0.85;
+  line-height: 1.6;
+  font-size: clamp(1rem, 1.2vw, 1.15rem);
+}
+
+.abt-cta__actions {
+  margin-top: clamp(1.5rem, 2.5vw, 2.25rem);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.9rem;
+}

@@ -6,61 +6,53 @@ import {
   Users,
   ChevronDown,
   ChevronUp,
-  Sparkles,
-  Target,
   TrendingUp,
   Award,
-  CheckCircle2,
   ArrowRight,
   Globe,
-  Zap
+  Check
 } from 'lucide-react';
-import { Badge } from '../components/ui/Badge';
+import { LandingHeader } from '../components/landing-redesign/LandingHeader';
+import { LandingFooter } from '../components/landing-redesign/LandingFooter';
+import '../components/landing-redesign/landing-redesign.css';
+import './how-it-works.css';
+import './about-us.css';
 
 const coreValues = [
   {
     icon: Shield,
+    iconClass: '',
     title: 'Transparency',
     description: 'We communicate openly and honestly, ensuring our members have clear insights into their healthcare options and costs.',
-    color: 'text-blue-600',
-    bgColor: 'bg-gradient-to-br from-blue-50 to-cyan-50',
-    iconBg: 'bg-blue-500',
-    highlight: 'border-blue-200'
   },
   {
     icon: Heart,
+    iconClass: 'abt-value-card__icon--teal',
     title: 'Compassion',
     description: "We listen with empathy and understanding, treating each member's circumstances with kindness and respect.",
-    color: 'text-rose-600',
-    bgColor: 'bg-gradient-to-br from-rose-50 to-pink-50',
-    iconBg: 'bg-rose-500',
-    highlight: 'border-rose-200'
   },
   {
     icon: Users,
+    iconClass: 'abt-value-card__icon--green',
     title: 'Care',
     description: 'We deliver personalized support and attention, going the extra mile to ensure every member receives the highest quality healthcare experience.',
-    color: 'text-green-600',
-    bgColor: 'bg-gradient-to-br from-green-50 to-emerald-50',
-    iconBg: 'bg-green-500',
-    highlight: 'border-green-200'
   }
 ];
 
 const stats = [
-  { icon: Users, value: '50K+', label: 'Members Served', color: 'text-blue-600' },
-  { icon: TrendingUp, value: '30-60%', label: 'Average Savings', color: 'text-green-600' },
-  { icon: Award, value: '98%', label: 'Satisfaction Rate', color: 'text-orange-600' },
-  { icon: Globe, value: 'US-Wide', label: 'Membership', color: 'text-violet-600' }
+  { icon: Users, value: '50K+', label: 'Members Served' },
+  { icon: TrendingUp, value: '30-60%', label: 'Average Savings' },
+  { icon: Award, value: '98%', label: 'Satisfaction Rate' },
+  { icon: Globe, value: 'US-Wide', label: 'Membership' }
 ];
 
 const achievements = [
-  { icon: CheckCircle2, text: 'Industry-leading medical cost sharing platform' },
-  { icon: CheckCircle2, text: 'Dedicated support and personalized guidance' },
-  { icon: CheckCircle2, text: 'Comprehensive membership options for all life stages' },
-  { icon: CheckCircle2, text: 'Transparent pricing with no hidden fees' },
-  { icon: CheckCircle2, text: 'Community-driven approach to healthcare' },
-  { icon: CheckCircle2, text: 'Innovative technology for seamless experience' }
+  'Industry-leading medical cost sharing platform',
+  'Dedicated support and personalized guidance',
+  'Comprehensive membership options for all life stages',
+  'Transparent pricing with no hidden fees',
+  'Community-driven approach to healthcare',
+  'Innovative technology for seamless experience'
 ];
 
 const faqs = [
@@ -119,262 +111,220 @@ const AboutUs: React.FC = () => {
     <>
       <MarketingHydrationSeo />
 
-      <section className="relative pt-20 pb-10 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-cyan-50/50" />
-        <div className="absolute inset-0 opacity-30">
-          <img
-            src="/assets/team-photo.avif"
-            alt="About MPB Health"
-            className="w-full h-full object-cover"
-          />
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-r from-white/95 via-white/90 to-white/80" />
+      <div className="lr hiw abt">
+        {/* ── Hero ─────────────────────────────────────────────────── */}
+        <section className="hiw-hero" aria-label="About MPB Health">
+          <LandingHeader />
+          <div className="hiw-hero__content">
+            <div className="hiw-hero__copy">
+              <p className="abt-label">About Us</p>
+              <h1 className="hiw-hero__title">Community-Driven Healthcare Solutions</h1>
+              <p className="hiw-hero__lede">
+                Making quality healthcare accessible and affordable through innovative cost-sharing
+                solutions.
+              </p>
+              <div className="abt-hero__stats">
+                {stats.map((stat) => (
+                  <span key={stat.label} className="abt-stat">
+                    <stat.icon aria-hidden="true" />
+                    <strong>{stat.value}</strong> {stat.label}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <img
+              className="hiw-hero__img"
+              src="/assets/team-photo.avif"
+              alt="The MPB Health team"
+              fetchPriority="high"
+              decoding="async"
+            />
+          </div>
+        </section>
 
-        <div className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-          <div className="max-w-2xl">
-            <Badge className="mb-4 bg-blue-100 text-blue-700 border-0">
-              <Sparkles className="w-3 h-3 mr-1" />
-              About Us
-            </Badge>
+        {/* ── Our story ────────────────────────────────────────────── */}
+        <section className="hiw-section" aria-label="Our story">
+          <div className="hiw-inner">
+            <div className="abt-story">
+              <div>
+                <p className="abt-label">Our Story</p>
+                <h2 className="abt-story__title">Transforming Healthcare Together</h2>
+                <p className="abt-story__lede">
+                  MPB Health is a leading provider of alternative healthcare solutions, empowering
+                  individuals and families to access affordable care through a supportive,
+                  member-driven community.
+                </p>
+                <p className="abt-story__text">
+                  Our innovative medical cost sharing model helps members save up to 50% on medical
+                  expenses versus traditional insurance plans. Based in the United States, we
+                  prioritize transparency, compassionate support, and comprehensive membership
+                  options—so you can make informed healthcare decisions and enjoy true peace of
+                  mind.
+                </p>
 
-            <h1 className="text-4xl sm:text-5xl font-bold mb-4 text-gray-900 text-balance">
-              Community-Driven Healthcare Solutions
-            </h1>
+                <ul className="abt-checklist">
+                  {achievements.slice(0, 3).map((achievement) => (
+                    <li key={achievement}>
+                      <span className="abt-checklist__check">
+                        <Check aria-hidden="true" />
+                      </span>
+                      <span>{achievement}</span>
+                    </li>
+                  ))}
+                </ul>
 
-            <p className="text-lg text-gray-600 mb-6 leading-relaxed">
-              Making quality healthcare accessible and affordable through innovative cost-sharing solutions.
-            </p>
+                <div className="abt-story__actions">
+                  <a
+                    href="https://outlook.office.com/book/SpeakWithaAdvisor@NETORG6712533.onmicrosoft.com/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="abt-btn abt-btn--primary"
+                  >
+                    Schedule a Consultation
+                    <ArrowRight aria-hidden="true" />
+                  </a>
+                </div>
+              </div>
 
-            <div className="flex flex-wrap items-center gap-6 text-sm text-gray-600">
-              {stats.map((stat, index) => (
-                <span key={index} className="flex items-center gap-1">
-                  <stat.icon className={`w-4 h-4 ${stat.color}`} />
-                  <span className="font-semibold text-gray-900">{stat.value}</span> {stat.label}
-                </span>
+              <img
+                className="abt-story__img"
+                src="/assets/team-photo.avif"
+                alt="MPB Health Team"
+                loading="lazy"
+                decoding="async"
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* ── Our mission ──────────────────────────────────────────── */}
+        <section className="hiw-section" aria-label="Our mission">
+          <div className="hiw-inner">
+            <div className="abt-mission">
+              <img
+                className="abt-mission__img"
+                src="/assets/mpbhealthteam.jpg"
+                alt="MPB Health Team"
+                loading="lazy"
+                decoding="async"
+              />
+              <div>
+                <p className="abt-label">Our Mission</p>
+                <h2 className="abt-mission__title">
+                  Together, We Share the Care That Empowers Healthier Lives
+                </h2>
+                <p className="abt-mission__text">
+                  Our mission is to empower individuals to live healthier, happier lives through
+                  innovative, comprehensive healthcare solutions—providing personalized support and
+                  guidance so our members can make informed decisions and access the best care
+                  possible.
+                </p>
+
+                <ul className="abt-mission__list">
+                  {achievements.slice(3).map((achievement) => (
+                    <li key={achievement}>
+                      <span className="abt-checklist__check">
+                        <Check aria-hidden="true" />
+                      </span>
+                      <span>{achievement}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Our values ───────────────────────────────────────────── */}
+        <section className="hiw-section" aria-label="Our values">
+          <div className="hiw-inner">
+            <div className="hiw-section__header">
+              <p className="abt-label">Our Values</p>
+              <h2 className="hiw-title">What Drives Us Every Day</h2>
+              <p className="hiw-body">
+                Our core values guide everything we do, from how we serve our members to how we
+                build our community
+              </p>
+            </div>
+
+            <div className="abt-values-grid">
+              {coreValues.map((value) => (
+                <div key={value.title} className="abt-value-card">
+                  <div className={`abt-value-card__icon ${value.iconClass}`}>
+                    <value.icon aria-hidden="true" />
+                  </div>
+                  <h3 className="abt-value-card__title">{value.title}</h3>
+                  <p className="abt-value-card__text">{value.description}</p>
+                </div>
               ))}
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section className="py-24 bg-gradient-to-b from-white to-gray-50">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
-            <div>
-              <Badge className="mb-4 bg-blue-100 text-blue-700 border-0">
-                <Target className="w-3 h-3 mr-1" />
-                Our Story
-              </Badge>
-              <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
-                Transforming Healthcare Together
-              </h2>
-              <p className="text-xl text-gray-700 mb-6 leading-relaxed">
-                MPB Health is a leading provider of alternative healthcare solutions, empowering individuals and families to access affordable care through a supportive, member-driven community.
+        {/* ── FAQ ──────────────────────────────────────────────────── */}
+        <section className="hiw-section" aria-label="Frequently asked questions">
+          <div className="hiw-inner">
+            <div className="hiw-section__header">
+              <p className="abt-label">FAQ</p>
+              <h2 className="hiw-title">Frequently Asked Questions</h2>
+              <p className="hiw-body">
+                Get answers to common questions about our healthcare solutions
               </p>
-              <p className="text-lg text-gray-600 mb-8 leading-relaxed">
-                Our innovative medical cost sharing model helps members save up to 50% on medical expenses versus traditional insurance plans. Based in the United States, we prioritize transparency, compassionate support, and comprehensive membership options—so you can make informed healthcare decisions and enjoy true peace of mind.
-              </p>
+            </div>
 
-              <div className="space-y-3 mb-8">
-                {achievements.slice(0, 3).map((achievement, index) => (
-                  <div key={index} className="flex items-start gap-3">
-                    <achievement.icon className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                    <span className="text-gray-700 font-medium">{achievement.text}</span>
-                  </div>
-                ))}
-              </div>
+            <div className="abt-faq-list">
+              {faqs.map((faq, index) => (
+                <div key={faq.question} className="abt-faq">
+                  <button type="button" onClick={() => toggleFaq(index)} className="abt-faq__btn">
+                    <h3 className="abt-faq__q">{faq.question}</h3>
+                    {openFaqIndex === index ? (
+                      <ChevronUp className="abt-faq__chevron" aria-hidden="true" />
+                    ) : (
+                      <ChevronDown className="abt-faq__chevron" aria-hidden="true" />
+                    )}
+                  </button>
+                  {openFaqIndex === index && (
+                    <div className="abt-faq__body">
+                      {faq.answer.split('\n\n').map((paragraph, pIndex) => (
+                        <p key={pIndex}>{paragraph}</p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
 
+        {/* ── Final CTA ────────────────────────────────────────────── */}
+        <section className="abt-cta" aria-label="Get started">
+          <div className="abt-cta__card">
+            <p className="abt-label">Get Started</p>
+            <h2 className="abt-cta__title">Ready to Experience Better Healthcare?</h2>
+            <p className="abt-cta__text">
+              Join thousands of members who are saving on healthcare while getting the care they
+              need. Let's talk about your options.
+            </p>
+            <div className="abt-cta__actions">
               <a
                 href="https://outlook.office.com/book/SpeakWithaAdvisor@NETORG6712533.onmicrosoft.com/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-semibold rounded-2xl hover:from-blue-700 hover:to-cyan-700 transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-105 group"
+                className="abt-btn abt-btn--primary"
               >
-                Schedule a Consultation
-                <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+                Schedule a Call
+                <ArrowRight aria-hidden="true" />
+              </a>
+              <a href="/plans" className="abt-btn abt-btn--ghost">
+                View Memberships
               </a>
             </div>
-
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-400/20 to-cyan-400/20 rounded-3xl transform rotate-3" />
-              <div className="relative rounded-3xl overflow-hidden shadow-2xl">
-                <img
-                  src="/assets/team-photo.avif"
-                  alt="MPB Health Team"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-blue-900/40 to-transparent" />
-              </div>
-            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section className="py-24 bg-gradient-to-br from-blue-600 via-blue-700 to-cyan-600 relative overflow-hidden">
-        <div className="absolute inset-0">
-          <div className="absolute top-0 left-0 w-96 h-96 bg-white/10 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 right-0 w-96 h-96 bg-cyan-400/10 rounded-full blur-3xl" />
-        </div>
-
-        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="relative order-2 lg:order-1">
-              <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent rounded-3xl transform -rotate-3" />
-              <div className="relative rounded-3xl overflow-hidden shadow-2xl">
-                <img
-                  src="/assets/mpbhealthteam.jpg"
-                  alt="MPB Health Team"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-blue-900/60 to-transparent" />
-              </div>
-            </div>
-
-            <div className="order-1 lg:order-2">
-              <Badge className="mb-4 bg-white/20 text-white border-0">
-                <Zap className="w-3 h-3 mr-1" />
-                Our Mission
-              </Badge>
-              <h2 className="text-4xl lg:text-5xl font-bold text-white mb-6">
-                Together, We Share the Care That Empowers Healthier Lives
-              </h2>
-              <p className="text-xl text-white/90 mb-8 leading-relaxed">
-                Our mission is to empower individuals to live healthier, happier lives through innovative, comprehensive healthcare solutions—providing personalized support and guidance so our members can make informed decisions and access the best care possible.
-              </p>
-
-              <div className="grid sm:grid-cols-2 gap-4">
-                {achievements.slice(3).map((achievement, index) => (
-                  <div key={index} className="flex items-start gap-3 text-white">
-                    <achievement.icon className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
-                    <span className="font-medium">{achievement.text}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-24 bg-white">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <Badge className="mb-4 bg-green-100 text-green-700 border-0">
-              Our Values
-            </Badge>
-            <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
-              What Drives Us Every Day
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Our core values guide everything we do, from how we serve our members to how we build our community
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {coreValues.map((value, index) => (
-              <div
-                key={index}
-                className={`${value.bgColor} rounded-3xl p-8 border ${value.highlight} hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group`}
-              >
-                <div className={`w-16 h-16 ${value.iconBg} rounded-2xl flex items-center justify-center mb-6 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                  <value.icon className="h-8 w-8 text-white" />
-                </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-3">
-                  {value.title}
-                </h3>
-                <p className="text-gray-700 leading-relaxed">
-                  {value.description}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="py-24 bg-gradient-to-b from-gray-50 to-white">
-        <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <Badge className="mb-4 bg-violet-100 text-violet-700 border-0">
-              FAQ
-            </Badge>
-            <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
-              Frequently Asked Questions
-            </h2>
-            <p className="text-xl text-gray-600">
-              Get answers to common questions about our healthcare solutions
-            </p>
-          </div>
-
-          <div className="space-y-4">
-            {faqs.map((faq, index) => (
-              <div
-                key={index}
-                className="bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-300"
-              >
-                <button
-                  onClick={() => toggleFaq(index)}
-                  className="w-full px-8 py-6 flex items-center justify-between text-left hover:bg-gray-50 transition-colors group"
-                >
-                  <h3 className="text-lg font-bold text-gray-900 pr-4 group-hover:text-blue-600 transition-colors">
-                    {faq.question}
-                  </h3>
-                  {openFaqIndex === index ? (
-                    <ChevronUp className="h-5 w-5 text-blue-600 flex-shrink-0" />
-                  ) : (
-                    <ChevronDown className="h-5 w-5 text-gray-400 flex-shrink-0 group-hover:text-blue-600 transition-colors" />
-                  )}
-                </button>
-                {openFaqIndex === index && (
-                  <div className="px-8 pb-6 animate-fade-in">
-                    {faq.answer.split('\n\n').map((paragraph, pIndex) => (
-                      <p key={pIndex} className="text-gray-700 leading-relaxed mb-4 last:mb-0">
-                        {paragraph}
-                      </p>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="py-20 bg-gradient-to-br from-blue-600 via-blue-700 to-cyan-600 relative overflow-hidden">
-        <div className="absolute inset-0" style={{
-          backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(255, 255, 255, 0.1) 1px, transparent 0)',
-          backgroundSize: '32px 32px'
-        }} />
-
-        <div className="relative mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center">
-          <Badge className="mb-4 bg-white/20 text-white border-white/30">
-            <Sparkles className="w-3 h-3 mr-1" />
-            Get Started
-          </Badge>
-          <h2 className="text-3xl lg:text-4xl font-bold text-white mb-6">
-            Ready to Experience Better Healthcare?
-          </h2>
-          <p className="text-lg text-white/95 mb-8 max-w-2xl mx-auto leading-relaxed">
-            Join thousands of members who are saving on healthcare while getting the care they need. Let's talk about your options.
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a
-              href="https://outlook.office.com/book/SpeakWithaAdvisor@NETORG6712533.onmicrosoft.com/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center px-8 py-4 bg-white text-blue-600 font-semibold rounded-xl hover:bg-gray-50 transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-105 group"
-            >
-              Schedule a Call
-              <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
-            </a>
-            <a
-              href="/plans"
-              className="inline-flex items-center justify-center px-8 py-4 bg-white/10 backdrop-blur-sm border-2 border-white/30 text-white font-semibold rounded-xl hover:bg-white/20 transition-all duration-300"
-            >
-              View Memberships
-            </a>
-          </div>
-        </div>
-      </section>
+        {/* ── Footer (same as landing page) ────────────────────────── */}
+        <LandingFooter />
+      </div>
     </>
   );
 };

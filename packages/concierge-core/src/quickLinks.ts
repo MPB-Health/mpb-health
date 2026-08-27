@@ -27,6 +27,7 @@ export const QUICK_LINKS: QuickLink[] = [
       { name: 'Lyric', url: 'https://portal.getlyric.com/lyric/login' },
       { name: 'Zion', url: 'https://zionhealthshare.org/members/' },
       { name: 'Sedera', url: 'https://sedera.my.site.com/MemberPortal/s/login/' },
+      { name: 'HSA Portal', url: 'https://portal.hsahealthshare.com/' },
       { name: 'EverTrust', url: 'https://evertrusthealth.org/' },
       { name: 'ShareWell', url: 'https://sharewellhealth.org/' },
     ],

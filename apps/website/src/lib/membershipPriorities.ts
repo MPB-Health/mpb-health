@@ -48,7 +48,7 @@ export const membershipPriorities: MembershipPriority[] = [
     label: 'ACA Employer Compliance',
     shortLabel: 'Small business / employer care',
     icon: Building2,
-    description: 'Minimum Essential Care — satisfies employer mandate',
+    description: 'Preventive Care — satisfies employer mandate',
     keywords: ['ACA', 'MEC', 'employer mandate', 'small business', 'compliance'],
   },
   {

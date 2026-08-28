@@ -127,7 +127,7 @@ const mpbCourseTopics: Topic[] = [
       },
       {
         id: 'mec',
-        title: 'Minimum Essential Coverage (MEC)',
+        title: 'Preventive Care (MEC)',
         type: 'text',
         content:
           'Covers preventive care at 100% with no waiting period or limitations on pre-existing conditions and uses out-of-network reference-based pricing (RBP).\n\nServices include:\n\n\u2022 Annual Wellness Visit\n\u2022 Health Screenings\n\u2022 Immunizations\n\u2022 Cancer Screenings\n\u2022 Child\'s Vision Acuity Screening\n\nFor more information visit: https://www.healthcare.gov/coverage/preventive-care-benefits/',
@@ -249,7 +249,7 @@ const secureHsaCourseTopics: Topic[] = [
         title: 'What is Secure HSA?',
         type: 'text',
         content:
-          'Secure HSA is a medical cost-sharing membership that combines three key components:\n\n**1. Minimum Essential Coverage (MEC)**\nACA-mandated preventive services at 100% with no waiting period.\n\n**2. Medical Cost Sharing**\nCommunity-based sharing of eligible medical expenses with no network restrictions, no lifetime limits, and a 2-year lookback on pre-existing conditions.\n\n**3. HSA Compatibility**\nMembers can open a Health Savings Account and use pre-tax dollars for qualified medical expenses, combining cost sharing with tax-advantaged savings.\n\nSecure HSA is NOT traditional health insurance. It is a medical cost-sharing membership designed for self-employed individuals, 1099 contractors, and gig workers.',
+          'Secure HSA is a medical cost-sharing membership that combines three key components:\n\n**1. Preventive Care (MEC)**\nACA-mandated preventive services at 100% with no waiting period.\n\n**2. Medical Cost Sharing**\nCommunity-based sharing of eligible medical expenses with no network restrictions, no lifetime limits, and a 2-year lookback on pre-existing conditions.\n\n**3. HSA Compatibility**\nMembers can open a Health Savings Account and use pre-tax dollars for qualified medical expenses, combining cost sharing with tax-advantaged savings.\n\nSecure HSA is NOT traditional health insurance. It is a medical cost-sharing membership designed for self-employed individuals, 1099 contractors, and gig workers.',
       },
       {
         id: 'who-its-for',
@@ -270,7 +270,7 @@ const secureHsaCourseTopics: Topic[] = [
         title: 'Secure HSA Components',
         type: 'text',
         content:
-          'Secure HSA includes:\n\n**Medical Cost Sharing**\nCommunity-based sharing of eligible medical needs with no network restrictions and no lifetime limits or annual caps.\n\n**Minimum Essential Coverage (MEC)**\nACA-mandated preventive services at 100%.\n\n**HSA Compatibility**\nMembers can open an HSA and use pre-tax dollars for qualified medical expenses.\n\n**$0 Unlimited Virtual Care**\nAccess to virtual health services at no additional cost.\n\nNote: Hospital Debt Relief is a separate program and is not included in Secure HSA.',
+          'Secure HSA includes:\n\n**Medical Cost Sharing**\nCommunity-based sharing of eligible medical needs with no network restrictions and no lifetime limits or annual caps.\n\n**Preventive Care (MEC)**\nACA-mandated preventive services at 100%.\n\n**HSA Compatibility**\nMembers can open an HSA and use pre-tax dollars for qualified medical expenses.\n\n**$0 Unlimited Virtual Care**\nAccess to virtual health services at no additional cost.\n\nNote: Hospital Debt Relief is a separate program and is not included in Secure HSA.',
       },
       {
         id: 'mec-details',
@@ -326,7 +326,7 @@ const secureHsaCourseTopics: Topic[] = [
         title: 'Secure HSA is Not Insurance',
         type: 'text',
         content:
-          '**Critical Compliance Point**\n\nSecure HSA is a medical cost-sharing membership, NOT traditional health insurance. Never represent it as ACA insurance.\n\n**When a prospect asks: "Is this ACA insurance?"**\n\nThe correct response is: "No, it is a medical cost-sharing membership, not insurance."\n\n**Best Explanation for Self-Employed Business Owners**\n\n"Secure HSA is a medical cost-sharing membership that includes Minimum Essential Coverage for preventive care, medical cost sharing for eligible needs, and HSA compatibility so you can use pre-tax dollars for qualified expenses."',
+          '**Critical Compliance Point**\n\nSecure HSA is a medical cost-sharing membership, NOT traditional health insurance. Never represent it as ACA insurance.\n\n**When a prospect asks: "Is this ACA insurance?"**\n\nThe correct response is: "No, it is a medical cost-sharing membership, not insurance."\n\n**Best Explanation for Self-Employed Business Owners**\n\n"Secure HSA is a medical cost-sharing membership that includes Preventive Care for ACA-mandated preventive services, medical cost sharing for eligible needs, and HSA compatibility so you can use pre-tax dollars for qualified expenses."',
       },
     ],
   },
@@ -382,7 +382,7 @@ const carePlusCourseTopics: Topic[] = [
         title: 'CARE+ Components',
         type: 'text',
         content:
-          'CARE+ includes:\n\n**Medical Cost Sharing**\nCommunity-based sharing for eligible medical needs—not preventive care only, dental cleanings, or ACA-mandated screenings.\n\n**$0 Unlimited Virtual Care**\nAccess to Virtual Urgent Care, Virtual Primary Care, Virtual Behavioral Health, Virtual Dermatology, and Pet Telehealth—all at $0 with no visit limits or copays.\n\n**What CARE+ Does NOT Include**\n\n\u2022 Minimum Essential Coverage (MEC)\n\u2022 HSA compatibility\n\u2022 Hospital Debt Relief (separate program)',
+          'CARE+ includes:\n\n**Medical Cost Sharing**\nCommunity-based sharing for eligible medical needs—not preventive care only, dental cleanings, or ACA-mandated screenings.\n\n**$0 Unlimited Virtual Care**\nAccess to Virtual Urgent Care, Virtual Primary Care, Virtual Behavioral Health, Virtual Dermatology, and Pet Telehealth—all at $0 with no visit limits or copays.\n\n**What CARE+ Does NOT Include**\n\n\u2022 Preventive Care (MEC)\n\u2022 HSA compatibility\n\u2022 Hospital Debt Relief (separate program)',
       },
       {
         id: 'virtual-care',
@@ -670,7 +670,7 @@ const secureHsaQuizQuestions: QuizQuestion[] = [
     question: 'Secure HSA includes which of the following? (Select all that apply)',
     options: [
       'Medical Cost Sharing',
-      'Minimum Essential Coverage (MEC)',
+      'Preventive Care (MEC)',
       'HSA Compatibility',
       'Hospital Debt Relief',
       '$0 Unlimited Virtual Care',
@@ -763,7 +763,7 @@ const secureHsaQuizQuestions: QuizQuestion[] = [
     question: 'Which explanation BEST describes Secure HSA to a self-employed business owner?',
     options: [
       'Secure HSA is traditional health insurance that works like a PPO but with lower premiums and full coverage for medical expenses.',
-      'Secure HSA is a medical cost-sharing membership that includes Minimum Essential Coverage for preventive care, medical cost sharing for eligible needs, and HSA compatibility so you can use pre-tax dollars for qualified expenses.',
+      'Secure HSA is a medical cost-sharing membership that includes Preventive Care for ACA-mandated preventive services, medical cost sharing for eligible needs, and HSA compatibility so you can use pre-tax dollars for qualified expenses.',
       'Secure HSA is a catastrophic-only plan that does not include preventive care but allows unlimited specialist visits without eligibility guidelines.',
       'Secure HSA is an ACA-compliant insurance alternative that guarantees payment of all hospital and surgical bills.',
     ],
@@ -788,7 +788,7 @@ const carePlusQuizQuestions: QuizQuestion[] = [
     question: 'Care+ includes which of the following? (Select all that apply)',
     options: [
       'Medical Cost Sharing',
-      'Minimum Essential Coverage (MEC)',
+      'Preventive Care (MEC)',
       'HSA Compatibility',
       '$0 Unlimited Virtual Care',
       'Hospital Debt Relief',
@@ -809,7 +809,7 @@ const carePlusQuizQuestions: QuizQuestion[] = [
   },
   {
     id: 3,
-    question: 'True or False: Care+ includes Minimum Essential Coverage (MEC).',
+    question: 'True or False: Care+ includes Preventive Care (MEC).',
     options: ['True', 'False'],
     correctIndex: 1,
   },

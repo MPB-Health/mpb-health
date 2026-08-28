@@ -486,7 +486,7 @@ export const generateAllPlansSchema = () => {
     },
     {
       name: 'HSA Essentials',
-      description: 'Minimum Essential Care membership satisfying ACA employer mandate requirements. Ideal for businesses seeking compliant, affordable options.',
+      description: 'Preventive Care membership satisfying ACA employer mandate requirements. Ideal for businesses seeking compliant, affordable options.',
       lowPrice: 125,
       highPrice: 195,
       features: ['ACA Compliant', 'Employer Mandate Satisfaction', 'Preventive Care', 'Affordable Business Solution'],

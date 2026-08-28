@@ -4,7 +4,7 @@ export const FEATURE_CATEGORIES = {
   'Virtual Health': 'Virtual Health',
   'Preventive Care': 'Preventive Care',
   'Medical Cost Sharing': 'Medical Cost Sharing',
-  'Minimum Essential Coverage': 'Minimum Essential Care',
+  'Minimum Essential Coverage': 'Preventive Care',
   'Pharmacy Benefits': 'Pharmacy Benefits',
   'Member Support': 'Member Support',
   'Exclusive Discounts': 'Exclusive Discounts',

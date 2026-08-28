@@ -36,7 +36,7 @@ const MemberPortal = () => {
               </h2>
 
               <p className="text-neutral-600 mb-6 leading-relaxed">
-                For memberships <strong>without</strong> Minimum Essential Care (non-MEC).
+                For memberships <strong>without</strong> Preventive Care (non-MEC).
               </p>
 
               <div className="mb-8 pb-8 border-b border-neutral-200">
@@ -78,7 +78,7 @@ const MemberPortal = () => {
               </h2>
 
               <p className="text-neutral-600 mb-6 leading-relaxed">
-                For memberships <strong>with</strong> Minimum Essential Care (MEC-Based).
+                For memberships <strong>with</strong> Preventive Care (MEC-Based).
               </p>
 
               <div className="mb-8 pb-8 border-b border-neutral-200">

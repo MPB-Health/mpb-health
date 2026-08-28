@@ -35,7 +35,7 @@ const PLAN_FEATURES: Record<string, string[]> = {
     'No network restrictions'
   ],
   'mec-essentials': [
-    'ACA Minimum Essential Care',
+    'ACA Preventive Care',
     '24/7 Virtual Care included',
     'Satisfies employer mandate',
     'Preventive care benefits'

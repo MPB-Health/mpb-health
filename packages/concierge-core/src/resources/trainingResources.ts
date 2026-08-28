@@ -285,7 +285,7 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
     subcategory: 'MEC + Essentials',
     type: 'handbook',
     external: true,
-    keywords: ['minimum essential coverage', 'ACA', 'Affordable Care Act', 'Zion', 'ARM', 'telehealth', 'IUA', 'sharing request', 'preventive', 'wellness', 'copay', 'network', 'PHCS'],
+    keywords: ['preventive care', 'ACA', 'Affordable Care Act', 'Zion', 'ARM', 'telehealth', 'IUA', 'sharing request', 'preventive', 'wellness', 'copay', 'network', 'PHCS'],
   },
   {
     id: 'care-plus-handbook',
@@ -404,7 +404,7 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
     subcategory: 'MEC + Essentials',
     type: 'script',
     external: true,
-    keywords: ['onboarding', 'new member', 'MEC', 'ARM', 'minimum essential coverage', 'ACA', 'telehealth', 'ID card', 'portal', 'concierge', 'Zion', 'welcome'],
+    keywords: ['onboarding', 'new member', 'MEC', 'ARM', 'preventive care', 'ACA', 'telehealth', 'ID card', 'portal', 'concierge', 'Zion', 'welcome'],
   },
   {
     id: 'care-plus-welcome-call',
@@ -547,7 +547,7 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
     category: 'telehealth',
     type: 'sop',
     external: true,
-    keywords: ['ARM', 'MEC', 'minimum essential coverage', 'telehealth visit', 'virtual doctor', 'copay', 'ID card', 'eligibility', 'activation', 'enrollment', 'portal', 'mediconnx'],
+    keywords: ['ARM', 'MEC', 'preventive care', 'telehealth visit', 'virtual doctor', 'copay', 'ID card', 'eligibility', 'activation', 'enrollment', 'portal', 'mediconnx'],
   },
   {
     id: 'arm-hdhp-sbc-2026',

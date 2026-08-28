@@ -346,11 +346,11 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
     id: 'hsa-healthshare-handbook',
     title: 'HSA Healthshare Handbook',
     description: 'Complete handbook for the HSA Healthshare plan',
-    url: 'https://drive.google.com/file/d/1S36_pIhCSPtAqp6NS4kxx4bp_wWwVUkM/view?pli=1',
+    url: '/docs/HSA%20HealthShare%20Member%20Guidelines%20(1)%201.pdf',
     category: 'mpb-plans',
     subcategory: 'HSA Healthshare',
     type: 'handbook',
-    external: true,
+    external: false,
     keywords: [
       'HSA Healthshare',
       'HSA HealthShare',
@@ -360,7 +360,7 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
       'eligible expenses',
       'IUA',
       'sharing request',
-      'Google Drive',
+      'member guidelines',
     ],
   },
   {

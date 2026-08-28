@@ -1598,9 +1598,19 @@
   }
 }
 
+/* White wordmark on an aurora plate, echoing the nav badge and favicon */
+.lr-footer__brand {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.9rem 1.15rem;
+  border-radius: var(--lr-r);
+  background: var(--lr-aurora);
+  box-shadow: var(--lr-shadow-sm);
+}
 .lr-footer__logo {
-  width: 190px;
+  width: 176px;
   height: auto;
+  display: block;
 }
 
 .lr-footer__bbb {

@@ -9,15 +9,17 @@ export function LandingFooter() {
       <div className="lr-inner">
         <div className="lr-footer__top">
           <div>
-            <img
-              className="lr-footer__logo"
-              src="/assets/MPB-Health-No-background.webp"
-              alt="MPB Health"
-              width={1101}
-              height={231}
-              decoding="async"
-              loading="lazy"
-            />
+            <div className="lr-footer__brand">
+              <img
+                className="lr-footer__logo"
+                src="/assets/brand/mpb-wordmark-white.png"
+                alt="MPB Health"
+                width={706}
+                height={204}
+                decoding="async"
+                loading="lazy"
+              />
+            </div>
             <a
               className="lr-footer__bbb"
               href="https://www.bbb.org/us/fl/boca-raton/profile/health-insurance/mpowering-benefits-inc-0633-92042549/#sealclick"

@@ -206,7 +206,7 @@ export const HOW_IT_WORKS_STEPS: HowItWorksStep[] = [
             <span>
               <strong>Tax-Advantaged Options:</strong> Benefit from{" "}
               <GlossaryTooltip term="HSA-compatible" definition="Qualifies for Health Savings Account contributions; consult your tax advisor for details." />{" "}
-              memberships when paired with Minimum Essential Care.
+              memberships when paired with Preventive Care.
             </span>
           </li>
         </ul>

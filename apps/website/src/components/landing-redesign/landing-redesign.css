@@ -120,7 +120,7 @@
   display: flex;
   align-items: center;
   gap: 1rem;
-  height: 84px;
+  height: 92px;
   padding: 0 1.5rem;
 }
 
@@ -153,25 +153,21 @@
   padding: 0.8rem 1rem 0;
 }
 
+/* One glass capsule holds logo, links and actions */
 .lr-header--pill .lr-header__bar {
   width: fit-content;
   max-width: 100%;
   margin: 0 auto;
-  height: auto;
-  gap: 0.6rem;
-  padding: 0;
-  animation: lrNavDrop 0.55s var(--lr-ease);
-}
-
-.lr-header--pill .lr-header__logo,
-.lr-header--pill .lr-header__list,
-.lr-header--pill .lr-header__actions,
-.lr-header--pill .lr-header__burger {
+  height: 68px;
+  gap: 0.75rem;
+  padding: 0 0.5rem 0 0.7rem;
+  border-radius: 999px;
   background: rgba(255, 255, 255, 0.72);
   backdrop-filter: blur(28px) saturate(190%);
   -webkit-backdrop-filter: blur(28px) saturate(190%);
   border: 1px solid rgba(255, 255, 255, 0.65);
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.85) inset, 0 16px 44px -20px rgba(15, 27, 45, 0.3);
+  animation: lrNavDrop 0.55s var(--lr-ease);
 }
 
 .lr-header--pill .lr-header__nav {
@@ -218,8 +214,13 @@
 }
 
 .lr-header--pill .lr-header__logo {
+  height: 56px;
+  padding: 0;
+}
+/* Overlay state: reserve the wordmark's footprint so the link stays clickable */
+.lr-header--overlay .lr-header__logo {
+  min-width: 200px;
   height: 58px;
-  padding: 0 1.2rem;
 }
 
 .lr-header__logo img {
@@ -227,11 +228,26 @@
   width: auto;
   transition: opacity 0.3s var(--lr-ease);
 }
+/* Pill state: square brand tile, app-icon style, sized to the capsule */
+.lr-header__logo .lr-header__logo-color {
+  height: 46px;
+  width: 46px;
+  border-radius: 999px;
+  object-fit: cover;
+  /* Zoom into the tile so the mark, not its padding, fills the circle */
+  object-position: center;
+  transform: scale(1.18);
+  transform-origin: center;
+  clip-path: circle(50%);
+}
 
-.lr-header__logo-white {
+.lr-header__logo .lr-header__logo-white {
   position: absolute;
-  inset: 0;
-  height: 32px;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 58px;
+  width: auto;
 }
 
 .lr-header--overlay .lr-header__logo-color {
@@ -274,8 +290,8 @@
 }
 
 .lr-header--pill .lr-header__list {
-  height: 58px;
-  padding: 0 0.45rem;
+  height: auto;
+  padding: 0;
 }
 
 .lr-header__list > li {
@@ -340,8 +356,8 @@
 }
 
 .lr-header--pill .lr-header__actions {
-  height: 58px;
-  padding: 0 0.5rem;
+  height: auto;
+  padding: 0;
 }
 
 .lr-header__cta {
@@ -637,22 +653,18 @@
   pointer-events: none;
 }
 
-.lr-hero__dots {
+
+/* Cursor-painted colour field over the shader (see HeroFlowCanvas) */
+.lr-hero__flow-canvas {
   position: absolute;
   inset: 0;
   z-index: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
-  background-image: radial-gradient(rgba(255, 255, 255, 0.7) 1.3px, transparent 1.8px);
-  background-size: 20px 20px;
+  opacity: 0.42;
+  mix-blend-mode: screen;
 }
-
-.lr-hero__glow {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-}
-
 .lr-hero::after {
   content: '';
   position: absolute;
@@ -670,8 +682,56 @@
   position: relative;
   text-align: center;
   color: #fff;
-  padding: 4rem 1.25rem;
+  /* Bottom inset reserves room for the photo window that overlaps the hero edge */
+  padding: 5rem 1.25rem calc(var(--lr-bridge-overlap) + 3rem);
   max-width: 60rem;
+}
+.lr {
+  --lr-bridge-overlap: 22vh;
+}
+/* ——— Photo window bridging the hero and the intro ——— */
+.lr-bridge {
+  position: relative;
+  z-index: 2;
+  max-width: 1200px;
+  /* Bottom reserve = height gained at full bleed on mobile (16:10, 2.5rem gutters) */
+  margin: calc(-1 * var(--lr-bridge-overlap)) auto calc(2.5rem * 0.625);
+  padding: 0 1.25rem;
+}
+.lr-bridge__frame {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  border-radius: var(--lr-r-lg);
+  overflow: hidden;
+  transform-origin: 50% 0;
+  will-change: transform;
+  box-shadow:
+    var(--lr-shadow),
+    0 0 0 1px rgba(255, 255, 255, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+.lr-bridge__frame img {
+  display: block;
+  width: 100%;
+  height: 122%;
+  margin-top: -11%;
+  object-fit: cover;
+  object-position: 50% 35%;
+  filter: contrast(1.06) saturate(1.08);
+  will-change: transform;
+}
+@media (min-width: 768px) {
+  .lr {
+    --lr-bridge-overlap: 26vh;
+  }
+  .lr-bridge {
+    padding: 0 2rem;
+    /* Reserve the extra height the frame gains when it scales to full bleed */
+    margin-bottom: calc((100vw - min(1136px, 100vw - 4rem)) * 0.43);
+  }
+  .lr-bridge__frame {
+    aspect-ratio: 21 / 9;
+  }
 }
 
 .lr-hero__kicker {
@@ -711,7 +771,12 @@
    ============================================================ */
 
 .lr-intro {
-  padding: 6.5rem 0;
+  padding: 4.5rem 0 6.5rem;
+}
+@media (min-width: 768px) {
+  .lr-intro {
+    padding-top: 6rem;
+  }
 }
 
 .lr-intro__grid {
@@ -1172,6 +1237,13 @@
   text-align: center;
 }
 
+.lr-statement__mark {
+  display: block;
+  height: 64px;
+  width: auto;
+  margin: 0 auto 1.75rem;
+  filter: drop-shadow(0 6px 24px rgba(8, 20, 40, 0.35));
+}
 .lr-statement__title {
   margin: 0 auto;
   max-width: 56rem;
@@ -1198,10 +1270,19 @@
 }
 
 .lr-statement__value {
-  font-variant-numeric: tabular-nums;
   font-size: clamp(1.9rem, 3.4vw, 2.8rem);
   font-weight: 800;
   letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+/* NumberFlow renders a custom element; match it to the plain-text metrics */
+.lr-statement__value number-flow-react {
+  --number-flow-char-height: 1.1em;
+  --number-flow-mask-height: 0.12em;
+  display: block;
+  line-height: inherit;
+  letter-spacing: inherit;
+  font-variant-numeric: tabular-nums;
 }
 
 .lr-statement__label {
@@ -1276,6 +1357,9 @@
   scroll-snap-type: x mandatory;
   padding: 0.25rem 0.25rem 1rem;
   scrollbar-width: none;
+  /* Soft edges so the clipped card reads as "more to the right", not a bug */
+  mask-image: linear-gradient(90deg, transparent, #000 3%, #000 94%, transparent);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 3%, #000 94%, transparent);
 }
 
 .lr-social__track::-webkit-scrollbar {

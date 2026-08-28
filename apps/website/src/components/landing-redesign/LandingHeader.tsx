@@ -147,18 +147,18 @@ export function LandingHeader({ floating = false }: { floating?: boolean }) {
       <Link to="/" className="lr-header__logo" aria-label="MPB Health Home">
         <img
           className="lr-header__logo-color"
-          src="/assets/MPB-Health-No-background.webp"
+          src="/assets/brand/mpb-tile.png"
           alt="MPB Health"
-          width={1101}
-          height={231}
+          width={800}
+          height={800}
           decoding="async"
         />
         <img
           className="lr-header__logo-white"
-          src="/assets/logo.png"
+          src="/assets/brand/mpb-wordmark-white.png"
           alt=""
-          width={500}
-          height={120}
+          width={706}
+          height={204}
           decoding="async"
         />
       </Link>

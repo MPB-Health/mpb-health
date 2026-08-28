@@ -1,10 +1,9 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   AnimatePresence,
   motion,
   useInView,
-  useMotionTemplate,
   useMotionValue,
   useMotionValueEvent,
   useReducedMotion,
@@ -26,7 +25,9 @@ import {
   Video,
 } from 'lucide-react';
 import { GoogleGIcon, RxIcon } from './icons';
+import NumberFlow, { type Format } from '@number-flow/react';
 import { AuroraFlow } from './AuroraFlow';
+import { HeroFlowCanvas } from './HeroFlowCanvas';
 import { homepageFaqQuestions } from '../../lib/schemaMarkup';
 import { LandingHeader } from './LandingHeader';
 import { LandingFooter } from './LandingFooter';
@@ -159,6 +160,34 @@ function Reveal({
   );
 }
 
+/** Counts up from 0 to `value` the first time it scrolls into view. */
+function StatNumber({
+  value,
+  suffix,
+  format,
+}: {
+  value: number;
+  suffix?: string;
+  format?: Format;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, amount: 0.6 });
+  const reduce = useReducedMotion();
+  const shown = inView || reduce ? value : 0;
+  return (
+    <div ref={ref} className="lr-statement__value">
+      <NumberFlow
+        value={shown}
+        suffix={suffix}
+        format={format}
+        transformTiming={{ duration: 1400, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' }}
+        spinTiming={{ duration: 1400, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' }}
+        opacityTiming={{ duration: 400, easing: 'ease-out' }}
+      />
+    </div>
+  );
+}
+
 function TestimonialCard({
   name,
   location,
@@ -212,11 +241,15 @@ export function LandingRedesign() {
   const trackRef = useRef<HTMLDivElement>(null);
   const heroRef = useRef<HTMLElement>(null);
   const estimateRef = useRef<HTMLElement>(null);
+  const tailRef = useRef<HTMLElement>(null);
   const reduce = useReducedMotion();
 
   const heroInView = useInView(heroRef, { amount: 0.25 });
   const estimateInView = useInView(estimateRef, { amount: 0.2 });
-  const showOrderBar = !heroInView && !estimateInView;
+  // Once the reader reaches the FAQ the page is winding down; the bar would
+  // only cover the questions and the footer, so it retires there.
+  const tailInView = useInView(tailRef, { amount: 0.05 });
+  const showOrderBar = !heroInView && !estimateInView && !tailInView;
 
   const [navFloating, setNavFloating] = useState(false);
   const { scrollY } = useScroll();
@@ -230,23 +263,56 @@ export function LandingRedesign() {
   });
   const heroContentY = useTransform(heroProgress, [0, 1], [0, 90]);
   const heroContentOpacity = useTransform(heroProgress, [0, 0.65], [1, 0]);
+  // The photo window rises against the scroll (slower than the page) so it
+  // reads as a separate plane sitting in front of the gradient.
+  const bridgeY = useTransform(heroProgress, [0, 1], [0, -70]);
+  const bridgeImgY = useTransform(heroProgress, [0, 1], ['-4%', '4%']);
+  // "Window opens": as the photo travels up into view it grows toward the
+  // viewport edges and its corners tighten, so the glimpse becomes the picture.
+  const bridgeRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress: bridgeProgress } = useScroll({
+    target: bridgeRef,
+    offset: ['start 85%', 'center 45%'],
+  });
+  // Full-bleed target: viewport width divided by the frame's layout width
+  // (offsetWidth ignores the transform, so this stays stable mid-animation).
+  const frameRef = useRef<HTMLDivElement>(null);
+  const [fullScale, setFullScale] = useState(1.2);
+  useEffect(() => {
+    const measure = () => {
+      const w = frameRef.current?.offsetWidth;
+      if (w) setFullScale(window.innerWidth / w);
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, []);
+  const bridgeScale = useSpring(useTransform(bridgeProgress, [0, 1], [1, fullScale]), {
+    stiffness: 120,
+    damping: 26,
+    mass: 0.5,
+  });
+  const bridgeRadius = useTransform(bridgeProgress, [0, 1], [28, 0]);
 
-  const pointerX = useMotionValue(-600);
-  const pointerY = useMotionValue(-600);
-  const springX = useSpring(pointerX, { stiffness: 140, damping: 22, mass: 0.6 });
-  const springY = useSpring(pointerY, { stiffness: 140, damping: 22, mass: 0.6 });
-  const dotsMask = useMotionTemplate`radial-gradient(340px at ${springX}px ${springY}px, rgba(0, 0, 0, 0.95), transparent 72%)`;
-  const pointerGlow = useMotionTemplate`radial-gradient(480px at ${springX}px ${springY}px, rgba(255, 255, 255, 0.2), transparent 70%)`;
+  // The aurora itself leans toward the cursor: pointer position normalized to
+  // -1..1, scaled down and heavily damped so the colour field drifts, not snaps.
+  const auroraX = useMotionValue(0);
+  const auroraY = useMotionValue(0);
+  const auroraSpringX = useSpring(auroraX, { stiffness: 40, damping: 18, mass: 1.2 });
+  const auroraSpringY = useSpring(auroraY, { stiffness: 40, damping: 18, mass: 1.2 });
+  const AURORA_REACH = 0.35;
 
   const onHeroPointerMove = (e: React.PointerEvent<HTMLElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    pointerX.set(e.clientX - rect.left);
-    pointerY.set(e.clientY - rect.top);
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    auroraX.set(((x / rect.width) * 2 - 1) * AURORA_REACH);
+    auroraY.set((1 - (y / rect.height) * 2) * AURORA_REACH);
   };
 
   const onHeroPointerLeave = () => {
-    pointerX.set(-600);
-    pointerY.set(-600);
+    auroraX.set(0);
+    auroraY.set(0);
   };
 
   const scrollTrack = (dir: 1 | -1) => {
@@ -276,22 +342,14 @@ export function LandingRedesign() {
         onPointerLeave={reduce ? undefined : onHeroPointerLeave}
       >
         <div className="lr-hero__media">
-          <AuroraFlow className="lr-hero__shader" speed={0.55} />
+          <AuroraFlow
+            className="lr-hero__shader"
+            speed={0.55}
+            offsetX={reduce ? undefined : auroraSpringX}
+            offsetY={reduce ? undefined : auroraSpringY}
+          />
         </div>
-        {reduce ? null : (
-          <>
-            <motion.div
-              className="lr-hero__dots"
-              aria-hidden="true"
-              style={{ maskImage: dotsMask, WebkitMaskImage: dotsMask }}
-            />
-            <motion.div
-              className="lr-hero__glow"
-              aria-hidden="true"
-              style={{ background: pointerGlow }}
-            />
-          </>
-        )}
+        {reduce ? null : <HeroFlowCanvas targetRef={heroRef} />}
         <motion.div
           className="lr-hero__content"
           variants={heroStagger}
@@ -313,6 +371,31 @@ export function LandingRedesign() {
           </motion.div>
         </motion.div>
       </section>
+
+      <motion.div
+        className="lr-bridge"
+        ref={bridgeRef}
+        style={reduce ? undefined : { y: bridgeY }}
+        initial={reduce ? false : { opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 1.1, delay: 0.55, ease: easeOut }}
+      >
+        <motion.div
+          className="lr-bridge__frame"
+          ref={frameRef}
+          style={reduce ? undefined : { scale: bridgeScale, borderRadius: bridgeRadius }}
+        >
+          <motion.img
+            src="/assets/hero-family.jpg"
+            alt="A family laughing together outdoors"
+            width={1800}
+            height={1272}
+            fetchPriority="high"
+            decoding="async"
+            style={reduce ? undefined : { y: bridgeImgY }}
+          />
+        </motion.div>
+      </motion.div>
 
       <section className="lr-intro" aria-label="Introducing MPB Health">
         <div className="lr-inner">
@@ -454,21 +537,30 @@ export function LandingRedesign() {
         <AuroraFlow />
         <div className="lr-inner lr-statement__inner">
           <Reveal>
+            <img
+              className="lr-statement__mark"
+              src="/assets/brand/mpb-mark-white.png"
+              alt=""
+              width={572}
+              height={366}
+              loading="lazy"
+              decoding="async"
+            />
             <h2 className="lr-statement__title">
               Health sharing that goes beyond the unexpected.
             </h2>
           </Reveal>
           <Reveal delay={0.12} className="lr-statement__stats">
             <div>
-              <div className="lr-statement__value">4.9/5</div>
+              <StatNumber value={4.9} suffix="/5" format={{ minimumFractionDigits: 1, maximumFractionDigits: 1 }} />
               <div className="lr-statement__label">Average rating on Google Reviews</div>
             </div>
             <div>
-              <div className="lr-statement__value">96%</div>
+              <StatNumber value={96} suffix="%" />
               <div className="lr-statement__label">Would recommend to friends and family</div>
             </div>
             <div>
-              <div className="lr-statement__value">12,000+</div>
+              <StatNumber value={12000} suffix="+" />
               <div className="lr-statement__label">Families served historically</div>
             </div>
           </Reveal>
@@ -530,7 +622,7 @@ export function LandingRedesign() {
         </div>
       </section>
 
-      <section className="lr-faq" aria-label="Frequently asked questions">
+      <section className="lr-faq" aria-label="Frequently asked questions" ref={tailRef}>
         <div className="lr-inner">
           <div className="lr-faq__grid">
             <Reveal>

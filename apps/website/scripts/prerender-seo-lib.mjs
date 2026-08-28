@@ -2,7 +2,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 export const SITE_URL = 'https://mpb.health';
-export const DEFAULT_OG_IMAGE = `${SITE_URL}/assets/MPB-Health-No-background.png?v=2`;
+export const DEFAULT_OG_IMAGE = `${SITE_URL}/assets/brand/mpb-tile.png`;
 
 export function escapeHtml(value) {
   return String(value)

@@ -74,7 +74,7 @@ export function SimplePlanCard({
     'Financial Benefits': 'Financial Benefits',
     'Additional Benefits': 'Additional Benefits',
     'Preventive Care': 'Preventive Care',
-    'Minimum Essential Coverage': 'Minimum Essential Care',
+    'Minimum Essential Coverage': 'Preventive Care',
     'Pharmacy Benefits': 'Pharmacy Benefits',
     'Exclusive Discounts': 'Exclusive Discounts',
     'Digital Health Tools': 'Digital Health Tools',

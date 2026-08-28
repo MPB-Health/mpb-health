@@ -79,7 +79,7 @@ function scoreMECEssentials(answers: OnboardingAnswers): ScoredPlan {
 
   if (answers.audience === 'employer') {
     score += 25;
-    rationale.push('Meets minimum essential coverage requirements');
+    rationale.push('Meets preventive care requirements');
   }
 
   if (rationale.length === 0) {

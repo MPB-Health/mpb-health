@@ -21,8 +21,8 @@ function missingFeatureTreatAsIncluded(
 ): boolean {
   return (
     plan.slug === MEC_ESSENTIALS_PLAN_SLUG &&
-    category === 'Minimum Essential Coverage' &&
-    featureName.trim().toLowerCase() === 'minimum essential coverage'
+    category === 'Preventive Care' &&
+    featureName.trim().toLowerCase() === 'preventive care'
   );
 }
 

@@ -4,7 +4,6 @@ export const FEATURE_CATEGORIES = {
   'Virtual Health': 'Virtual Health',
   'Preventive Care': 'Preventive Care',
   'Medical Cost Sharing': 'Medical Cost Sharing',
-  'Minimum Essential Coverage': 'Preventive Care',
   'Pharmacy Benefits': 'Pharmacy Benefits',
   'Member Support': 'Member Support',
   'Exclusive Discounts': 'Exclusive Discounts',
@@ -66,7 +65,6 @@ export function getAllUniqueCategories(plans: PlanWithDetails[]): string[] {
     const orderMap: Record<string, number> = {
       'Core Benefits': 1,
       'Medical Cost Sharing': 2,
-      'Minimum Essential Coverage': 3,
       'Preventive Care': 4,
       'Virtual Health': 5,
       'Virtual Care': 6,

@@ -20,11 +20,17 @@ const AURORA_COLORS = ['#083d71', '#0a4e8e', '#0d7f9e', '#00a99d', '#7ec244'];
 export function AuroraFlow({
   className = 'lr-statement__shader',
   speed = 0.7,
+  colors = AURORA_COLORS,
+  distortion = 0.9,
+  swirl = 0.5,
   offsetX,
   offsetY,
 }: {
   className?: string;
   speed?: number;
+  colors?: string[];
+  distortion?: number;
+  swirl?: number;
   offsetX?: MotionValue<number>;
   offsetY?: MotionValue<number>;
 }) {
@@ -64,9 +70,9 @@ export function AuroraFlow({
       <MeshGradient
         ref={mountRef}
         className={className}
-        colors={AURORA_COLORS}
-        distortion={0.9}
-        swirl={0.5}
+        colors={colors}
+        distortion={distortion}
+        swirl={swirl}
         speed={reduce ? 0 : speed}
       />
     </Suspense>

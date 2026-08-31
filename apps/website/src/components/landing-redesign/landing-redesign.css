@@ -138,11 +138,12 @@
   }
 }
 
-/* Overlay state: transparent, sits on the hero photograph */
+/* Overlay state: transparent, sits on the hero photograph. The photo's sky
+   is light, so the overlay nav goes ink-on-light (Oura pattern). */
 
 .lr-header--overlay {
-  --hdr-fg: #ffffff;
-  --hdr-hover: rgba(255, 255, 255, 0.16);
+  --hdr-fg: var(--lr-ink);
+  --hdr-hover: rgba(15, 27, 45, 0.07);
 }
 
 /* Pill state: detached floating glass capsule */
@@ -255,7 +256,9 @@
 }
 
 .lr-header--overlay .lr-header__logo-white {
-  opacity: 1;
+  opacity: 0.88;
+  /* No dark wordmark asset yet: silhouette the white one to ink */
+  filter: brightness(0) saturate(100%);
 }
 
 .lr-header--pill .lr-header__logo-color {
@@ -367,13 +370,13 @@
   flex-shrink: 0;
   padding: 0.68rem 1.3rem;
   border-radius: 999px;
-  background: #ffffff;
-  color: var(--lr-ink);
+  background: linear-gradient(120deg, var(--lr-navy-deep), var(--lr-navy) 45%, var(--lr-teal) 130%);
+  color: #fff;
   font: 600 0.92rem/1 var(--lr-font);
   text-decoration: none;
   transition: background 0.25s var(--lr-ease), color 0.25s var(--lr-ease),
     transform 0.15s var(--lr-ease), box-shadow 0.25s var(--lr-ease), filter 0.25s var(--lr-ease);
-  box-shadow: 0 10px 30px -12px rgba(8, 20, 40, 0.5);
+  box-shadow: 0 8px 22px -10px rgba(10, 78, 142, 0.55);
 }
 
 .lr-header--pill .lr-header__cta {
@@ -383,7 +386,8 @@
 }
 
 .lr-header__cta:hover {
-  background: #eef4fa;
+  background: linear-gradient(120deg, var(--lr-navy-deep), var(--lr-navy) 25%, var(--lr-teal) 110%);
+  filter: brightness(1.05);
 }
 
 .lr-header--pill .lr-header__cta:hover {
@@ -632,7 +636,7 @@
   position: relative;
   min-height: 100dvh;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   overflow: hidden;
   isolation: isolate;
@@ -642,19 +646,54 @@
   position: absolute;
   inset: 0;
   z-index: -2;
+  /* Aurora paints behind the photo while it loads */
   background: var(--lr-aurora);
 }
 
+/* The photograph is the hero canvas (untouched: no scrims or filters) */
+.lr-hero__photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 48%;
+  will-change: transform;
+}
+
+/* The brand aurora lives only in the sky: opaque behind the headline, then
+   dissolving away above the horizon so the photograph takes over clean. */
 .lr-hero__shader {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   pointer-events: none;
+  /* Sunset shape: the aurora glows out of the horizon line and thins as it
+     climbs, so the real sky carries the top of the frame. The blur melts the
+     shader's colour blobs into one atmospheric wash. */
+  opacity: 0.65;
+  filter: blur(28px) saturate(0.85);
+  -webkit-mask-image: radial-gradient(
+    ellipse 150% 42% at 42% 36%,
+    black 0%,
+    rgba(0, 0, 0, 0.6) 28%,
+    rgba(0, 0, 0, 0.28) 52%,
+    rgba(0, 0, 0, 0.1) 68%,
+    transparent 85%
+  );
+  mask-image: radial-gradient(
+    ellipse 150% 42% at 42% 36%,
+    black 0%,
+    rgba(0, 0, 0, 0.6) 28%,
+    rgba(0, 0, 0, 0.28) 52%,
+    rgba(0, 0, 0, 0.1) 68%,
+    transparent 85%
+  );
 }
 
-
-/* Cursor-painted colour field over the shader (see HeroFlowCanvas) */
+/* Cursor-painted colour field over the shader (see HeroFlowCanvas).
+   Same sky mask as the shader so the paint never lands on the photograph. */
 .lr-hero__flow-canvas {
   position: absolute;
   inset: 0;
@@ -662,76 +701,35 @@
   width: 100%;
   height: 100%;
   pointer-events: none;
-  opacity: 0.42;
+  opacity: 0.34;
   mix-blend-mode: screen;
-}
-.lr-hero::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: linear-gradient(
-    to bottom,
-    rgba(8, 20, 40, 0.44) 0%,
-    rgba(8, 20, 40, 0.12) 40%,
-    rgba(8, 20, 40, 0.52) 100%
+  -webkit-mask-image: radial-gradient(
+    ellipse 140% 40% at 42% 36%,
+    black 0%,
+    rgba(0, 0, 0, 0.45) 40%,
+    rgba(0, 0, 0, 0.15) 65%,
+    transparent 85%
+  );
+  mask-image: radial-gradient(
+    ellipse 140% 40% at 42% 36%,
+    black 0%,
+    rgba(0, 0, 0, 0.45) 40%,
+    rgba(0, 0, 0, 0.15) 65%,
+    transparent 85%
   );
 }
 
 .lr-hero__content {
   position: relative;
-  text-align: center;
-  color: #fff;
-  /* Bottom inset reserves room for the photo window that overlaps the hero edge */
-  padding: 5rem 1.25rem calc(var(--lr-bridge-overlap) + 3rem);
-  max-width: 60rem;
-}
-.lr {
-  --lr-bridge-overlap: 22vh;
-}
-/* ——— Photo window bridging the hero and the intro ——— */
-.lr-bridge {
-  position: relative;
-  z-index: 2;
-  max-width: 1200px;
-  /* Bottom reserve = height gained at full bleed on mobile (16:10, 2.5rem gutters) */
-  margin: calc(-1 * var(--lr-bridge-overlap)) auto calc(2.5rem * 0.625);
-  padding: 0 1.25rem;
-}
-.lr-bridge__frame {
-  position: relative;
-  aspect-ratio: 16 / 10;
-  border-radius: var(--lr-r-lg);
-  overflow: hidden;
-  transform-origin: 50% 0;
-  will-change: transform;
-  box-shadow:
-    var(--lr-shadow),
-    0 0 0 1px rgba(255, 255, 255, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.45);
-}
-.lr-bridge__frame img {
-  display: block;
   width: 100%;
-  height: 122%;
-  margin-top: -11%;
-  object-fit: cover;
-  object-position: 50% 35%;
-  filter: contrast(1.06) saturate(1.08);
-  will-change: transform;
+  max-width: 1360px;
+  text-align: left;
+  color: #fff;
+  /* Headline holds the open water on the left; the pose owns the right */
+  padding: clamp(7rem, 18vh, 12rem) clamp(1.25rem, 4vw, 3rem) 3rem;
 }
-@media (min-width: 768px) {
-  .lr {
-    --lr-bridge-overlap: 26vh;
-  }
-  .lr-bridge {
-    padding: 0 2rem;
-    /* Reserve the extra height the frame gains when it scales to full bleed */
-    margin-bottom: calc((100vw - min(1136px, 100vw - 4rem)) * 0.43);
-  }
-  .lr-bridge__frame {
-    aspect-ratio: 21 / 9;
-  }
+.lr-hero__content > * {
+  max-width: 44rem;
 }
 
 .lr-hero__kicker {
@@ -755,9 +753,9 @@
 .lr-hero__actions {
   margin-top: 2.4rem;
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 0.9rem;
+  gap: 1.1rem;
 }
 
 .lr-hero__micro {

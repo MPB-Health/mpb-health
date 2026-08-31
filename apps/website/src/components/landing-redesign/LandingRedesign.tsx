@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   AnimatePresence,
@@ -263,36 +263,9 @@ export function LandingRedesign() {
   });
   const heroContentY = useTransform(heroProgress, [0, 1], [0, 90]);
   const heroContentOpacity = useTransform(heroProgress, [0, 0.65], [1, 0]);
-  // The photo window rises against the scroll (slower than the page) so it
-  // reads as a separate plane sitting in front of the gradient.
-  const bridgeY = useTransform(heroProgress, [0, 1], [0, -70]);
-  const bridgeImgY = useTransform(heroProgress, [0, 1], ['-4%', '4%']);
-  // "Window opens": as the photo travels up into view it grows toward the
-  // viewport edges and its corners tighten, so the glimpse becomes the picture.
-  const bridgeRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress: bridgeProgress } = useScroll({
-    target: bridgeRef,
-    offset: ['start 85%', 'center 45%'],
-  });
-  // Full-bleed target: viewport width divided by the frame's layout width
-  // (offsetWidth ignores the transform, so this stays stable mid-animation).
-  const frameRef = useRef<HTMLDivElement>(null);
-  const [fullScale, setFullScale] = useState(1.2);
-  useEffect(() => {
-    const measure = () => {
-      const w = frameRef.current?.offsetWidth;
-      if (w) setFullScale(window.innerWidth / w);
-    };
-    measure();
-    window.addEventListener('resize', measure);
-    return () => window.removeEventListener('resize', measure);
-  }, []);
-  const bridgeScale = useSpring(useTransform(bridgeProgress, [0, 1], [1, fullScale]), {
-    stiffness: 120,
-    damping: 26,
-    mass: 0.5,
-  });
-  const bridgeRadius = useTransform(bridgeProgress, [0, 1], [28, 0]);
+  // The photograph settles slower than the page so it reads as the far plane.
+  const heroPhotoScale = useTransform(heroProgress, [0, 1], [1, 1.07]);
+  const heroPhotoY = useTransform(heroProgress, [0, 1], ['0%', '6%']);
 
   // The aurora itself leans toward the cursor: pointer position normalized to
   // -1..1, scaled down and heavily damped so the colour field drifts, not snaps.
@@ -342,9 +315,24 @@ export function LandingRedesign() {
         onPointerLeave={reduce ? undefined : onHeroPointerLeave}
       >
         <div className="lr-hero__media">
+          <motion.img
+            className="lr-hero__photo"
+            src="/assets/hero-option-yoga-field.jpg"
+            alt="A person doing yoga in a green field by the water"
+            width={1800}
+            height={1272}
+            fetchPriority="high"
+            decoding="async"
+            style={reduce ? undefined : { scale: heroPhotoScale, y: heroPhotoY }}
+          />
           <AuroraFlow
             className="lr-hero__shader"
             speed={0.55}
+            /* Softer sky palette: no saturated lime, so the glow reads as
+               atmosphere over the water rather than a streak of colour. */
+            colors={['#0a4e8e', '#0d7f9e', '#00a99d', '#5fbfae', '#bfe3d5']}
+            distortion={0.6}
+            swirl={0.35}
             offsetX={reduce ? undefined : auroraSpringX}
             offsetY={reduce ? undefined : auroraSpringY}
           />
@@ -371,31 +359,6 @@ export function LandingRedesign() {
           </motion.div>
         </motion.div>
       </section>
-
-      <motion.div
-        className="lr-bridge"
-        ref={bridgeRef}
-        style={reduce ? undefined : { y: bridgeY }}
-        initial={reduce ? false : { opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 1.1, delay: 0.55, ease: easeOut }}
-      >
-        <motion.div
-          className="lr-bridge__frame"
-          ref={frameRef}
-          style={reduce ? undefined : { scale: bridgeScale, borderRadius: bridgeRadius }}
-        >
-          <motion.img
-            src="/assets/hero-family.jpg"
-            alt="A family laughing together outdoors"
-            width={1800}
-            height={1272}
-            fetchPriority="high"
-            decoding="async"
-            style={reduce ? undefined : { y: bridgeImgY }}
-          />
-        </motion.div>
-      </motion.div>
 
       <section className="lr-intro" aria-label="Introducing MPB Health">
         <div className="lr-inner">

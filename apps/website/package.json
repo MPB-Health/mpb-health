@@ -30,6 +30,8 @@
     "@mpbhealth/plans-core": "workspace:*",
     "@mpbhealth/ui": "workspace:*",
     "@mpbhealth/utils": "workspace:*",
+    "@number-flow/react": "^0.6.2",
+    "@paper-design/shaders-react": "^0.0.80",
     "@supabase/supabase-js": "catalog:",
     "@tiptap/core": "catalog:",
     "@tiptap/extension-code-block-lowlight": "catalog:",

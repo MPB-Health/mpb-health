@@ -571,7 +571,7 @@ export default BlogAdmin;
 
 // ─── SEO helpers ───────────────────────────────────────────────────────────
 
-const DEFAULT_SOCIAL_IMAGE = 'https://mpb.health/assets/MPB-Health-No-background.png?v=2';
+const DEFAULT_SOCIAL_IMAGE = 'https://mpb.health/assets/brand/mpb-tile.png';
 
 const CharCount: React.FC<{ value: string; limit: number; hint: string }> = ({ value, limit, hint }) => {
   const count = value.length;

@@ -80,7 +80,7 @@ function DropdownPanel({
   );
 }
 
-export function LandingHeader() {
+export function LandingHeader({ floating = false }: { floating?: boolean }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [openMenu, setOpenMenu] = useState<MenuKey | null>(null);
   const [openSection, setOpenSection] = useState<MenuKey | null>(null);
@@ -140,9 +140,27 @@ export function LandingHeader() {
   const accountIsExternal = accountRoute.startsWith('http');
 
   return (
-    <header className="lr-header">
+    <header
+      className={`lr-header ${floating || drawerOpen ? 'lr-header--pill' : 'lr-header--overlay'}`}
+    >
+      <div className="lr-header__bar">
       <Link to="/" className="lr-header__logo" aria-label="MPB Health Home">
-        <img src="/assets/logo.png" alt="MPB Health" width={500} height={120} decoding="async" />
+        <img
+          className="lr-header__logo-color"
+          src="/assets/brand/mpb-tile.png"
+          alt="MPB Health"
+          width={800}
+          height={800}
+          decoding="async"
+        />
+        <img
+          className="lr-header__logo-white"
+          src="/assets/brand/mpb-wordmark-white.png"
+          alt=""
+          width={706}
+          height={204}
+          decoding="async"
+        />
       </Link>
 
       <nav className="lr-header__nav" aria-label="Primary" ref={navRef}>
@@ -181,29 +199,33 @@ export function LandingHeader() {
               </li>
             );
           })}
-          <li>
-            {isAuthenticated ? (
-              accountIsExternal ? (
-                <a href={accountRoute} className="lr-header__link lr-header__link--signin">
-                  My Account
-                </a>
-              ) : (
-                <Link to={accountRoute} className="lr-header__link lr-header__link--signin">
-                  My Account
-                </Link>
-              )
-            ) : (
-              <button
-                type="button"
-                className="lr-header__link lr-header__link--signin"
-                onClick={() => void signInRedirect()}
-              >
-                Sign In
-              </button>
-            )}
-          </li>
         </ul>
       </nav>
+
+      <div className="lr-header__actions">
+        {isAuthenticated ? (
+          accountIsExternal ? (
+            <a href={accountRoute} className="lr-header__link lr-header__link--signin">
+              My Account
+            </a>
+          ) : (
+            <Link to={accountRoute} className="lr-header__link lr-header__link--signin">
+              My Account
+            </Link>
+          )
+        ) : (
+          <button
+            type="button"
+            className="lr-header__link lr-header__link--signin"
+            onClick={() => void signInRedirect()}
+          >
+            Sign In
+          </button>
+        )}
+        <a className="lr-header__cta" href="#estimate">
+          Get Your Quote
+        </a>
+      </div>
 
       <button
         type="button"
@@ -216,6 +238,7 @@ export function LandingHeader() {
         <span />
         <span />
       </button>
+      </div>
 
       <div className={`lr-header__drawer${drawerOpen ? ' is-open' : ''}`}>
         {dropdowns.slice(0, 1).map((section) => (

@@ -46,8 +46,13 @@ export async function listApps(): Promise<AppCatalogItem[]> {
   return (data ?? []) as AppCatalogItem[];
 }
 
+const LICENSE_COLUMNS =
+  'id, org_id, app_slug, plan_id, status, seats, trial_ends_at, provisioned_at, created_at, updated_at, price_cents';
+const INVITATION_COLUMNS =
+  'id, org_id, email, role, token, status, invited_by, expires_at, created_at';
+
 export async function listLicenses(orgId?: string): Promise<OrgAppLicense[]> {
-  let query = accounts.from('org_app_licenses').select('*').order('created_at');
+  let query = accounts.from('org_app_licenses').select(LICENSE_COLUMNS).order('created_at');
   if (orgId) query = query.eq('org_id', orgId);
   const { data, error } = await query;
   if (error) throw error;
@@ -55,7 +60,10 @@ export async function listLicenses(orgId?: string): Promise<OrgAppLicense[]> {
 }
 
 export async function listInvitations(orgId?: string): Promise<OrgInvitation[]> {
-  let query = accounts.from('org_invitations').select('*').order('created_at', { ascending: false });
+  let query = accounts
+    .from('org_invitations')
+    .select(INVITATION_COLUMNS)
+    .order('created_at', { ascending: false });
   if (orgId) query = query.eq('org_id', orgId);
   const { data, error } = await query;
   if (error) throw error;
@@ -87,7 +95,7 @@ export async function createInvitation(input: {
       invited_by: user.id,
       expires_at: expiresAt,
     })
-    .select('*')
+    .select(INVITATION_COLUMNS)
     .single();
 
   if (error) throw error;

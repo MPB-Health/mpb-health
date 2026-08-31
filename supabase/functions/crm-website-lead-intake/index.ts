@@ -286,9 +286,33 @@ serve(async (req) => {
           },
         }),
       });
-      emailSent = sendResp.ok;
-      if (!emailSent) {
-        emailError = `send-crm-email-v2 returned ${sendResp.status}`;
+      // Never trust HTTP status alone: send-crm-email-v2 can return 422 for
+      // suppressions, or 200 without a real Resend/log id. Only stamp Email #1
+      // when the body confirms a real delivery artifact.
+      let sendBody: {
+        success?: boolean;
+        skipped?: boolean;
+        resend_id?: string | null;
+        email_id?: string | null;
+        error?: string;
+        reason?: string;
+      } = {};
+      try {
+        sendBody = await sendResp.json();
+      } catch {
+        sendBody = {};
+      }
+      const delivered =
+        sendResp.ok &&
+        sendBody.success === true &&
+        !sendBody.skipped &&
+        Boolean(sendBody.resend_id || sendBody.email_id);
+      emailSent = delivered;
+      if (!delivered) {
+        emailError =
+          sendBody.reason ||
+          sendBody.error ||
+          `send-crm-email-v2 returned ${sendResp.status} without resend_id/email_id`;
       }
     } catch (err) {
       emailError = err instanceof Error ? err.message : String(err);

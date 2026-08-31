@@ -40,7 +40,7 @@
     "react-hot-toast": "^2.6.0",
     "react-router-dom": "catalog:",
     "recharts": "catalog:",
-    "xlsx": "^0.18.5"
+    "exceljs": "^4.4.0"
   },
   "devDependencies": {
     "@mpbhealth/eslint-config": "workspace:*",

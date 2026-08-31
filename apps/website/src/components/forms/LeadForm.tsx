@@ -7,6 +7,7 @@ import { Select } from '../ui/Select';
 import { trackFormStep } from '../../lib/analytics';
 import { typography } from '../../lib/typography';
 import { leadSubmissionService } from '../../lib/leadSubmissionService';
+import { getLeadAttribution } from '../../lib/leadAttribution';
 import { EnrollNowPrompt } from '../lead-capture/EnrollNowPrompt';
 
 interface FormData {
@@ -112,6 +113,7 @@ const LeadForm: React.FC<LeadFormProps> = ({ onSubmit, className }) => {
 
     try {
       const result = await leadSubmissionService.submitLead({
+        ...getLeadAttribution(),
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,

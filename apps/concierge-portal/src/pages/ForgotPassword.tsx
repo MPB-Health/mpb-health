@@ -48,7 +48,7 @@ export default function ForgotPassword() {
           </div>
           <h1 className="text-2xl font-bold text-[#2F3E2F]">Check your email</h1>
           <p className="text-slate-600">
-            If an account exists for <strong>{email}</strong>, we've sent a password reset link.
+            If an account exists for <strong>{email}</strong>, we have sent a password reset link.
             Check your inbox (and spam folder).
           </p>
           <Link
@@ -70,7 +70,7 @@ export default function ForgotPassword() {
             <span className="text-white font-bold text-lg">MPB</span>
           </div>
           <h1 className="text-2xl font-bold text-[#2F3E2F]">Reset your password</h1>
-          <p className="mt-2 text-slate-600">Enter your email and we'll send you a reset link</p>
+          <p className="mt-2 text-slate-600">Enter your email and we will send you a reset link</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">

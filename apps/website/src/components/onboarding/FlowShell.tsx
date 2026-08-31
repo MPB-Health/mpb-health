@@ -10,6 +10,7 @@ import { recommendPlans } from '../../lib/onboarding/rules';
 import { OnboardingAnswers, Audience, Priority, Usage, IUAComfort, Extra } from '../../lib/onboarding/types';
 import { supabase } from '../../lib/supabase';
 import { leadSubmissionService } from '../../lib/leadSubmissionService';
+import { getLeadAttribution } from '../../lib/leadAttribution';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 
 declare global {
@@ -88,6 +89,7 @@ export function FlowShell() {
       if (answers.contactOptIn && answers.contactEmail?.trim()) {
         try {
           const leadResult = await leadSubmissionService.submitLead({
+            ...getLeadAttribution(),
             firstName: answers.contactEmail.split('@')[0] || 'Quick Start',
             lastName: 'Lead',
             email: answers.contactEmail.trim(),

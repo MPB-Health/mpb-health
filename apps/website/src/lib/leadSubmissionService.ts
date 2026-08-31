@@ -1,4 +1,5 @@
 import { sendLeadWelcomeEmail } from './emailService';
+import { trackEvent } from './analytics';
 import { createClientLogger } from '@mpbhealth/utils';
 
 const log = createClientLogger('LeadSubmission');
@@ -177,6 +178,54 @@ export function sanitizeFormDataForCrm(
   return compact;
 }
 
+/** Coarse failure reason for telemetry. Never derived from user input. */
+export function classifyFailure(error: unknown): string {
+  if (error instanceof DOMException && error.name === 'TimeoutError') return 'timeout';
+  if (error instanceof Error) {
+    if (/timed out|aborted|abort/i.test(error.message)) return 'timeout';
+    if (/already submitted/i.test(error.message)) return 'duplicate';
+    if (/failed to fetch|networkerror|load failed/i.test(error.message)) return 'network';
+    if (/Lead intake failed \(\d{3}/.test(error.message)) return 'http_error';
+    if (/exceeds \d+ KB/i.test(error.message)) return 'payload_too_large';
+  }
+  return 'unknown';
+}
+
+/**
+ * Surface intake failures to analytics.
+ *
+ * Previously a failed submission produced only a console.error in the
+ * visitor's own browser, so a systemic outage — a misprovisioned env var, ARYX
+ * down, the RPC rejecting every payload — was invisible to the business and
+ * could run for weeks with nobody noticing leads had stopped.
+ *
+ * Carries NO lead PII by design: name, email, phone, zip, primary_concern and
+ * form_data are all withheld, since this is healthcare enquiry data and these
+ * events flow to third-party analytics. Only the failure reason and the
+ * page/CTA that produced it. The message is server-side error text (see
+ * submit_public_lead, which never echoes submitted values back).
+ */
+function reportSubmissionFailure(
+  formData: LeadFormData,
+  reason: string,
+  detail?: unknown,
+): void {
+  try {
+    const message =
+      detail instanceof Error ? detail.message : typeof detail === 'string' ? detail : undefined;
+    trackEvent('lead_submission_failed', {
+      reason,
+      source_page:
+        formData.sourcePage ??
+        (typeof window !== 'undefined' ? window.location.pathname : undefined),
+      source_cta: formData.sourceCTA,
+      message: message?.slice(0, 200),
+    });
+  } catch {
+    // Telemetry must never break intake.
+  }
+}
+
 class LeadSubmissionService {
   async submitLead(formData: LeadFormData): Promise<LeadSubmissionResult> {
     const warnings: string[] = [];
@@ -188,6 +237,10 @@ class LeadSubmissionService {
         'Lead intake is misconfigured (missing VITE_ARYX_FUNCTIONS_URL or VITE_ARYX_ANON_KEY). ' +
         'Please contact support and try again later.';
       log.error(`[LeadSubmission] ${msg}`);
+      // Total-outage case: every submission on this build fails. Report it so
+      // a misprovisioned deploy is visible in analytics instead of only in the
+      // browser console of whoever happened to hit the form.
+      reportSubmissionFailure(formData, 'misconfigured', msg);
       return { success: false, error: msg };
     }
 
@@ -284,6 +337,7 @@ class LeadSubmissionService {
       };
     } catch (error) {
       console.error('Lead submission error:', error);
+      reportSubmissionFailure(formData, classifyFailure(error), error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to submit lead',

@@ -216,6 +216,33 @@ serve(async (req) => {
       }
     }
 
+    // Fallback: providers may rewrite the Message-ID we pin at send time.
+    // Resend's own IDs take the form <{resend_email_id}@{domain}>, so when the
+    // direct message_id lookup misses, retry the local part against
+    // resend_email_id before giving up and starting a brand new thread.
+    if (!threadId && inReplyTo) {
+      const localPart = inReplyTo.replace(/^</, '').replace(/>$/, '').split('@')[0]?.trim();
+      if (localPart) {
+        const { data: byResendId } = await supabase
+          .from('crm_email_log')
+          .select('thread_id, ab_test_id, ab_variant')
+          .eq('resend_email_id', localPart)
+          .limit(1)
+          .maybeSingle();
+
+        if (byResendId?.thread_id) {
+          threadId = byResendId.thread_id;
+          log.info(`Matched thread via In-Reply-To → resend_email_id: ${threadId}`);
+        }
+        if (!replyParentAbTest && byResendId?.ab_test_id) {
+          replyParentAbTest = {
+            ab_test_id: byResendId.ab_test_id,
+            ab_variant: byResendId.ab_variant ?? null,
+          };
+        }
+      }
+    }
+
     // If not found, try matching via References header
     if (!threadId && referencesHeader) {
       const referenceIds = referencesHeader.split(/\s+/).filter(Boolean);

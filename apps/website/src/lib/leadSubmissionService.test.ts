@@ -1,9 +1,36 @@
 import { describe, expect, it } from 'vitest';
 import {
+  classifyFailure,
   FORM_DATA_MAX_BYTES,
   FORM_DATA_SOFT_MAX_BYTES,
   sanitizeFormDataForCrm,
 } from './leadSubmissionService';
+
+describe('classifyFailure', () => {
+  it('identifies the 10s client abort, the most common silent failure', () => {
+    expect(classifyFailure(new DOMException('signal timed out', 'TimeoutError'))).toBe('timeout');
+    expect(classifyFailure(new Error('The operation was aborted'))).toBe('timeout');
+  });
+
+  it('separates network loss from server rejection', () => {
+    expect(classifyFailure(new TypeError('Failed to fetch'))).toBe('network');
+    expect(classifyFailure(new Error('Lead intake failed (500 Internal Server Error)'))).toBe(
+      'http_error',
+    );
+  });
+
+  it('flags the oversized-payload rejection distinctly', () => {
+    expect(classifyFailure(new Error('form_data exceeds 640 KB'))).toBe('payload_too_large');
+  });
+
+  it('recognises duplicate submissions and falls back to unknown', () => {
+    expect(classifyFailure(new Error('It looks like you already submitted this form.'))).toBe(
+      'duplicate',
+    );
+    expect(classifyFailure('something odd')).toBe('unknown');
+    expect(classifyFailure(undefined)).toBe('unknown');
+  });
+});
 
 function buildOversizedHeroFormData() {
   const all_plan_rates: Record<string, unknown> = {};

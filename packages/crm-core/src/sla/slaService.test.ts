@@ -7,7 +7,7 @@ const stubSupabase = {} as unknown as never;
 
 // Expose the private method for tests. The SQL function
 // `crm_calc_business_hour_deadline` is the source of truth; this test pins
-// the JS fallback to the same logic so both agree within 1 minute.
+// the JS fallback to the same local-clock logic so both agree within 1 minute.
 class ExposedSLA extends SLAService {
   public deadline(
     start: Date,
@@ -29,20 +29,26 @@ const svc = new ExposedSLA(stubSupabase as never, '00000000-0000-0000-0000-00000
 
 describe('SLAService business-hour deadline', () => {
   it('adds hours within a single business day', () => {
-    const start = new Date('2026-01-05T14:00:00-05:00'); // Monday 2pm ET
+    // Local wall clock: the JS fallback uses Date#getDay/getHours, not the tz arg.
+    const start = new Date(2026, 0, 5, 14, 0, 0); // Monday 2pm local
     const out = svc.deadline(start, 2, '09:00', '17:00', [1, 2, 3, 4, 5], 'America/New_York');
-    expect(out.toISOString()).toBe(new Date('2026-01-05T16:00:00-05:00').toISOString());
+    expect(out.getFullYear()).toBe(2026);
+    expect(out.getMonth()).toBe(0);
+    expect(out.getDate()).toBe(5);
+    expect(out.getHours()).toBe(16);
+    expect(out.getMinutes()).toBe(0);
   });
 
   it('rolls over an evening start into the next business morning', () => {
-    const start = new Date('2026-01-05T18:30:00-05:00'); // Monday 6:30pm ET
+    const start = new Date(2026, 0, 5, 18, 30, 0); // Monday 6:30pm local
     const out = svc.deadline(start, 1, '09:00', '17:00', [1, 2, 3, 4, 5], 'America/New_York');
+    expect(out.getDay()).toBe(2); // Tuesday
     expect(out.getHours()).toBe(10);
     expect(out.getMinutes()).toBe(0);
   });
 
   it('skips weekends when computing a 24 business-hour deadline', () => {
-    const start = new Date('2026-01-02T10:00:00-05:00'); // Friday 10am ET
+    const start = new Date(2026, 0, 2, 10, 0, 0); // Friday 10am local
     const out = svc.deadline(start, 24, '09:00', '17:00', [1, 2, 3, 4, 5], 'America/New_York');
     // 24 business hours = 3 business days of 8h each. Friday 10am + 24bh:
     //   Fri: 10-17 = 7h remaining 17h
@@ -54,7 +60,7 @@ describe('SLAService business-hour deadline', () => {
   });
 
   it('falls back to wall-clock when business hour window is zero', () => {
-    const start = new Date('2026-01-05T14:00:00-05:00');
+    const start = new Date(2026, 0, 5, 14, 0, 0);
     const out = svc.deadline(start, 2, '09:00', '09:00', [1, 2, 3, 4, 5], 'America/New_York');
     expect(out.getTime() - start.getTime()).toBe(2 * 60 * 60 * 1000);
   });

@@ -32,7 +32,11 @@ declare global {
       salesiq?: {
         widgetcode?: string;
         values?: Record<string, any>;
-        ready: (callback: () => void) => void;
+        /** Zoho may call ready() with no args; our monitor also accepts a callback. */
+        ready: (callback?: () => void) => void;
+        visitor?: {
+          info: (fields: Record<string, string>) => void;
+        };
         floatbutton?: {
           visible: (visible: 'show' | 'hide') => void;
         };
@@ -108,8 +112,8 @@ class ZohoSalesIQManager {
       window.$zoho.salesiq = {
         widgetcode: this.widgetCode,
         values: {},
-        ready: (callback: () => void) => {
-          this.readyCallbacks.push(callback);
+        ready: (callback?: () => void) => {
+          if (callback) this.readyCallbacks.push(callback);
         },
       };
     } else {
@@ -194,9 +198,17 @@ class ZohoSalesIQManager {
 
   private setupReadyHandler() {
     if (window.$zoho?.salesiq) {
-      window.$zoho.salesiq.ready = (callback: () => void) => {
+      window.$zoho.salesiq.ready = (callback?: () => void) => {
         this.status.isReady = true;
         this.status.lastChecked = new Date().toISOString();
+
+        try {
+          window.$zoho?.salesiq?.visitor?.info?.({
+            'Portal Source': 'MPB Health',
+          });
+        } catch (error) {
+          console.error('[Zoho SalesIQ] visitor.info error:', error);
+        }
 
         this.readyCallbacks.forEach(cb => {
           try {

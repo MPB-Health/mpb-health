@@ -138,12 +138,11 @@
   }
 }
 
-/* Overlay state: transparent, sits on the hero photograph. The photo's sky
-   is light, so the overlay nav goes ink-on-light (Oura pattern). */
+/* Overlay state: transparent, sits on the dark split hero */
 
 .lr-header--overlay {
-  --hdr-fg: var(--lr-ink);
-  --hdr-hover: rgba(15, 27, 45, 0.07);
+  --hdr-fg: #ffffff;
+  --hdr-hover: rgba(255, 255, 255, 0.16);
 }
 
 /* Pill state: detached floating glass capsule */
@@ -256,9 +255,7 @@
 }
 
 .lr-header--overlay .lr-header__logo-white {
-  opacity: 0.88;
-  /* No dark wordmark asset yet: silhouette the white one to ink */
-  filter: brightness(0) saturate(100%);
+  opacity: 1;
 }
 
 .lr-header--pill .lr-header__logo-color {
@@ -737,6 +734,357 @@
   font: 600 1.02rem/1.3 var(--lr-font);
   letter-spacing: 0.01em;
   color: rgba(255, 255, 255, 0.92);
+}
+
+/* ——— Split hero (option C): navy canvas, photo right, aurora beam ——— */
+
+.lr-hero--split {
+  align-items: center;
+  background: #081a33;
+}
+.lr-hero--split .lr-hero__media {
+  background: #081a33;
+}
+/* Photo lives in the right bay only; the type column sits on solid navy.
+   The left edge dissolves under the aurora seam (mask boundary is driven
+   from JS so the beam's cursor lean uncovers more of the photograph). */
+.lr-hero--split .lr-hero__photo {
+  inset: auto;
+  top: 0;
+  left: 32%;
+  width: 68%;
+  height: 100%;
+  object-position: 62% 42%;
+  /* The photo's edge IS the beam's centerline, translated into this box
+     (photo spans hero 32%..100%, so x_photo = (x_hero - 32) / 0.68) and
+     filled to the right. The box reaches further left than the band's tail
+     ever does, so its own edge can never peek out from under the light. */
+  -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><filter id='f' x='-40%25' y='-40%25' width='180%25' height='180%25'><feGaussianBlur stdDeviation='4.5'/></filter><path d='M38.2,-6 C27.9,20 20.6,45 18.4,68 C16.9,82 13.2,95 7.4,106 L110,106 L110,-6 Z' fill='white' filter='url(%23f)'/></svg>");
+  mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><filter id='f' x='-40%25' y='-40%25' width='180%25' height='180%25'><feGaussianBlur stdDeviation='4.5'/></filter><path d='M38.2,-6 C27.9,20 20.6,45 18.4,68 C16.9,82 13.2,95 7.4,106 L110,106 L110,-6 Z' fill='white' filter='url(%23f)'/></svg>");
+}
+/* Nav strip sits above everything so links stay legible where the beam
+   crosses the top of the canvas */
+.lr-hero--split .lr-hero__media::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  background: linear-gradient(to bottom, rgba(8, 26, 51, 0.5) 0%, rgba(8, 26, 51, 0) 16%);
+}
+/* Static aurora band riding the navy/photo seam (matches the inspo).
+   Two layers sharing one S-curve centerline (SVG masks, stretched to the
+   hero): an OPAQUE painted core (normal blend — it covers the seam instead
+   of letting the photo burn through) and a soft screen-blend halo above it
+   for the glow. Colour flows along the band: sunlit haze up top, cyan/teal
+   core, green foot. */
+.lr-hero__beam,
+.lr-hero__beamglow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    rgba(214, 206, 180, 0.28) 0%,
+    rgba(122, 199, 199, 0.7) 12%,
+    #2bb4bd 32%,
+    #00887f 55%,
+    #35a065 75%,
+    #6f9c22 100%
+  );
+}
+.lr-hero__beam {
+  z-index: 2;
+  filter: blur(5px) saturate(1.25);
+  -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><filter id='f' x='-60%25' y='-60%25' width='220%25' height='220%25'><feGaussianBlur stdDeviation='2'/></filter><path d='M47.0,-5 L46.5,5 L46.6,15 L45.2,25 L42.1,35 L39.6,45 L40.1,55 L41.7,65 L41.3,75 L38.3,85 L33.7,95 L31.5,106 L42.5,106 L43.7,95 L47.1,85 L49.5,75 L49.7,65 L48.4,55 L48.0,45 L52.3,35 L57.3,25 L62.0,15 L66.7,5 L72.0,-5 Z' fill='white' filter='url(%23f)'><animate attributeName='d' dur='8s' repeatCount='indefinite' keyTimes='0;0.25;0.5;0.75;1' values='M47.0,-5 L46.5,5 L46.6,15 L45.2,25 L42.1,35 L39.6,45 L40.1,55 L41.7,65 L41.3,75 L38.3,85 L33.7,95 L31.5,106 L42.5,106 L43.7,95 L47.1,85 L49.5,75 L49.7,65 L48.4,55 L48.0,45 L52.3,35 L57.3,25 L62.0,15 L66.7,5 L72.0,-5 Z;M47.0,-5 L45.7,5 L45.4,15 L45.8,25 L44.8,35 L41.8,45 L39.3,55 L38.9,65 L39.6,75 L38.8,85 L34.6,95 L31.5,106 L42.5,106 L44.6,95 L47.5,85 L47.9,75 L47.0,65 L47.6,55 L50.2,45 L55.0,35 L57.9,25 L60.8,15 L65.9,5 L72.0,-5 Z;M47.0,-5 L45.9,5 L44.2,15 L43.5,25 L44.1,35 L44.0,45 L42.3,55 L39.7,65 L38.0,75 L37.1,85 L34.3,95 L31.5,106 L42.5,106 L44.3,95 L45.8,85 L46.2,75 L47.7,65 L50.6,55 L52.4,45 L54.3,35 L55.6,25 L59.6,15 L66.1,5 L72.0,-5 Z;M47.0,-5 L46.7,5 L45.4,15 L42.9,25 L41.4,35 L41.8,45 L43.1,55 L42.4,65 L39.6,75 L36.6,85 L33.4,95 L31.5,106 L42.5,106 L43.4,95 L45.4,85 L47.9,75 L50.5,65 L51.4,55 L50.2,45 L51.6,35 L55.0,25 L60.8,15 L66.9,5 L72.0,-5 Z;M47.0,-5 L46.5,5 L46.6,15 L45.2,25 L42.1,35 L39.6,45 L40.1,55 L41.7,65 L41.3,75 L38.3,85 L33.7,95 L31.5,106 L42.5,106 L43.7,95 L47.1,85 L49.5,75 L49.7,65 L48.4,55 L48.0,45 L52.3,35 L57.3,25 L62.0,15 L66.7,5 L72.0,-5 Z'/></path></svg>");
+  mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><filter id='f' x='-60%25' y='-60%25' width='220%25' height='220%25'><feGaussianBlur stdDeviation='2'/></filter><path d='M47.0,-5 L46.5,5 L46.6,15 L45.2,25 L42.1,35 L39.6,45 L40.1,55 L41.7,65 L41.3,75 L38.3,85 L33.7,95 L31.5,106 L42.5,106 L43.7,95 L47.1,85 L49.5,75 L49.7,65 L48.4,55 L48.0,45 L52.3,35 L57.3,25 L62.0,15 L66.7,5 L72.0,-5 Z' fill='white' filter='url(%23f)'><animate attributeName='d' dur='8s' repeatCount='indefinite' keyTimes='0;0.25;0.5;0.75;1' values='M47.0,-5 L46.5,5 L46.6,15 L45.2,25 L42.1,35 L39.6,45 L40.1,55 L41.7,65 L41.3,75 L38.3,85 L33.7,95 L31.5,106 L42.5,106 L43.7,95 L47.1,85 L49.5,75 L49.7,65 L48.4,55 L48.0,45 L52.3,35 L57.3,25 L62.0,15 L66.7,5 L72.0,-5 Z;M47.0,-5 L45.7,5 L45.4,15 L45.8,25 L44.8,35 L41.8,45 L39.3,55 L38.9,65 L39.6,75 L38.8,85 L34.6,95 L31.5,106 L42.5,106 L44.6,95 L47.5,85 L47.9,75 L47.0,65 L47.6,55 L50.2,45 L55.0,35 L57.9,25 L60.8,15 L65.9,5 L72.0,-5 Z;M47.0,-5 L45.9,5 L44.2,15 L43.5,25 L44.1,35 L44.0,45 L42.3,55 L39.7,65 L38.0,75 L37.1,85 L34.3,95 L31.5,106 L42.5,106 L44.3,95 L45.8,85 L46.2,75 L47.7,65 L50.6,55 L52.4,45 L54.3,35 L55.6,25 L59.6,15 L66.1,5 L72.0,-5 Z;M47.0,-5 L46.7,5 L45.4,15 L42.9,25 L41.4,35 L41.8,45 L43.1,55 L42.4,65 L39.6,75 L36.6,85 L33.4,95 L31.5,106 L42.5,106 L43.4,95 L45.4,85 L47.9,75 L50.5,65 L51.4,55 L50.2,45 L51.6,35 L55.0,25 L60.8,15 L66.9,5 L72.0,-5 Z;M47.0,-5 L46.5,5 L46.6,15 L45.2,25 L42.1,35 L39.6,45 L40.1,55 L41.7,65 L41.3,75 L38.3,85 L33.7,95 L31.5,106 L42.5,106 L43.7,95 L47.1,85 L49.5,75 L49.7,65 L48.4,55 L48.0,45 L52.3,35 L57.3,25 L62.0,15 L66.7,5 L72.0,-5 Z'/></path></svg>");
+}
+
+/* SMIL mask animation can't see prefers-reduced-motion — hand those users
+   the still ribbon explicitly */
+@media (prefers-reduced-motion: reduce) {
+  .lr-hero__beam {
+    -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><filter id='f' x='-60%25' y='-60%25' width='220%25' height='220%25'><feGaussianBlur stdDeviation='2'/></filter><path d='M47,-5 C45.5,20 43,45 40.5,68 C39,82 36,95 31.5,106 L42.5,106 C46,92 47.5,80 48.5,68 C52,42 58,14 72,-5 Z' fill='white' filter='url(%23f)'/></svg>");
+    mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><filter id='f' x='-60%25' y='-60%25' width='220%25' height='220%25'><feGaussianBlur stdDeviation='2'/></filter><path d='M47,-5 C45.5,20 43,45 40.5,68 C39,82 36,95 31.5,106 L42.5,106 C46,92 47.5,80 48.5,68 C52,42 58,14 72,-5 Z' fill='white' filter='url(%23f)'/></svg>");
+  }
+  .lr-hero__beamglow {
+    -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><filter id='f' x='-60%25' y='-60%25' width='220%25' height='220%25'><feGaussianBlur stdDeviation='5'/></filter><path d='M40,-5 C39.5,20 38,45 36,68 C34,84 30,96 25,106 L51,106 C50,92 51,80 52,68 C57,42 64,14 82,-5 Z' fill='white' fill-opacity='0.65' filter='url(%23f)'/></svg>");
+    mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><filter id='f' x='-60%25' y='-60%25' width='220%25' height='220%25'><feGaussianBlur stdDeviation='5'/></filter><path d='M40,-5 C39.5,20 38,45 36,68 C34,84 30,96 25,106 L51,106 C50,92 51,80 52,68 C57,42 64,14 82,-5 Z' fill='white' fill-opacity='0.65' filter='url(%23f)'/></svg>");
+  }
+}
+
+/* dead: shimmer replaced by the shader */
+.lr-hero__beamflow {
+  display: none;
+  -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><filter id='f' x='-60%25' y='-60%25' width='220%25' height='220%25'><feGaussianBlur stdDeviation='2'/></filter><path d='M47,-5 C45.5,20 43,45 40.5,68 C39,82 36,95 31.5,106 L42.5,106 C46,92 47.5,80 48.5,68 C52,42 58,14 72,-5 Z' fill='white' filter='url(%23f)'><animate attributeName='d' dur='7s' repeatCount='indefinite' calcMode='spline' keyTimes='0;0.33;0.66;1' keySplines='0.42 0 0.58 1;0.42 0 0.58 1;0.42 0 0.58 1' values='M47,-5 C45.5,20 43,45 40.5,68 C39,82 36,95 31.5,106 L42.5,106 C46,92 47.5,80 48.5,68 C52,42 58,14 72,-5 Z;M47,-5 C43,20 36,45 34,68 C34,82 34.5,95 31.5,106 L42.5,106 C44,92 41,80 42,68 C45,42 55,14 72,-5 Z;M47,-5 C48,20 49,45 47,68 C45,82 38,95 31.5,106 L42.5,106 C48,92 54,80 55,68 C59,42 61,14 72,-5 Z;M47,-5 C45.5,20 43,45 40.5,68 C39,82 36,95 31.5,106 L42.5,106 C46,92 47.5,80 48.5,68 C52,42 58,14 72,-5 Z'/></path></svg>");
+  mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><filter id='f' x='-60%25' y='-60%25' width='220%25' height='220%25'><feGaussianBlur stdDeviation='2'/></filter><path d='M47,-5 C45.5,20 43,45 40.5,68 C39,82 36,95 31.5,106 L42.5,106 C46,92 47.5,80 48.5,68 C52,42 58,14 72,-5 Z' fill='white' filter='url(%23f)'><animate attributeName='d' dur='7s' repeatCount='indefinite' calcMode='spline' keyTimes='0;0.33;0.66;1' keySplines='0.42 0 0.58 1;0.42 0 0.58 1;0.42 0 0.58 1' values='M47,-5 C45.5,20 43,45 40.5,68 C39,82 36,95 31.5,106 L42.5,106 C46,92 47.5,80 48.5,68 C52,42 58,14 72,-5 Z;M47,-5 C43,20 36,45 34,68 C34,82 34.5,95 31.5,106 L42.5,106 C44,92 41,80 42,68 C45,42 55,14 72,-5 Z;M47,-5 C48,20 49,45 47,68 C45,82 38,95 31.5,106 L42.5,106 C48,92 54,80 55,68 C59,42 61,14 72,-5 Z;M47,-5 C45.5,20 43,45 40.5,68 C39,82 36,95 31.5,106 L42.5,106 C46,92 47.5,80 48.5,68 C52,42 58,14 72,-5 Z'/></path></svg>");
+}
+.lr-hero__beamglow {
+  z-index: 3;
+  mix-blend-mode: screen;
+  opacity: 0.8;
+  filter: blur(26px) saturate(1.4);
+  -webkit-mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><filter id='f' x='-60%25' y='-60%25' width='220%25' height='220%25'><feGaussianBlur stdDeviation='5'/></filter><path d='M37.0,-5 L38.4,5 L40.4,15 L40.4,25 L38.0,35 L36.3,45 L36.9,55 L38.5,65 L38.1,75 L34.8,85 L29.7,95 L27.1,106 L46.9,106 L47.7,95 L50.6,85 L52.8,75 L53.0,65 L51.7,55 L51.4,45 L56.4,35 L62.1,25 L68.1,15 L74.8,5 L82.0,-5 Z' fill='white' fill-opacity='0.65' filter='url(%23f)'><animate attributeName='d' dur='8s' repeatCount='indefinite' keyTimes='0;0.25;0.5;0.75;1' values='M37.0,-5 L38.4,5 L40.4,15 L40.4,25 L38.0,35 L36.3,45 L36.9,55 L38.5,65 L38.1,75 L34.8,85 L29.7,95 L27.1,106 L46.9,106 L47.7,95 L50.6,85 L52.8,75 L53.0,65 L51.7,55 L51.4,45 L56.4,35 L62.1,25 L68.1,15 L74.8,5 L82.0,-5 Z;M37.0,-5 L37.6,5 L39.2,15 L41.0,25 L40.7,35 L38.4,45 L36.1,55 L35.7,65 L36.4,75 L35.3,85 L30.6,95 L27.1,106 L46.9,106 L48.6,95 L51.0,85 L51.1,75 L50.2,65 L50.9,55 L53.6,45 L59.1,35 L62.7,25 L67.0,15 L73.9,5 L82.0,-5 Z;M37.0,-5 L37.8,5 L38.1,15 L38.7,25 L40.0,35 L40.6,45 L39.0,55 L36.4,65 L34.7,75 L33.6,85 L30.3,95 L27.1,106 L46.9,106 L48.3,95 L49.4,85 L49.4,75 L50.9,65 L53.8,55 L55.7,45 L58.4,35 L60.4,25 L65.8,15 L74.2,5 L82.0,-5 Z;M37.0,-5 L38.7,5 L39.2,15 L38.1,25 L37.3,35 L38.4,45 L39.8,55 L39.2,65 L36.4,75 L33.1,85 L29.4,95 L27.1,106 L46.9,106 L47.4,95 L48.9,85 L51.1,75 L53.7,65 L54.6,55 L53.6,45 L55.7,35 L59.8,25 L67.0,15 L75.0,5 L82.0,-5 Z;M37.0,-5 L38.4,5 L40.4,15 L40.4,25 L38.0,35 L36.3,45 L36.9,55 L38.5,65 L38.1,75 L34.8,85 L29.7,95 L27.1,106 L46.9,106 L47.7,95 L50.6,85 L52.8,75 L53.0,65 L51.7,55 L51.4,45 L56.4,35 L62.1,25 L68.1,15 L74.8,5 L82.0,-5 Z'/></path></svg>");
+  mask-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'><filter id='f' x='-60%25' y='-60%25' width='220%25' height='220%25'><feGaussianBlur stdDeviation='5'/></filter><path d='M37.0,-5 L38.4,5 L40.4,15 L40.4,25 L38.0,35 L36.3,45 L36.9,55 L38.5,65 L38.1,75 L34.8,85 L29.7,95 L27.1,106 L46.9,106 L47.7,95 L50.6,85 L52.8,75 L53.0,65 L51.7,55 L51.4,45 L56.4,35 L62.1,25 L68.1,15 L74.8,5 L82.0,-5 Z' fill='white' fill-opacity='0.65' filter='url(%23f)'><animate attributeName='d' dur='8s' repeatCount='indefinite' keyTimes='0;0.25;0.5;0.75;1' values='M37.0,-5 L38.4,5 L40.4,15 L40.4,25 L38.0,35 L36.3,45 L36.9,55 L38.5,65 L38.1,75 L34.8,85 L29.7,95 L27.1,106 L46.9,106 L47.7,95 L50.6,85 L52.8,75 L53.0,65 L51.7,55 L51.4,45 L56.4,35 L62.1,25 L68.1,15 L74.8,5 L82.0,-5 Z;M37.0,-5 L37.6,5 L39.2,15 L41.0,25 L40.7,35 L38.4,45 L36.1,55 L35.7,65 L36.4,75 L35.3,85 L30.6,95 L27.1,106 L46.9,106 L48.6,95 L51.0,85 L51.1,75 L50.2,65 L50.9,55 L53.6,45 L59.1,35 L62.7,25 L67.0,15 L73.9,5 L82.0,-5 Z;M37.0,-5 L37.8,5 L38.1,15 L38.7,25 L40.0,35 L40.6,45 L39.0,55 L36.4,65 L34.7,75 L33.6,85 L30.3,95 L27.1,106 L46.9,106 L48.3,95 L49.4,85 L49.4,75 L50.9,65 L53.8,55 L55.7,45 L58.4,35 L60.4,25 L65.8,15 L74.2,5 L82.0,-5 Z;M37.0,-5 L38.7,5 L39.2,15 L38.1,25 L37.3,35 L38.4,45 L39.8,55 L39.2,65 L36.4,75 L33.1,85 L29.4,95 L27.1,106 L46.9,106 L47.4,95 L48.9,85 L51.1,75 L53.7,65 L54.6,55 L53.6,45 L55.7,35 L59.8,25 L67.0,15 L75.0,5 L82.0,-5 Z;M37.0,-5 L38.4,5 L40.4,15 L40.4,25 L38.0,35 L36.3,45 L36.9,55 L38.5,65 L38.1,75 L34.8,85 L29.7,95 L27.1,106 L46.9,106 L47.7,95 L50.6,85 L52.8,75 L53.0,65 L51.7,55 L51.4,45 L56.4,35 L62.1,25 L68.1,15 L74.8,5 L82.0,-5 Z'/></path></svg>");
+}
+.lr-hero--split .lr-hero__content {
+  width: 100%;
+  max-width: 1200px;
+  text-align: left;
+  color: #fff;
+  padding: clamp(7rem, 16vh, 10rem) 1.25rem 5rem;
+}
+@media (min-width: 768px) {
+  .lr-hero--split .lr-hero__content {
+    padding-left: 2.25rem;
+    padding-right: 2.25rem;
+  }
+}
+.lr-hero--split .lr-hero__content > * {
+  max-width: 38rem;
+}
+.lr-hero--split .lr-hero__kicker {
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  color: #6fd6ca;
+  max-width: 30rem;
+}
+.lr-hero--split .lr-hero__headline {
+  max-width: 46rem;
+  font-size: clamp(2.7rem, 5.6vw, 4.4rem);
+  line-height: 1.06;
+  text-shadow: none;
+}
+.lr-hero__headline-grad {
+  display: block;
+  font-weight: 500;
+  padding-bottom: 0.09em;
+  /* drop-shadow (not text-shadow) survives background-clip:text — a tight
+     edge plus a wide navy halo lift the glyphs off the bright band */
+  filter: drop-shadow(0 1px 2px rgba(8, 26, 51, 0.55))
+    drop-shadow(0 6px 22px rgba(8, 26, 51, 0.6));
+  background: linear-gradient(92deg, #39b6e8 0%, #00a99d 46%, #a6ce39 96%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+.lr-hero__lede {
+  margin: 1.4rem 0 0;
+  font-size: 1.12rem;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.72);
+}
+.lr-hero__lede strong {
+  color: #fff;
+  font-weight: 600;
+}
+.lr-btn--grad {
+  background: linear-gradient(120deg, var(--lr-navy) 0%, #0d7f9e 45%, var(--lr-teal) 100%);
+  color: #fff;
+  box-shadow: 0 14px 40px -14px rgba(0, 169, 157, 0.55);
+}
+.lr-btn--grad:hover {
+  filter: brightness(1.08);
+}
+.lr-hero__ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font: 600 1rem/1 var(--lr-font);
+  color: #fff;
+  text-decoration: none;
+}
+.lr-hero__ghost svg {
+  transition: transform 0.2s var(--lr-ease);
+}
+.lr-hero__ghost:hover svg {
+  transform: translateX(4px);
+}
+.lr-hero__micro--row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1.4rem;
+  padding-top: 1rem;
+}
+
+/* Trust rail along the hero's lower-left — thin hairlines, real numbers */
+.lr-hero__stats {
+  display: flex;
+  flex-wrap: wrap;
+  margin: clamp(2.2rem, 5vh, 3.6rem) 0 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.18);
+  padding-top: 1.3rem;
+  gap: 0 2.4rem;
+}
+.lr-hero__stats > div {
+  display: flex;
+  flex-direction: column-reverse;
+}
+.lr-hero__stats > div + div {
+  border-left: 1px solid rgba(255, 255, 255, 0.18);
+  padding-left: 2.4rem;
+}
+.lr-hero__stats dd {
+  margin: 0;
+  font: 600 1.45rem/1.15 var(--lr-font);
+  letter-spacing: -0.02em;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+}
+.lr-hero__stats dt {
+  margin-top: 0.3rem;
+  font: 500 0.82rem/1.35 var(--lr-font);
+  color: rgba(255, 255, 255, 0.62);
+}
+
+/* Light panel directly below the hero (option C) */
+.lr-heropanel {
+  position: relative;
+  z-index: 2;
+  background: var(--lr-soft);
+  padding: 3.2rem 0 3.4rem;
+}
+.lr-heropanel__title {
+  margin: 0 auto;
+  max-width: 46rem;
+  text-align: center;
+  font-size: clamp(1.45rem, 3vw, 2rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+  text-wrap: balance;
+}
+.lr-heropanel__title em {
+  font-style: normal;
+  font-weight: 700;
+}
+.lr-heropanel__title .is-mental { color: #3d6fd0; }
+.lr-heropanel__title .is-physical { color: var(--lr-teal); }
+.lr-heropanel__title .is-balance { color: #79a52c; }
+.lr-heropanel__grid {
+  display: grid;
+  gap: 1rem;
+  margin-top: 2.2rem;
+}
+@media (min-width: 768px) {
+  .lr-heropanel__grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+  }
+}
+/* Open ruled columns (the90-style rows), not boxed cards */
+.lr-heropanel__card {
+  display: flex;
+  gap: 1.1rem;
+  align-items: flex-start;
+  height: 100%;
+  padding: 0.4rem 0.25rem;
+  text-decoration: none;
+  color: inherit;
+  border-radius: 14px;
+  transition: background 0.25s var(--lr-ease);
+}
+.lr-heropanel__card:hover {
+  background: rgba(15, 27, 45, 0.04);
+}
+@media (min-width: 768px) {
+  .lr-heropanel__grid > * + * .lr-heropanel__card {
+    border-left: 1px solid var(--lr-line);
+    padding-left: 1.5rem;
+  }
+}
+.lr-heropanel__icon {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+}
+.lr-heropanel__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.6rem;
+  font: 600 0.88rem/1 var(--lr-font);
+  color: var(--lr-navy);
+}
+.lr-heropanel__link svg {
+  transition: transform 0.2s var(--lr-ease);
+}
+.lr-heropanel__card:hover .lr-heropanel__link svg {
+  transform: translateX(3px);
+}
+.lr-heropanel__card.is-mental .lr-heropanel__icon {
+  background: linear-gradient(140deg, #dfe7fb, #c4d4f6);
+  color: #3d6fd0;
+}
+.lr-heropanel__card.is-physical .lr-heropanel__icon {
+  background: linear-gradient(140deg, #d8f3f0, #bde8e3);
+  color: #068c82;
+}
+.lr-heropanel__card.is-balance .lr-heropanel__icon {
+  background: linear-gradient(140deg, #e9f3d3, #d7eab4);
+  color: #6c9427;
+}
+.lr-heropanel__card h3 {
+  margin: 0.15rem 0 0.35rem;
+  font-size: 1.12rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.lr-heropanel__card p {
+  margin: 0;
+  color: var(--lr-ink-2);
+  font-size: 0.96rem;
+  line-height: 1.5;
+}
+
+/* Split hero on small screens: deepen the blend so the type stays legible
+   over the full-bleed photo */
+@media (max-width: 767px) {
+  /* Photo becomes a bottom band under the type; !important beats the
+     JS-driven horizontal mask, which only exists for the desktop cursor lean */
+  .lr-hero--split .lr-hero__photo {
+    top: auto;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 62%;
+    object-position: 62% 40%;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 34%) !important;
+    mask-image: linear-gradient(to bottom, transparent 0%, black 34%) !important;
+  }
+  .lr-hero--split .lr-hero__media::after {
+    background: linear-gradient(to bottom, rgba(8, 26, 51, 0.6) 0%, rgba(8, 26, 51, 0) 20%);
+  }
+  /* Beam follows the horizontal seam above the bottom-band photo */
+  .lr-hero__beamglow,
+  .lr-hero__beamflow {
+    display: none;
+  }
+  .lr-hero__beam {
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      transparent 24%,
+      rgba(0, 0, 0, 0.9) 36%,
+      black 42%,
+      rgba(0, 0, 0, 0.4) 50%,
+      transparent 58%
+    );
+    mask-image: linear-gradient(
+      to bottom,
+      transparent 24%,
+      rgba(0, 0, 0, 0.9) 36%,
+      black 42%,
+      rgba(0, 0, 0, 0.4) 50%,
+      transparent 58%
+    );
+  }
 }
 
 .lr-hero__headline {
@@ -2202,5 +2550,76 @@
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
+  }
+}
+
+/* ============================================================
+   Footer reveal (motion.dev pattern): the spacer clips a
+   viewport-fixed footer, so the page's end scrolls up and
+   uncovers it like a curtain. `.is-ready` gates the fixed
+   positioning on the first JS measurement — before that the
+   footer sits in normal flow (no flash, works without JS).
+   ============================================================ */
+.lr-footer-reveal.is-ready {
+  position: relative;
+  clip-path: inset(0 0 0 0);
+}
+.lr-footer-reveal.is-ready .lr-footer-reveal__fixed {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lr-footer-reveal.is-ready {
+    clip-path: none;
+    height: auto !important;
+  }
+  .lr-footer-reveal.is-ready .lr-footer-reveal__fixed {
+    position: static;
+  }
+}
+
+/* ============================================================
+   Magnetic filings — iron-filing field in the hero's navy zone.
+   Rotation is driven inline by framer-motion springs; this only
+   lays out the grid and draws the pins. Desktop pointer only.
+   ============================================================ */
+.lr-filings {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 40%;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(14, 1fr);
+  grid-template-rows: repeat(22, 1fr);
+  place-items: center;
+  pointer-events: none;
+  /* small hollow over the (trimmed) type block only — the rest of the navy
+     stays evenly filled so the field reads as one texture */
+  -webkit-mask-image: radial-gradient(
+    ellipse 60% 26% at 62% 52%,
+    transparent 34%,
+    rgba(0, 0, 0, 0.55) 65%,
+    black 88%
+  );
+  mask-image: radial-gradient(
+    ellipse 60% 26% at 62% 52%,
+    transparent 34%,
+    rgba(0, 0, 0, 0.55) 65%,
+    black 88%
+  );
+}
+.lr-filings__pin {
+  width: 11px;
+  height: 1.5px;
+  border-radius: 2px;
+  background: rgba(111, 214, 202, 0.24);
+}
+@media (max-width: 767px), (hover: none) {
+  .lr-filings {
+    display: none;
   }
 }

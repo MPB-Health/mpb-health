@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   AnimatePresence,
@@ -10,6 +10,7 @@ import {
   useScroll,
   useSpring,
   useTransform,
+  type MotionValue,
 } from 'framer-motion';
 import {
   Users,
@@ -23,11 +24,13 @@ import {
   ExternalLink,
   Plus,
   Video,
+  Brain,
+  Activity,
+  Flower2,
 } from 'lucide-react';
 import { GoogleGIcon, RxIcon } from './icons';
 import NumberFlow, { type Format } from '@number-flow/react';
 import { AuroraFlow } from './AuroraFlow';
-import { HeroFlowCanvas } from './HeroFlowCanvas';
 import { homepageFaqQuestions } from '../../lib/schemaMarkup';
 import { LandingHeader } from './LandingHeader';
 import { LandingFooter } from './LandingFooter';
@@ -136,6 +139,82 @@ const TESTIMONIALS = [
 ] as const;
 
 const easeOut = [0.16, 1, 0.3, 1] as const;
+
+/* ——— Magnetic filings (motion.dev pattern): a field of short lines in the
+   hero's navy zone, each springing its rotation toward the cursor like iron
+   filings around a magnet. All filings share two pointer motion values; each
+   derives its own angle, so pointer moves never re-render React. ——— */
+const FILINGS_COLS = 14;
+const FILINGS_ROWS = 22;
+
+function Filing({
+  px,
+  py,
+  cx,
+  cy,
+}: {
+  px: MotionValue<number>;
+  py: MotionValue<number>;
+  cx: number;
+  cy: number;
+}) {
+  const angle = useTransform([px, py], (v) => {
+    const [x, y] = v as number[];
+    return (Math.atan2(y - cy, x - cx) * 180) / Math.PI;
+  });
+  const rotate = useSpring(angle, { stiffness: 120, damping: 16, mass: 0.4 });
+  return <motion.div className="lr-filings__pin" style={{ rotate }} />;
+}
+
+function MagneticFilings({ heroRef }: { heroRef: React.RefObject<HTMLElement | null> }) {
+  const layerRef = useRef<HTMLDivElement>(null);
+  // Start far off-canvas so idle filings rest in a coherent diagonal field
+  const px = useMotionValue(-900);
+  const py = useMotionValue(-900);
+  const [centers, setCenters] = useState<{ x: number; y: number }[] | null>(null);
+
+  useEffect(() => {
+    const layer = layerRef.current;
+    const hero = heroRef.current;
+    if (!layer || !hero) return;
+    // Filing centers in hero-local space, so pointer math survives scrolling
+    const measure = () => {
+      const lb = layer.getBoundingClientRect();
+      const hb = hero.getBoundingClientRect();
+      const left = lb.left - hb.left;
+      const top = lb.top - hb.top;
+      const cw = lb.width / FILINGS_COLS;
+      const ch = lb.height / FILINGS_ROWS;
+      setCenters(
+        Array.from({ length: FILINGS_COLS * FILINGS_ROWS }, (_, i) => ({
+          x: left + ((i % FILINGS_COLS) + 0.5) * cw,
+          y: top + (Math.floor(i / FILINGS_COLS) + 0.5) * ch,
+        })),
+      );
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(layer);
+    const onMove = (e: PointerEvent) => {
+      const hb = hero.getBoundingClientRect();
+      px.set(e.clientX - hb.left);
+      py.set(e.clientY - hb.top);
+    };
+    window.addEventListener('pointermove', onMove, { passive: true });
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('pointermove', onMove);
+    };
+  }, [heroRef, px, py]);
+
+  return (
+    <div ref={layerRef} className="lr-filings" aria-hidden="true">
+      {centers?.map((c, i) => (
+        <Filing key={i} px={px} py={py} cx={c.x} cy={c.y} />
+      ))}
+    </div>
+  );
+}
 
 function Reveal({
   children,
@@ -263,30 +342,11 @@ export function LandingRedesign() {
   });
   const heroContentY = useTransform(heroProgress, [0, 1], [0, 90]);
   const heroContentOpacity = useTransform(heroProgress, [0, 0.65], [1, 0]);
-  // The photograph settles slower than the page so it reads as the far plane.
-  const heroPhotoScale = useTransform(heroProgress, [0, 1], [1, 1.07]);
-  const heroPhotoY = useTransform(heroProgress, [0, 1], ['0%', '6%']);
-
-  // The aurora itself leans toward the cursor: pointer position normalized to
-  // -1..1, scaled down and heavily damped so the colour field drifts, not snaps.
-  const auroraX = useMotionValue(0);
-  const auroraY = useMotionValue(0);
-  const auroraSpringX = useSpring(auroraX, { stiffness: 40, damping: 18, mass: 1.2 });
-  const auroraSpringY = useSpring(auroraY, { stiffness: 40, damping: 18, mass: 1.2 });
-  const AURORA_REACH = 0.35;
-
-  const onHeroPointerMove = (e: React.PointerEvent<HTMLElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    auroraX.set(((x / rect.width) * 2 - 1) * AURORA_REACH);
-    auroraY.set((1 - (y / rect.height) * 2) * AURORA_REACH);
-  };
-
-  const onHeroPointerLeave = () => {
-    auroraX.set(0);
-    auroraY.set(0);
-  };
+  // Scroll animation: the whole media plane scrolls at ~2/3 speed so the
+  // panel below visibly slides up and over the photograph, while the photo
+  // itself zooms slowly as the far plane.
+  const heroMediaY = useTransform(heroProgress, [0, 1], ['0%', '32%']);
+  const heroPhotoScale = useTransform(heroProgress, [0, 1], [1, 1.12]);
 
   const scrollTrack = (dir: 1 | -1) => {
     const el = trackRef.current;
@@ -307,37 +367,33 @@ export function LandingRedesign() {
     <div className="lr">
       <LandingHeader floating={navFloating} />
 
-      <section
-        className="lr-hero"
-        aria-label="Hero"
-        ref={heroRef}
-        onPointerMove={reduce ? undefined : onHeroPointerMove}
-        onPointerLeave={reduce ? undefined : onHeroPointerLeave}
-      >
-        <div className="lr-hero__media">
+      <section className="lr-hero lr-hero--split" aria-label="Hero" ref={heroRef}>
+        <motion.div
+          className="lr-hero__media"
+          style={reduce ? undefined : { y: heroMediaY }}
+        >
           <motion.img
             className="lr-hero__photo"
-            src="/assets/hero-option-yoga-field.jpg"
-            alt="A person doing yoga in a green field by the water"
+            src="/assets/hero-option-cliff-meditation.jpg"
+            alt="A person meditating on a clifftop overlooking the ocean"
             width={1800}
-            height={1272}
+            height={1200}
             fetchPriority="high"
             decoding="async"
-            style={reduce ? undefined : { scale: heroPhotoScale, y: heroPhotoY }}
+            style={reduce ? undefined : { scale: heroPhotoScale }}
           />
-          <AuroraFlow
-            className="lr-hero__shader"
-            speed={0.55}
-            /* Softer sky palette: no saturated lime, so the glow reads as
-               atmosphere over the water rather than a streak of colour. */
-            colors={['#0a4e8e', '#0d7f9e', '#00a99d', '#5fbfae', '#bfe3d5']}
-            distortion={0.6}
-            swirl={0.35}
-            offsetX={reduce ? undefined : auroraSpringX}
-            offsetY={reduce ? undefined : auroraSpringY}
+          {/* The ribbon itself moves: its mask paths carry a large SMIL sway —
+              the whole band travels and bends like a curtain in wind. Colours
+              stay anchored to the gradient. */}
+          <div className="lr-hero__beam" aria-hidden="true" />
+          <motion.div
+            className="lr-hero__beamglow"
+            aria-hidden="true"
+            animate={reduce ? undefined : { opacity: [0.68, 0.85, 0.68] }}
+            transition={reduce ? undefined : { duration: 7, ease: 'easeInOut', repeat: Infinity }}
           />
-        </div>
-        {reduce ? null : <HeroFlowCanvas targetRef={heroRef} />}
+        </motion.div>
+        {reduce ? null : <MagneticFilings heroRef={heroRef} />}
         <motion.div
           className="lr-hero__content"
           variants={heroStagger}
@@ -349,15 +405,75 @@ export function LandingRedesign() {
             The community-based alternative to traditional insurance.
           </motion.p>
           <motion.h1 variants={heroItem} className="lr-hero__headline">
-            Healthcare that uplifts you
+            Healthcare
+            <span className="lr-hero__headline-grad">for the way you live.</span>
           </motion.h1>
           <motion.div variants={heroItem} className="lr-hero__actions">
-            <a className="lr-btn lr-btn--white" href="#estimate">
+            <a className="lr-btn lr-btn--grad" href="#estimate">
               Get Your Quote
             </a>
-            <p className="lr-hero__micro">Compare all memberships in 30 seconds.</p>
+            <Link className="lr-hero__ghost" to="/get-a-quote">
+              Compare Memberships <ArrowRight size={17} aria-hidden="true" />
+            </Link>
           </motion.div>
+          <motion.p variants={heroItem} className="lr-hero__micro lr-hero__micro--row">
+            <ShieldCheck size={16} aria-hidden="true" /> Compare memberships in about 30 seconds.
+          </motion.p>
         </motion.div>
+      </section>
+
+      <section className="lr-heropanel" aria-label="Mental, physical, and everyday balance">
+        <div className="lr-inner">
+          <Reveal>
+            <h2 className="lr-heropanel__title">
+              Healthcare that supports your <em className="is-mental">mental</em>,{' '}
+              <em className="is-physical">physical</em>, and everyday{' '}
+              <em className="is-balance">balance</em>.
+            </h2>
+          </Reveal>
+          <div className="lr-heropanel__grid">
+            {(
+              [
+                {
+                  key: 'mental',
+                  title: 'Mental',
+                  body: 'Support for your mental and emotional well-being.',
+                  Icon: Brain,
+                  to: '/features/mental-health',
+                },
+                {
+                  key: 'physical',
+                  title: 'Physical',
+                  body: 'Resources that support movement, prevention, and healthier habits.',
+                  Icon: Activity,
+                  to: '/features/preventive-care',
+                },
+                {
+                  key: 'balance',
+                  title: 'Balance',
+                  body: 'Healthcare designed to work alongside your real life.',
+                  Icon: Flower2,
+                  to: '/how-it-works',
+                },
+              ] as const
+            ).map(({ key, title, body, Icon, to }, i) => (
+              <Reveal key={key} delay={0.08 * i}>
+                <Link to={to} className={`lr-heropanel__card is-${key}`}>
+                  <span className="lr-heropanel__icon" aria-hidden="true">
+                    <Icon size={22} />
+                  </span>
+                  <div>
+                    <h3>{title}</h3>
+                    <p>{body}</p>
+                    <span className="lr-heropanel__link">
+                      Learn more <ArrowRight size={15} aria-hidden="true" />
+                    </span>
+                  </div>
+                </Link>
+              </Reveal>
+            ))}
+          </div>
+        </div>
       </section>
 
       <section className="lr-intro" aria-label="Introducing MPB Health">

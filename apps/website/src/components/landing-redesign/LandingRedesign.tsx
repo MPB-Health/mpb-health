@@ -4,11 +4,9 @@ import {
   AnimatePresence,
   motion,
   useInView,
-  useMotionValue,
   useMotionValueEvent,
   useReducedMotion,
   useScroll,
-  useSpring,
   useTransform,
   type MotionValue,
 } from 'framer-motion';
@@ -31,7 +29,6 @@ import {
 import { GoogleGIcon, RxIcon } from './icons';
 import NumberFlow, { type Format } from '@number-flow/react';
 import { AuroraFlow } from './AuroraFlow';
-import { HeroFlowCanvas } from './HeroFlowCanvas';
 import { homepageFaqQuestions } from '../../lib/schemaMarkup';
 import { LandingHeader } from './LandingHeader';
 import { LandingFooter } from './LandingFooter';
@@ -356,27 +353,6 @@ export function LandingRedesign() {
   const panelRise = useTransform(heroProgress, [0, 1], [0, -140]);
   const panelTint = useTransform(heroProgress, [0.12, 0.9], [0, 0.28]);
 
-  // The aurora itself leans toward the cursor: pointer position normalized to
-  // -1..1, scaled down and heavily damped so the colour field drifts, not snaps.
-  const auroraX = useMotionValue(0);
-  const auroraY = useMotionValue(0);
-  const auroraSpringX = useSpring(auroraX, { stiffness: 40, damping: 18, mass: 1.2 });
-  const auroraSpringY = useSpring(auroraY, { stiffness: 40, damping: 18, mass: 1.2 });
-  const AURORA_REACH = 0.35;
-
-  const onHeroPointerMove = (e: React.PointerEvent<HTMLElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    auroraX.set(((x / rect.width) * 2 - 1) * AURORA_REACH);
-    auroraY.set((1 - (y / rect.height) * 2) * AURORA_REACH);
-  };
-
-  const onHeroPointerLeave = () => {
-    auroraX.set(0);
-    auroraY.set(0);
-  };
-
   const scrollTrack = (dir: 1 | -1) => {
     const el = trackRef.current;
     if (!el) return;
@@ -396,22 +372,10 @@ export function LandingRedesign() {
     <div className="lr">
       <LandingHeader floating={navFloating} />
 
-      <section
-        className="lr-hero"
-        aria-label="Hero"
-        ref={heroRef}
-        onPointerMove={reduce ? undefined : onHeroPointerMove}
-        onPointerLeave={reduce ? undefined : onHeroPointerLeave}
-      >
+      <section className="lr-hero" aria-label="Hero" ref={heroRef}>
         <div className="lr-hero__media">
-          <AuroraFlow
-            className="lr-hero__shader"
-            speed={0.55}
-            offsetX={reduce ? undefined : auroraSpringX}
-            offsetY={reduce ? undefined : auroraSpringY}
-          />
+          <AuroraFlow className="lr-hero__shader" speed={0.55} />
         </div>
-        {reduce ? null : <HeroFlowCanvas targetRef={heroRef} />}
         <motion.div
           className="lr-hero__content"
           variants={heroStagger}

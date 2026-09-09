@@ -16,7 +16,8 @@ import { ScrollToTop } from './components/layout/ScrollToTop';
 import { BackToTop } from './components/layout/BackToTop';
 import DashboardToggle from './components/admin/DashboardToggle';
 import { StateEligibilityBanner } from './components/blocks/StateEligibilityBanner';
-import { ZohoSalesIQMonitor } from './components/ZohoSalesIQMonitor';
+// Temporarily disabled while reviewing the landing redesign
+// import { ZohoSalesIQMonitor } from './components/ZohoSalesIQMonitor';
 import { SilentErrorBoundary } from './components/ErrorBoundary';
 import LazyLoadErrorBoundary from './components/LazyLoadErrorBoundary';
 import { Toaster } from 'sonner';
@@ -881,9 +882,10 @@ const App = () => {
             <ConditionalFooter />
             <BackToTop />
             <DashboardToggle />
+            {/* Temporarily disabled while reviewing the landing redesign
             <SilentErrorBoundary>
               <ZohoSalesIQMonitor />
-            </SilentErrorBoundary>
+            </SilentErrorBoundary> */}
           </div>
             </AnalyticsTracker>
             </Router>

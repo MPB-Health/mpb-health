@@ -421,7 +421,7 @@ export function QuickRateEstimateForm() {
           <div className="qre__step">
             <div className="qre__eyebrow">STEP 2 OF 4</div>
             <h3 className="qre__step-title">What matters most?</h3>
-            <p className="qre__helper">We'll match you to your best membership</p>
+            <p className="qre__helper">We&rsquo;ll match you to your best membership</p>
             <p className="qre__helper">
               Tap to select — pick 1–3 that matter most. All memberships include $0 virtual care.
             </p>
@@ -481,7 +481,9 @@ export function QuickRateEstimateForm() {
             </div>
             <div className="qre__privacy">
               <Lock size={14} />
-              <span>We'll never spam you. Your info is only used to send your rate comparison.</span>
+              <span>
+                We&rsquo;ll never spam you. Your info is only used to send your rate comparison.
+              </span>
             </div>
           </div>
         )}

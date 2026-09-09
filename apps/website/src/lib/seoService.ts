@@ -45,7 +45,7 @@ export function getStructuredData(type: 'organization' | 'faq' | 'article', data
       name: 'MPB Health',
       description: 'Community-based health sharing organization offering affordable alternatives to traditional health insurance',
       url: baseUrl,
-      logo: `${baseUrl}/assets/MPB-Health-No-background.png?v=2`,
+      logo: `${baseUrl}/assets/brand/mpb-tile.png`,
       telephone: '(855) 816-4650',
       email: 'info@mympb.com',
       foundingDate: '2011',
@@ -86,7 +86,7 @@ export function getStructuredData(type: 'organization' | 'faq' | 'article', data
       '@type': 'Article',
       headline: data.title,
       description: data.description,
-      image: data.image || `${baseUrl}/assets/MPB-Health-No-background.png?v=2`,
+      image: data.image || `${baseUrl}/assets/brand/mpb-tile.png`,
       author: {
         '@type': 'Organization',
         name: 'MPB Health'
@@ -96,7 +96,7 @@ export function getStructuredData(type: 'organization' | 'faq' | 'article', data
         name: 'MPB Health',
         logo: {
           '@type': 'ImageObject',
-          url: `${baseUrl}/assets/MPB-Health-No-background.png?v=2`
+          url: `${baseUrl}/assets/brand/mpb-tile.png`
         }
       },
       datePublished: data.publishedDate,

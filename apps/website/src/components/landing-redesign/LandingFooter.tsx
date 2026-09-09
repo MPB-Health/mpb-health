@@ -1,23 +1,54 @@
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Phone, Mail, MapPin } from 'lucide-react';
 import './landing-redesign.css';
 
 export function LandingFooter() {
+  // motion.dev-style footer reveal: the footer is fixed to the viewport
+  // bottom and clipped to a spacer whose height mirrors it, so the end of
+  // the page scrolls up like a curtain and uncovers the footer beneath.
+  // Until the first measurement lands the footer renders in normal flow.
+  const fixedRef = useRef<HTMLDivElement>(null);
+  const [height, setHeight] = useState<number | null>(null);
+
+  useEffect(() => {
+    const el = fixedRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setHeight(el.offsetHeight));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  return (
+    <div
+      className={`lr-footer-reveal${height ? ' is-ready' : ''}`}
+      style={height ? { height } : undefined}
+    >
+      <div className="lr-footer-reveal__fixed" ref={fixedRef}>
+        <FooterBody />
+      </div>
+    </div>
+  );
+}
+
+function FooterBody() {
   return (
     <footer className="lr-footer">
       <div className="lr-footer__hairline" />
       <div className="lr-inner">
         <div className="lr-footer__top">
           <div>
-            <img
-              className="lr-footer__logo"
-              src="/assets/logo.png"
-              alt="MPB Health"
-              width={500}
-              height={120}
-              decoding="async"
-              loading="lazy"
-            />
+            <div className="lr-footer__brand">
+              <img
+                className="lr-footer__logo"
+                src="/assets/brand/mpb-wordmark-white.png"
+                alt="MPB Health"
+                width={706}
+                height={204}
+                decoding="async"
+                loading="lazy"
+              />
+            </div>
             <a
               className="lr-footer__bbb"
               href="https://www.bbb.org/us/fl/boca-raton/profile/health-insurance/mpowering-benefits-inc-0633-92042549/#sealclick"

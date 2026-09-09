@@ -93,7 +93,7 @@ export const SEOHead: React.FC<SEOHeadProps> = ({
   const canonicalUrl = seo?.canonicalUrl || 'https://mpb.health';
   const ogTitle = seo?.ogTitle || title;
   const ogDescription = seo?.ogDescription || description;
-  const ogImage = seo?.ogImage || 'https://mpb.health/assets/MPB-Health-No-background.png?v=2';
+  const ogImage = seo?.ogImage || 'https://mpb.health/assets/brand/mpb-tile.png';
   const robots = seo?.robots || 'index, follow';
   const hasStaticPrerender = pathname ? isPrerenderedRoute(pathname) : false;
 
@@ -244,8 +244,8 @@ export const SEOHead: React.FC<SEOHeadProps> = ({
         </>
       )}
       <meta property="og:site_name" content="MPB Health" />
-      <meta property="og:image:width" content="1200" />
-      <meta property="og:image:height" content="630" />
+      <meta property="og:image:width" content="800" />
+      <meta property="og:image:height" content="800" />
       <meta property="og:locale" content="en_US" />
 
       {/* Twitter Card */}

@@ -16,7 +16,7 @@ function entry(route, meta) {
     route,
     {
       robots: 'index, follow',
-      ogImage: `${SITE}/assets/MPB-Health-No-background.png?v=2`,
+      ogImage: `${SITE}/assets/brand/mpb-tile.png`,
       canonicalUrl: canonical,
       ogTitle: meta.ogTitle || meta.title,
       ogDescription: meta.ogDescription || meta.description,

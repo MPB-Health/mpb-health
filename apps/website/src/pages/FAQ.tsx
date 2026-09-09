@@ -2,12 +2,18 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { SEOHead } from '../components/SEOHead';
-import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '../components/ui/Accordion';
-import { Button } from '../components/ui/button';
-import { Phone } from 'lucide-react';
 import { sanitizeHtml } from '@mpbhealth/utils';
 import { useFAQ } from '../hooks/useFAQ';
 import { generateFAQSchema, faqPagePaaQuestions } from '../lib/schemaMarkup';
+import {
+  AuroraBand,
+  FaqList,
+  LandingPage,
+  PageHero,
+  Reveal,
+  SectionHead,
+  Sheet,
+} from '../components/landing-redesign/page-kit';
 
 /** Aligned with About Us / marketing FAQ; also seeded as category `mpb-faq-main` in DB. */
 const FALLBACK_FAQS = [
@@ -63,6 +69,26 @@ const FALLBACK_FAQS = [
   },
 ];
 
+/** Multi-paragraph fallback answers keep their breaks inside the native details skin. */
+const FALLBACK_ITEMS = FALLBACK_FAQS.map(({ question, answer }) => {
+  const parts = answer.split('\n\n');
+  return {
+    question,
+    answer:
+      parts.length === 1 ? (
+        answer
+      ) : (
+        <>
+          {parts.map((p) => (
+            <p key={p} className="lr-body">
+              {p}
+            </p>
+          ))}
+        </>
+      ),
+  };
+});
+
 const FAQ: React.FC = () => {
   const { faqItems, loading } = useFAQ();
   const paaFaqSchema = generateFAQSchema(faqPagePaaQuestions);
@@ -76,6 +102,13 @@ const FAQ: React.FC = () => {
       }))
     : FALLBACK_FAQS;
 
+  const databaseItems = hasDatabaseFAQs
+    ? faqItems.map((item) => ({
+        question: item.title,
+        answer: <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(item.content_html) }} />,
+      }))
+    : [];
+
   return (
     <>
       <SEOHead
@@ -88,95 +121,100 @@ const FAQ: React.FC = () => {
         <script type="application/ld+json">{JSON.stringify(paaFaqSchema)}</script>
       </Helmet>
 
-      <div className="min-h-screen bg-gradient-to-b from-neutral-50 to-white">
-        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
-          <div className="text-center mb-16">
-            <h1 className="text-display-lg font-bold text-neutral-900 mb-6">
-              Frequently Asked Questions
-            </h1>
-            <p className="text-xl text-neutral-600 max-w-2xl mx-auto">
-              Get clear answers to common questions about health sharing and membership.
-              Still have questions? Our team is here to help.
-            </p>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-sm border border-neutral-200 p-6 sm:p-8 mb-12">
-            {loading ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-              </div>
-            ) : hasDatabaseFAQs ? (
-              <Accordion type="single">
-                {faqItems.map((item) => (
-                  <AccordionItem key={item.id} value={`faq-${item.id}`}>
-                    <AccordionTrigger>
-                      <span className="text-left font-semibold text-neutral-900 text-lg">
-                        {item.title}
-                      </span>
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      <div
-                        className="text-neutral-700 leading-relaxed text-base prose prose-neutral max-w-none"
-                        dangerouslySetInnerHTML={{ __html: sanitizeHtml(item.content_html) }}
-                      />
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
-            ) : (
-              <Accordion type="single">
-                {FALLBACK_FAQS.map((faq, index) => (
-                  <AccordionItem key={index} value={`faq-${index}`}>
-                    <AccordionTrigger>
-                      <span className="text-left font-semibold text-neutral-900 text-lg">
-                        {faq.question}
-                      </span>
-                    </AccordionTrigger>
-                    <AccordionContent>
-                      {faq.answer.split('\n\n').map((paragraph, pIndex) => (
-                        <p
-                          key={pIndex}
-                          className="text-neutral-700 leading-relaxed text-base mb-4 last:mb-0"
-                        >
-                          {paragraph}
-                        </p>
-                      ))}
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
-            )}
-          </div>
-
-          <div className="bg-gradient-to-r from-primary/5 to-primary/10 rounded-2xl p-8 sm:p-12 text-center">
-            <h2 className="text-2xl font-bold text-neutral-900 mb-4">
-              Still Have Questions?
-            </h2>
-            <p className="text-neutral-700 mb-8 max-w-xl mx-auto">
-              Our member specialists are ready to help you understand how health sharing
-              can work for you and your family.
-            </p>
-
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <a
-                href="tel:8558164650"
-                className="flex items-center space-x-2 text-neutral-700 hover:text-primary transition-colors"
-              >
-                <Phone className="h-5 w-5" />
-                <span className="font-medium">(855) 816-4650</span>
-              </a>
-
-              <span className="hidden sm:block text-neutral-400">|</span>
-
-              <Link to="/get-started">
-                <Button size="lg" trackingName="FAQ Get Quote" trackingLocation="faq-page">
-                  Get Free Quote
-                </Button>
+      <LandingPage>
+        <PageHero
+          ariaLabel="Help center"
+          align="center"
+          kicker="Help center"
+          title="Questions, answered."
+          lede="Straight answers about health sharing, memberships and what it's like to be a member."
+          actions={
+            <>
+              <Link className="lr-btn lr-btn--white" to="/get-started">
+                Get your quote
               </Link>
+              <a className="lr-btn lr-btn--glass" href="tel:+18558164650">
+                Call (855) 816-4650
+              </a>
+            </>
+          }
+        />
+
+        <Sheet>
+          <section className="lr-sec lr-sec--top" aria-label="Frequently asked questions">
+            <div className="lr-inner">
+              <div className="lr-faq__grid">
+                <Reveal>
+                  <h2 className="lr-faq__title">
+                    Frequently
+                    <br />
+                    Asked Questions
+                  </h2>
+                  <p className="lr-body" style={{ marginTop: '1.2rem', maxWidth: '26rem' }}>
+                    Get clear answers to common questions about health sharing and membership. Still have
+                    questions? Our team is here to help.
+                  </p>
+                </Reveal>
+                <Reveal delay={0.1}>
+                  {loading ? (
+                    <p className="lr-body" role="status">
+                      Loading…
+                    </p>
+                  ) : hasDatabaseFAQs ? (
+                    <FaqList items={databaseItems} />
+                  ) : (
+                    <FaqList items={FALLBACK_ITEMS} />
+                  )}
+                </Reveal>
+              </div>
             </div>
-          </div>
-        </div>
-      </div>
+          </section>
+
+          <section className="lr-sec lr-sec--soft" aria-label="Still have questions">
+            <div className="lr-inner">
+              <SectionHead
+                eyebrow="Talk to us"
+                title="Still have questions?"
+                lede="Our member specialists are ready to help you understand"
+                ledeMuted="how health sharing can work for you and your family."
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    justifyContent: 'center',
+                    gap: '0.8rem',
+                    marginTop: '0.4rem',
+                  }}
+                >
+                  <a className="lr-btn lr-btn--navy" href="tel:+18558164650">
+                    Call (855) 816-4650
+                  </a>
+                  <Link className="lr-btn lr-btn--ghost" to="/contact">
+                    Contact us
+                  </Link>
+                </div>
+              </SectionHead>
+            </div>
+          </section>
+
+          <AuroraBand
+            title="Ready to see what you'd contribute?"
+            lede="Compare every membership priced for your household in about 30 seconds."
+            actions={
+              <>
+                <Link className="lr-btn lr-btn--white" to="/get-started">
+                  Get your quote
+                </Link>
+                <a className="lr-btn lr-btn--glass" href="tel:+18558164650">
+                  Call (855) 816-4650
+                </a>
+              </>
+            }
+            note="MPB Health memberships are not insurance and do not guarantee payment of medical expenses. Eligible expenses are shared according to the membership guidelines."
+          />
+        </Sheet>
+      </LandingPage>
     </>
   );
 };

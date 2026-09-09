@@ -260,15 +260,25 @@ const AnalyticsTracker: React.FC<{ children: React.ReactNode }> = ({ children })
 const isHomePath = (pathname: string) => pathname === '/';
 
 // Pages that render the landing-redesign header themselves (no global header, no top padding)
+const LANDING_CHROME_PATHS = new Set([
+  '/how-it-works',
+  '/advisor-directory',
+  '/features',
+  '/resources',
+  '/blog',
+  '/events',
+  '/member-stories',
+  '/individuals-and-families',
+  '/businesses-and-organizations',
+  '/plans',
+  '/compare-plans',
+  '/get-a-quote',
+  '/about-us',
+  '/contact',
+  '/faq',
+]);
 const usesLandingChrome = (pathname: string) =>
-  isHomePath(pathname) ||
-  pathname === '/how-it-works' ||
-  pathname === '/advisor-directory' ||
-  pathname === '/features' ||
-  pathname === '/resources' ||
-  pathname === '/blog' ||
-  pathname === '/events' ||
-  pathname === '/member-stories';
+  isHomePath(pathname) || LANDING_CHROME_PATHS.has(pathname.replace(/\/+$/, '') || '/');
 
 const ConditionalHeader: React.FC = () => {
   const location = useLocation();

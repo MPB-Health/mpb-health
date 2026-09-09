@@ -1,10 +1,21 @@
 import React from 'react';
-import { Phone, Mail, MapPin, Clock } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Clock, Mail, MapPin, Phone } from 'lucide-react';
 import { createClientLogger } from '@mpbhealth/utils';
 import { SEOHead } from '../components/SEOHead';
 import { ContactForm } from '../components/forms/ContactForm';
+import {
+  AuroraBand,
+  LandingPage,
+  PageHero,
+  Reveal,
+  SectionHead,
+  Sheet,
+} from '../components/landing-redesign/page-kit';
 
 const log = createClientLogger('Contact');
+
+const BOOKING_URL = 'https://outlook.office.com/book/SpeakWithaAdvisor@NETORG6712533.onmicrosoft.com/';
 
 const Contact: React.FC = () => {
   const handleFormSubmit = (formData: any) => {
@@ -15,178 +26,141 @@ const Contact: React.FC = () => {
     <>
       <SEOHead pathname="/contact" />
 
-      {/* Hero Section - Same style as About Us */}
-      <section className="relative pt-20 pb-16 overflow-hidden bg-gradient-to-br from-blue-50 via-white to-cyan-50">
-        <div
-          className="absolute inset-0 opacity-20"
-          style={{
-            backgroundImage: "url('/assets/ContactPicture.jpg')",
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat'
-          }}
+      <LandingPage>
+        <PageHero
+          ariaLabel="Contact MPB Health"
+          align="center"
+          kicker="Contact"
+          title="Talk to a real person."
+          lede="Have questions about medical cost sharing? Our experienced healthcare advisors are here to help you find an affordable, comprehensive membership for you and your family."
+          rail={[
+            { value: 'Expert', label: 'Advisors' },
+            { value: '24 hr', label: 'Response' },
+            { value: '1:1', label: 'Personalized support' },
+          ]}
         />
-        <div className="absolute inset-0 bg-gradient-to-br from-white/60 via-white/40 to-transparent" />
 
-        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center animate-fade-in">
-            <h1 className="text-display-lg sm:text-display-xl font-bold text-neutral-900 mb-6 text-balance">
-              <span className="bg-gradient-to-r from-neutral-900 via-primary to-neutral-800 bg-clip-text text-transparent">
-                Get in
-              </span>{" "}
-              <span className="bg-gradient-to-r from-cyan-600 via-[#a3cc43] to-blue-600 bg-clip-text text-transparent">
-                Touch
-              </span>
-            </h1>
-            <p className="text-xl text-neutral-600 mb-12 max-w-3xl mx-auto leading-relaxed">
-              Have questions about medical cost sharing? Our experienced healthcare advisors are here to help you find an affordable, comprehensive membership for you and your family.
-            </p>
-
-            {/* Stats */}
-            <div className="grid grid-cols-3 gap-8 max-w-2xl mx-auto animate-slide-up animate-delayed-2">
-              <div className="text-center">
-                <div className="flex justify-center mb-2">
-                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                    <Phone className="h-5 w-5 text-primary" />
+        <Sheet>
+          <section className="lr-sec lr-sec--top" aria-label="Send us a message">
+            <div className="lr-inner">
+              <div className="lr-formgrid">
+                <Reveal>
+                  <div className="lr-panel lr-formwrap">
+                    <ContactForm onSubmit={handleFormSubmit} />
                   </div>
-                </div>
-                <div className="text-2xl font-bold text-neutral-900 tabular-nums mb-1">
-                  Expert
-                </div>
-                <div className="text-sm text-neutral-600">Advisors</div>
-              </div>
-              <div className="text-center">
-                <div className="flex justify-center mb-2">
-                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                    <Clock className="h-5 w-5 text-primary" />
-                  </div>
-                </div>
-                <div className="text-2xl font-bold text-neutral-900 tabular-nums mb-1">
-                  24 Hour
-                </div>
-                <div className="text-sm text-neutral-600">Response</div>
-              </div>
-              <div className="text-center">
-                <div className="flex justify-center mb-2">
-                  <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                    <Mail className="h-5 w-5 text-primary" />
-                  </div>
-                </div>
-                <div className="text-2xl font-bold text-neutral-900 tabular-nums mb-1">
-                  Personalized
-                </div>
-                <div className="text-sm text-neutral-600">Support</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+                </Reveal>
 
-      <div className="bg-white">
-        {/* Contact Information & Form Section */}
-        <section className="py-16 sm:py-20 bg-gradient-to-br from-blue-50 via-white to-cyan-50">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="grid lg:grid-cols-2 gap-12">
-              {/* Contact Information */}
-              <div>
-                <h2 className="text-3xl sm:text-4xl font-bold text-neutral-900 mb-8">
-                  Contact Information
-                </h2>
-
-                <div className="space-y-6">
-                  {/* Phone */}
-                  <div className="flex items-start gap-4 p-6 bg-white rounded-2xl shadow-md hover:shadow-lg transition-all duration-300">
-                    <div className="flex-shrink-0">
-                      <div className="inline-flex w-14 h-14 rounded-xl bg-primary/10 items-center justify-center">
-                        <Phone className="h-7 w-7 text-primary" />
+                <Reveal delay={0.1}>
+                  <aside className="lr-aside" aria-label="Contact information">
+                    <div className="lr-contact">
+                      <div>
+                        <span className="lr-cell__tile">
+                          <Phone strokeWidth={1.8} />
+                        </span>
+                        <div>
+                          <h3>Phone</h3>
+                          <a href="tel:+18558164650">(855) 816-4650</a>
+                        </div>
+                      </div>
+                      <div>
+                        <span className="lr-cell__tile">
+                          <Mail strokeWidth={1.8} />
+                        </span>
+                        <div>
+                          <h3>Email</h3>
+                          <a href="mailto:info@mympb.com">info@mympb.com</a>
+                        </div>
+                      </div>
+                      <div>
+                        <span className="lr-cell__tile">
+                          <MapPin strokeWidth={1.8} />
+                        </span>
+                        <div>
+                          <h3>Office</h3>
+                          <p>
+                            5301 N Federal Hwy Suite 155
+                            <br />
+                            Boca Raton, FL 33487
+                          </p>
+                        </div>
+                      </div>
+                      <div>
+                        <span className="lr-cell__tile">
+                          <Clock strokeWidth={1.8} />
+                        </span>
+                        <div>
+                          <h3>Hours</h3>
+                          <p>
+                            Monday – Friday: 9:00 AM – 5:00 PM
+                            <br />
+                            Saturday – Sunday: Closed
+                          </p>
+                        </div>
                       </div>
                     </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-neutral-900 mb-1">Phone</h3>
-                      <a href="tel:8558164650" className="text-primary hover:text-primary/80 font-medium">
-                        (855) 816-4650
-                      </a>
-                    </div>
-                  </div>
 
-                  {/* Email */}
-                  <div className="flex items-start gap-4 p-6 bg-white rounded-2xl shadow-md hover:shadow-lg transition-all duration-300">
-                    <div className="flex-shrink-0">
-                      <div className="inline-flex w-14 h-14 rounded-xl bg-accent/10 items-center justify-center">
-                        <Mail className="h-7 w-7 text-accent" />
-                      </div>
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-neutral-900 mb-1">Email</h3>
-                      <a href="mailto:info@mympb.com" className="text-accent hover:text-accent/80 font-medium">
-                        info@mympb.com
-                      </a>
-                    </div>
-                  </div>
-
-                  {/* Address */}
-                  <div className="flex items-start gap-4 p-6 bg-white rounded-2xl shadow-md hover:shadow-lg transition-all duration-300">
-                    <div className="flex-shrink-0">
-                      <div className="inline-flex w-14 h-14 rounded-xl bg-success/10 items-center justify-center">
-                        <MapPin className="h-7 w-7 text-success" />
-                      </div>
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-neutral-900 mb-1">Office</h3>
-                      <p className="text-neutral-600">
-                        5301 N Federal Hwy Suite 155<br />
-                        Boca Raton, FL 33487
+                    <div className="lr-panel lr-panel--soft">
+                      <h3 className="lr-panel__title">Prefer to book a time?</h3>
+                      <p className="lr-body">
+                        Pick a slot that suits you and an advisor will call you back. No pressure, no
+                        scripts.
+                      </p>
+                      <p style={{ margin: '1.2rem 0 0' }}>
+                        <a
+                          className="lr-btn lr-btn--navy lr-btn--sm"
+                          href={BOOKING_URL}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          Schedule a call
+                        </a>
                       </p>
                     </div>
-                  </div>
-
-                  {/* Hours */}
-                  <div className="flex items-start gap-4 p-6 bg-white rounded-2xl shadow-md hover:shadow-lg transition-all duration-300">
-                    <div className="flex-shrink-0">
-                      <div className="inline-flex w-14 h-14 rounded-xl bg-primary/10 items-center justify-center">
-                        <Clock className="h-7 w-7 text-primary" />
-                      </div>
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-neutral-900 mb-1">Hours</h3>
-                      <p className="text-neutral-600">
-                        Monday - Friday: 9:00 AM - 5:00 PM<br />
-                        Saturday - Sunday: Closed
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Contact Form */}
-              <div>
-                <ContactForm onSubmit={handleFormSubmit} />
+                  </aside>
+                </Reveal>
               </div>
             </div>
-          </div>
-        </section>
+          </section>
 
-        {/* Map Section */}
-        <section className="py-16 sm:py-20">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <h2 className="text-3xl sm:text-4xl font-bold text-neutral-900 mb-8 text-center">
-              Visit Our Office
-            </h2>
-            <div className="rounded-2xl overflow-hidden shadow-xl">
-              <iframe
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3570.887595886799!2d-80.08905842416968!3d26.358597377005556!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x88d8e2c3e3e3e3e3%3A0x1234567890abcdef!2s5301%20N%20Federal%20Hwy%20Suite%20155%2C%20Boca%20Raton%2C%20FL%2033487!5e0!3m2!1sen!2sus!4v1635789012345"
-                width="100%"
-                height="450"
-                style={{ border: 0 }}
-                allowFullScreen
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-                title="MPB Health Office Location"
+          <section className="lr-sec lr-sec--soft" aria-label="Visit our office">
+            <div className="lr-inner">
+              <SectionHead
+                eyebrow="Visit us"
+                title="Our door is open."
+                lede="5301 N Federal Hwy, Suite 155, Boca Raton."
+                ledeMuted="Weekdays 9 to 5."
               />
+              <Reveal>
+                <div className="lr-map">
+                  <iframe
+                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3570.887595886799!2d-80.08905842416968!3d26.358597377005556!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x88d8e2c3e3e3e3e3%3A0x1234567890abcdef!2s5301%20N%20Federal%20Hwy%20Suite%20155%2C%20Boca%20Raton%2C%20FL%2033487!5e0!3m2!1sen!2sus!4v1635789012345"
+                    allowFullScreen
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    title="MPB Health Office Location"
+                  />
+                </div>
+              </Reveal>
             </div>
-          </div>
-        </section>
-      </div>
+          </section>
+
+          <AuroraBand
+            title="Not sure where to start? Start with a conversation."
+            lede="Our advisors answer questions honestly and help you find the membership that fits your family."
+            actions={
+              <>
+                <a className="lr-btn lr-btn--white" href="tel:+18558164650">
+                  Call (855) 816-4650
+                </a>
+                <Link className="lr-btn lr-btn--glass" to="/get-a-quote">
+                  Get your quote
+                </Link>
+              </>
+            }
+            note="MPB Health memberships are not insurance and do not guarantee payment of medical expenses. Eligible expenses are shared according to the membership guidelines."
+          />
+        </Sheet>
+      </LandingPage>
     </>
   );
 };

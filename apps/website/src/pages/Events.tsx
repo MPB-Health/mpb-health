@@ -2,8 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { Calendar, Users, Award, MapPin } from 'lucide-react';
-import { LandingHeader } from '../components/landing-redesign/LandingHeader';
-import { LandingFooter } from '../components/landing-redesign/LandingFooter';
+import { LandingPage, PageHero, Sheet } from '../components/landing-redesign/page-kit';
 import { supabase, CmsEvent } from '../lib/supabase';
 import { useCmsLive } from '../hooks/useCmsLive';
 import '../components/landing-redesign/landing-redesign.css';
@@ -53,44 +52,33 @@ const Events: React.FC = () => {
         />
       </Helmet>
 
-      <div className="lr hiw evt">
-        {/* ── Hero ─────────────────────────────────────────────────── */}
-        <section className="hiw-hero" aria-label="MPB Health events">
-          <LandingHeader />
-          <div className="hiw-hero__content">
-            <div className="hiw-hero__copy">
-              <p className="evt-label">Events</p>
-              <h1 className="hiw-hero__title">MPB Health Events &amp; Celebrations</h1>
-              <p className="hiw-hero__lede">
-                Join us as we celebrate excellence, build connections, and shape the future of
-                community healthcare. Discover our latest events and company culture.
-              </p>
-              <div className="evt-hero__stats">
-                <span className="evt-stat">
-                  <Calendar aria-hidden="true" />
-                  Year-Round Events
-                </span>
-                <span className="evt-stat">
-                  <Users aria-hidden="true" />
-                  Community Focused
-                </span>
-                <span className="evt-stat">
-                  <Award aria-hidden="true" />
-                  Excellence Celebrated
-                </span>
-              </div>
-            </div>
-            <img
-              className="hiw-hero__img"
-              src="/assets/delegates-networking.jpg"
-              alt="Delegates networking at an MPB Health event"
-              width={1600}
-              height={1067}
-              fetchPriority="high"
-              decoding="async"
-            />
-          </div>
-        </section>
+      <LandingPage className="hiw evt">
+        <PageHero
+          ariaLabel="MPB Health events"
+          kicker="Events"
+          title={
+            <>
+              Events &amp;
+              <br />
+              celebrations.
+            </>
+          }
+          lede="Join us as we celebrate excellence, build connections, and shape the future of community healthcare."
+          rail={[
+            { value: 'All year', label: 'Events and gatherings' },
+            { value: 'Community', label: 'Focused' },
+            { value: 'Excellence', label: 'Celebrated' },
+          ]}
+          media={{
+            type: 'image',
+            src: '/assets/delegates-networking.jpg',
+            alt: 'Delegates networking at an MPB Health event',
+            width: 1600,
+            height: 1067,
+          }}
+        />
+
+        <Sheet>
 
         {/* ── Latest events ────────────────────────────────────────── */}
         <section className="hiw-section" aria-label="Latest events">
@@ -169,8 +157,8 @@ const Events: React.FC = () => {
         </section>
 
         {/* ── Footer (same as landing page) ────────────────────────── */}
-        <LandingFooter />
-      </div>
+        </Sheet>
+      </LandingPage>
     </>
   );
 };

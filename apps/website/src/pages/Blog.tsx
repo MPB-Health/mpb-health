@@ -2,8 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { BookOpen, TrendingUp, Heart, Calendar, Clock, ArrowRight } from 'lucide-react';
-import { LandingHeader } from '../components/landing-redesign/LandingHeader';
-import { LandingFooter } from '../components/landing-redesign/LandingFooter';
+import { LandingPage, PageHero, Sheet } from '../components/landing-redesign/page-kit';
 import { supabase, BlogArticle } from '../lib/supabase';
 import { useCmsLive } from '../hooks/useCmsLive';
 import '../components/landing-redesign/landing-redesign.css';
@@ -52,43 +51,33 @@ const Blog: React.FC = () => {
         />
       </Helmet>
 
-      <div className="lr hiw blg">
-        {/* ── Hero ─────────────────────────────────────────────────── */}
-        <section className="hiw-hero" aria-label="Healthcare blog">
-          <LandingHeader />
-          <div className="hiw-hero__content">
-            <div className="hiw-hero__copy">
-              <p className="blg-label">Healthcare Blog</p>
-              <h1 className="hiw-hero__title">Healthcare Insights &amp; Wellness Tips</h1>
-              <p className="hiw-hero__lede">
-                Expert insights on healthcare, wellness, and living your healthiest life.
-              </p>
-              <div className="blg-hero__stats">
-                <span className="blg-stat">
-                  <BookOpen aria-hidden="true" />
-                  {blogPosts.length}+ Articles
-                </span>
-                <span className="blg-stat">
-                  <TrendingUp aria-hidden="true" />
-                  Weekly Updates
-                </span>
-                <span className="blg-stat">
-                  <Heart aria-hidden="true" />
-                  Expert Advice
-                </span>
-              </div>
-            </div>
-            <img
-              className="hiw-hero__img"
-              src="/assets/newsletter-blog-images-2.jpg"
-              alt="A group of hands holding a red heart together"
-              width={500}
-              height={378}
-              fetchPriority="high"
-              decoding="async"
-            />
-          </div>
-        </section>
+      <LandingPage className="hiw blg">
+        <PageHero
+          ariaLabel="Healthcare blog"
+          kicker="Healthcare blog"
+          title={
+            <>
+              Insights for
+              <br />
+              healthier living.
+            </>
+          }
+          lede="Expert insights on healthcare, wellness, and living your healthiest life."
+          rail={[
+            { value: `${blogPosts.length}+`, label: 'Articles' },
+            { value: 'Weekly', label: 'New updates' },
+            { value: 'Expert', label: 'Advice you can use' },
+          ]}
+          media={{
+            type: 'image',
+            src: '/assets/newsletter-blog-images-2.jpg',
+            alt: 'A group of hands holding a red heart together',
+            width: 500,
+            height: 378,
+          }}
+        />
+
+        <Sheet>
 
         {/* ── Latest articles ──────────────────────────────────────── */}
         <section className="hiw-section" aria-label="Latest articles">
@@ -166,8 +155,8 @@ const Blog: React.FC = () => {
         </section>
 
         {/* ── Footer (same as landing page) ────────────────────────── */}
-        <LandingFooter />
-      </div>
+        </Sheet>
+      </LandingPage>
     </>
   );
 };

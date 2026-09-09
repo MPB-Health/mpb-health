@@ -13,7 +13,7 @@
   --ad-pale-blue: #e8f1fb;
   --ad-pale-green: #e7f4ea;
   --ad-card-gradient: linear-gradient(105deg, #cbd3f1 0%, #c3e6f4 32%, #c2eedd 62%, #edf5c2 100%);
-  --ad-font-sans: 'Segoe UI', system-ui, sans-serif;
+  --ad-font-sans: var(--lr-font);
   --ad-inner: 1440px;
   --ad-pad-x: clamp(1rem, 3vw, 3.25rem);
   --ad-radius: clamp(1.25rem, 2vw, 2rem);
@@ -79,9 +79,7 @@
   --hero-copy-inset: 0px;
 }
 
-.ad .lr-header__list {
-  background: rgba(10, 42, 74, 0.5);
-}
+
 
 @media (max-width: 1023px) {
   .ad .lr-header__burger span {
@@ -158,13 +156,13 @@
 
 /* ——— Main content ——— */
 .ad-main {
-  padding: 0 var(--ad-pad-x) clamp(3rem, 5vw, 4.5rem);
+  padding: clamp(3rem, 5vw, 4.5rem) var(--ad-pad-x);
 }
 
 /* ——— Filter card (frosted card, echoes the front-page quote form) ——— */
 .ad-filters {
   position: relative;
-  margin-top: clamp(-3.5rem, -4vw, -2.75rem);
+  margin-top: 0;
   padding: clamp(1rem, 1.6vw, 1.5rem);
   border-radius: var(--ad-radius);
   background: rgba(255, 255, 255, 0.94);

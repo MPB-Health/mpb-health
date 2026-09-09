@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { BookOpen, FileText, ArrowRight } from 'lucide-react';
-import { LandingHeader } from '../components/landing-redesign/LandingHeader';
-import { LandingFooter } from '../components/landing-redesign/LandingFooter';
+import { LandingPage, PageHero, Sheet } from '../components/landing-redesign/page-kit';
 import { useResources } from '../hooks/useResources';
 import { ResourceFilters as IResourceFilters } from '../lib/supabase';
 import { ResourceFilters } from '../components/resources/ResourceFilters';
@@ -43,47 +42,47 @@ export const ResourceLibrary: React.FC = () => {
         />
       </Helmet>
 
-      <div className="lr hiw rl">
-        {/* ── Hero ─────────────────────────────────────────────────── */}
-        <section className="hiw-hero" aria-label="Resource library">
-          <LandingHeader />
-          <div className="hiw-hero__content">
-            <div className="hiw-hero__copy">
-              <p className="rl-label">Resource Library</p>
-              <h1 className="hiw-hero__title">Your Complete Resource Hub</h1>
-              <p className="hiw-hero__lede">
-                Access guides, forms, and educational materials to support your health sharing
-                journey.
-              </p>
-              <div className="rl-hero__actions">
-                <button type="button" className="rl-btn rl-btn--primary" onClick={scrollToGrid}>
-                  Browse Resources
-                  <ArrowRight />
-                </button>
-                <button
-                  type="button"
-                  className="rl-btn rl-btn--ghost"
-                  onClick={() => {
-                    setFilters({ ...filters, types: ['Form'] });
-                    setTimeout(scrollToGrid, 100);
-                  }}
-                >
-                  <FileText />
-                  View Forms
-                </button>
-              </div>
-            </div>
-            <img
-              className="hiw-hero__img"
-              src="/assets/healthcare-images-for-healthcare-blog-website2-980x653.png"
-              alt="Palm trees in front of the Miami skyline at sunset"
-              width={980}
-              height={653}
-              fetchPriority="high"
-              decoding="async"
-            />
-          </div>
-        </section>
+      <LandingPage className="hiw rl">
+        <PageHero
+          ariaLabel="Resource library"
+          kicker="Resource library"
+          title={
+            <>
+              Your complete
+              <br />
+              resource hub.
+            </>
+          }
+          lede="Guides, forms, and educational materials to support your health sharing journey."
+          actions={
+            <>
+              <button type="button" className="lr-btn lr-btn--white" onClick={scrollToGrid}>
+                Browse resources
+                <ArrowRight />
+              </button>
+              <button
+                type="button"
+                className="lr-btn lr-btn--glass"
+                onClick={() => {
+                  setFilters({ ...filters, types: ['Form'] });
+                  setTimeout(scrollToGrid, 100);
+                }}
+              >
+                <FileText />
+                View forms
+              </button>
+            </>
+          }
+          media={{
+            type: 'image',
+            src: '/assets/healthcare-images-for-healthcare-blog-website2-980x653.png',
+            alt: 'Palm trees in front of the Miami skyline at sunset',
+            width: 980,
+            height: 653,
+          }}
+        />
+
+        <Sheet>
 
         {/* ── Featured resources ───────────────────────────────────── */}
         {featuredResources.length > 0 && (
@@ -207,8 +206,8 @@ export const ResourceLibrary: React.FC = () => {
         </section>
 
         {/* ── Footer (same as landing page) ────────────────────────── */}
-        <LandingFooter />
-      </div>
+        </Sheet>
+      </LandingPage>
     </>
   );
 };

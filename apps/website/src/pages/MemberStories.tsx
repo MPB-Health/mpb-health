@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Play, Star, TrendingUp, Users } from 'lucide-react';
-import { LandingHeader } from '../components/landing-redesign/LandingHeader';
-import { LandingFooter } from '../components/landing-redesign/LandingFooter';
+import { LandingPage, PageHero, Sheet } from '../components/landing-redesign/page-kit';
 import { TestimonialShowcase } from '../components/blocks/TestimonialShowcase';
 import '../components/landing-redesign/landing-redesign.css';
 import './how-it-works.css';
@@ -114,42 +113,31 @@ const MemberStories: React.FC = () => {
         <meta property="og:type" content="website" />
       </Helmet>
 
-      <div className="lr hiw ms">
-        {/* ── Hero ─────────────────────────────────────────────────── */}
-        <section className="hiw-hero" aria-label="Member stories">
-          <LandingHeader />
-          <div className="hiw-hero__content">
-            <div className="hiw-hero__copy">
-              <p className="ms-label">Member Stories</p>
-              <h1 className="hiw-hero__title">Real Families. Real Savings.</h1>
-              <p className="hiw-hero__lede">
-                Hear directly from members whose lives have been changed by community health
-                sharing.
-              </p>
-              <div className="ms-hero__stats">
-                <span className="ms-stat">
-                  <Star aria-hidden="true" style={{ fill: 'currentColor' }} />
-                  4.9/5 Rating
-                </span>
-                <span className="ms-stat">
-                  <TrendingUp aria-hidden="true" />
-                  $3,400 Avg. Savings
-                </span>
-                <span className="ms-stat">
-                  <Users aria-hidden="true" />
-                  12K+ Members
-                </span>
-              </div>
-            </div>
-            <img
-              className="hiw-hero__img"
-              src="https://images.pexels.com/photos/3184325/pexels-photo-3184325.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2"
-              alt="MPB Health members sharing their stories"
-              fetchPriority="high"
-              decoding="async"
-            />
-          </div>
-        </section>
+      <LandingPage className="hiw ms">
+        <PageHero
+          ariaLabel="Member stories"
+          kicker="Member stories"
+          title={
+            <>
+              Real families.
+              <br />
+              Real savings.
+            </>
+          }
+          lede="Hear directly from members whose lives have been changed by community health sharing."
+          rail={[
+            { value: '4.9/5', label: 'Google rating' },
+            { value: '$3,400', label: 'Average yearly savings' },
+            { value: '12K+', label: 'Members' },
+          ]}
+          media={{
+            type: 'image',
+            src: 'https://images.pexels.com/photos/3184325/pexels-photo-3184325.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
+            alt: 'MPB Health members sharing their stories',
+          }}
+        />
+
+        <Sheet>
 
         {/* ── Testimonial carousel + stats + CTA ───────────────────── */}
         <TestimonialShowcase />
@@ -172,8 +160,8 @@ const MemberStories: React.FC = () => {
         </section>
 
         {/* ── Footer (same as landing page) ────────────────────────── */}
-        <LandingFooter />
-      </div>
+        </Sheet>
+      </LandingPage>
     </>
   );
 };

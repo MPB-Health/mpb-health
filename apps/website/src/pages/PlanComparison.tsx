@@ -1,231 +1,192 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { ArrowRight, FileText } from 'lucide-react';
 import { MarketingHydrationSeo } from '../components/MarketingHydrationSeo';
-import { generateFAQSchema, comparePlansFaqQuestions } from '@/lib/schemaMarkup';
-import { usePlans } from '@/hooks/usePlans';
-import { PlanComparisonTable } from '@/components/blocks/PlanComparisonTable';
-import { PlanComparisonGuide } from '@/components/blocks/PlanComparisonGuide';
-import { Card } from '@/components/ui/Card';
-import { Checkbox } from '@/components/ui/Checkbox';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/Label';
-import { Shield, HeartPulse, Building2, Briefcase, Heart } from 'lucide-react';
+import {
+  AuroraBand,
+  CompareTable,
+  FaqSection,
+  LandingPage,
+  PageHero,
+  PlanGrid,
+  Reveal,
+  SectionHead,
+  Sheet,
+} from '../components/landing-redesign/page-kit';
+import {
+  BUSINESS_COMPARE,
+  BUSINESS_PLANS,
+  INDIVIDUAL_COMPARE,
+  INDIVIDUAL_PLANS,
+} from '../components/landing-redesign/plansData';
+import { generateFAQSchema, comparePlansFaqQuestions } from '../lib/schemaMarkup';
 
-const planIcons: Record<string, React.ElementType> = {
-  essentials: Shield,
-  'mec-essentials': HeartPulse,
-  'care-plus': Heart,
-  careplus: Heart,
-  direct: Building2,
-  'secure-hsa': Briefcase,
-  securehsa: Briefcase,
-};
+type Audience = 'individual' | 'business';
+
+const TABS: ReadonlyArray<{ id: Audience; label: string }> = [
+  { id: 'individual', label: 'Individuals & families' },
+  { id: 'business', label: 'Self-employed & business' },
+];
 
 export default function PlanComparison() {
-  const { plans, loading } = usePlans();
   const compareFaqSchema = generateFAQSchema(comparePlansFaqQuestions);
-  const [selectedPlans, setSelectedPlans] = useState<string[]>([]);
-
-  const handlePlanToggle = (slug: string) => {
-    setSelectedPlans(prev =>
-      prev.includes(slug)
-        ? prev.filter(s => s !== slug)
-        : [...prev, slug]
-    );
-  };
-
-  const handleSelectAll = () => {
-    setSelectedPlans([...new Set(plans.map((p) => p.slug.trim()))]);
-  };
-
-  const handleClearAll = () => {
-    setSelectedPlans([]);
-  };
-
-  /**
-   * Every distinct catalog slug is represented in the selection — hides legacy 3‑column guide
-   * even if CMS mistakenly returns duplicate plan rows sharing a slug.
-   */
-  const allPlansSelected = useMemo(() => {
-    const distinctCatalog = [...new Set(plans.map((p) => p.slug.trim()))].sort().join('|');
-    const distinctSelected = [...new Set(selectedPlans.map((s) => s.trim()))].sort().join('|');
-    return distinctCatalog.length > 0 && distinctCatalog === distinctSelected;
-  }, [plans, selectedPlans]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-primary-50 via-white to-neutral-50 py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-16 w-16 border-4 border-primary-200 border-t-primary-600"></div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const [audience, setAudience] = useState<Audience>('individual');
+  const isBusiness = audience === 'business';
+  const compare = isBusiness ? BUSINESS_COMPARE : INDIVIDUAL_COMPARE;
 
   return (
     <>
-    <MarketingHydrationSeo>
-      <script type="application/ld+json">{JSON.stringify(compareFaqSchema)}</script>
-    </MarketingHydrationSeo>
-    <div className="min-h-screen bg-gradient-to-b from-primary-50 via-white to-neutral-50 py-12 relative overflow-x-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary-100/40 via-transparent to-transparent"></div>
-      <div className="absolute top-20 right-10 w-96 h-96 bg-gradient-to-br from-primary-200/20 to-accent-200/20 rounded-full blur-3xl"></div>
-      <div className="absolute bottom-20 left-10 w-80 h-80 bg-gradient-to-tr from-success-200/20 to-primary-200/20 rounded-full blur-3xl"></div>
+      <MarketingHydrationSeo>
+        <script type="application/ld+json">{JSON.stringify(compareFaqSchema)}</script>
+      </MarketingHydrationSeo>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="space-y-8">
-          <div className="text-center space-y-4 animate-fade-in">
-            <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-primary-700 via-primary-600 to-primary-500 bg-clip-text text-transparent">
-              Compare Memberships
-            </h1>
-            <p className="mt-4 text-xl text-neutral-600 max-w-3xl mx-auto">
-              Select memberships to compare features side by side
-            </p>
-          </div>
+      <LandingPage>
+        <PageHero
+          ariaLabel="Compare memberships"
+          align="center"
+          kicker="Compare memberships"
+          title={
+            <>
+              Every membership,
+              <br />
+              side by side.
+            </>
+          }
+          lede="Virtual care and concierge come with all five. Here is exactly what changes as you move up."
+          actions={
+            <>
+              <Link className="lr-btn lr-btn--white" to="/get-a-quote">
+                Get your quote
+              </Link>
+              <Link className="lr-btn lr-btn--glass" to="/individuals-and-families">
+                Individuals &amp; families
+              </Link>
+            </>
+          }
+        />
 
-          <Card className="p-8 backdrop-blur-sm bg-white/80 border-primary-100 shadow-2xl animate-slide-up">
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold bg-gradient-to-r from-primary-700 to-primary-600 bg-clip-text text-transparent">
-                  Select Memberships to Compare
-                </h2>
-                <div className="flex gap-3">
-                  <Button
-                    variant="outline"
-                    size="md"
-                    onClick={handleSelectAll}
-                    className="border-2 border-primary-300 hover:border-primary-500 hover:bg-gradient-to-r hover:from-primary-50 hover:to-primary-100 transition-all duration-300"
-                  >
-                    Select All
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="md"
-                    onClick={handleClearAll}
-                    className="border-2 border-neutral-300 hover:border-neutral-500 hover:bg-gradient-to-r hover:from-neutral-50 hover:to-neutral-100 transition-all duration-300"
-                  >
-                    Clear All
-                  </Button>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5">
-                {plans.map((plan, index) => {
-                  const isSelected = selectedPlans.includes(plan.slug);
-                  const Icon = planIcons[plan.slug] || Shield;
-
-                  return (
-                    <div
-                      key={plan.id}
-                      className={`group relative flex items-start space-x-4 p-5 rounded-xl border-2 cursor-pointer transition-all duration-300 transform hover:scale-105 ${
-                        isSelected
-                          ? 'border-primary-500 bg-gradient-to-br from-primary-50 via-white to-primary-50 shadow-xl'
-                          : 'border-neutral-200 bg-white hover:border-primary-300 hover:shadow-lg'
-                      }`}
-                      style={{ animationDelay: `${index * 50}ms` }}
-                      onClick={() => handlePlanToggle(plan.slug)}
+        <Sheet>
+          <section className="lr-sec lr-sec--top" aria-label="Compare memberships" id="compare">
+            <div className="lr-inner">
+              <SectionHead
+                eyebrow="Side by side"
+                title="Pick who you're comparing for."
+                lede="Price and enroll first, then every feature line by line."
+                ledeMuted="Switch between household and business memberships below."
+              >
+                <div className="lr-chips" role="tablist" aria-label="Membership group" style={{ marginTop: '1.6rem' }}>
+                  {TABS.map((tab) => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      role="tab"
+                      id={`tab-${tab.id}`}
+                      aria-selected={audience === tab.id}
+                      aria-controls={`panel-${tab.id}`}
+                      className={`lr-chip${audience === tab.id ? ' is-active' : ''}`}
+                      onClick={() => setAudience(tab.id)}
                     >
-                      {isSelected && (
-                        <div className="absolute inset-0 bg-gradient-to-r from-primary-500/5 to-success-500/5 rounded-xl"></div>
-                      )}
-                      <div className="relative z-10 flex items-start space-x-4 w-full">
-                        <div className={`flex-shrink-0 w-12 h-12 rounded-lg flex items-center justify-center transition-all duration-300 ${
-                          isSelected
-                            ? 'bg-gradient-to-br from-primary-500 to-primary-600 shadow-lg'
-                            : 'bg-gradient-to-br from-neutral-100 to-neutral-200 group-hover:from-primary-100 group-hover:to-primary-200'
-                        }`}>
-                          <Icon className={`w-6 h-6 transition-colors duration-300 ${
-                            isSelected ? 'text-white' : 'text-neutral-600 group-hover:text-primary-600'
-                          }`} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1">
-                              <Label
-                                htmlFor={plan.slug}
-                                className={`font-semibold cursor-pointer transition-colors duration-300 ${
-                                  isSelected ? 'text-primary-700' : 'text-neutral-900 group-hover:text-primary-700'
-                                }`}
-                              >
-                                {plan.name}
-                              </Label>
-                              {plan.tagline && (
-                                <p className="text-sm text-neutral-600 mt-1 line-clamp-2">{plan.tagline}</p>
-                              )}
-                            </div>
-                            <Checkbox
-                              id={plan.slug}
-                              checked={isSelected}
-                              onCheckedChange={() => handlePlanToggle(plan.slug)}
-                              className="mt-1"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+              </SectionHead>
 
-              {selectedPlans.length > 0 && (
-                <div className="pt-6 border-t border-primary-100">
-                  <div className="flex items-center justify-between flex-wrap gap-4">
-                    <div className="flex items-center gap-4">
-                      <p className="text-base font-medium bg-gradient-to-r from-primary-700 to-success-600 bg-clip-text text-transparent">
-                        {new Set(selectedPlans.map((s) => s.trim())).size}{' '}
-                        {new Set(selectedPlans.map((s) => s.trim())).size === 1
-                          ? 'membership'
-                          : 'memberships'}{' '}
-                        selected
-                      </p>
-                      <div className="h-2 w-48 bg-neutral-100 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-primary-500 to-success-500 rounded-full transition-all duration-500"
-                          style={{
-                            width: `${(new Set(selectedPlans.map((s) => s.trim())).size /
-                              Math.max(1, new Set(plans.map((p) => p.slug.trim())).size)) *
-                              100}%`,
-                          }}
-                        ></div>
-                      </div>
-                    </div>
+              <div role="tabpanel" id={`panel-${audience}`} aria-labelledby={`tab-${audience}`}>
+                {isBusiness ? (
+                  <div key="business" style={{ maxWidth: '56rem', marginInline: 'auto' }}>
+                    <PlanGrid plans={BUSINESS_PLANS} cols={2} />
                   </div>
-                </div>
-              )}
-            </div>
-          </Card>
+                ) : (
+                  <div key="individual">
+                    <PlanGrid plans={INDIVIDUAL_PLANS} />
+                  </div>
+                )}
 
-          {selectedPlans.length > 0 ? (
-            <div className="animate-fade-in">
-              <PlanComparisonTable planSlugs={selectedPlans} />
-            </div>
-          ) : (
-            <Card className="p-16 text-center bg-gradient-to-br from-neutral-50 to-white border-neutral-200 shadow-lg">
-              <div className="max-w-md mx-auto space-y-4">
-                <div className="w-20 h-20 mx-auto bg-gradient-to-br from-primary-100 to-primary-200 rounded-full flex items-center justify-center">
-                  <Shield className="w-10 h-10 text-primary-600" />
-                </div>
-                <p className="text-xl font-medium text-neutral-700">
-                  Select at least one membership above to start comparing
-                </p>
-                <p className="text-sm text-neutral-500">
-                  Choose multiple memberships to see a detailed side-by-side comparison of features
-                </p>
+                <Reveal key={`table-${audience}`} delay={0.1}>
+                  <div className="lr-sec__head lr-sec__head--left" style={{ margin: '3.5rem 0 1.4rem' }}>
+                    <p className="lr-eyebrow">Feature by feature</p>
+                    <h3 className="lr-h3">
+                      {isBusiness ? 'HSA Essentials and Secure HSA' : 'Essentials, Care+ and Direct'}
+                    </h3>
+                  </div>
+                  <CompareTable columns={compare.columns} groups={compare.groups} />
+                </Reveal>
               </div>
-            </Card>
-          )}
 
-          {/* Static Care+/Direct/Essentials guide — omit when entire catalog is selected (full dynamic matrix replaces it). */}
-          {!allPlansSelected && (
-            <PlanComparisonGuide
-              title="Complete Membership Comparison Guide"
-              subtitle="View all memberships and features at a glance"
-            />
-          )}
-        </div>
-      </div>
-    </div>
+              <Reveal delay={0.1}>
+                <p className="lr-note" style={{ textAlign: 'center', marginInline: 'auto' }}>
+                  Monthly amounts shown are starting contributions for one member and vary by age, household and
+                  member responsibility amount. MPB Health memberships are not insurance.
+                </p>
+              </Reveal>
+            </div>
+          </section>
+
+          <section className="lr-sec lr-sec--hair" aria-label="Printable comparison guide">
+            <div className="lr-inner">
+              <Reveal>
+                <div
+                  className="lr-panel lr-panel--soft"
+                  style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '1rem 2rem',
+                  }}
+                >
+                  <div>
+                    <h2 className="lr-panel__title" style={{ marginBottom: '0.3rem' }}>
+                      Prefer a printable guide?
+                    </h2>
+                    <p className="lr-body">
+                      Every membership and feature on one page, ready to print or share.
+                    </p>
+                  </div>
+                  <a
+                    className="lr-btn lr-btn--ghost lr-btn--sm"
+                    href="/docs/plan-comparison-guide.html"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <FileText strokeWidth={1.8} />
+                    Open the guide
+                  </a>
+                </div>
+              </Reveal>
+            </div>
+          </section>
+
+          <FaqSection
+            items={comparePlansFaqQuestions}
+            intro={
+              <>
+                Still deciding? Our advisors answer the hard questions too.{' '}
+                <Link to="/faq" className="lr-more">
+                  Browse all FAQs <ArrowRight />
+                </Link>
+              </>
+            }
+          />
+
+          <AuroraBand
+            title="Seen enough? Get a number for your household."
+            lede="Every membership priced for you in about 30 seconds, or talk it through with an advisor."
+            actions={
+              <>
+                <Link className="lr-btn lr-btn--white" to="/get-a-quote">
+                  Get your quote
+                </Link>
+                <a className="lr-btn lr-btn--glass" href="tel:+18558164650">
+                  Call (855) 816-4650
+                </a>
+              </>
+            }
+            note="MPB Health memberships are not insurance and do not guarantee payment of medical expenses. Eligible expenses are shared according to the membership guidelines."
+          />
+        </Sheet>
+      </LandingPage>
     </>
   );
 }

@@ -1,13 +1,35 @@
 import React from 'react';
-import { MarketingHydrationSeo } from '../components/MarketingHydrationSeo';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Shield, Clock, Phone, CheckCircle } from 'lucide-react';
-import { Button } from '../components/ui/button';
+import { Check, Phone, ShieldCheck, Users, Video } from 'lucide-react';
+import { MarketingHydrationSeo } from '../components/MarketingHydrationSeo';
 import { LeadForm } from '../components/forms/LeadForm';
+import {
+  AuroraBand,
+  CountUp,
+  LandingPage,
+  PageHero,
+  Reveal,
+  SectionHead,
+  Sheet,
+} from '../components/landing-redesign/page-kit';
 import { createClientLogger } from '@mpbhealth/utils';
 import { generateOrganizationSchema } from '../lib/schemaMarkup';
 
 const log = createClientLogger('GetAQuote');
+
+const NEXT_STEPS = [
+  { title: 'Submit your information', text: 'Complete the form with your details.' },
+  { title: 'We review your needs', text: 'Our team analyzes your requirements.' },
+  { title: 'Receive your quote', text: 'Get a personalized quote within 24 hours.' },
+  { title: 'Speak with an advisor', text: 'Discuss your options with a specialist.' },
+] as const;
+
+const PRIVACY = [
+  'Your information is encrypted and secure',
+  'We will never sell your data to third parties',
+  'No spam calls or emails. We respect your privacy.',
+  'HIPAA-compliant data handling',
+] as const;
 
 const GetAQuote: React.FC = () => {
   return (
@@ -18,179 +40,186 @@ const GetAQuote: React.FC = () => {
         </script>
       </MarketingHydrationSeo>
 
-      <div className="min-h-screen bg-gradient-to-b from-neutral-50 to-white">
-        {/* Header Section */}
-        <div className="bg-white border-b border-neutral-200">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
-            <Link to="/">
-              <Button variant="ghost" size="sm">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Home
-              </Button>
-            </Link>
-          </div>
-        </div>
+      <LandingPage>
+        <PageHero
+          ariaLabel="Get a quote"
+          align="center"
+          kicker="Free quote"
+          title="Your quote, in about two minutes."
+          lede="Tell us a little about who needs care and a licensed advisor will send a personalized health sharing quote within 24 hours. No obligation."
+          rail={[
+            { value: '2–3 min', label: 'To complete' },
+            { value: '24 hr', label: 'Response' },
+            { value: '$0', label: 'Virtual care, included' },
+          ]}
+        />
 
-        {/* Hero Section */}
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
-          <div className="text-center mb-12">
-            <h1 className="text-4xl sm:text-5xl font-bold text-neutral-900 mb-4">
-              Get Your Free Quote
-            </h1>
-            <p className="text-xl text-neutral-600 max-w-2xl mx-auto mb-8">
-              Complete the form below and we'll send you a personalized health sharing quote within 24 hours
-            </p>
-
-            {/* Trust Indicators */}
-            <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-neutral-600">
-              <div className="flex items-center gap-2">
-                <Clock className="h-5 w-5 text-blue-600" />
-                <span>Takes 2-3 minutes</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Shield className="h-5 w-5 text-blue-600" />
-                <span>Your information is secure</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle className="h-5 w-5 text-blue-600" />
-                <span>No obligation</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid lg:grid-cols-3 gap-8">
-            {/* Form Column */}
-            <div className="lg:col-span-2">
-              <div className="bg-white rounded-2xl shadow-xl border border-neutral-200 overflow-hidden p-6">
-                <LeadForm onSubmit={(formData) => log.info('Quote form submitted', formData)} />
-              </div>
-            </div>
-
-            {/* Sidebar */}
-            <div className="lg:col-span-1">
-              <div className="sticky top-6 space-y-6">
-                {/* What Happens Next */}
-                <div className="bg-white rounded-xl shadow-lg border border-neutral-200 p-6">
-                  <h3 className="text-lg font-bold text-neutral-900 mb-4">
-                    What Happens Next?
-                  </h3>
-                  <div className="space-y-4">
-                    <div className="flex gap-3">
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
-                        1
-                      </div>
-                      <div>
-                        <p className="font-semibold text-neutral-900">Submit Your Information</p>
-                        <p className="text-sm text-neutral-600">Complete the form with your details</p>
-                      </div>
-                    </div>
-                    <div className="flex gap-3">
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
-                        2
-                      </div>
-                      <div>
-                        <p className="font-semibold text-neutral-900">We Review Your Needs</p>
-                        <p className="text-sm text-neutral-600">Our team analyzes your requirements</p>
-                      </div>
-                    </div>
-                    <div className="flex gap-3">
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
-                        3
-                      </div>
-                      <div>
-                        <p className="font-semibold text-neutral-900">Receive Your Quote</p>
-                        <p className="text-sm text-neutral-600">Get a personalized quote within 24 hours</p>
-                      </div>
-                    </div>
-                    <div className="flex gap-3">
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
-                        4
-                      </div>
-                      <div>
-                        <p className="font-semibold text-neutral-900">Speak with an Advisor</p>
-                        <p className="text-sm text-neutral-600">Discuss your options with a specialist</p>
-                      </div>
-                    </div>
+        <Sheet>
+          <section className="lr-sec lr-sec--top" aria-label="Quote request form" id="quote">
+            <div className="lr-inner">
+              <div className="lr-formgrid">
+                <Reveal>
+                  <div className="lr-panel lr-formwrap lr-quoteform">
+                    <LeadForm onSubmit={(formData) => log.info('Quote form submitted', formData)} />
                   </div>
-                </div>
+                </Reveal>
 
-                {/* Need Help? */}
-                <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl border border-blue-200 p-6">
-                  <h3 className="text-lg font-bold text-neutral-900 mb-2">
-                    Need Help?
-                  </h3>
-                  <p className="text-sm text-neutral-700 mb-4">
-                    Our team is here to answer any questions you have about health sharing or the quote process.
-                  </p>
-                  <a
-                    href="tel:+18558164650"
-                    className="flex items-center justify-center gap-2 w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
-                  >
-                    <Phone className="h-5 w-5" />
-                    Call (855) 816-4650
-                  </a>
-                  <p className="text-xs text-neutral-600 text-center mt-2">
-                    Monday - Friday, 9am - 6pm EST
-                  </p>
-                </div>
+                <aside className="lr-aside" aria-label="About your quote">
+                  <Reveal delay={0.08}>
+                    <div className="lr-panel">
+                      <h2 className="lr-panel__title">What happens next</h2>
+                      <ol className="lr-steps lr-steps--tight">
+                        {NEXT_STEPS.map((step, i) => (
+                          <li key={step.title}>
+                            <span className="lr-steps__num">0{i + 1}</span>
+                            <div>
+                              <h3>{step.title}</h3>
+                              <p>{step.text}</p>
+                            </div>
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+                  </Reveal>
 
-                {/* Trust & Security */}
-                <div className="bg-white rounded-xl shadow-lg border border-neutral-200 p-6">
-                  <h3 className="text-lg font-bold text-neutral-900 mb-4">
-                    Your Privacy Matters
-                  </h3>
-                  <div className="space-y-3 text-sm text-neutral-600">
-                    <div className="flex items-start gap-2">
-                      <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                      <span>Your information is encrypted and secure</span>
+                  <Reveal delay={0.14}>
+                    <div className="lr-panel lr-panel--soft">
+                      <h2 className="lr-panel__title">Need help?</h2>
+                      <p className="lr-body">
+                        Our team is here to answer any questions you have about health sharing or the
+                        quote process.
+                      </p>
+                      <p style={{ margin: '1.2rem 0 0' }}>
+                        <a className="lr-btn lr-btn--navy lr-btn--sm" href="tel:+18558164650">
+                          <Phone strokeWidth={2} />
+                          Call (855) 816-4650
+                        </a>
+                      </p>
+                      <p className="lr-note" style={{ marginTop: '0.9rem' }}>
+                        Monday to Friday, 9am to 6pm EST
+                      </p>
                     </div>
-                    <div className="flex items-start gap-2">
-                      <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                      <span>We'll never sell your data to third parties</span>
+                  </Reveal>
+
+                  <Reveal delay={0.2}>
+                    <div className="lr-panel">
+                      <h2 className="lr-panel__title">Your privacy matters</h2>
+                      <ul className="lr-checks" style={{ marginTop: 0 }}>
+                        {PRIVACY.map((item) => (
+                          <li key={item}>
+                            <Check strokeWidth={3} />
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
-                    <div className="flex items-start gap-2">
-                      <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                      <span>No spam calls or emails - we respect your privacy</span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                      <span>HIPAA-compliant data handling</span>
-                    </div>
+                  </Reveal>
+                </aside>
+              </div>
+
+              <div className="lr-estimate__trust">
+                <span>
+                  <ShieldCheck /> Secure &amp; private
+                </span>
+                <span>
+                  <Users /> Over 12,000 members served
+                </span>
+                <span>
+                  <Video /> $0 virtual care included
+                </span>
+              </div>
+            </div>
+          </section>
+
+          <section className="lr-sec lr-sec--soft" aria-label="Instant estimate">
+            <div className="lr-inner">
+              <div className="lr-split">
+                <Reveal>
+                  <p className="lr-eyebrow">Prefer an instant estimate?</p>
+                  <h2 className="lr-h2">
+                    See every membership
+                    <br />
+                    priced for you.
+                  </h2>
+                  <p className="lr-twotone">
+                    Answer three quick questions and compare memberships side by side.{' '}
+                    <span>No email required, no waiting for a callback.</span>
+                  </p>
+                  <Link className="lr-btn lr-btn--grad" to="/individuals-and-families#estimate">
+                    Get a 30-second estimate
+                  </Link>
+                </Reveal>
+                <Reveal delay={0.1}>
+                  <div className="lr-split__media lr-split__media--wide">
+                    <img
+                      src="/assets/how-it-works-app.png"
+                      alt=""
+                      width={1400}
+                      height={933}
+                      loading="lazy"
+                      decoding="async"
+                    />
                   </div>
-                </div>
+                </Reveal>
               </div>
             </div>
-          </div>
-        </div>
+          </section>
 
-        {/* Bottom CTA Section */}
-        <div className="bg-gradient-to-r from-blue-600 to-cyan-600 py-12">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="text-center text-white">
-              <h2 className="text-3xl font-bold mb-4">
-                Join Thousands of Members Who've Made the Switch
-              </h2>
-              <p className="text-xl text-blue-100 mb-6">
-                Save an average of 40% on healthcare costs while getting quality care
-              </p>
-              <div className="flex flex-wrap justify-center gap-8 text-lg">
-                <div>
-                  <div className="text-4xl font-bold">50,000+</div>
-                  <div className="text-blue-100">Families Served</div>
-                </div>
-                <div>
-                  <div className="text-4xl font-bold">$240M+</div>
-                  <div className="text-blue-100">In Shared Medical Bills</div>
-                </div>
-                <div>
-                  <div className="text-4xl font-bold">4.9/5</div>
-                  <div className="text-blue-100">Customer Rating</div>
-                </div>
-              </div>
+          <section className="lr-sec" aria-label="Member results">
+            <div className="lr-inner">
+              <SectionHead
+                eyebrow="Real results"
+                title="Members who made the switch."
+                lede="Real families, real savings,"
+                ledeMuted="and a rating they gave us themselves."
+                align="left"
+              />
+              <Reveal>
+                <dl className="lr-stats" style={{ '--cols': 3 } as React.CSSProperties}>
+                  <div>
+                    <dt>
+                      <CountUp value={12000} suffix="+" />
+                    </dt>
+                    <dd>Families served</dd>
+                  </div>
+                  <div>
+                    <dt>
+                      <CountUp
+                        value={4.9}
+                        suffix="/5"
+                        format={{ minimumFractionDigits: 1, maximumFractionDigits: 1 }}
+                      />
+                    </dt>
+                    <dd>Google rating</dd>
+                  </div>
+                  <div>
+                    <dt>
+                      <CountUp value={96} suffix="%" />
+                    </dt>
+                    <dd>Would recommend</dd>
+                  </div>
+                </dl>
+              </Reveal>
             </div>
-          </div>
-        </div>
-      </div>
+          </section>
+
+          <AuroraBand
+            title="Thousands of families already share the way."
+            lede="Start your quote now, or talk to a real advisor first. Either way, there is no obligation."
+            actions={
+              <>
+                <a className="lr-btn lr-btn--white" href="#quote">
+                  Start my quote
+                </a>
+                <a className="lr-btn lr-btn--glass" href="tel:+18558164650">
+                  Call (855) 816-4650
+                </a>
+              </>
+            }
+            note="MPB Health memberships are not insurance and do not guarantee payment of medical expenses. Eligible expenses are shared according to the membership guidelines."
+          />
+        </Sheet>
+      </LandingPage>
     </>
   );
 };

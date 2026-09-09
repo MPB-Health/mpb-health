@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Search, Users, MapPin, X, ChevronDown } from 'lucide-react';
 import { AdvisorCard } from '../components/advisor/AdvisorCard';
-import { LandingHeader } from '../components/landing-redesign/LandingHeader';
-import { LandingFooter } from '../components/landing-redesign/LandingFooter';
+import { LandingPage, PageHero, Sheet } from '../components/landing-redesign/page-kit';
 import {
   getAdvisors,
   getUniqueStates,
@@ -117,39 +116,33 @@ export const AdvisorDirectory: React.FC = () => {
         />
       </Helmet>
 
-      <div className="lr ad">
-        {/* ── Hero ─────────────────────────────────────────────────── */}
-        <section className="ad-hero" aria-label="Find a health advisor">
-          <LandingHeader />
-          <div className="ad-hero__content">
-            <div className="ad-hero__copy">
-              <h1 className="ad-hero__title">Find a Health Advisor</h1>
-              <p className="ad-hero__sub">
-                Connect with licensed advisors ready to help you find the right health sharing
-                membership
-              </p>
-              <div className="ad-hero__stats">
-                <span className="ad-stat">
-                  <Users aria-hidden="true" />
-                  {advisors.length} Advisors
-                </span>
-                <span className="ad-stat">
-                  <MapPin aria-hidden="true" />
-                  {states.length} States
-                </span>
-              </div>
-            </div>
-            <img
-              className="ad-hero__img"
-              src="/assets/advisorDirectory.png"
-              alt="A team of MPB Health advisors meeting together around a table"
-              width={1600}
-              height={1066}
-              fetchPriority="high"
-              decoding="async"
-            />
-          </div>
-        </section>
+      <LandingPage className="ad">
+        <PageHero
+          ariaLabel="Find a health advisor"
+          kicker="Advisor directory"
+          title={
+            <>
+              Find a health
+              <br />
+              advisor near you.
+            </>
+          }
+          lede="Connect with licensed advisors ready to help you find the right health sharing membership."
+          rail={[
+            { value: `${advisors.length}`, label: 'Advisors' },
+            { value: `${states.length}`, label: 'States' },
+            { value: '1:1', label: 'Personal guidance' },
+          ]}
+          media={{
+            type: 'image',
+            src: '/assets/advisorDirectory.png',
+            alt: 'A team of MPB Health advisors meeting together around a table',
+            width: 1600,
+            height: 1066,
+          }}
+        />
+
+        <Sheet>
 
         {/* ── Main content ─────────────────────────────────────────── */}
         <div className="ad-main">
@@ -271,8 +264,8 @@ export const AdvisorDirectory: React.FC = () => {
         </div>
 
         {/* ── Footer (same as landing page) ────────────────────────── */}
-        <LandingFooter />
-      </div>
+        </Sheet>
+      </LandingPage>
     </>
   );
 };

@@ -1,30 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import {
-  ArrowRight,
-  Brain,
-  Building2,
-  CheckSquare,
-  Clock,
-  CreditCard,
-  Dna,
-  DollarSign,
-  Download,
-  Edit,
-  FileText,
-  Headphones,
-  Heart,
-  HeartPulse,
-  Infinity as InfinityIcon,
-  PawPrint,
-  Pill,
-  Plus,
-  Shield,
-  Stethoscope,
-  TrendingUp,
-  UserMinus,
-  Users,
-} from 'lucide-react';
+import { HeartPulse } from 'lucide-react';
 import { MarketingHydrationSeo } from '../components/MarketingHydrationSeo';
 import BusinessRateCalculator from '../components/BusinessRateCalculator';
 import {
@@ -48,71 +24,63 @@ import {
 } from '../lib/schemaMarkup';
 
 const employerGroupForms = [
-  { to: '/list-bill-update', label: 'Employee updates', Icon: Edit },
+  { to: '/list-bill-update', label: 'Employee updates' },
   {
     to: 'https://www.cognitoforms.com/MPoweringBenefits1/UpdateFormOfPayment',
     label: 'Update form of payment',
-    Icon: CreditCard,
     external: true,
   },
-  { to: '/employee-removal', label: 'Employee removal', Icon: UserMinus },
+  { to: '/employee-removal', label: 'Employee removal' },
 ] as const;
 
 const whyChooseItems = [
   {
-    Icon: DollarSign,
     title: 'Cost-sharing for the self-employed',
     description:
       'Replace hefty premiums with a fixed monthly share that pools funds for eligible medical costs, saving 40 to 60% versus typical plans.',
   },
   {
-    Icon: Users,
     title: 'Share monthly contributions',
     description:
       'Each participating employee or self-employed member pays a fixed share into a communal pool. Contributions fund eligible medical expenses for all members. HSA compatible.',
   },
   {
-    Icon: TrendingUp,
     title: 'Tax-friendly options',
     description:
       'Qualifying individuals may deduct the MEC portion of their membership, whether they are independent contractors, freelancers or traditional employees. Consult your tax advisor for guidance specific to your situation.',
   },
 ] as const;
 
-const services: ReadonlyArray<{ Icon: React.ElementType; title: string; note?: string }> = [
-  { Icon: Shield, title: 'Protection from large medical expenses' },
-  { Icon: Brain, title: '$0 virtual behavioral health' },
-  { Icon: Clock, title: '$0 unlimited 24/7/365 virtual urgent care' },
-  { Icon: Stethoscope, title: '$0 continuous, personalized virtual primary care' },
-  { Icon: CheckSquare, title: 'Preventive services that satisfy federal health mandates' },
+const services: ReadonlyArray<{ title: string; note?: string }> = [
+  { title: 'Protection from large medical expenses' },
+  { title: '$0 virtual behavioral health' },
+  { title: '$0 unlimited 24/7/365 virtual urgent care' },
+  { title: '$0 continuous, personalized virtual primary care' },
+  { title: 'Preventive services that satisfy federal health mandates' },
   {
-    Icon: Building2,
     title: 'Maternity sharing: prenatal, delivery, postnatal and newborn care',
     note: 'Applicable with eligibility requirements',
   },
-  { Icon: Pill, title: 'Over 1,000 medications at $0 or under $14.95' },
-  { Icon: Plus, title: 'Save on prescriptions at nationwide pharmacies' },
-  { Icon: Heart, title: 'Save 30% on high-quality vitamins and supplements' },
-  { Icon: Headphones, title: 'Personalized advocacy and expert member support' },
-  { Icon: Dna, title: 'Genetic testing discounts' },
-  { Icon: PawPrint, title: '$0 unlimited virtual pet care' },
+  { title: 'Over 1,000 medications at $0 or under $14.95' },
+  { title: 'Save on prescriptions at nationwide pharmacies' },
+  { title: 'Save 30% on high-quality vitamins and supplements' },
+  { title: 'Personalized advocacy and expert member support' },
+  { title: 'Genetic testing discounts' },
+  { title: '$0 unlimited virtual pet care' },
 ];
 
 const featureItems = [
   {
-    Icon: Shield,
     title: 'Provider freedom',
     description:
       'Members choose their own providers without narrow networks or out-of-network penalties. Memberships that include MEC benefits do follow a network, since those services are provided at no cost.',
   },
   {
-    Icon: InfinityIcon,
     title: 'No annual or lifetime sharing maximums',
     description:
       "Unlike many traditional plans, MPB Health's cost-sharing programs don't impose yearly or lifetime maximums on eligible expenses.",
   },
   {
-    Icon: FileText,
     title: 'Transparent sharing guidelines',
     description:
       'Detailed, easy-to-understand rules outline which medical expenses are eligible, how sharing amounts are applied and any limits, so members know exactly what to expect.',
@@ -154,7 +122,7 @@ const BusinessesOrganizations = () => {
       <LandingPage>
         <PageHero
           ariaLabel="Businesses and organizations"
-          kicker="For businesses & organizations"
+          kicker="For businesses and organizations"
           title={
             <>
               Healthcare
@@ -205,9 +173,8 @@ const BusinessesOrganizations = () => {
             <div className="lr-inner">
               <Reveal>
                 <div className="lr-toolrow">
-                  <p className="lr-eyebrow">Employer group forms</p>
                   <nav className="lr-toolrow__links" aria-label="Employer group forms">
-                    {employerGroupForms.map(({ to, label, Icon, ...rest }) =>
+                    {employerGroupForms.map(({ to, label, ...rest }) =>
                       'external' in rest && rest.external ? (
                         <a
                           key={to}
@@ -216,12 +183,10 @@ const BusinessesOrganizations = () => {
                           rel="noopener noreferrer"
                           className="lr-btn lr-btn--ghost lr-btn--sm"
                         >
-                          <Icon strokeWidth={1.8} />
                           {label}
                         </a>
                       ) : (
                         <Link key={to} to={to} className="lr-btn lr-btn--ghost lr-btn--sm">
-                          <Icon strokeWidth={1.8} />
                           {label}
                         </Link>
                       )
@@ -247,8 +212,7 @@ const BusinessesOrganizations = () => {
                     />
                   </div>
                 </Reveal>
-                <Reveal delay={0.1}>
-                  <p className="lr-eyebrow">Why teams choose MPB Health</p>
+                <Reveal>
                   <h2 className="lr-h2">
                     Better benefits.
                     <br />
@@ -258,16 +222,11 @@ const BusinessesOrganizations = () => {
                     A healthcare sharing membership built for small teams.{' '}
                     <span>Fixed monthly shares, HSA compatibility and no premium creep.</span>
                   </p>
-                  <ul className="lr-rows">
-                    {whyChooseItems.map(({ Icon, title, description }) => (
+                  <ul className="lr-ledger lr-ledger--1" style={{ marginTop: '1.8rem' }}>
+                    {whyChooseItems.map(({ title, description }) => (
                       <li key={title}>
-                        <span className="lr-cell__tile">
-                          <Icon strokeWidth={1.8} />
-                        </span>
-                        <div>
-                          <h3>{title}</h3>
-                          <p>{description}</p>
-                        </div>
+                        <h3>{title}</h3>
+                        <p>{description}</p>
                       </li>
                     ))}
                   </ul>
@@ -279,27 +238,19 @@ const BusinessesOrganizations = () => {
           <section className="lr-sec lr-sec--soft" aria-label="What a membership includes">
             <div className="lr-inner">
               <SectionHead
-                eyebrow="Complete protection"
                 title="Everything a membership includes."
                 lede="One stop access to telehealth, cost sharing, virtual behavioral health and more."
                 ledeMuted="Features vary by membership."
               />
-              <div className="lr-cells lr-cells--compact lr-cells--4">
-                {services.map(({ Icon, title, note }, i) => (
-                  <Reveal key={title} delay={(i % 4) * 0.05}>
-                    <div className="lr-cell">
-                      <span className="lr-cell__tile">
-                        <Icon strokeWidth={1.8} />
-                      </span>
-                      <div>
-                        <h3>{title}</h3>
-                        {note ? <p>{note}</p> : null}
-                      </div>
-                    </div>
-                  </Reveal>
+              <ul className="lr-ledger lr-ledger--3 lr-ledger--tight">
+                {services.map(({ title, note }) => (
+                  <li key={title}>
+                    <h3>{title}</h3>
+                    {note ? <p>{note}</p> : null}
+                  </li>
                 ))}
-              </div>
-              <Reveal delay={0.1}>
+              </ul>
+              <Reveal>
                 <p className="lr-note" style={{ textAlign: 'center', marginInline: 'auto' }}>
                   Sharing of eligible expenses is subject to membership guidelines and eligibility requirements.
                   Preventive services that satisfy federal mandates are included with MEC memberships.
@@ -311,7 +262,6 @@ const BusinessesOrganizations = () => {
           <section className="lr-sec" aria-label="Memberships" id="memberships">
             <div className="lr-inner">
               <SectionHead
-                eyebrow="Memberships"
                 title="Two memberships. One for every team."
                 lede="Start with ACA-compliant essentials or add full medical cost sharing."
                 ledeMuted="Both are HSA compatible and include $0 virtual care."
@@ -319,24 +269,20 @@ const BusinessesOrganizations = () => {
               <div style={{ maxWidth: '56rem', margin: '0 auto' }}>
                 <PlanGrid plans={BUSINESS_PLANS} cols={2} />
               </div>
-              <Reveal delay={0.1}>
+              <Reveal>
                 <p className="lr-note" style={{ textAlign: 'center', marginInline: 'auto' }}>
                   Monthly amounts shown are starting contributions per member and vary by age, household, state and
                   member responsibility amount. MPB Health memberships are not insurance.
                 </p>
                 <p style={{ textAlign: 'center', marginTop: '1.4rem' }}>
                   <Link to="/compare-plans" className="lr-more">
-                    See every membership side by side <ArrowRight />
+                    See every membership side by side
                   </Link>
                 </p>
               </Reveal>
 
               <div style={{ marginTop: 'clamp(3.5rem, 6vw, 5.5rem)' }}>
-                <SectionHead
-                  eyebrow="Side by side"
-                  title="What each membership shares."
-                  align="left"
-                >
+                <SectionHead title="What each membership shares." align="left">
                   <p style={{ margin: '0.25rem 0 0' }}>
                     <a
                       href="/docs/plan-comparison-guide.html"
@@ -344,7 +290,7 @@ const BusinessesOrganizations = () => {
                       rel="noopener noreferrer"
                       className="lr-more"
                     >
-                      Download the comparison guide <Download />
+                      Download the comparison guide
                     </a>
                   </p>
                 </SectionHead>
@@ -363,7 +309,6 @@ const BusinessesOrganizations = () => {
           >
             <div className="lr-inner">
               <SectionHead
-                eyebrow="Estimate"
                 title="Estimate your group contribution."
                 lede="Tell us about your team and see both memberships priced in about 60 seconds."
                 ledeMuted="No email required. Estimates are informational, not a binding quote."
@@ -378,20 +323,18 @@ const BusinessesOrganizations = () => {
 
           <section className="lr-sec" aria-label="What makes it work">
             <div className="lr-inner">
-              <SectionHead
-                eyebrow="What makes it work"
-                title="Freedom, no ceilings, clear rules."
-                align="left"
-              />
-              <ol className="lr-steps lr-steps--cols" style={{ '--cols': 3 } as React.CSSProperties}>
-                {featureItems.map((feature, i) => (
-                  <Reveal as="li" key={feature.title} delay={i * 0.08}>
-                    <span className="lr-steps__num">0{i + 1}</span>
+              <SectionHead title="Freedom, no ceilings, clear rules." align="left" />
+              <ul
+                className="lr-steps lr-steps--cols lr-steps--plain"
+                style={{ '--cols': 3 } as React.CSSProperties}
+              >
+                {featureItems.map((feature) => (
+                  <Reveal as="li" key={feature.title}>
                     <h3>{feature.title}</h3>
                     <p>{feature.description}</p>
                   </Reveal>
                 ))}
-              </ol>
+              </ul>
             </div>
           </section>
 
@@ -401,7 +344,7 @@ const BusinessesOrganizations = () => {
               <>
                 Questions about HSAs, compliance or group billing? Our advisors handle those every day.{' '}
                 <Link to="/faq" className="lr-more">
-                  Browse all FAQs <ArrowRight />
+                  Browse all FAQs
                 </Link>
               </>
             }

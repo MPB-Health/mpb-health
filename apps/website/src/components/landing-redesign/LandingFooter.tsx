@@ -41,10 +41,10 @@ function FooterBody() {
             <div className="lr-footer__brand">
               <img
                 className="lr-footer__logo"
-                src="/assets/brand/mpb-wordmark-white.png"
+                src="/assets/brand/mpb-tile.png"
                 alt="MPB Health"
-                width={706}
-                height={204}
+                width={800}
+                height={800}
                 decoding="async"
                 loading="lazy"
               />

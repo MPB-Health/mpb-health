@@ -89,7 +89,7 @@ export function EnrollmentEmbed({ embedUrl, title }: EnrollmentEmbedProps) {
             href={embedUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-[#0a4c8f] text-white text-sm font-semibold rounded-lg hover:bg-[#083d73] transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-[#0013bd] text-white text-sm font-semibold rounded-lg hover:bg-[#083d73] transition-colors"
           >
             <ExternalLink className="w-4 h-4" />
             <span className="hidden sm:inline">Open in New Window</span>

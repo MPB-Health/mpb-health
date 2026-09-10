@@ -1,6 +1,5 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { motion, useReducedMotion } from 'framer-motion';
 import { SEOHead } from '../components/SEOHead';
 import {
   AuroraBand,
@@ -11,25 +10,6 @@ import {
   SectionHead,
   Sheet,
 } from '../components/landing-redesign/page-kit';
-import {
-  ArrowRight,
-  Brain,
-  ClipboardList,
-  FileCheck,
-  FileText,
-  Headset,
-  Heart,
-  History,
-  Hourglass,
-  Pill,
-  PiggyBank,
-  Scale,
-  ShieldCheck,
-  Smile,
-  Stethoscope,
-  Users,
-  Video,
-} from 'lucide-react';
 import './how-it-works.css';
 
 const GUIDELINES_PATH = '/3d-flip-book/zion-guidelines';
@@ -89,23 +69,23 @@ const CARE_STEPS = [
 ];
 
 const ELIGIBILITY_FACTORS = [
-  { label: 'The type of medical service', Icon: Stethoscope },
-  { label: 'The reason for the service', Icon: ClipboardList },
-  { label: 'Membership requirements', Icon: FileText },
-  { label: 'Pre-membership conditions', Icon: History },
-  { label: 'Waiting or phase-in provisions', Icon: Hourglass },
-  { label: 'Applicable sharing maximums and exclusions', Icon: Scale },
-  { label: 'Documentation and submission requirements', Icon: FileCheck },
+  'The type of medical service',
+  'The reason for the service',
+  'Membership requirements',
+  'Pre-membership conditions',
+  'Waiting or phase-in provisions',
+  'Applicable sharing maximums and exclusions',
+  'Documentation and submission requirements',
 ];
 
 const EVERYDAY_RESOURCES = [
-  { title: 'Preventive care', text: 'Eligible preventive services and screenings.', Icon: Heart },
-  { title: 'HSA compatibility', text: 'Certain memberships are designed to be HSA-compatible.', Icon: PiggyBank },
-  { title: 'Dental discounts', text: 'Discounted pricing on dental care.', Icon: Smile },
-  { title: 'Virtual care', text: 'Convenient access to virtual healthcare.', Icon: Video },
-  { title: 'Behavioral health', text: 'Virtual behavioral health resources.', Icon: Brain },
-  { title: 'Prescription resources', text: 'Access to available prescription programs and resources.', Icon: Pill },
-  { title: 'Member support', text: 'Personalized guidance when navigating healthcare.', Icon: Headset },
+  { title: 'Preventive care', text: 'Eligible preventive services and screenings.' },
+  { title: 'HSA compatibility', text: 'Certain memberships are designed to be HSA-compatible.' },
+  { title: 'Dental discounts', text: 'Discounted pricing on dental care.' },
+  { title: 'Virtual care', text: 'Convenient access to virtual healthcare.' },
+  { title: 'Behavioral health', text: 'Virtual behavioral health resources.' },
+  { title: 'Prescription resources', text: 'Access to available prescription programs and resources.' },
+  { title: 'Member support', text: 'Personalized guidance when navigating healthcare.' },
 ];
 
 const COMPARISON_ROWS = [
@@ -122,32 +102,26 @@ const WHY_CHOOSE = [
   {
     title: 'Community-driven',
     text: 'Members participate in a community built around sharing eligible medical expenses.',
-    Icon: Users,
   },
   {
     title: 'Provider choice',
     text: 'Eligible members can seek care from licensed healthcare providers without traditional insurance network restrictions, subject to applicable membership requirements.',
-    Icon: Stethoscope,
   },
   {
     title: 'Convenient virtual care',
     text: 'Access virtual healthcare resources available through your membership.',
-    Icon: Video,
   },
   {
     title: 'Preventive care',
     text: 'Eligible memberships include access to preventive care resources.',
-    Icon: Heart,
   },
   {
     title: 'Member support',
     text: 'Get personalized support navigating your healthcare membership.',
-    Icon: Headset,
   },
   {
     title: 'Transparent guidelines',
     text: 'Understand how eligible medical expenses are handled through clearly defined membership guidelines.',
-    Icon: ShieldCheck,
   },
 ];
 
@@ -204,27 +178,14 @@ const FAQS = [
 /* ------------------------------------------------------------------ */
 
 function JourneyFlow() {
-  const reduceMotion = useReducedMotion();
-
   return (
     <div className="hiw-journey__flow">
-      <motion.div
-        className="hiw-journey__rail"
-        aria-hidden="true"
-        initial={reduceMotion ? false : { scaleY: 0 }}
-        whileInView={{ scaleY: 1 }}
-        viewport={{ once: true, amount: 0.2 }}
-        transition={{ duration: 1.4, ease: [0.16, 1, 0.3, 1] }}
-      />
+      <div className="hiw-journey__rail" aria-hidden="true" />
       <ol className="hiw-journey__list">
         {JOURNEY.map((step, index) => (
-          <motion.li
+          <li
             key={step.title}
             className={`hiw-journey__step${index % 2 === 1 ? ' hiw-journey__step--right' : ''}`}
-            initial={reduceMotion ? false : { opacity: 0, y: 28 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.4 }}
-            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           >
             <span className="hiw-journey__node" aria-hidden="true">
               {index + 1}
@@ -233,7 +194,7 @@ function JourneyFlow() {
               <h3 className="hiw-journey__step-title">{step.title}</h3>
               <p className="hiw-journey__step-text">{step.text}</p>
             </div>
-          </motion.li>
+          </li>
         ))}
       </ol>
     </div>
@@ -256,7 +217,6 @@ const HowItWorksPage: React.FC = () => {
       <LandingPage className="hiw">
         <PageHero
           ariaLabel="How health sharing works"
-          kicker="How it works"
           title="How health sharing works."
           lede={
             <>
@@ -276,11 +236,6 @@ const HowItWorksPage: React.FC = () => {
               </Link>
             </>
           }
-          rail={[
-            { value: '6', label: 'Steps from joining to sharing' },
-            { value: '$0', label: 'Virtual care, included' },
-            { value: '12,000+', label: 'Families served' },
-          ]}
           media={{
             type: 'image',
             src: '/assets/howitworks.png',
@@ -307,8 +262,7 @@ const HowItWorksPage: React.FC = () => {
                     />
                   </div>
                 </Reveal>
-                <Reveal delay={0.1}>
-                  <p className="lr-eyebrow">What is health sharing</p>
+                <Reveal>
                   <h2 className="lr-h2">
                     Healthcare built
                     <br />
@@ -332,11 +286,11 @@ const HowItWorksPage: React.FC = () => {
                 </Reveal>
               </div>
 
-              <Reveal delay={0.1}>
+              <Reveal>
                 <div className="hiw-simple">
-                  <p className="hiw-simple__label">In simple terms</p>
                   <p className="hiw-simple__text">
-                    Members contribute. Members receive care. <span>Eligible expenses are shared by the community.</span>
+                    Members contribute. Members receive care.{' '}
+                    <span>Eligible expenses are shared by the community.</span>
                   </p>
                 </div>
               </Reveal>
@@ -347,7 +301,6 @@ const HowItWorksPage: React.FC = () => {
           <section className="lr-sec lr-sec--hair" aria-label="How does MPB Health sharing work">
             <div className="lr-inner">
               <SectionHead
-                eyebrow="The process"
                 title="Six steps from joining to sharing."
                 lede="From choosing a membership to the community sharing an expense,"
                 ledeMuted="here is how it works."
@@ -372,8 +325,7 @@ const HowItWorksPage: React.FC = () => {
                     />
                   </div>
                 </Reveal>
-                <Reveal delay={0.1}>
-                  <p className="lr-eyebrow">When you need care</p>
+                <Reveal>
                   <h2 className="lr-h2">
                     What happens when
                     <br />
@@ -394,7 +346,7 @@ const HowItWorksPage: React.FC = () => {
                   </ol>
                   <p style={{ marginTop: '1.8rem' }}>
                     <Link to={GUIDELINES_PATH} className="lr-more">
-                      Membership guidelines <ArrowRight />
+                      Read the Member Guidelines
                     </Link>
                   </p>
                 </Reveal>
@@ -408,7 +360,6 @@ const HowItWorksPage: React.FC = () => {
               <Reveal>
                 <div className="hiw-mra">
                   <div>
-                    <p className="lr-eyebrow">Member responsibility</p>
                     <h2 className="lr-h2">Understanding your member responsibility amount.</h2>
                     <p className="hiw-mra__sub">Also called an Initial Unshareable Amount (IUA)</p>
                   </div>
@@ -420,7 +371,7 @@ const HowItWorksPage: React.FC = () => {
                       structure of this responsibility can vary by membership.
                     </p>
                     <div className="hiw-mra__important">
-                      <p className="hiw-mra__important-label">Important</p>
+                      <p className="hiw-mra__important-label">Worth knowing</p>
                       <p className="hiw-mra__important-text">
                         There is no one-size-fits-all member responsibility across MPB memberships.
                       </p>
@@ -435,24 +386,22 @@ const HowItWorksPage: React.FC = () => {
           <section className="lr-sec lr-sec--hair" aria-label="What medical expenses can be shared">
             <div className="lr-inner">
               <SectionHead
-                eyebrow="Eligibility"
                 title="What medical expenses can be shared?"
                 lede="Not every healthcare expense automatically qualifies for sharing."
                 ledeMuted="Eligibility is set by the Member Guidelines for your membership and can depend on:"
               />
 
               <Reveal>
-                <ul className="hiw-eligible__factors">
-                  {ELIGIBILITY_FACTORS.map(({ label, Icon }) => (
-                    <li key={label} className="hiw-eligible__factor">
-                      <Icon strokeWidth={1.8} aria-hidden="true" />
-                      {label}
+                <ul className="lr-ledger lr-ledger--3 lr-ledger--tight hiw-eligible">
+                  {ELIGIBILITY_FACTORS.map((label) => (
+                    <li key={label}>
+                      <h3>{label}</h3>
                     </li>
                   ))}
                 </ul>
               </Reveal>
 
-              <Reveal delay={0.1}>
+              <Reveal>
                 <div className="hiw-eligible__why">
                   <h3 className="lr-h3">Why this matters</h3>
                   <p className="lr-body">
@@ -461,7 +410,7 @@ const HowItWorksPage: React.FC = () => {
                   </p>
                   <p style={{ marginTop: '1rem' }}>
                     <Link to={GUIDELINES_PATH} className="lr-more">
-                      Read the Member Guidelines <ArrowRight />
+                      Read the Member Guidelines
                     </Link>
                   </p>
                 </div>
@@ -485,8 +434,7 @@ const HowItWorksPage: React.FC = () => {
                     />
                   </div>
                 </Reveal>
-                <Reveal delay={0.1}>
-                  <p className="lr-eyebrow">Everyday healthcare</p>
+                <Reveal>
                   <h2 className="lr-h2">
                     Preventive care and
                     <br />
@@ -499,19 +447,14 @@ const HowItWorksPage: React.FC = () => {
                       help members take a proactive approach to their health.
                     </span>
                   </p>
-                  <div className="hiw-everyday__grid">
-                    {EVERYDAY_RESOURCES.map(({ title, text, Icon }) => (
-                      <div key={title} className="hiw-everyday__item">
-                        <span className="lr-cell__tile">
-                          <Icon strokeWidth={1.8} aria-hidden="true" />
-                        </span>
-                        <div>
-                          <h3 className="hiw-everyday__item-title">{title}</h3>
-                          <p className="hiw-everyday__item-text">{text}</p>
-                        </div>
-                      </div>
+                  <ul className="lr-ledger lr-ledger--1 hiw-everyday">
+                    {EVERYDAY_RESOURCES.map(({ title, text }) => (
+                      <li key={title}>
+                        <h3>{title}</h3>
+                        <p>{text}</p>
+                      </li>
                     ))}
-                  </div>
+                  </ul>
                 </Reveal>
               </div>
             </div>
@@ -521,7 +464,6 @@ const HowItWorksPage: React.FC = () => {
           <section className="lr-sec" aria-label="Health sharing versus traditional health insurance">
             <div className="lr-inner">
               <SectionHead
-                eyebrow="Side by side"
                 title="Health sharing vs. traditional insurance."
                 lede="Familiar ideas, different words."
                 ledeMuted="Here is how the two vocabularies line up."
@@ -554,26 +496,20 @@ const HowItWorksPage: React.FC = () => {
           <section className="lr-sec lr-sec--soft" aria-label="Why people choose MPB Health">
             <div className="lr-inner">
               <SectionHead
-                eyebrow="Why people choose MPB Health"
-                title="A modern approach to healthcare."
+                title="Why people choose MPB Health."
                 lede="Community, choice and support,"
                 ledeMuted="without the network telling you where to go."
               />
-              <div className="lr-cells">
-                {WHY_CHOOSE.map(({ title, text, Icon }, i) => (
-                  <Reveal key={title} delay={i * 0.06}>
-                    <div className="lr-cell">
-                      <span className="lr-cell__tile">
-                        <Icon strokeWidth={1.8} />
-                      </span>
-                      <div>
-                        <h3>{title}</h3>
-                        <p>{text}</p>
-                      </div>
-                    </div>
-                  </Reveal>
-                ))}
-              </div>
+              <Reveal>
+                <ul className="lr-ledger lr-ledger--3">
+                  {WHY_CHOOSE.map(({ title, text }) => (
+                    <li key={title}>
+                      <h3>{title}</h3>
+                      <p>{text}</p>
+                    </li>
+                  ))}
+                </ul>
+              </Reveal>
             </div>
           </section>
 
@@ -592,7 +528,7 @@ const HowItWorksPage: React.FC = () => {
                 <>
                   The Member Guidelines have the full rules for every membership.{' '}
                   <Link to="/faq" className="lr-more">
-                    Browse all FAQs <ArrowRight />
+                    Browse all FAQs
                   </Link>
                 </>
               }

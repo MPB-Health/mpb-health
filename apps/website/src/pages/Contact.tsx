@@ -1,6 +1,5 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Clock, Mail, MapPin, Phone } from 'lucide-react';
 import { createClientLogger } from '@mpbhealth/utils';
 import { SEOHead } from '../components/SEOHead';
 import { ContactForm } from '../components/forms/ContactForm';
@@ -30,14 +29,8 @@ const Contact: React.FC = () => {
         <PageHero
           ariaLabel="Contact MPB Health"
           align="center"
-          kicker="Contact"
           title="Talk to a real person."
-          lede="Have questions about medical cost sharing? Our experienced healthcare advisors are here to help you find an affordable, comprehensive membership for you and your family."
-          rail={[
-            { value: 'Expert', label: 'Advisors' },
-            { value: '24 hr', label: 'Response' },
-            { value: '1:1', label: 'Personalized support' },
-          ]}
+          lede="Have questions about medical cost sharing? Our healthcare advisors will help you find an affordable membership for you and your family."
         />
 
         <Sheet>
@@ -54,27 +47,18 @@ const Contact: React.FC = () => {
                   <aside className="lr-aside" aria-label="Contact information">
                     <div className="lr-contact">
                       <div>
-                        <span className="lr-cell__tile">
-                          <Phone strokeWidth={1.8} />
-                        </span>
                         <div>
                           <h3>Phone</h3>
                           <a href="tel:+18558164650">(855) 816-4650</a>
                         </div>
                       </div>
                       <div>
-                        <span className="lr-cell__tile">
-                          <Mail strokeWidth={1.8} />
-                        </span>
                         <div>
                           <h3>Email</h3>
                           <a href="mailto:info@mympb.com">info@mympb.com</a>
                         </div>
                       </div>
                       <div>
-                        <span className="lr-cell__tile">
-                          <MapPin strokeWidth={1.8} />
-                        </span>
                         <div>
                           <h3>Office</h3>
                           <p>
@@ -85,9 +69,6 @@ const Contact: React.FC = () => {
                         </div>
                       </div>
                       <div>
-                        <span className="lr-cell__tile">
-                          <Clock strokeWidth={1.8} />
-                        </span>
                         <div>
                           <h3>Hours</h3>
                           <p>
@@ -124,12 +105,7 @@ const Contact: React.FC = () => {
 
           <section className="lr-sec lr-sec--soft" aria-label="Visit our office">
             <div className="lr-inner">
-              <SectionHead
-                eyebrow="Visit us"
-                title="Our door is open."
-                lede="5301 N Federal Hwy, Suite 155, Boca Raton."
-                ledeMuted="Weekdays 9 to 5."
-              />
+              <SectionHead title="Visit us in Boca Raton." lede="5301 N Federal Hwy, Suite 155." ledeMuted="Weekdays 9 to 5." />
               <Reveal>
                 <div className="lr-map">
                   <iframe

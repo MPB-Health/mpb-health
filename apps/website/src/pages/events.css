@@ -5,15 +5,6 @@
    Margin rules on headings/paragraphs are prefixed with `.evt` (0,2,0) so they
    beat the .hiw h/p margin reset (0,1,0) regardless of CSS bundle order. */
 
-/* ——— Shared bits ——— */
-.evt .evt-label {
-  font-size: clamp(0.85rem, 1vw, 0.95rem);
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--hiw-green-why);
-}
-
 /* ——— Hero stat pills (frosted, like Blog / Advisor Directory) ——— */
 .evt-hero__stats {
   display: flex;
@@ -29,7 +20,7 @@
   padding: 0.6rem 1.1rem;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.72);
-  box-shadow: inset 0 0 0 1px rgba(24, 51, 146, 0.12), 0 8px 18px -12px rgba(15, 39, 64, 0.35);
+  box-shadow: inset 0 0 0 1px rgba(0, 19, 189, 0.12), 0 8px 18px -12px rgba(15, 39, 64, 0.35);
   backdrop-filter: blur(4px);
   color: var(--hiw-navy);
   font-size: clamp(0.88rem, 1vw, 0.98rem);
@@ -73,11 +64,6 @@
   transition: transform 250ms ease, box-shadow 250ms ease;
 }
 
-.evt-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 18px 40px -18px rgba(15, 39, 64, 0.35);
-}
-
 .evt-card__media {
   position: relative;
   height: 12rem;
@@ -94,14 +80,10 @@
   transition: transform 500ms ease;
 }
 
-.evt-card:hover .evt-card__media img {
-  transform: scale(1.05);
-}
-
 .evt-card__media-fallback {
   width: 3rem;
   height: 3rem;
-  color: rgba(24, 51, 146, 0.3);
+  color: rgba(0, 19, 189, 0.3);
 }
 
 .evt-card__body {

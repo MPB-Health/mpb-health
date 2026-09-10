@@ -125,7 +125,6 @@ const FAQ: React.FC = () => {
         <PageHero
           ariaLabel="Help center"
           align="center"
-          kicker="Help center"
           title="Questions, answered."
           lede="Straight answers about health sharing, memberships and what it's like to be a member."
           actions={
@@ -146,13 +145,12 @@ const FAQ: React.FC = () => {
               <div className="lr-faq__grid">
                 <Reveal>
                   <h2 className="lr-faq__title">
-                    Frequently
+                    Frequently asked
                     <br />
-                    Asked Questions
+                    questions
                   </h2>
                   <p className="lr-body" style={{ marginTop: '1.2rem', maxWidth: '26rem' }}>
-                    Get clear answers to common questions about health sharing and membership. Still have
-                    questions? Our team is here to help.
+                    Clear answers about health sharing and membership. If yours isn't here, call us.
                   </p>
                 </Reveal>
                 <Reveal delay={0.1}>
@@ -173,7 +171,6 @@ const FAQ: React.FC = () => {
           <section className="lr-sec lr-sec--soft" aria-label="Still have questions">
             <div className="lr-inner">
               <SectionHead
-                eyebrow="Talk to us"
                 title="Still have questions?"
                 lede="Our member specialists are ready to help you understand"
                 ledeMuted="how health sharing can work for you and your family."

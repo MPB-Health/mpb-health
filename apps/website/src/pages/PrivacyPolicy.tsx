@@ -14,40 +14,40 @@ const PrivacyPolicy = () => {
         <section className="relative bg-gradient-to-br from-[#e8f3fc] via-[#d4e7f7] to-[#c4ddf2] pt-8 pb-20 overflow-hidden">
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDE2YzAgMi4yMS0xLjc5IDQtNCA0cy00LTEuNzktNC00IDEuNzktNCA0LTQgNCAxLjc5IDQgNHptLTQgMjhjLTIuMjEgMC00IDEuNzktNCA0czEuNzkgNCA0IDQgNC0xLjc5IDQtNC0xLjc5LTQtNC00ek0xNiAzNmMtMi4yMSAwLTQgMS43OS00IDRzMS43OSA0IDQgNCA0LTEuNzkgNC00LTEuNzktNC00LTR6bTI4IDBjLTIuMjEgMC00IDEuNzktNCA0czEuNzkgNCA0IDQgNC0xLjc5IDQtNC0xLjc5LTQtNC00em0tMTItMTJjLTIuMjEgMC00IDEuNzktNCA0czEuNzkgNCA0IDQgNC0xLjc5IDQtNC0xLjc5LTQtNC00eiIvPjwvZz48L2c+PC9zdmc+')] opacity-40"></div>
 
-          <div className="absolute top-0 right-0 -mt-16 -mr-16 w-96 h-96 bg-[#0a4c8f]/10 rounded-full blur-3xl"></div>
-          <div className="absolute bottom-0 left-0 -mb-16 -ml-16 w-96 h-96 bg-[#0a4c8f]/15 rounded-full blur-3xl"></div>
+          <div className="absolute top-0 right-0 -mt-16 -mr-16 w-96 h-96 bg-[#0013bd]/10 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-0 left-0 -mb-16 -ml-16 w-96 h-96 bg-[#0013bd]/15 rounded-full blur-3xl"></div>
 
           <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="text-center">
-              <div className="inline-flex items-center justify-center w-20 h-20 bg-[#0a4c8f]/10 backdrop-blur-sm rounded-2xl mb-6 border border-[#0a4c8f]/20">
-                <svg className="w-10 h-10 text-[#0a4c8f]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="inline-flex items-center justify-center w-20 h-20 bg-[#0013bd]/10 backdrop-blur-sm rounded-2xl mb-6 border border-[#0013bd]/20">
+                <svg className="w-10 h-10 text-[#0013bd]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
               </div>
 
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-[#0a4c8f] mb-6 leading-tight">
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-[#0013bd] mb-6 leading-tight">
                 Privacy Policy
               </h1>
 
-              <p className="text-xl sm:text-2xl text-[#0a4c8f]/80 max-w-3xl mx-auto leading-relaxed">
+              <p className="text-xl sm:text-2xl text-[#0013bd]/80 max-w-3xl mx-auto leading-relaxed">
                 Your privacy matters to us
               </p>
 
-              <div className="mt-5 flex flex-wrap items-center justify-center gap-6 text-[#0a4c8f]/90">
+              <div className="mt-5 flex flex-wrap items-center justify-center gap-6 text-[#0013bd]/90">
                 <div className="flex items-center gap-2">
-                  <svg className="w-5 h-5 text-[#0a4c8f]" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="w-5 h-5 text-[#0013bd]" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
                   <span className="text-sm font-medium">Data Protection</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <svg className="w-5 h-5 text-[#0a4c8f]" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="w-5 h-5 text-[#0013bd]" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
                   <span className="text-sm font-medium">Transparency</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <svg className="w-5 h-5 text-[#0a4c8f]" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="w-5 h-5 text-[#0013bd]" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
                   <span className="text-sm font-medium">Your Rights</span>
@@ -66,7 +66,7 @@ const PrivacyPolicy = () => {
               </p>
 
               <p className="text-slate-600 mb-6">
-                https://mpb.health/ (the "Site") is owned and operated by MPowering Benefits INC. MPowering Benefits INC can be contacted at: <a href="mailto:info@mympb.com" className="text-[#0a4c8f] hover:underline">info@mympb.com</a>
+                https://mpb.health/ (the "Site") is owned and operated by MPowering Benefits INC. MPowering Benefits INC can be contacted at: <a href="mailto:info@mympb.com" className="text-[#0013bd] hover:underline">info@mympb.com</a>
               </p>
 
               <h2 className="text-2xl font-bold text-slate-900 mt-8 mb-4">Purpose</h2>
@@ -224,7 +224,7 @@ const PrivacyPolicy = () => {
 
               <h2 className="text-2xl font-bold text-slate-900 mt-8 mb-4">How to Access, Modify, Delete, or Challenge the Data Collected</h2>
               <p className="text-slate-600 mb-6">
-                If you would like to know if we have collected your personal data, how we have used your personal data, if we have disclosed your personal data and to who we disclosed your personal data, or if you would like your data to be deleted or modified in any way, please contact our privacy officer at: <a href="mailto:info@mympb.com" className="text-[#0a4c8f] hover:underline">info@mympb.com</a>
+                If you would like to know if we have collected your personal data, how we have used your personal data, if we have disclosed your personal data and to who we disclosed your personal data, or if you would like your data to be deleted or modified in any way, please contact our privacy officer at: <a href="mailto:info@mympb.com" className="text-[#0013bd] hover:underline">info@mympb.com</a>
               </p>
 
               <h2 className="text-2xl font-bold text-slate-900 mt-8 mb-4">Do Not Track Notice</h2>
@@ -257,7 +257,7 @@ const PrivacyPolicy = () => {
               <div className="text-slate-600 mb-6">
                 <p className="mb-2"><strong>MPB Health</strong></p>
                 <p className="mb-2">5301 N Federal Hwy, Suite 155, Boca Raton, FL, 33487</p>
-                <p><a href="mailto:info@mympb.com" className="text-[#0a4c8f] hover:underline">info@mympb.com</a></p>
+                <p><a href="mailto:info@mympb.com" className="text-[#0013bd] hover:underline">info@mympb.com</a></p>
               </div>
             </div>
           </div>

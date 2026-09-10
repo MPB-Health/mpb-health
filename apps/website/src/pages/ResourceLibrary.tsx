@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { BookOpen, FileText, ArrowRight } from 'lucide-react';
-import { LandingPage, PageHero, Sheet } from '../components/landing-redesign/page-kit';
+import { BookOpen } from 'lucide-react';
+import { AuroraBand, LandingPage, PageHero, Sheet } from '../components/landing-redesign/page-kit';
 import { useResources } from '../hooks/useResources';
 import { ResourceFilters as IResourceFilters } from '../lib/supabase';
 import { ResourceFilters } from '../components/resources/ResourceFilters';
@@ -58,7 +58,6 @@ export const ResourceLibrary: React.FC = () => {
             <>
               <button type="button" className="lr-btn lr-btn--white" onClick={scrollToGrid}>
                 Browse resources
-                <ArrowRight />
               </button>
               <button
                 type="button"
@@ -68,7 +67,6 @@ export const ResourceLibrary: React.FC = () => {
                   setTimeout(scrollToGrid, 100);
                 }}
               >
-                <FileText />
                 View forms
               </button>
             </>
@@ -89,10 +87,9 @@ export const ResourceLibrary: React.FC = () => {
           <section className="hiw-section" aria-label="Featured resources">
             <div className="hiw-inner">
               <div className="hiw-section__header">
-                <p className="rl-label">Featured Resources</p>
-                <h2 className="hiw-title">Most Popular Resources</h2>
+                <h2 className="hiw-title">Featured resources</h2>
                 <p className="hiw-body">
-                  Our most popular and recently updated guides and materials
+                  Our most popular and recently updated guides and materials.
                 </p>
               </div>
 
@@ -109,10 +106,9 @@ export const ResourceLibrary: React.FC = () => {
         <section id="features-grid" className="hiw-section" aria-label="Complete resource collection">
           <div className="hiw-inner">
             <div className="hiw-section__header">
-              <p className="rl-label">Browse All</p>
-              <h2 className="hiw-title">Complete Resource Collection</h2>
+              <h2 className="hiw-title">Browse all resources</h2>
               <p className="hiw-body">
-                Filter by type, audience, or topic to find exactly what you need
+                Filter by type, audience, or topic to find exactly what you need.
               </p>
             </div>
 
@@ -144,14 +140,14 @@ export const ResourceLibrary: React.FC = () => {
                 <div className="rl-state__icon">
                   <BookOpen aria-hidden="true" />
                 </div>
-                <h3 className="rl-state__title">Error Loading Resources</h3>
+                <h3 className="rl-state__title">We couldn't load resources</h3>
                 <p className="rl-state__text">{error}</p>
                 <button
                   type="button"
                   className="rl-btn rl-btn--primary"
                   onClick={() => window.location.reload()}
                 >
-                  Try Again
+                  Try again
                 </button>
               </div>
             ) : regularResources.length === 0 ? (
@@ -174,7 +170,7 @@ export const ResourceLibrary: React.FC = () => {
                     })
                   }
                 >
-                  Clear All Filters
+                  Clear all filters
                 </button>
               </div>
             ) : (
@@ -187,23 +183,20 @@ export const ResourceLibrary: React.FC = () => {
           </div>
         </section>
 
-        {/* ── CTA ──────────────────────────────────────────────────── */}
-        <section className="rl-cta" aria-label="Contact our team">
-          <div className="rl-cta__card">
-            <p className="rl-label">Need Help?</p>
-            <h2 className="rl-cta__title">Can't Find What You're Looking For?</h2>
-            <p className="rl-cta__text">
-              Our team is here to assist you with any questions about our resources or health
-              sharing programs.
-            </p>
-            <div className="rl-cta__actions">
-              <Link to="/contact" className="rl-btn rl-btn--primary">
-                Contact Our Team
-                <ArrowRight />
+        {/* ── Closing ──────────────────────────────────────────────── */}
+        <AuroraBand
+          ariaLabel="Contact our team"
+          title="Can't find what you're looking for?"
+          lede="Our team can answer questions about any resource or about how health sharing works."
+          actions={
+            <>
+              <Link className="lr-btn lr-btn--white" to="/contact">
+                Contact our team
               </Link>
-            </div>
-          </div>
-        </section>
+            </>
+          }
+          note="MPB Health memberships are not insurance and do not guarantee payment of medical expenses. Eligible expenses are shared according to the membership guidelines."
+        />
 
         {/* ── Footer (same as landing page) ────────────────────────── */}
         </Sheet>

@@ -90,7 +90,7 @@ const Support: React.FC = () => {
                 <span className="bg-gradient-to-r from-neutral-900 via-primary to-neutral-800 bg-clip-text text-transparent">
                   How Can We
                 </span>{" "}
-                <span className="bg-gradient-to-r from-cyan-600 via-[#a3cc43] to-blue-600 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-cyan-600 via-[#a3e475] to-blue-600 bg-clip-text text-transparent">
                   Help?
                 </span>
               </h1>
@@ -246,7 +246,7 @@ const Support: React.FC = () => {
           </div>
         </section>
 
-        <section className="py-16 bg-gradient-to-br from-blue-600 via-cyan-600 to-[#a3cc43]">
+        <section className="py-16 bg-gradient-to-br from-blue-600 via-cyan-600 to-[#a3e475]">
           <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-10">
               <h2 className="text-3xl font-bold text-white mb-4">

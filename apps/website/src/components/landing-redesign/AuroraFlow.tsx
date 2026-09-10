@@ -4,7 +4,8 @@ const MeshGradient = lazy(() =>
   import('@paper-design/shaders-react').then((m) => ({ default: m.MeshGradient })),
 );
 
-const AURORA_COLORS = ['#083d71', '#0a4e8e', '#0d7f9e', '#00a99d', '#7ec244'];
+// Lime appears twice so the mesh reads blue → cyan → lime with green weight
+const AURORA_COLORS = ['#1a4fd6', '#2cb7dc', '#a3e475', '#2cb7dc', '#7fd3c9', '#a3e475'];
 
 /**
  * Animated WebGL mesh gradient (brand aurora).

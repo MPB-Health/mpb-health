@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Check } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { MarketingHydrationSeo } from '../components/MarketingHydrationSeo';
 import {
   AuroraBand,
@@ -46,10 +46,9 @@ const Plans: React.FC = () => {
         </script>
       </MarketingHydrationSeo>
 
-      <LandingPage>
+      <LandingPage className="plans">
         <PageHero
           ariaLabel="Memberships"
-          align="center"
           kicker="Memberships"
           title={
             <>
@@ -58,35 +57,47 @@ const Plans: React.FC = () => {
               One community.
             </>
           }
-          lede="Every membership includes $0 virtual care, concierge support and pharmacy savings. Pick the level of sharing that fits."
-          actions={
-            <>
-              <Link className="lr-btn lr-btn--white" to="/get-a-quote">
-                Get your quote
-              </Link>
-              <Link className="lr-btn lr-btn--glass" to="/how-it-works">
-                How sharing works
-              </Link>
-            </>
+          lede="Every one includes $0 virtual care, concierge support and pharmacy savings. Pick the level of sharing that fits."
+          panel={
+            <ol className="lr-ladder">
+              {INDIVIDUAL_PLANS.map((plan) => (
+                <li key={plan.id}>
+                  <a href="#individual">
+                    {plan.name}
+                    <small>{plan.whoFor}</small>
+                  </a>
+                  <strong>
+                    {plan.price}
+                    <span>/mo</span>
+                  </strong>
+                </li>
+              ))}
+              {BUSINESS_PLANS.map((plan) => (
+                <li key={plan.id}>
+                  <a href="#business">
+                    {plan.name}
+                    <small>{plan.whoFor}</small>
+                  </a>
+                  <strong>
+                    {plan.price}
+                    <span>/mo</span>
+                  </strong>
+                </li>
+              ))}
+            </ol>
           }
-          rail={[
-            { value: '$0', label: 'Virtual care, included' },
-            { value: '30–60%', label: 'Typical monthly savings' },
-            { value: '4.9/5', label: 'Google rating' },
-          ]}
         />
 
         <Sheet>
-          <section className="lr-sec lr-sec--top" aria-label="Memberships for individuals and families" id="individuals">
+          <section className="lr-sec lr-sec--top" aria-label="Memberships for individuals and families" id="individual">
             <div className="lr-inner">
               <SectionHead
-                eyebrow="For individuals & families"
-                title="Three ways to join."
+                title="For individuals and families"
                 lede="Start with everyday care, or add medical cost sharing"
                 ledeMuted="for the bills you can't plan for."
               />
               <PlanGrid plans={INDIVIDUAL_PLANS} />
-              <Reveal delay={0.1}>
+              <Reveal>
                 <p className="lr-note" style={{ textAlign: 'center', marginInline: 'auto' }}>
                   Monthly amounts shown are starting contributions for an individual and vary by age, household
                   and member responsibility amount. MPB Health memberships are not insurance.
@@ -98,14 +109,13 @@ const Plans: React.FC = () => {
           <section className="lr-sec lr-sec--soft" aria-label="Memberships for self-employed and businesses" id="business">
             <div className="lr-inner">
               <SectionHead
-                eyebrow="For self-employed & businesses"
-                title="Built for 1099s and teams of 2 to 50."
+                title="For the self-employed and teams of 2 to 50"
                 lede="HSA compatibility, ACA compliance and sharing"
                 ledeMuted="without the group-plan price tag."
               />
               <div style={{ maxWidth: '56rem', marginInline: 'auto' }}>
                 <PlanGrid plans={BUSINESS_PLANS} cols={2} />
-                <Reveal delay={0.1}>
+                <Reveal>
                   <p className="lr-note" style={{ textAlign: 'center', marginInline: 'auto' }}>
                     Starting contributions for one member. A 1099 or business ID is required for HSA Essentials and
                     Secure HSA. MPB Health memberships are not insurance.
@@ -118,36 +128,29 @@ const Plans: React.FC = () => {
           <section className="lr-sec lr-sec--hair" aria-label="Compare at a glance">
             <div className="lr-inner">
               <SectionHead
-                eyebrow="Compare at a glance"
                 title="Same everyday care. Different sharing."
                 lede="Virtual care and concierge are in every membership."
                 ledeMuted="The differences are in what the community shares."
               />
 
               <Reveal>
-                <div className="lr-sec__head lr-sec__head--left" style={{ marginBottom: '1.4rem' }}>
-                  <p className="lr-eyebrow">Individuals & families</p>
-                  <h3 className="lr-h3">Essentials, Care+ and Direct</h3>
-                </div>
-              </Reveal>
-              <Reveal delay={0.08}>
+                <h3 className="lr-h3" style={{ marginBottom: '1.4rem' }}>
+                  Essentials, Care+ and Direct
+                </h3>
                 <CompareTable columns={INDIVIDUAL_COMPARE.columns} groups={INDIVIDUAL_COMPARE.groups} />
               </Reveal>
 
               <Reveal>
-                <div className="lr-sec__head lr-sec__head--left" style={{ margin: '3.5rem 0 1.4rem' }}>
-                  <p className="lr-eyebrow">Self-employed & business</p>
-                  <h3 className="lr-h3">HSA Essentials and Secure HSA</h3>
-                </div>
-              </Reveal>
-              <Reveal delay={0.08}>
+                <h3 className="lr-h3" style={{ margin: '3.5rem 0 1.4rem' }}>
+                  HSA Essentials and Secure HSA
+                </h3>
                 <CompareTable columns={BUSINESS_COMPARE.columns} groups={BUSINESS_COMPARE.groups} />
               </Reveal>
 
-              <Reveal delay={0.1}>
+              <Reveal>
                 <p style={{ textAlign: 'center', marginTop: '2.4rem' }}>
                   <Link to="/compare-plans" className="lr-more">
-                    Open the full comparison <ArrowRight />
+                    Open the full comparison
                   </Link>
                 </p>
               </Reveal>
@@ -171,8 +174,7 @@ const Plans: React.FC = () => {
                     />
                   </div>
                 </Reveal>
-                <Reveal delay={0.1}>
-                  <p className="lr-eyebrow">How the IUA works</p>
+                <Reveal>
                   <h2 className="lr-h2">
                     One amount you&rsquo;re responsible for. Then the community shares.
                   </h2>
@@ -207,12 +209,19 @@ const Plans: React.FC = () => {
           </section>
 
           <FaqSection
+            title={
+              <>
+                Frequently
+                <br />
+                asked questions
+              </>
+            }
             items={plansFaqQuestions}
             intro={
               <>
                 Still deciding? Our advisors answer the hard questions too.{' '}
                 <Link to="/faq" className="lr-more">
-                  Browse all FAQs <ArrowRight />
+                  Browse all FAQs
                 </Link>
               </>
             }

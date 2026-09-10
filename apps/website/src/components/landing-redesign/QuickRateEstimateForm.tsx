@@ -504,7 +504,7 @@ export function QuickRateEstimateForm() {
                 {topPlans.map(({ rec, estimate }) => (
                   <div key={rec.planId} className="qre__plan">
                     <div className="qre__badge">Best Match</div>
-                    <div style={{ fontWeight: 800, color: '#1256b0' }}>{rec.planName}</div>
+                    <div style={{ fontWeight: 800, color: '#0013bd' }}>{rec.planName}</div>
                     {estimate ? (
                       <div>
                         From <strong>{fmtMoney(estimate.lowestPrice)}</strong>/mo

@@ -5,15 +5,6 @@
    Margin rules on headings/paragraphs are prefixed with `.ms` (0,2,0) so
    they beat the .hiw h/p margin reset (0,1,0) regardless of bundle order. */
 
-/* ——— Shared bits ——— */
-.ms .ms-label {
-  font-size: clamp(0.85rem, 1vw, 0.95rem);
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--hiw-green-why);
-}
-
 /* ——— Hero stat pills (frosted, like Blog / Events) ——— */
 .ms-hero__stats {
   display: flex;
@@ -29,7 +20,7 @@
   padding: 0.6rem 1.1rem;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.72);
-  box-shadow: inset 0 0 0 1px rgba(24, 51, 146, 0.12), 0 8px 18px -12px rgba(15, 39, 64, 0.35);
+  box-shadow: inset 0 0 0 1px rgba(0, 19, 189, 0.12), 0 8px 18px -12px rgba(15, 39, 64, 0.35);
   backdrop-filter: blur(4px);
   color: var(--hiw-navy);
   font-size: clamp(0.88rem, 1vw, 0.98rem);
@@ -191,11 +182,11 @@
   align-items: center;
   padding: 0.45rem 1rem;
   border-radius: 999px;
-  background: linear-gradient(120deg, var(--hiw-green-why), #7fb432);
+  background: linear-gradient(120deg, var(--hiw-green-why), #6fb63a);
   color: #fff;
   font-size: 0.95rem;
   font-weight: 800;
-  box-shadow: 0 10px 22px -12px rgba(127, 180, 50, 0.8);
+  box-shadow: 0 10px 22px -12px rgba(111, 182, 58, 0.8);
 }
 
 .ms-badge--topic {
@@ -220,7 +211,7 @@
   left: -0.4rem;
   width: 2.75rem;
   height: 2.75rem;
-  color: rgba(24, 51, 146, 0.14);
+  color: rgba(0, 19, 189, 0.14);
 }
 
 .ms .ms-feature__quote {
@@ -280,7 +271,7 @@
   gap: 0.4rem;
   padding: 0.65rem 1.25rem;
   border-radius: 999px;
-  border: 1px solid rgba(24, 51, 146, 0.18);
+  border: 1px solid rgba(0, 19, 189, 0.18);
   background: #fff;
   color: var(--hiw-navy);
   font-weight: 700;
@@ -291,7 +282,6 @@
 
 .ms-feature__btn:hover {
   background: var(--hiw-pale-blue);
-  transform: translateY(-1px);
 }
 
 .ms-feature__btn svg {
@@ -357,11 +347,6 @@
   transition: transform 250ms ease, box-shadow 250ms ease;
 }
 
-.ms-stat-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 18px 40px -18px rgba(15, 39, 64, 0.35);
-}
-
 .ms-stat-card__icon {
   width: 3.5rem;
   height: 3.5rem;
@@ -369,14 +354,14 @@
   border-radius: 1rem;
   display: grid;
   place-items: center;
-  background: linear-gradient(135deg, var(--hiw-blue), #2f6fd8);
+  background: linear-gradient(135deg, var(--hiw-blue), #0013bd);
   color: #fff;
-  box-shadow: 0 12px 26px -14px rgba(24, 51, 146, 0.7);
+  box-shadow: 0 12px 26px -14px rgba(0, 19, 189, 0.7);
 }
 
 .ms-stat-card__icon--green {
-  background: linear-gradient(135deg, var(--hiw-green-why), #7fb432);
-  box-shadow: 0 12px 26px -14px rgba(127, 180, 50, 0.7);
+  background: linear-gradient(135deg, var(--hiw-green-why), #6fb63a);
+  box-shadow: 0 12px 26px -14px rgba(111, 182, 58, 0.7);
 }
 
 .ms-stat-card__icon svg {
@@ -420,11 +405,6 @@
   box-shadow: var(--hiw-shadow);
   overflow: hidden;
   transition: transform 250ms ease, box-shadow 250ms ease;
-}
-
-.ms-video-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 18px 40px -18px rgba(15, 39, 64, 0.35);
 }
 
 .ms-video-card__media {
@@ -486,16 +466,7 @@
   padding: 1.1rem 1.3rem 1.3rem;
 }
 
-.ms .ms-video-card__kicker {
-  font-size: 0.75rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--hiw-blue);
-}
-
 .ms .ms-video-card__name {
-  margin-top: 0.3rem;
   font-size: 1.05rem;
   font-weight: 800;
   color: var(--hiw-navy);
@@ -506,80 +477,4 @@
   font-size: 0.9rem;
   line-height: 1.5;
   color: var(--hiw-gray);
-}
-
-/* ——— CTA ——— */
-.ms-cta {
-  padding: clamp(3rem, 6vw, 5rem) 1.5rem;
-}
-
-.ms-cta__card {
-  max-width: 72rem;
-  margin: 0 auto;
-  padding: clamp(2.5rem, 5vw, 4rem) clamp(1.5rem, 4vw, 3.5rem);
-  border-radius: var(--hiw-radius);
-  background: var(--hiw-card-gradient);
-  box-shadow: var(--hiw-shadow);
-  text-align: center;
-}
-
-.ms .ms-cta__title {
-  max-width: 34ch;
-  margin: 0 auto;
-  font-size: clamp(1.6rem, 2.6vw, 2.3rem);
-  font-weight: 800;
-  color: var(--hiw-navy);
-}
-
-.ms .ms-cta__text {
-  max-width: 56ch;
-  margin: 1rem auto 0;
-  color: var(--hiw-navy);
-  opacity: 0.85;
-  line-height: 1.6;
-  font-size: clamp(1rem, 1.2vw, 1.15rem);
-}
-
-.ms-cta__actions {
-  margin-top: clamp(1.5rem, 2.5vw, 2.25rem);
-  display: flex;
-  justify-content: center;
-}
-
-.ms-cta__btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.95rem 2rem;
-  border-radius: 999px;
-  font-size: clamp(0.98rem, 1.15vw, 1.1rem);
-  font-weight: 700;
-  background: var(--hiw-cta);
-  color: #fff;
-  box-shadow: 0 12px 22px -8px rgba(31, 166, 232, 0.55);
-  transition: transform 250ms ease, filter 250ms ease, box-shadow 250ms ease;
-}
-
-.ms-cta__btn:hover {
-  transform: translateY(-2px);
-  filter: brightness(1.06);
-  box-shadow: 0 16px 26px -8px rgba(31, 166, 232, 0.6);
-}
-
-.ms-cta__btn svg {
-  width: 1.1em;
-  height: 1.1em;
-}
-
-.ms .ms-cta__note {
-  margin-top: 1.25rem;
-  color: var(--hiw-navy);
-  opacity: 0.8;
-  font-size: clamp(0.95rem, 1.1vw, 1.05rem);
-}
-
-.ms .ms-cta__note strong {
-  font-weight: 800;
-  opacity: 1;
 }

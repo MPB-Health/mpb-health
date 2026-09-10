@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, FileText } from 'lucide-react';
 import { MarketingHydrationSeo } from '../components/MarketingHydrationSeo';
 import {
   AuroraBand,
@@ -24,8 +23,8 @@ import { generateFAQSchema, comparePlansFaqQuestions } from '../lib/schemaMarkup
 type Audience = 'individual' | 'business';
 
 const TABS: ReadonlyArray<{ id: Audience; label: string }> = [
-  { id: 'individual', label: 'Individuals & families' },
-  { id: 'business', label: 'Self-employed & business' },
+  { id: 'individual', label: 'Individuals and families' },
+  { id: 'business', label: 'Self-employed and business' },
 ];
 
 export default function PlanComparison() {
@@ -43,7 +42,6 @@ export default function PlanComparison() {
       <LandingPage>
         <PageHero
           ariaLabel="Compare memberships"
-          align="center"
           kicker="Compare memberships"
           title={
             <>
@@ -54,14 +52,9 @@ export default function PlanComparison() {
           }
           lede="Virtual care and concierge come with all five. Here is exactly what changes as you move up."
           actions={
-            <>
-              <Link className="lr-btn lr-btn--white" to="/get-a-quote">
-                Get your quote
-              </Link>
-              <Link className="lr-btn lr-btn--glass" to="/individuals-and-families">
-                Individuals &amp; families
-              </Link>
-            </>
+            <Link className="lr-btn lr-btn--white" to="/get-a-quote">
+              Get your quote
+            </Link>
           }
         />
 
@@ -69,7 +62,6 @@ export default function PlanComparison() {
           <section className="lr-sec lr-sec--top" aria-label="Compare memberships" id="compare">
             <div className="lr-inner">
               <SectionHead
-                eyebrow="Side by side"
                 title="Pick who you're comparing for."
                 lede="Price and enroll first, then every feature line by line."
                 ledeMuted="Switch between household and business memberships below."
@@ -103,18 +95,17 @@ export default function PlanComparison() {
                   </div>
                 )}
 
-                <Reveal key={`table-${audience}`} delay={0.1}>
-                  <div className="lr-sec__head lr-sec__head--left" style={{ margin: '3.5rem 0 1.4rem' }}>
-                    <p className="lr-eyebrow">Feature by feature</p>
-                    <h3 className="lr-h3">
-                      {isBusiness ? 'HSA Essentials and Secure HSA' : 'Essentials, Care+ and Direct'}
-                    </h3>
-                  </div>
+                <Reveal key={`table-${audience}`}>
+                  <h3 className="lr-h3" style={{ margin: '3.5rem 0 1.4rem' }}>
+                    {isBusiness
+                      ? 'HSA Essentials and Secure HSA, feature by feature'
+                      : 'Essentials, Care+ and Direct, feature by feature'}
+                  </h3>
                   <CompareTable columns={compare.columns} groups={compare.groups} />
                 </Reveal>
               </div>
 
-              <Reveal delay={0.1}>
+              <Reveal>
                 <p className="lr-note" style={{ textAlign: 'center', marginInline: 'auto' }}>
                   Monthly amounts shown are starting contributions for one member and vary by age, household and
                   member responsibility amount. MPB Health memberships are not insurance.
@@ -150,7 +141,6 @@ export default function PlanComparison() {
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    <FileText strokeWidth={1.8} />
                     Open the guide
                   </a>
                 </div>
@@ -159,12 +149,19 @@ export default function PlanComparison() {
           </section>
 
           <FaqSection
+            title={
+              <>
+                Frequently
+                <br />
+                asked questions
+              </>
+            }
             items={comparePlansFaqQuestions}
             intro={
               <>
                 Still deciding? Our advisors answer the hard questions too.{' '}
                 <Link to="/faq" className="lr-more">
-                  Browse all FAQs <ArrowRight />
+                  Browse all FAQs
                 </Link>
               </>
             }

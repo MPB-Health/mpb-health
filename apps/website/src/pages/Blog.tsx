@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { BookOpen, TrendingUp, Heart, Calendar, Clock, ArrowRight } from 'lucide-react';
+import { BookOpen, Calendar, Clock } from 'lucide-react';
 import { LandingPage, PageHero, Sheet } from '../components/landing-redesign/page-kit';
 import { supabase, BlogArticle } from '../lib/supabase';
 import { useCmsLive } from '../hooks/useCmsLive';
@@ -63,11 +63,6 @@ const Blog: React.FC = () => {
             </>
           }
           lede="Expert insights on healthcare, wellness, and living your healthiest life."
-          rail={[
-            { value: `${blogPosts.length}+`, label: 'Articles' },
-            { value: 'Weekly', label: 'New updates' },
-            { value: 'Expert', label: 'Advice you can use' },
-          ]}
           media={{
             type: 'image',
             src: '/assets/newsletter-blog-images-2.jpg',
@@ -83,10 +78,9 @@ const Blog: React.FC = () => {
         <section className="hiw-section" aria-label="Latest articles">
           <div className="hiw-inner">
             <div className="hiw-section__header">
-              <p className="blg-label">Latest Articles</p>
-              <h2 className="hiw-title">Healthcare Insights &amp; Updates</h2>
+              <h2 className="hiw-title">Latest articles</h2>
               <p className="hiw-body">
-                Explore our complete collection of healthcare insights and wellness tips
+                Our complete collection of healthcare insights and wellness tips.
               </p>
             </div>
 
@@ -143,9 +137,7 @@ const Blog: React.FC = () => {
                       </div>
                       <h3 className="blg-card__title">{post.title}</h3>
                       <p className="blg-card__excerpt">{post.excerpt}</p>
-                      <span className="blg-card__link">
-                        Read Article <ArrowRight />
-                      </span>
+                      <span className="blg-card__link">Read article</span>
                     </div>
                   </Link>
                 ))}

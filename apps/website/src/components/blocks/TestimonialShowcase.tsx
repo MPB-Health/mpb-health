@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Star, Quote, ChevronLeft, ChevronRight, Play, MapPin, Users, Heart, TrendingUp, Award, ArrowRight } from 'lucide-react';
+import { Star, Quote, ChevronLeft, ChevronRight, Play, MapPin, Users, Heart, TrendingUp, Award } from 'lucide-react';
 
 interface Testimonial {
   id: number;
@@ -236,7 +236,7 @@ const TestimonialShowcase: React.FC = () => {
 
             <div className="ms-feature__body">
               <div className="ms-feature__tags">
-                <span className="ms-badge--savings">{current.savings} Saved</span>
+                <span className="ms-badge--savings">{current.savings} saved</span>
                 {current.condition && <span className="ms-badge--topic">{current.condition}</span>}
               </div>
 
@@ -249,7 +249,7 @@ const TestimonialShowcase: React.FC = () => {
                 <span className="ms-feature__story-icon">
                   <Heart aria-hidden="true" />
                 </span>
-                Their Story
+                Their story
               </h4>
               <p className="ms-feature__story">{current.story}</p>
 
@@ -289,37 +289,22 @@ const TestimonialShowcase: React.FC = () => {
                 <Star aria-hidden="true" style={{ fill: 'currentColor' }} />
               </div>
               <div className="ms-stat-card__value">4.9/5</div>
-              <div className="ms-stat-card__caption">Average Member Rating</div>
+              <div className="ms-stat-card__caption">Average member rating</div>
             </div>
             <div className="ms-stat-card">
               <div className="ms-stat-card__icon ms-stat-card__icon--green">
                 <TrendingUp aria-hidden="true" />
               </div>
               <div className="ms-stat-card__value">$3,400</div>
-              <div className="ms-stat-card__caption">Average Annual Savings</div>
+              <div className="ms-stat-card__caption">Average annual savings</div>
             </div>
             <div className="ms-stat-card">
               <div className="ms-stat-card__icon">
                 <Heart aria-hidden="true" style={{ fill: 'currentColor' }} />
               </div>
               <div className="ms-stat-card__value">12,000+</div>
-              <div className="ms-stat-card__caption">Verified Reviews</div>
+              <div className="ms-stat-card__caption">Verified reviews</div>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="ms-cta" aria-label="Start your savings story">
-        <div className="ms-cta__card">
-          <h2 className="ms-cta__title">
-            Join 50,000+ families already saving with MPB Health
-          </h2>
-          <div className="ms-cta__actions">
-            <a href="/get-started" className="ms-cta__btn">
-              Start Your Savings Story
-              <ArrowRight aria-hidden="true" />
-            </a>
           </div>
         </div>
       </section>

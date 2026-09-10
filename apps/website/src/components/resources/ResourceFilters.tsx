@@ -19,16 +19,16 @@ const RESOURCE_TYPES: { value: ResourceType; label: string }[] = [
 ];
 
 const AUDIENCES: { value: TargetAudience; label: string }[] = [
-  { value: 'All', label: 'All Audiences' },
+  { value: 'All', label: 'All audiences' },
   { value: 'Members', label: 'Members' },
   { value: 'Employers', label: 'Employers' },
   { value: 'Advisors', label: 'Advisors' },
 ];
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
-  { value: 'newest', label: 'Newest First' },
-  { value: 'oldest', label: 'Oldest First' },
-  { value: 'most-viewed', label: 'Most Popular' },
+  { value: 'newest', label: 'Newest first' },
+  { value: 'oldest', label: 'Oldest first' },
+  { value: 'most-viewed', label: 'Most popular' },
   { value: 'title-asc', label: 'Title A-Z' },
   { value: 'title-desc', label: 'Title Z-A' },
 ];
@@ -111,7 +111,7 @@ export const ResourceFilters: React.FC<ResourceFiltersProps> = ({
             onClick={() => setShowTypeDropdown(!showTypeDropdown)}
           >
             <Filter aria-hidden="true" />
-            {filters.types.length > 0 ? `Type (${filters.types.length})` : 'All Types'}
+            {filters.types.length > 0 ? `Type (${filters.types.length})` : 'All types'}
             <ChevronDown aria-hidden="true" />
           </button>
           {showTypeDropdown && (
@@ -139,7 +139,7 @@ export const ResourceFilters: React.FC<ResourceFiltersProps> = ({
             <Filter aria-hidden="true" />
             {filters.audiences.length > 0
               ? `Audience (${filters.audiences.length})`
-              : 'All Audiences'}
+              : 'All audiences'}
             <ChevronDown aria-hidden="true" />
           </button>
           {showAudienceDropdown && (
@@ -165,7 +165,7 @@ export const ResourceFilters: React.FC<ResourceFiltersProps> = ({
             onClick={() => setShowTopicDropdown(!showTopicDropdown)}
           >
             <Filter aria-hidden="true" />
-            {filters.topics.length > 0 ? `Topics (${filters.topics.length})` : 'All Topics'}
+            {filters.topics.length > 0 ? `Topics (${filters.topics.length})` : 'All topics'}
             <ChevronDown aria-hidden="true" />
           </button>
           {showTopicDropdown && (

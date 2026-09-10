@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Play, Star, TrendingUp, Users } from 'lucide-react';
+import { Play } from 'lucide-react';
 import { LandingPage, PageHero, Sheet } from '../components/landing-redesign/page-kit';
 import { TestimonialShowcase } from '../components/blocks/TestimonialShowcase';
 import '../components/landing-redesign/landing-redesign.css';
@@ -88,7 +88,6 @@ const VideoCard: React.FC<{ video: VideoTestimonial }> = ({ video }) => {
       </div>
 
       <div className="ms-video-card__body">
-        <p className="ms-video-card__kicker">{video.title}</p>
         <p className="ms-video-card__name">{video.member}</p>
         <p className="ms-video-card__desc">{video.description}</p>
       </div>
@@ -116,20 +115,14 @@ const MemberStories: React.FC = () => {
       <LandingPage className="hiw ms">
         <PageHero
           ariaLabel="Member stories"
+          variant="quote"
           kicker="Member stories"
-          title={
+          title="“Adam at concierge services is my hero. He ended an hour of frustration trying to get Dr. visits scheduled. He was patient and informative.”"
+          by={
             <>
-              Real families.
-              <br />
-              Real savings.
+              <strong>Patrick Dittoe</strong>, member since 2024
             </>
           }
-          lede="Hear directly from members whose lives have been changed by community health sharing."
-          rail={[
-            { value: '4.9/5', label: 'Google rating' },
-            { value: '$3,400', label: 'Average yearly savings' },
-            { value: '12K+', label: 'Members' },
-          ]}
           media={{
             type: 'image',
             src: 'https://images.pexels.com/photos/3184325/pexels-photo-3184325.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
@@ -146,9 +139,8 @@ const MemberStories: React.FC = () => {
         <section className="hiw-section" aria-label="Video reviews">
           <div className="hiw-inner">
             <div className="hiw-section__header">
-              <p className="ms-label">Video Reviews</p>
-              <h2 className="hiw-title">Hear It Directly From Our Members</h2>
-              <p className="hiw-body">Real members, real experiences — in their own words.</p>
+              <h2 className="hiw-title">Hear it directly from our members</h2>
+              <p className="hiw-body">Real members, real experiences, in their own words.</p>
             </div>
 
             <div className="ms-videos">

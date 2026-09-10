@@ -107,7 +107,7 @@ const SystemSettings: React.FC = () => {
       { key: 'admin_alert_email', value: '', description: 'Email for admin alerts', is_sensitive: false }
     ],
     appearance: [
-      { key: 'primary_color', value: '#0a4c8f', description: 'Primary brand color', is_sensitive: false },
+      { key: 'primary_color', value: '#0013bd', description: 'Primary brand color', is_sensitive: false },
       { key: 'secondary_color', value: '#00a651', description: 'Secondary brand color', is_sensitive: false },
       { key: 'logo_url', value: '/assets/logo.png', description: 'Path to logo image', is_sensitive: false },
       { key: 'favicon_url', value: '/favicon.ico', description: 'Path to favicon', is_sensitive: false },

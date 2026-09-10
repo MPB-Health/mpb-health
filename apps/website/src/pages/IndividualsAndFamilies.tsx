@@ -1,22 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import {
-  ArrowRight,
-  Baby,
-  Check,
-  Globe,
-  Headset,
-  HeartPulse,
-  PiggyBank,
-  ShieldCheck,
-  Stethoscope,
-  Users,
-  Video,
-} from 'lucide-react';
+import { Check } from 'lucide-react';
 import { MarketingHydrationSeo } from '../components/MarketingHydrationSeo';
 import { AffiliateProvider } from '../components/AffiliateProvider';
 import { QuickRateEstimateForm } from '../components/landing-redesign/QuickRateEstimateForm';
-import { RxIcon } from '../components/landing-redesign/icons';
 import {
   AuroraBand,
   FaqSection,
@@ -39,32 +26,26 @@ const WHY = [
   {
     title: 'Save 30 to 60%',
     text: 'Typical families contribute far less each month than they would pay in traditional premiums.',
-    Icon: PiggyBank,
   },
   {
     title: 'See any provider',
     text: 'No narrow networks. Keep your pediatrician, your specialist and the hospital you trust.',
-    Icon: Stethoscope,
   },
   {
     title: 'A real community',
     text: 'Eligible medical expenses are shared by a nationwide community of members, not an insurer.',
-    Icon: Users,
   },
   {
     title: 'Transparent pricing',
     text: 'Clear monthly contributions and a single member responsibility amount. No surprise bills.',
-    Icon: ShieldCheck,
   },
   {
     title: 'Sharing that travels',
     text: 'Support that goes with you across the country and around the world.',
-    Icon: Globe,
   },
   {
     title: 'Maternity sharing',
     text: 'Prenatal, delivery, postnatal and newborn care are eligible for sharing on qualifying memberships.',
-    Icon: Baby,
   },
 ] as const;
 
@@ -72,17 +53,14 @@ const EVERYDAY = [
   {
     title: '$0 virtual care, day one',
     body: 'Unlimited 24/7 urgent care, continuous primary care and behavioral health visits at no cost.',
-    Icon: Video,
   },
   {
     title: 'A personal concierge',
     body: 'A real person schedules visits, walks you through sharing requests and answers questions fast.',
-    Icon: Headset,
   },
   {
     title: 'Pharmacy savings',
     body: 'Over 1,000 medications at $0 or under $14.95, plus 30% off vitamins and supplements.',
-    Icon: RxIcon,
   },
 ] as const;
 
@@ -143,7 +121,7 @@ const IndividualsAndFamilies = () => {
       <LandingPage>
         <PageHero
           ariaLabel="Individuals and families"
-          kicker="For individuals & families"
+          kicker="For individuals and families"
           title={
             <>
               Healthcare built
@@ -158,58 +136,52 @@ const IndividualsAndFamilies = () => {
             </>
           }
           actions={
-            <>
-              <a className="lr-btn lr-btn--white" href="#estimate">
-                Get your quote
-              </a>
-              <Link className="lr-btn lr-btn--glass" to="/compare-plans">
-                Compare memberships
-              </Link>
-            </>
+            <Link className="lr-btn lr-btn--glass" to="/compare-plans">
+              Compare memberships
+            </Link>
           }
-          rail={[
-            { value: '30–60%', label: 'Typical monthly savings' },
-            { value: '12,000+', label: 'Families served' },
-            { value: '$0', label: 'Virtual care, included' },
-          ]}
-          media={{
-            type: 'video',
-            src: '/assets/individual-and -family.mp4',
-            poster: '/assets/hero-family.jpg',
-          }}
-          caption={
-            <>
-              <HeartPulse />
-              <p>
-                <strong>Not insurance.</strong> A community that shares eligible medical expenses.
-              </p>
-            </>
+          panel={
+            <AffiliateProvider>
+              <QuickRateEstimateForm />
+            </AffiliateProvider>
           }
         />
 
         <Sheet>
           <section className="lr-sec lr-sec--top" aria-label="Why families choose MPB Health">
             <div className="lr-inner">
-              <SectionHead
-                eyebrow="Why families choose MPB Health"
-                title="Less premium. More care."
-                lede="Everything traditional insurance made complicated,"
-                ledeMuted="simplified into one membership you can actually understand."
-              />
-              <div className="lr-cells">
-                {WHY.map(({ title, text, Icon }, i) => (
-                  <Reveal key={title} delay={i * 0.06}>
-                    <div className="lr-cell">
-                      <span className="lr-cell__tile">
-                        <Icon strokeWidth={1.8} />
-                      </span>
-                      <div>
+              <div className="lr-split">
+                <Reveal>
+                  <div className="lr-split__media">
+                    <img
+                      src="/assets/how-it-works-family.png"
+                      alt=""
+                      width={1448}
+                      height={1086}
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </div>
+                </Reveal>
+                <Reveal>
+                  <h2 className="lr-h2">
+                    Why families
+                    <br />
+                    choose MPB Health.
+                  </h2>
+                  <p className="lr-twotone">
+                    Everything traditional insurance made complicated,{' '}
+                    <span>simplified into one membership you can actually understand.</span>
+                  </p>
+                  <ul className="lr-ledger lr-ledger--1" style={{ marginTop: '1.8rem' }}>
+                    {WHY.map(({ title, text }) => (
+                      <li key={title}>
                         <h3>{title}</h3>
                         <p>{text}</p>
-                      </div>
-                    </div>
-                  </Reveal>
-                ))}
+                      </li>
+                    ))}
+                  </ul>
+                </Reveal>
               </div>
             </div>
           </section>
@@ -217,56 +189,22 @@ const IndividualsAndFamilies = () => {
           <section className="lr-sec lr-sec--soft" aria-label="Memberships" id="memberships">
             <div className="lr-inner">
               <SectionHead
-                eyebrow="Memberships"
                 title="Choose the membership that fits."
                 lede="Three ways to join, one community."
                 ledeMuted="Every membership includes $0 virtual care and concierge support."
               />
               <PlanGrid plans={INDIVIDUAL_PLANS} />
-              <Reveal delay={0.1}>
+              <Reveal>
                 <p className="lr-note" style={{ textAlign: 'center', marginInline: 'auto' }}>
                   Monthly amounts shown are starting contributions for an individual and vary by age, household
                   and member responsibility amount. MPB Health memberships are not insurance.
                 </p>
                 <p style={{ textAlign: 'center', marginTop: '1.4rem' }}>
                   <Link to="/compare-plans" className="lr-more">
-                    See every membership side by side <ArrowRight />
+                    See every membership side by side
                   </Link>
                 </p>
               </Reveal>
-            </div>
-          </section>
-
-          <section className="lr-sec" aria-label="Quick rate estimate" id="estimate">
-            <div className="lr-inner">
-              <div className="lr-estimate__grid">
-                <div className="lr-estimate__media">
-                  <img
-                    src="/assets/how-it-works-family.png"
-                    alt=""
-                    width={1448}
-                    height={1086}
-                    loading="lazy"
-                    decoding="async"
-                  />
-                </div>
-                <Reveal>
-                  <AffiliateProvider>
-                    <QuickRateEstimateForm />
-                  </AffiliateProvider>
-                </Reveal>
-              </div>
-              <div className="lr-estimate__trust">
-                <span>
-                  <ShieldCheck /> Secure &amp; private
-                </span>
-                <span>
-                  <Users /> Over 12,000 members served
-                </span>
-                <span>
-                  <Video /> $0 virtual care included
-                </span>
-              </div>
             </div>
           </section>
 
@@ -294,8 +232,7 @@ const IndividualsAndFamilies = () => {
                     </div>
                   </div>
                 </Reveal>
-                <Reveal delay={0.1}>
-                  <p className="lr-eyebrow">Everyday care, included</p>
+                <Reveal>
                   <h2 className="lr-h2">
                     Built for the
                     <br />
@@ -305,20 +242,15 @@ const IndividualsAndFamilies = () => {
                     Sharing protects you from the unexpected.{' '}
                     <span>These are the things your family uses every week.</span>
                   </p>
-                  <ul className="lr-rows">
-                    {EVERYDAY.map(({ title, body, Icon }) => (
+                  <ul className="lr-ledger lr-ledger--1" style={{ marginTop: '1.8rem' }}>
+                    {EVERYDAY.map(({ title, body }) => (
                       <li key={title}>
-                        <span className="lr-cell__tile">
-                          <Icon strokeWidth={1.8} />
-                        </span>
-                        <div>
-                          <h3>{title}</h3>
-                          <p>{body}</p>
-                        </div>
+                        <h3>{title}</h3>
+                        <p>{body}</p>
                       </li>
                     ))}
                   </ul>
-                  <ul className="lr-checks" style={{ marginTop: '2rem' }}>
+                  <ul className="lr-checks" style={{ marginTop: '1.4rem' }}>
                     <li>
                       <Check strokeWidth={3} />
                       <span>No annual or lifetime sharing maximums on eligible expenses</span>
@@ -335,15 +267,11 @@ const IndividualsAndFamilies = () => {
 
           <section className="lr-sec lr-sec--soft" aria-label="How joining works">
             <div className="lr-inner">
-              <SectionHead
-                eyebrow="Getting started"
-                title="From quote to care in four steps."
-                align="left"
-              />
+              <SectionHead title="From quote to care in four steps." align="left" />
               <ol className="lr-steps lr-steps--cols" style={{ '--cols': 4 } as React.CSSProperties}>
                 {JOURNEY.map((step, i) => (
-                  <Reveal as="li" key={step.title} delay={i * 0.08}>
-                    <span className="lr-steps__num">0{i + 1}</span>
+                  <Reveal as="li" key={step.title}>
+                    <span className="lr-steps__num">{i + 1}</span>
                     <h3>{step.title}</h3>
                     <p>{step.text}</p>
                   </Reveal>
@@ -358,7 +286,7 @@ const IndividualsAndFamilies = () => {
               <>
                 Still deciding? Our advisors answer the hard questions too.{' '}
                 <Link to="/faq" className="lr-more">
-                  Browse all FAQs <ArrowRight />
+                  Browse all FAQs
                 </Link>
               </>
             }

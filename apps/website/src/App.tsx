@@ -231,8 +231,8 @@ function PageSpinner() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#e8f3fc] to-white">
       <div className="text-center">
-        <div className="inline-block w-16 h-16 border-4 border-[#0a4c8f] border-t-transparent rounded-full animate-spin mb-4"></div>
-        <p className="text-lg font-medium text-[#0a4c8f]">Loading...</p>
+        <div className="inline-block w-16 h-16 border-4 border-[#0013bd] border-t-transparent rounded-full animate-spin mb-4"></div>
+        <p className="text-lg font-medium text-[#0013bd]">Loading...</p>
       </div>
     </div>
   );

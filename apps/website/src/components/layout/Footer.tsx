@@ -102,10 +102,10 @@ const Footer = () => {
               <meta itemProp="url" content="https://mpb.health/" />
 
               <div className="flex items-center gap-3 text-neutral-300">
-                <Phone className="w-5 h-5 text-[#0a4d90]" />
+                <Phone className="w-5 h-5 text-[#0013bd]" />
                 <a
                   href="tel:+18558164650"
-                  className="hover:text-[#0a4d90] transition-colors"
+                  className="hover:text-[#0013bd] transition-colors"
                   itemProp="telephone"
                   content="+1-855-816-4650"
                 >
@@ -113,10 +113,10 @@ const Footer = () => {
                 </a>
               </div>
               <div className="flex items-center gap-3 text-neutral-300">
-                <Mail className="w-5 h-5 text-[#0a4d90]" />
+                <Mail className="w-5 h-5 text-[#0013bd]" />
                 <a
                   href="mailto:info@mympb.com"
-                  className="hover:text-[#0a4d90] transition-colors"
+                  className="hover:text-[#0013bd] transition-colors"
                   itemProp="email"
                 >
                   info@mympb.com
@@ -128,7 +128,7 @@ const Footer = () => {
                 itemScope
                 itemType="https://schema.org/PostalAddress"
               >
-                <MapPin className="w-5 h-5 text-[#0a4d90] flex-shrink-0 mt-1" aria-hidden="true" />
+                <MapPin className="w-5 h-5 text-[#0013bd] flex-shrink-0 mt-1" aria-hidden="true" />
                 <span>
                   <span itemProp="streetAddress">5301 N Federal Hwy, Suite 155</span>,{' '}
                   <span itemProp="addressLocality">Boca Raton</span>,{' '}
@@ -146,7 +146,7 @@ const Footer = () => {
               <li>
                 <a
                   href="/privacy-policy"
-                  className="text-neutral-300 hover:text-[#0a4d90] transition-colors"
+                  className="text-neutral-300 hover:text-[#0013bd] transition-colors"
                 >
                   Privacy Policy
                 </a>
@@ -154,7 +154,7 @@ const Footer = () => {
               <li>
                 <a
                   href="/terms-and-conditions"
-                  className="text-neutral-300 hover:text-[#0a4d90] transition-colors"
+                  className="text-neutral-300 hover:text-[#0013bd] transition-colors"
                 >
                   Terms and Conditions
                 </a>
@@ -162,7 +162,7 @@ const Footer = () => {
               <li>
                 <a
                   href="/state-notices"
-                  className="text-neutral-300 hover:text-[#0a4d90] transition-colors"
+                  className="text-neutral-300 hover:text-[#0013bd] transition-colors"
                 >
                   State Notices
                 </a>
@@ -170,7 +170,7 @@ const Footer = () => {
               <li>
                 <Link
                   to="/washington-statement"
-                  className="text-neutral-300 hover:text-[#0a4d90] transition-colors"
+                  className="text-neutral-300 hover:text-[#0013bd] transition-colors"
                 >
                   Washington Statement
                 </Link>
@@ -184,7 +184,7 @@ const Footer = () => {
               <li>
                 <a
                   href="/faq"
-                  className="text-neutral-300 hover:text-[#0a4d90] transition-colors"
+                  className="text-neutral-300 hover:text-[#0013bd] transition-colors"
                 >
                   FAQ
                 </a>
@@ -192,7 +192,7 @@ const Footer = () => {
               <li>
                 <Link
                   to="/download-app"
-                  className="text-neutral-300 hover:text-[#0a4d90] transition-colors"
+                  className="text-neutral-300 hover:text-[#0013bd] transition-colors"
                 >
                   App Download
                 </Link>
@@ -216,7 +216,7 @@ const Footer = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={isSubmitting}
-                className="px-4 py-2 border border-neutral-700 bg-neutral-800/50 text-neutral-100 placeholder:text-neutral-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0a4d90] focus:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 border border-neutral-700 bg-neutral-800/50 text-neutral-100 placeholder:text-neutral-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0013bd] focus:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               />
               <button
                 type="submit"

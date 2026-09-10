@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { Calendar, Users, Award, MapPin } from 'lucide-react';
+import { Calendar, MapPin } from 'lucide-react';
 import { LandingPage, PageHero, Sheet } from '../components/landing-redesign/page-kit';
 import { supabase, CmsEvent } from '../lib/supabase';
 import { useCmsLive } from '../hooks/useCmsLive';
@@ -10,7 +10,7 @@ import './how-it-works.css';
 import './events.css';
 
 const LOCATION_TYPE_LABEL: Record<string, string> = {
-  in_person: 'In Person',
+  in_person: 'In person',
   virtual: 'Virtual',
   hybrid: 'Hybrid',
 };
@@ -64,11 +64,6 @@ const Events: React.FC = () => {
             </>
           }
           lede="Join us as we celebrate excellence, build connections, and shape the future of community healthcare."
-          rail={[
-            { value: 'All year', label: 'Events and gatherings' },
-            { value: 'Community', label: 'Focused' },
-            { value: 'Excellence', label: 'Celebrated' },
-          ]}
           media={{
             type: 'image',
             src: '/assets/delegates-networking.jpg',
@@ -84,9 +79,9 @@ const Events: React.FC = () => {
         <section className="hiw-section" aria-label="Latest events">
           <div className="hiw-inner">
             <div className="hiw-section__header">
-              <h2 className="hiw-title">Latest Events</h2>
+              <h2 className="hiw-title">Latest events</h2>
               <p className="hiw-body">
-                Explore our complete collection of events, celebrations, and community gatherings
+                Our complete collection of events, celebrations, and community gatherings.
               </p>
             </div>
 

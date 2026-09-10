@@ -22,6 +22,11 @@
 }
 
 @layer utilities {
+  /* Square brand tile reads as an app icon everywhere it appears */
+  img[src^="/assets/brand/mpb-tile"] {
+    border-radius: 18%;
+  }
+
   .text-balance {
     text-wrap: balance;
   }

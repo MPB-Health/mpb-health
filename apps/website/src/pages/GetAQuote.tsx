@@ -65,13 +65,13 @@ const GetAQuote: React.FC = () => {
                 </Reveal>
 
                 <aside className="lr-aside" aria-label="About your quote">
-                  <Reveal delay={0.08}>
+                  <Reveal>
                     <div className="lr-panel">
                       <h2 className="lr-panel__title">What happens next</h2>
                       <ol className="lr-steps lr-steps--tight">
                         {NEXT_STEPS.map((step, i) => (
                           <li key={step.title}>
-                            <span className="lr-steps__num">0{i + 1}</span>
+                            <span className="lr-steps__num">{i + 1}</span>
                             <div>
                               <h3>{step.title}</h3>
                               <p>{step.text}</p>
@@ -82,7 +82,7 @@ const GetAQuote: React.FC = () => {
                     </div>
                   </Reveal>
 
-                  <Reveal delay={0.14}>
+                  <Reveal>
                     <div className="lr-panel lr-panel--soft">
                       <h2 className="lr-panel__title">Need help?</h2>
                       <p className="lr-body">
@@ -101,7 +101,7 @@ const GetAQuote: React.FC = () => {
                     </div>
                   </Reveal>
 
-                  <Reveal delay={0.2}>
+                  <Reveal>
                     <div className="lr-panel">
                       <h2 className="lr-panel__title">Your privacy matters</h2>
                       <ul className="lr-checks" style={{ marginTop: 0 }}>
@@ -119,7 +119,7 @@ const GetAQuote: React.FC = () => {
 
               <div className="lr-estimate__trust">
                 <span>
-                  <ShieldCheck /> Secure &amp; private
+                  <ShieldCheck /> Secure and private
                 </span>
                 <span>
                   <Users /> Over 12,000 members served
@@ -135,21 +135,16 @@ const GetAQuote: React.FC = () => {
             <div className="lr-inner">
               <div className="lr-split">
                 <Reveal>
-                  <p className="lr-eyebrow">Prefer an instant estimate?</p>
-                  <h2 className="lr-h2">
-                    See every membership
-                    <br />
-                    priced for you.
-                  </h2>
+                  <h2 className="lr-h2">Prefer an instant estimate?</h2>
                   <p className="lr-twotone">
-                    Answer three quick questions and compare memberships side by side.{' '}
+                    Answer three quick questions and see every membership priced for you.{' '}
                     <span>No email required, no waiting for a callback.</span>
                   </p>
                   <Link className="lr-btn lr-btn--grad" to="/individuals-and-families#estimate">
                     Get a 30-second estimate
                   </Link>
                 </Reveal>
-                <Reveal delay={0.1}>
+                <Reveal>
                   <div className="lr-split__media lr-split__media--wide">
                     <img
                       src="/assets/how-it-works-app.png"
@@ -168,7 +163,6 @@ const GetAQuote: React.FC = () => {
           <section className="lr-sec" aria-label="Member results">
             <div className="lr-inner">
               <SectionHead
-                eyebrow="Real results"
                 title="Members who made the switch."
                 lede="Real families, real savings,"
                 ledeMuted="and a rating they gave us themselves."

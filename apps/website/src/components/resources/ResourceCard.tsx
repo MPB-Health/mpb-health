@@ -49,7 +49,7 @@ export const ResourceCard: React.FC<ResourceCardProps> = ({ resource }) => {
       {resource.is_featured && (
         <div className="absolute top-3 right-3 z-10 bg-gradient-to-r from-amber-400 to-amber-500 text-white px-3 py-1 rounded-full flex items-center gap-1.5 text-xs font-semibold shadow-lg">
           <Star className="h-3 w-3 fill-current" />
-          FEATURED
+          Featured
         </div>
       )}
 

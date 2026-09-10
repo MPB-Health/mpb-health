@@ -174,7 +174,7 @@ export const OptimizedHeader: React.FC = () => {
               aria-label="MPB Health Home"
             >
               <img
-                src="/assets/MPB-Health-No-background.png"
+                src="/assets/brand/mpb-tile.png"
                 alt="MPB Health"
                 className={cn(
                   'w-auto transition-all duration-300',

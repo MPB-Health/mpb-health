@@ -26,7 +26,7 @@ export const typography = {
 
   gradients: {
     primary: 'bg-gradient-to-r from-blue-600 via-cyan-600 to-teal-600 bg-clip-text text-transparent',
-    brand: 'bg-gradient-to-r from-cyan-600 via-[#a3cc43] to-blue-600 bg-clip-text text-transparent',
+    brand: 'bg-gradient-to-r from-cyan-600 via-[#a3e475] to-blue-600 bg-clip-text text-transparent',
     neutral: 'bg-gradient-to-r from-neutral-900 via-primary to-neutral-800 bg-clip-text text-transparent',
     success: 'bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent',
   },

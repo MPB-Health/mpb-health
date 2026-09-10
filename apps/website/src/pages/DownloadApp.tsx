@@ -40,7 +40,7 @@ const DownloadApp = () => {
             className="absolute inset-0"
             style={{
               backgroundImage:
-                'radial-gradient(circle at 2px 2px, #0a4d90 1px, transparent 0)',
+                'radial-gradient(circle at 2px 2px, #0013bd 1px, transparent 0)',
               backgroundSize: '40px 40px',
             }}
           ></div>

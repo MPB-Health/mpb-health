@@ -98,7 +98,7 @@ export const MemberHeader: React.FC = () => {
           }}
         >
           <img
-            src="/assets/MPB-Health-No-background.png?v=2"
+            src="/assets/brand/mpb-tile.png"
             alt="MPB Health"
             className={cn(
               'w-auto transition-all duration-300',

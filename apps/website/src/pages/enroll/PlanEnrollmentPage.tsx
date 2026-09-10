@@ -22,7 +22,7 @@ export default function PlanEnrollmentPage() {
           <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="mb-6">
               <Link to="/plans">
-                <Button variant="ghost" size="sm" className="text-[#0a4c8f] hover:text-[#083d73]">
+                <Button variant="ghost" size="sm" className="text-[#0013bd] hover:text-[#083d73]">
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   Back to Memberships
                 </Button>
@@ -30,14 +30,14 @@ export default function PlanEnrollmentPage() {
             </div>
 
             <div className="text-center max-w-3xl mx-auto">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-[#0a4c8f]/10 rounded-2xl mb-5 border border-[#0a4c8f]/20">
-                <Shield className="w-8 h-8 text-[#0a4c8f]" />
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-[#0013bd]/10 rounded-2xl mb-5 border border-[#0013bd]/20">
+                <Shield className="w-8 h-8 text-[#0013bd]" />
               </div>
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#0a4c8f] mb-4">
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#0013bd] mb-4">
                 {plan.title}
               </h1>
-              <p className="text-lg text-[#0a4c8f]/80 mb-6">{plan.description}</p>
-              <div className="flex flex-wrap items-center justify-center gap-5 text-sm text-[#0a4c8f]/90">
+              <p className="text-lg text-[#0013bd]/80 mb-6">{plan.description}</p>
+              <div className="flex flex-wrap items-center justify-center gap-5 text-sm text-[#0013bd]/90">
                 <span className="inline-flex items-center gap-2">
                   <Clock className="w-4 h-4" />
                   ~{plan.estimatedMinutes} minutes
@@ -66,7 +66,7 @@ export default function PlanEnrollmentPage() {
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                 <a
                   href="tel:8558164650"
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-[#0a4c8f] text-white font-semibold rounded-lg hover:bg-[#083d73] transition-colors"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-[#0013bd] text-white font-semibold rounded-lg hover:bg-[#083d73] transition-colors"
                 >
                   <Phone className="w-4 h-4" />
                   Call (855) 816-4650

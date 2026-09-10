@@ -65,8 +65,11 @@ export function PageHero({
   micro,
   rail,
   media,
+  panel,
   caption,
+  by,
   align = 'left',
+  variant = 'default',
   ariaLabel,
 }: {
   kicker?: string;
@@ -76,8 +79,13 @@ export function PageHero({
   micro?: React.ReactNode;
   rail?: Array<{ value: string; label: string }>;
   media?: HeroMedia;
+  /** Custom right-column module (a form, a price ladder); replaces `media`. */
+  panel?: React.ReactNode;
   caption?: React.ReactNode;
+  /** Attribution line under a quote-led title. */
+  by?: React.ReactNode;
   align?: 'left' | 'center';
+  variant?: 'default' | 'quote';
   ariaLabel?: string;
 }) {
   const ref = useRef<HTMLElement>(null);
@@ -97,8 +105,13 @@ export function PageHero({
     show: { opacity: 1, y: 0, transition: { duration: 0.9, ease: easeOut } },
   };
 
-  const split = Boolean(media);
-  const cls = ['lr-phero', split ? 'lr-phero--split' : '', align === 'center' ? 'lr-phero--center' : '']
+  const split = Boolean(media || panel);
+  const cls = [
+    'lr-phero',
+    split ? 'lr-phero--split' : '',
+    align === 'center' ? 'lr-phero--center' : '',
+    variant === 'quote' ? 'lr-phero--quote' : '',
+  ]
     .filter(Boolean)
     .join(' ');
 
@@ -124,6 +137,11 @@ export function PageHero({
             <motion.h1 variants={item} className="lr-phero__title">
               {title}
             </motion.h1>
+            {by ? (
+              <motion.p variants={item} className="lr-phero__by">
+                {by}
+              </motion.p>
+            ) : null}
             {lede ? (
               <motion.p variants={item} className="lr-phero__lede">
                 {lede}
@@ -147,7 +165,17 @@ export function PageHero({
             ) : null}
           </motion.div>
 
-          {media ? (
+          {panel ? (
+            <motion.div
+              className="lr-phero__window lr-phero__window--panel"
+              initial={reduce ? false : { opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1.1, ease: easeOut, delay: 0.25 }}
+              style={reduce ? undefined : { y: windowY }}
+            >
+              {panel}
+            </motion.div>
+          ) : media ? (
             <motion.div
               className="lr-phero__window"
               initial={reduce ? false : { opacity: 0, y: 40, scale: 0.96 }}
@@ -207,28 +235,17 @@ export function Sheet({ children }: { children: React.ReactNode }) {
 
 export function Reveal({
   children,
-  delay = 0,
   className,
   as = 'div',
 }: {
   children: React.ReactNode;
+  /** Kept for call-site compatibility; section entrances are intentionally static. */
   delay?: number;
   className?: string;
   as?: 'div' | 'li' | 'section';
 }) {
-  const reduce = useReducedMotion();
-  const Comp = motion[as] as typeof motion.div;
-  return (
-    <Comp
-      className={className}
-      initial={reduce ? false : { opacity: 0, y: 26 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.2 }}
-      transition={{ duration: 0.7, delay, ease: easeOut }}
-    >
-      {children}
-    </Comp>
-  );
+  const Comp = as;
+  return <Comp className={className}>{children}</Comp>;
 }
 
 export function CountUp({
@@ -273,6 +290,7 @@ export function SectionHead({
   align = 'center',
   children,
 }: {
+  /** Ignored: section eyebrows were removed from the system. */
   eyebrow?: string;
   title: React.ReactNode;
   lede?: React.ReactNode;
@@ -282,7 +300,6 @@ export function SectionHead({
 }) {
   return (
     <Reveal className={`lr-sec__head${align === 'left' ? ' lr-sec__head--left' : ''}`}>
-      {eyebrow ? <p className="lr-eyebrow">{eyebrow}</p> : null}
       <h2 className="lr-h2">{title}</h2>
       {lede ? (
         <p className="lr-twotone">
@@ -358,9 +375,9 @@ export function FaqList({
 export function FaqSection({
   title = (
     <>
-      Frequently
+      Frequently asked
       <br />
-      Asked Questions
+      questions
     </>
   ),
   items,

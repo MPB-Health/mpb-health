@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MarketingHydrationSeo } from '../components/MarketingHydrationSeo';
-import { ArrowRight, Search } from 'lucide-react';
 import {
   AuroraBand,
   LandingPage,
@@ -53,7 +52,6 @@ export const Features: React.FC = () => {
       <LandingPage className="hiw ftr">
         <PageHero
           ariaLabel="Membership features"
-          kicker="Membership features"
           title="Everything your membership can include."
           lede={
             <>
@@ -71,11 +69,6 @@ export const Features: React.FC = () => {
               </Link>
             </>
           }
-          rail={[
-            { value: '$0', label: 'Virtual care, included' },
-            { value: '12,000+', label: 'Families served' },
-            { value: '4.9/5', label: 'Google rating' },
-          ]}
           media={{
             type: 'image',
             src: '/assets/featureHero.jpg',
@@ -112,9 +105,6 @@ export const Features: React.FC = () => {
 
               {filteredFeatures.length === 0 ? (
                 <div className="ftr-empty">
-                  <span className="lr-cell__tile">
-                    <Search strokeWidth={1.8} />
-                  </span>
                   <h2 className="lr-h3">No benefits found</h2>
                   <p className="lr-body">Try adjusting your filter.</p>
                   <button
@@ -127,10 +117,9 @@ export const Features: React.FC = () => {
                 </div>
               ) : (
                 <div className="ftr-grid">
-                  {filteredFeatures.map((feature, i) => {
-                    const Icon = feature.icon;
+                  {filteredFeatures.map((feature) => {
                     return (
-                      <Reveal key={feature.id} delay={(i % 3) * 0.06}>
+                      <Reveal key={feature.id}>
                         <Link to={`/features/${feature.id}`} className="ftr-card">
                           <div className="ftr-card__media">
                             <img
@@ -141,13 +130,9 @@ export const Features: React.FC = () => {
                               loading="lazy"
                               decoding="async"
                             />
-                            <span className="ftr-card__icon">
-                              <Icon strokeWidth={1.8} />
-                            </span>
                           </div>
 
                           <div className="ftr-card__body">
-                            <p className="ftr-card__tagline">{feature.tagline}</p>
                             <h2 className="ftr-card__title">{feature.name}</h2>
                             <p className="ftr-card__text">{feature.shortDescription}</p>
 
@@ -162,9 +147,7 @@ export const Features: React.FC = () => {
                               )}
                             </div>
 
-                            <span className="lr-more">
-                              Learn more <ArrowRight />
-                            </span>
+                            <span className="lr-more">Learn more</span>
                           </div>
                         </Link>
                       </Reveal>

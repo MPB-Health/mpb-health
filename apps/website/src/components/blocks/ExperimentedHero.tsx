@@ -100,7 +100,7 @@ const ExperimentedHero: React.FC = () => {
           <span className="bg-gradient-to-r from-neutral-900 via-primary to-neutral-800 bg-clip-text text-transparent">
             Lower Your Healthcare Costs
           </span>{" "}
-          <span className="bg-gradient-to-r from-cyan-600 via-[#a3cc43] to-blue-600 bg-clip-text text-transparent">
+          <span className="bg-gradient-to-r from-cyan-600 via-[#a3e475] to-blue-600 bg-clip-text text-transparent">
             with MPB Health
           </span>
         </>
@@ -114,7 +114,7 @@ const ExperimentedHero: React.FC = () => {
           <span className="bg-gradient-to-r from-neutral-900 via-primary to-neutral-800 bg-clip-text text-transparent">
             Lower Your Healthcare Costs
           </span>{" "}
-          <span className="bg-gradient-to-r from-cyan-600 via-[#a3cc43] to-blue-600 bg-clip-text text-transparent">
+          <span className="bg-gradient-to-r from-cyan-600 via-[#a3e475] to-blue-600 bg-clip-text text-transparent">
             with MPB Health
           </span>
         </>

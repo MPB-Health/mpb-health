@@ -3,16 +3,16 @@
 
 .ad {
   --ad-text: #1a1a1a;
-  --ad-navy: #183392;
-  --ad-blue: #1668c9;
-  --ad-green: #3c8a50;
-  --ad-green-why: #2e9e44;
+  --ad-navy: #0013bd;
+  --ad-blue: #0a24cf;
+  --ad-green: #55902c;
+  --ad-green-why: #55902c;
   --ad-slate: #0f2740;
   --ad-gray: #52606d;
-  --ad-cta: linear-gradient(90deg, #8be356 0%, #2fd0c0 55%, #1fa6e8 100%);
-  --ad-pale-blue: #e8f1fb;
-  --ad-pale-green: #e7f4ea;
-  --ad-card-gradient: linear-gradient(105deg, #cbd3f1 0%, #c3e6f4 32%, #c2eedd 62%, #edf5c2 100%);
+  --ad-cta: var(--lr-cta);
+  --ad-pale-blue: #e8eafb;
+  --ad-pale-green: #eef9e0;
+  --ad-card-gradient: linear-gradient(105deg, #d4d8f7 0%, #d2eff9 32%, #e9f9d4 62%, #f4fce9 100%);
   --ad-font-sans: var(--lr-font);
   --ad-inner: 1440px;
   --ad-pad-x: clamp(1rem, 3vw, 3.25rem);
@@ -61,97 +61,16 @@
   margin: 0 auto;
 }
 
-/* ——— Hero (same treatment as the How It Works hero) ——— */
-.ad-hero {
-  position: relative;
-  background-image: url('/assets/gradient.png');
-  background-size: cover;
-  background-position: center;
-  /* Top padding clears the absolute-positioned landing header; extra bottom
-     padding leaves room for the floating filter card overlap */
-  padding: clamp(7.5rem, 12vw, 10.5rem) var(--ad-pad-x) clamp(4.5rem, 7vw, 6.5rem);
-}
-
-/* Landing header adjustments: no quote form to align with, and the pill needs
-   a stronger fill to stay legible over the light gradient */
+/* Landing header adjustments: no quote form to align with */
 .ad {
   --hero-form-shift: 0px;
   --hero-copy-inset: 0px;
 }
 
-
-
 @media (max-width: 1023px) {
   .ad .lr-header__burger span {
     background: var(--ad-navy);
   }
-}
-
-.ad-hero__content {
-  max-width: var(--ad-inner);
-  margin: 0 auto;
-  display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
-  gap: clamp(1.75rem, 4vw, 4.5rem);
-  align-items: center;
-}
-
-.ad-hero__img {
-  width: 100%;
-  aspect-ratio: 3 / 2;
-  object-fit: cover;
-  border-radius: var(--ad-radius);
-  box-shadow: 0 18px 40px -20px rgba(15, 39, 64, 0.45);
-}
-
-@media (max-width: 900px) {
-  .ad-hero__content {
-    grid-template-columns: 1fr;
-  }
-}
-
-.ad-hero__title {
-  max-width: 18ch;
-  font-size: clamp(2.4rem, 4.8vw, 4rem);
-  font-weight: 800;
-  line-height: 1.08;
-  letter-spacing: -0.02em;
-  color: var(--ad-navy);
-}
-
-.ad-hero__sub {
-  margin-top: clamp(1rem, 1.8vw, 1.5rem);
-  max-width: 40rem;
-  font-size: clamp(1.1rem, 1.6vw, 1.45rem);
-  font-weight: 700;
-  line-height: 1.4;
-  color: var(--ad-navy);
-}
-
-.ad-hero__stats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-top: clamp(1.5rem, 2.5vw, 2.25rem);
-}
-
-.ad-stat {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1.1rem;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.78);
-  box-shadow: 0 6px 18px -10px rgba(15, 39, 64, 0.35);
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--ad-slate);
-}
-
-.ad-stat svg {
-  width: 1.05rem;
-  height: 1.05rem;
-  color: var(--ad-green-why);
 }
 
 /* ——— Main content ——— */
@@ -216,7 +135,7 @@
 .ad-filters__input:focus {
   background: #fff;
   border-color: var(--ad-blue);
-  box-shadow: 0 0 0 3px rgba(22, 104, 201, 0.18);
+  box-shadow: 0 0 0 3px rgba(0, 19, 189, 0.18);
 }
 
 .ad-filters__select-wrap {
@@ -243,7 +162,7 @@
 .ad-filters__select:focus {
   background: #fff;
   border-color: var(--ad-blue);
-  box-shadow: 0 0 0 3px rgba(22, 104, 201, 0.18);
+  box-shadow: 0 0 0 3px rgba(0, 19, 189, 0.18);
 }
 
 .ad-filters__select-wrap svg {
@@ -364,9 +283,7 @@
 }
 
 .ad-card:hover {
-  transform: translateY(-3px);
   border-color: #c4d9ee;
-  box-shadow: 0 18px 38px -18px rgba(15, 39, 64, 0.35);
 }
 
 .ad-card__head {
@@ -390,7 +307,7 @@
   color: #fff;
   font-size: 0.9rem;
   font-weight: 800;
-  box-shadow: 0 6px 14px -6px rgba(31, 166, 232, 0.55);
+  box-shadow: 0 6px 14px -6px rgba(44, 183, 220, 0.55);
 }
 
 .ad-card__name {
@@ -517,14 +434,12 @@
   color: #fff;
   font-size: 0.9rem;
   font-weight: 700;
-  box-shadow: 0 8px 16px -8px rgba(31, 166, 232, 0.6);
+  box-shadow: 0 8px 16px -8px rgba(44, 183, 220, 0.6);
   transition: filter 160ms ease, transform 160ms ease, box-shadow 160ms ease;
 }
 
 .ad-card__cta:hover {
   filter: brightness(1.08);
-  transform: translateY(-1px);
-  box-shadow: 0 10px 20px -8px rgba(31, 166, 232, 0.75);
 }
 
 .ad-card__cta svg {
@@ -619,13 +534,12 @@
   font-size: 0.95rem;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 8px 16px -8px rgba(31, 166, 232, 0.6);
+  box-shadow: 0 8px 16px -8px rgba(44, 183, 220, 0.6);
   transition: filter 160ms ease, transform 160ms ease;
 }
 
 .ad-empty__btn:hover {
   filter: brightness(1.08);
-  transform: translateY(-1px);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -145,9 +145,9 @@ const HeaderWithAuth = () => {
             aria-label="MPB Health Home"
           >
             <picture>
-              <source srcSet="/assets/MPB-Health-No-background.webp" type="image/webp" />
+              <source srcSet="/assets/brand/mpb-tile.webp" type="image/webp" />
               <img
-                src="/assets/MPB-Health-No-background.png?v=2"
+                src="/assets/brand/mpb-tile.png"
                 alt="MPB Health"
                 width={160}
                 height={40}

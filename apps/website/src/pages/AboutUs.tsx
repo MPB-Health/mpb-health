@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Check, Heart, Shield, Users } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { MarketingHydrationSeo } from '../components/MarketingHydrationSeo';
 import {
   AuroraBand,
@@ -20,22 +20,19 @@ const BOOKING_URL = 'https://outlook.office.com/book/SpeakWithaAdvisor@NETORG671
 
 const coreValues = [
   {
-    Icon: Shield,
     title: 'Transparency',
     description:
-      'We communicate openly and honestly, ensuring our members have clear insights into their healthcare options and costs.',
+      'We communicate openly and honestly, so members have a clear view of their healthcare options and costs.',
   },
   {
-    Icon: Heart,
     title: 'Compassion',
     description:
-      "We listen with empathy and understanding, treating each member's circumstances with kindness and respect.",
+      "We listen with empathy and treat each member's circumstances with kindness and respect.",
   },
   {
-    Icon: Users,
     title: 'Care',
     description:
-      'We deliver personalized support and attention, going the extra mile to ensure every member receives the highest quality healthcare experience.',
+      'We give personal support and attention, going the extra mile so every member gets the best care experience.',
   },
 ] as const;
 
@@ -168,7 +165,6 @@ const AboutUs: React.FC = () => {
                   </div>
                 </Reveal>
                 <Reveal delay={0.1}>
-                  <p className="lr-eyebrow">Our story</p>
                   <h2 className="lr-h2">
                     Transforming
                     <br />
@@ -207,36 +203,24 @@ const AboutUs: React.FC = () => {
           <section className="lr-sec" aria-label="What we stand for">
             <div className="lr-inner">
               <SectionHead
-                eyebrow="Our values"
                 title="What we stand for."
                 lede="Three values guide everything we do,"
                 ledeMuted="from how we serve our members to how we build our community."
               />
-              <div className="lr-cells">
-                {coreValues.map(({ Icon, title, description }, i) => (
-                  <Reveal key={title} delay={i * 0.06}>
-                    <div className="lr-cell">
-                      <span className="lr-cell__tile">
-                        <Icon strokeWidth={1.8} />
-                      </span>
-                      <div>
-                        <h3>{title}</h3>
-                        <p>{description}</p>
-                      </div>
-                    </div>
-                  </Reveal>
+              <ul className="lr-ledger lr-ledger--3">
+                {coreValues.map(({ title, description }) => (
+                  <li key={title}>
+                    <h3>{title}</h3>
+                    <p>{description}</p>
+                  </li>
                 ))}
-              </div>
+              </ul>
             </div>
           </section>
 
           <section className="lr-sec lr-sec--soft" aria-label="MPB Health by the numbers">
             <div className="lr-inner">
-              <SectionHead
-                eyebrow="By the numbers"
-                title="A community that keeps growing."
-                align="left"
-              />
+              <SectionHead title="A community that keeps growing." align="left" />
               <Reveal>
                 <dl className="lr-stats" style={{ '--cols': 4 } as React.CSSProperties}>
                   <div>
@@ -265,8 +249,15 @@ const AboutUs: React.FC = () => {
           </section>
 
           <FaqSection
+            title={
+              <>
+                Frequently asked
+                <br />
+                questions
+              </>
+            }
             items={FAQ_ITEMS}
-            intro="Get answers to common questions about our healthcare solutions."
+            intro="Answers to the questions people ask us most."
           />
 
           <AuroraBand

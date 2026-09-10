@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Search, Users, MapPin, X, ChevronDown } from 'lucide-react';
+import { Search, Users, X, ChevronDown } from 'lucide-react';
 import { AdvisorCard } from '../components/advisor/AdvisorCard';
 import { LandingPage, PageHero, Sheet } from '../components/landing-redesign/page-kit';
 import {
@@ -128,11 +128,6 @@ export const AdvisorDirectory: React.FC = () => {
             </>
           }
           lede="Connect with licensed advisors ready to help you find the right health sharing membership."
-          rail={[
-            { value: `${advisors.length}`, label: 'Advisors' },
-            { value: `${states.length}`, label: 'States' },
-            { value: '1:1', label: 'Personal guidance' },
-          ]}
           media={{
             type: 'image',
             src: '/assets/advisorDirectory.png',
@@ -167,7 +162,7 @@ export const AdvisorDirectory: React.FC = () => {
                     value={filters.state}
                     onChange={handleStateChange}
                   >
-                    <option value="all">All States</option>
+                    <option value="all">All states</option>
                     {states.map(state => (
                       <option key={state} value={state}>{state}</option>
                     ))}
@@ -181,7 +176,7 @@ export const AdvisorDirectory: React.FC = () => {
                     value={filters.agentType}
                     onChange={handleAgentTypeChange}
                   >
-                    <option value="all">All Types</option>
+                    <option value="all">All types</option>
                     {agentTypes.map(type => (
                       <option key={type} value={type}>{type}</option>
                     ))}

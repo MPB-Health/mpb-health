@@ -36,30 +36,30 @@ export default function UpdateFormOfPaymentForm() {
         {/* Hero Section */}
         <section className="relative bg-gradient-to-br from-[#e8f3fc] via-[#d4e7f7] to-[#c4ddf2] pt-8 pb-20 overflow-hidden">
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDE2YzAgMi4yMS0xLjc5IDQtNCA0cy00LTEuNzktNC00IDEuNzktNCA0LTQgNCAxLjc5IDQgNHptLTQgMjhjLTIuMjEgMC00IDEuNzktNCA0czEuNzkgNCA0IDQgNC0xLjc5IDQtNC0xLjc5LTQtNC00ek0xNiAzNmMtMi4yMSAwLTQgMS43OS00IDRzMS43OSA0IDQgNCA0LTEuNzkgNC00LTEuNzktNC00LTR6bTI4IDBjLTIuMjEgMC00IDEuNzktNCA0czEuNzkgNCA0IDQgNC0xLjc5IDQtNC0xLjc5LTQtNC00em0tMTItMTJjLTIuMjEgMC00IDEuNzktNCA0czEuNzkgNCA0IDQgNC0xLjc5IDQtNC0xLjc5LTQtNC00eiIvPjwvZz48L2c+PC9zdmc+')] opacity-40" />
-          <div className="absolute top-0 right-0 -mt-16 -mr-16 w-96 h-96 bg-[#0a4c8f]/10 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 -mb-16 -ml-16 w-96 h-96 bg-[#0a4c8f]/15 rounded-full blur-3xl" />
+          <div className="absolute top-0 right-0 -mt-16 -mr-16 w-96 h-96 bg-[#0013bd]/10 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-0 -mb-16 -ml-16 w-96 h-96 bg-[#0013bd]/15 rounded-full blur-3xl" />
 
           <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="text-center">
-              <div className="inline-flex items-center justify-center w-20 h-20 bg-[#0a4c8f]/10 backdrop-blur-sm rounded-2xl mb-6 border border-[#0a4c8f]/20">
-                <CreditCard className="w-10 h-10 text-[#0a4c8f]" />
+              <div className="inline-flex items-center justify-center w-20 h-20 bg-[#0013bd]/10 backdrop-blur-sm rounded-2xl mb-6 border border-[#0013bd]/20">
+                <CreditCard className="w-10 h-10 text-[#0013bd]" />
               </div>
 
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-[#0a4c8f] mb-4 leading-tight">
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-[#0013bd] mb-4 leading-tight">
                 Update Your Payment
               </h1>
 
-              <p className="text-xl sm:text-2xl text-[#0a4c8f]/80 max-w-3xl mx-auto leading-relaxed">
+              <p className="text-xl sm:text-2xl text-[#0013bd]/80 max-w-3xl mx-auto leading-relaxed">
                 Secure Payment Portal
               </p>
 
-              <div className="mt-5 flex flex-wrap items-center justify-center gap-6 text-[#0a4c8f]/90">
+              <div className="mt-5 flex flex-wrap items-center justify-center gap-6 text-[#0013bd]/90">
                 <div className="flex items-center gap-2">
-                  <Shield className="w-5 h-5 text-[#0a4c8f]" />
+                  <Shield className="w-5 h-5 text-[#0013bd]" />
                   <span className="text-sm font-medium">HIPAA Compliant</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Lock className="w-5 h-5 text-[#0a4c8f]" />
+                  <Lock className="w-5 h-5 text-[#0013bd]" />
                   <span className="text-sm font-medium">Secure &amp; Private</span>
                 </div>
               </div>
@@ -72,8 +72,8 @@ export default function UpdateFormOfPaymentForm() {
           <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8">
             <Card className="p-8 sm:p-10">
               <div className="text-center mb-8">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-[#0a4c8f]/10 rounded-xl mb-4">
-                  <Shield className="w-8 h-8 text-[#0a4c8f]" />
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-[#0013bd]/10 rounded-xl mb-4">
+                  <Shield className="w-8 h-8 text-[#0013bd]" />
                 </div>
                 <h2 className="text-2xl sm:text-3xl font-bold text-neutral-900 mb-3">
                   How to Update Your Payment
@@ -99,7 +99,7 @@ export default function UpdateFormOfPaymentForm() {
                 </h3>
                 <div className="space-y-5">
                   <div className="flex gap-4 items-start bg-neutral-50 rounded-xl p-5">
-                    <div className="flex-shrink-0 w-10 h-10 bg-[#0a4c8f] text-white font-bold rounded-full flex items-center justify-center text-lg">
+                    <div className="flex-shrink-0 w-10 h-10 bg-[#0013bd] text-white font-bold rounded-full flex items-center justify-center text-lg">
                       1
                     </div>
                     <div>
@@ -113,7 +113,7 @@ export default function UpdateFormOfPaymentForm() {
                   </div>
 
                   <div className="flex gap-4 items-start bg-neutral-50 rounded-xl p-5">
-                    <div className="flex-shrink-0 w-10 h-10 bg-[#0a4c8f] text-white font-bold rounded-full flex items-center justify-center text-lg">
+                    <div className="flex-shrink-0 w-10 h-10 bg-[#0013bd] text-white font-bold rounded-full flex items-center justify-center text-lg">
                       2
                     </div>
                     <div>
@@ -128,7 +128,7 @@ export default function UpdateFormOfPaymentForm() {
                   </div>
 
                   <div className="flex gap-4 items-start bg-neutral-50 rounded-xl p-5">
-                    <div className="flex-shrink-0 w-10 h-10 bg-[#0a4c8f] text-white font-bold rounded-full flex items-center justify-center text-lg">
+                    <div className="flex-shrink-0 w-10 h-10 bg-[#0013bd] text-white font-bold rounded-full flex items-center justify-center text-lg">
                       3
                     </div>
                     <div>
@@ -143,7 +143,7 @@ export default function UpdateFormOfPaymentForm() {
                   </div>
 
                   <div className="flex gap-4 items-start bg-neutral-50 rounded-xl p-5">
-                    <div className="flex-shrink-0 w-10 h-10 bg-[#0a4c8f] text-white font-bold rounded-full flex items-center justify-center text-lg">
+                    <div className="flex-shrink-0 w-10 h-10 bg-[#0013bd] text-white font-bold rounded-full flex items-center justify-center text-lg">
                       4
                     </div>
                     <div>
@@ -184,7 +184,7 @@ export default function UpdateFormOfPaymentForm() {
               <div className="space-y-4">
                 <button
                   onClick={handleOpenPortal}
-                  className="w-full inline-flex items-center justify-center gap-3 px-6 py-5 bg-gradient-to-r from-[#0a4c8f] to-[#0d5fad] text-white font-bold rounded-xl hover:from-[#083d73] hover:to-[#0a4c8f] transition-all duration-300 shadow-lg hover:shadow-xl text-xl group"
+                  className="w-full inline-flex items-center justify-center gap-3 px-6 py-5 bg-gradient-to-r from-[#0013bd] to-[#0d5fad] text-white font-bold rounded-xl hover:from-[#083d73] hover:to-[#0013bd] transition-all duration-300 shadow-lg hover:shadow-xl text-xl group"
                 >
                   Go to Payment Portal
                   <ExternalLink className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
@@ -198,7 +198,7 @@ export default function UpdateFormOfPaymentForm() {
                   href={MPB_APP_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full inline-flex items-center justify-center gap-3 px-6 py-4 bg-[#0a4c8f]/10 text-[#0a4c8f] font-bold rounded-xl hover:bg-[#0a4c8f]/20 transition-all duration-300 text-lg group"
+                  className="w-full inline-flex items-center justify-center gap-3 px-6 py-4 bg-[#0013bd]/10 text-[#0013bd] font-bold rounded-xl hover:bg-[#0013bd]/20 transition-all duration-300 text-lg group"
                 >
                   <Smartphone className="w-6 h-6" />
                   Update via MPB Health App
@@ -207,7 +207,7 @@ export default function UpdateFormOfPaymentForm() {
 
                 <a
                   href="tel:8558164650"
-                  className="w-full inline-flex items-center justify-center gap-3 px-6 py-4 bg-white text-[#0a4c8f] font-bold rounded-xl border-2 border-[#0a4c8f]/20 hover:border-[#0a4c8f]/40 hover:bg-[#0a4c8f]/5 transition-all duration-300 text-lg"
+                  className="w-full inline-flex items-center justify-center gap-3 px-6 py-4 bg-white text-[#0013bd] font-bold rounded-xl border-2 border-[#0013bd]/20 hover:border-[#0013bd]/40 hover:bg-[#0013bd]/5 transition-all duration-300 text-lg"
                 >
                   <Phone className="w-6 h-6" />
                   Need Help? Call (855) 816-4650
@@ -217,7 +217,7 @@ export default function UpdateFormOfPaymentForm() {
               <div className="mt-8 text-center">
                 <Link
                   to="/member"
-                  className="inline-flex items-center gap-2 text-base text-neutral-500 hover:text-[#0a4c8f] transition-colors"
+                  className="inline-flex items-center gap-2 text-base text-neutral-500 hover:text-[#0013bd] transition-colors"
                 >
                   <ArrowLeft className="w-5 h-5" />
                   Go back to dashboard
@@ -228,9 +228,9 @@ export default function UpdateFormOfPaymentForm() {
             <div className="mt-8 text-center text-base text-neutral-500">
               <p>
                 Questions? Call us at{' '}
-                <a href="tel:8558164650" className="text-[#0a4c8f] hover:underline font-medium">(855) 816-4650</a>
+                <a href="tel:8558164650" className="text-[#0013bd] hover:underline font-medium">(855) 816-4650</a>
                 {' '}or email{' '}
-                <a href="mailto:support@mpb.health" className="text-[#0a4c8f] hover:underline font-medium">support@mpb.health</a>
+                <a href="mailto:support@mpb.health" className="text-[#0013bd] hover:underline font-medium">support@mpb.health</a>
               </p>
             </div>
           </div>
@@ -244,8 +244,8 @@ export default function UpdateFormOfPaymentForm() {
             <div className="p-8 sm:p-10">
               {/* Icon */}
               <div className="flex justify-center mb-5">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-[#0a4c8f]/10 rounded-xl">
-                  <CreditCard className="w-8 h-8 text-[#0a4c8f]" />
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-[#0013bd]/10 rounded-xl">
+                  <CreditCard className="w-8 h-8 text-[#0013bd]" />
                 </div>
               </div>
 
@@ -272,7 +272,7 @@ export default function UpdateFormOfPaymentForm() {
               </h3>
               <div className="space-y-4 mb-6">
                 <div className="flex gap-3 items-start">
-                  <div className="flex-shrink-0 w-9 h-9 bg-[#0a4c8f] text-white font-bold rounded-full flex items-center justify-center text-base">
+                  <div className="flex-shrink-0 w-9 h-9 bg-[#0013bd] text-white font-bold rounded-full flex items-center justify-center text-base">
                     1
                   </div>
                   <p className="text-base text-neutral-700 pt-1">
@@ -280,7 +280,7 @@ export default function UpdateFormOfPaymentForm() {
                   </p>
                 </div>
                 <div className="flex gap-3 items-start">
-                  <div className="flex-shrink-0 w-9 h-9 bg-[#0a4c8f] text-white font-bold rounded-full flex items-center justify-center text-base">
+                  <div className="flex-shrink-0 w-9 h-9 bg-[#0013bd] text-white font-bold rounded-full flex items-center justify-center text-base">
                     2
                   </div>
                   <p className="text-base text-neutral-700 pt-1">
@@ -288,7 +288,7 @@ export default function UpdateFormOfPaymentForm() {
                   </p>
                 </div>
                 <div className="flex gap-3 items-start">
-                  <div className="flex-shrink-0 w-9 h-9 bg-[#0a4c8f] text-white font-bold rounded-full flex items-center justify-center text-base">
+                  <div className="flex-shrink-0 w-9 h-9 bg-[#0013bd] text-white font-bold rounded-full flex items-center justify-center text-base">
                     3
                   </div>
                   <p className="text-base text-neutral-700 pt-1">
@@ -296,7 +296,7 @@ export default function UpdateFormOfPaymentForm() {
                   </p>
                 </div>
                 <div className="flex gap-3 items-start">
-                  <div className="flex-shrink-0 w-9 h-9 bg-[#0a4c8f] text-white font-bold rounded-full flex items-center justify-center text-base">
+                  <div className="flex-shrink-0 w-9 h-9 bg-[#0013bd] text-white font-bold rounded-full flex items-center justify-center text-base">
                     4
                   </div>
                   <p className="text-base text-neutral-700 pt-1">
@@ -331,7 +331,7 @@ export default function UpdateFormOfPaymentForm() {
                 href={MPB_APP_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-[#0a4c8f]/10 text-[#0a4c8f] font-semibold rounded-xl hover:bg-[#0a4c8f]/20 transition-colors text-base mb-3"
+                className="w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-[#0013bd]/10 text-[#0013bd] font-semibold rounded-xl hover:bg-[#0013bd]/20 transition-colors text-base mb-3"
               >
                 <Smartphone className="w-5 h-5" />
                 Update via MPB Health App
@@ -340,7 +340,7 @@ export default function UpdateFormOfPaymentForm() {
               {/* Contact Concierge */}
               <a
                 href="tel:8558164650"
-                className="w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-white text-[#0a4c8f] font-semibold rounded-xl border border-neutral-200 hover:bg-neutral-50 transition-colors text-base mb-6"
+                className="w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-white text-[#0013bd] font-semibold rounded-xl border border-neutral-200 hover:bg-neutral-50 transition-colors text-base mb-6"
               >
                 <Phone className="w-5 h-5" />
                 Need Help? Call Us
@@ -356,7 +356,7 @@ export default function UpdateFormOfPaymentForm() {
                 </button>
                 <button
                   onClick={handleOpenPortal}
-                  className="flex-1 px-5 py-4 bg-[#0a4c8f] text-white font-bold rounded-xl hover:bg-[#083d73] transition-colors text-base shadow-md"
+                  className="flex-1 px-5 py-4 bg-[#0013bd] text-white font-bold rounded-xl hover:bg-[#083d73] transition-colors text-base shadow-md"
                 >
                   Continue
                 </button>

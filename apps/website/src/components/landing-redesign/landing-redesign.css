@@ -11,11 +11,11 @@
   --lr-soft: #f5f8fb;
   --lr-ink: #0f1b2d;
   --lr-ink-2: #5b6b7f;
-  --lr-navy: #0a4e8e;
-  --lr-navy-deep: #083d71;
-  --lr-blue: #0f65a1;
-  --lr-teal: #00a99d;
-  --lr-lime: #a6ce39;
+  --lr-navy: #0013bd;
+  --lr-navy-deep: #000d8a;
+  --lr-blue: #0a24cf;
+  --lr-teal: #2cb7dc;
+  --lr-lime: #a3e475;
   --lr-line: #e4eaf1;
   --lr-r-sm: 14px;
   --lr-r: 20px;
@@ -24,7 +24,10 @@
   --lr-shadow-sm: 0 10px 34px -18px rgba(15, 27, 45, 0.28);
   --lr-font: 'Figtree', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --lr-ease: cubic-bezier(0.16, 1, 0.3, 1);
-  --lr-aurora: linear-gradient(115deg, #083d71 0%, #0a4e8e 38%, #0d7f9e 62%, #00a99d 82%, #7ec244 104%);
+  --lr-aurora: linear-gradient(115deg, #1a4fd6 0%, #2cb7dc 34%, #a3e475 64%, #7fd3c9 82%, #a3e475 104%);
+  /* Primary action gradient: lime leads, settles into the brand blue */
+  --lr-cta: linear-gradient(90deg, #a3e475 0%, #2cb7dc 55%, #1a4fd6 100%);
+  --lr-cta-hover: linear-gradient(90deg, #b4ec8a 0%, #3cc3e6 55%, #2a5fe0 100%);
 }
 
 .lr {
@@ -35,7 +38,7 @@
 }
 
 .lr ::selection {
-  background: #d1e9fb;
+  background: #d4d8f7;
   color: var(--lr-ink);
 }
 
@@ -84,12 +87,13 @@
 }
 
 .lr-btn--navy {
-  background: var(--lr-navy);
+  background: var(--lr-cta);
   color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 19, 189, 0.28);
 }
 
 .lr-btn--navy:hover {
-  background: var(--lr-navy-deep);
+  background: var(--lr-cta-hover);
 }
 
 .lr-btn--white {
@@ -99,7 +103,7 @@
 }
 
 .lr-btn--white:hover {
-  background: #eef4fa;
+  background: #eceefa;
 }
 
 /* ============================================================
@@ -236,7 +240,7 @@
   object-fit: cover;
   /* Zoom into the tile so the mark, not its padding, fills the circle */
   object-position: center;
-  transform: scale(1.18);
+  transform: scale(1);
   transform-origin: center;
   clip-path: circle(50%);
 }
@@ -377,18 +381,18 @@
 }
 
 .lr-header--pill .lr-header__cta {
-  background: linear-gradient(120deg, var(--lr-navy-deep), var(--lr-navy) 45%, var(--lr-teal) 130%);
+  background: var(--lr-cta);
   color: #fff;
-  box-shadow: 0 8px 22px -10px rgba(10, 78, 142, 0.55);
+  text-shadow: 0 1px 2px rgba(0, 19, 189, 0.28);
+  box-shadow: 0 8px 22px -10px rgba(0, 19, 189, 0.55);
 }
 
 .lr-header__cta:hover {
-  background: #eef4fa;
+  background: #eceefa;
 }
 
 .lr-header--pill .lr-header__cta:hover {
-  background: linear-gradient(120deg, var(--lr-navy-deep), var(--lr-navy) 25%, var(--lr-teal) 110%);
-  filter: brightness(1.05);
+  background: var(--lr-cta-hover);
 }
 
 .lr-header__cta:active {
@@ -704,9 +708,9 @@
   font-style: normal;
   font-weight: 700;
 }
-.lr-heropanel__title .is-mental { color: #3d6fd0; }
+.lr-heropanel__title .is-mental { color: #0013bd; }
 .lr-heropanel__title .is-physical { color: var(--lr-teal); }
-.lr-heropanel__title .is-balance { color: #79a52c; }
+.lr-heropanel__title .is-balance { color: #5f9a2a; }
 .lr-heropanel__grid {
   display: grid;
   gap: 1rem;
@@ -762,16 +766,16 @@
   transform: translateX(3px);
 }
 .lr-heropanel__card.is-mental .lr-heropanel__icon {
-  background: linear-gradient(140deg, #dfe7fb, #c4d4f6);
-  color: #3d6fd0;
+  background: linear-gradient(140deg, #e0e3fa, #c6cbf3);
+  color: #0013bd;
 }
 .lr-heropanel__card.is-physical .lr-heropanel__icon {
-  background: linear-gradient(140deg, #d8f3f0, #bde8e3);
-  color: #068c82;
+  background: linear-gradient(140deg, #d2eff9, #b6e4f4);
+  color: #1a8db0;
 }
 .lr-heropanel__card.is-balance .lr-heropanel__icon {
-  background: linear-gradient(140deg, #e9f3d3, #d7eab4);
-  color: #6c9427;
+  background: linear-gradient(140deg, #e4f6d1, #d3efb3);
+  color: #5f9a2a;
 }
 .lr-heropanel__card h3 {
   margin: 0.15rem 0 0.35rem;
@@ -1003,7 +1007,7 @@
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: #e8f4fd;
+  background: #e8eafb;
   color: var(--lr-navy);
 }
 
@@ -1013,13 +1017,13 @@
 }
 
 .lr-intro__feature:nth-child(2) .lr-intro__tile {
-  background: #e0f5f3;
-  color: #007b72;
+  background: #e3f5fb;
+  color: #1a8db0;
 }
 
 .lr-intro__feature:nth-child(3) .lr-intro__tile {
-  background: #f2f8e2;
-  color: #5d7c1c;
+  background: #eef9e0;
+  color: #4f8a20;
 }
 
 .lr-intro__feature h3 {
@@ -1072,7 +1076,7 @@
 }
 
 .lr-strip__cell:hover {
-  border-color: #b9c9da;
+  border-color: #b3b9e0;
   transform: translateY(-3px);
   box-shadow: var(--lr-shadow-sm);
 }
@@ -1259,7 +1263,7 @@
 
 .lr-statement {
   position: relative;
-  background: #0a4e8e;
+  background: #1a4fd6;
   padding: 7rem 0;
   color: #fff;
   overflow: hidden;
@@ -1297,7 +1301,7 @@
   height: 70%;
   left: 8%;
   top: 12%;
-  background: radial-gradient(closest-side, rgba(0, 169, 157, 0.55), transparent 70%);
+  background: radial-gradient(closest-side, rgba(44, 183, 220, 0.55), transparent 70%);
   animation: lrAuroraBlobA 13s ease-in-out infinite alternate;
 }
 
@@ -1306,7 +1310,7 @@
   height: 65%;
   right: 2%;
   bottom: 8%;
-  background: radial-gradient(closest-side, rgba(166, 206, 57, 0.4), transparent 70%);
+  background: radial-gradient(closest-side, rgba(163, 228, 117, 0.4), transparent 70%);
   animation: lrAuroraBlobB 17s ease-in-out infinite alternate;
 }
 
@@ -1718,18 +1722,17 @@
 }
 
 /* White wordmark on an aurora plate, echoing the nav badge and favicon */
+/* The square brand tile, app-icon style, echoing the nav badge and favicon */
 .lr-footer__brand {
   display: inline-flex;
   align-items: center;
-  padding: 0.9rem 1.15rem;
-  border-radius: var(--lr-r);
-  background: var(--lr-aurora);
-  box-shadow: var(--lr-shadow-sm);
 }
 .lr-footer__logo {
-  width: 176px;
-  height: auto;
+  width: 128px;
+  height: 128px;
   display: block;
+  border-radius: 26px;
+  box-shadow: var(--lr-shadow-sm);
 }
 
 .lr-footer__bbb {
@@ -1864,7 +1867,8 @@
   align-items: center;
   padding: 0.75rem 1.35rem;
   border-radius: 999px;
-  background: var(--lr-navy);
+  background: var(--lr-cta);
+  text-shadow: 0 1px 2px rgba(0, 19, 189, 0.28);
   color: #fff;
   font: 600 0.92rem/1 var(--lr-font);
   text-decoration: none;
@@ -1872,7 +1876,7 @@
 }
 
 .lr-orderbar__btn:hover {
-  background: var(--lr-navy-deep);
+  background: var(--lr-cta-hover);
 }
 
 .lr-orderbar__btn:active {
@@ -1912,7 +1916,7 @@
   height: 42px;
   flex-shrink: 0;
   border-radius: 12px;
-  background: #e8f4fd;
+  background: #e8eafb;
   color: var(--lr-navy);
 }
 
@@ -1959,7 +1963,7 @@
 .qre__progress-fill {
   height: 100%;
   border-radius: 999px;
-  background: var(--lr-navy);
+  background: var(--lr-cta);
   transition: width 0.5s var(--lr-ease);
 }
 
@@ -2024,7 +2028,7 @@
 
 .qre__tile.is-selected {
   border-color: var(--lr-navy);
-  background: #e8f4fd;
+  background: #e8eafb;
   color: var(--lr-navy);
 }
 
@@ -2080,13 +2084,13 @@
 }
 
 .qre__input:hover {
-  border-color: #b9c9da;
+  border-color: #b3b9e0;
 }
 
 .qre__input:focus {
   border-color: var(--lr-navy);
   outline: none;
-  box-shadow: 0 0 0 3px rgba(10, 78, 142, 0.15);
+  box-shadow: 0 0 0 3px rgba(0, 19, 189, 0.15);
 }
 
 .qre__error {
@@ -2101,7 +2105,7 @@
 }
 
 .qre__panel--kids {
-  background: #f0f7f0;
+  background: #eef9e0;
 }
 
 .qre__note {
@@ -2207,21 +2211,23 @@
 }
 
 .qre__btn--primary {
-  background: var(--lr-navy);
+  background: var(--lr-cta);
   color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 19, 189, 0.28);
 }
 
 .qre__btn--primary:hover:not(:disabled) {
-  background: var(--lr-navy-deep);
+  background: var(--lr-cta-hover);
 }
 
 .qre__btn--secondary {
-  background: var(--lr-navy);
+  background: var(--lr-cta);
   color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 19, 189, 0.28);
 }
 
 .qre__btn--secondary:hover {
-  background: var(--lr-navy-deep);
+  background: var(--lr-cta-hover);
 }
 
 .qre__btn--ghost {
@@ -2254,9 +2260,9 @@
 .qre__success {
   padding: 0.8rem 1rem;
   border-radius: var(--lr-r-sm);
-  background: #f0f7f0;
+  background: #eef9e0;
   font: 600 0.925rem/1.4 var(--lr-font);
-  color: #1c6b31;
+  color: #4f8a20;
 }
 
 .qre__compare {
@@ -2277,7 +2283,7 @@
 
 .qre__plan:first-of-type {
   border-color: var(--lr-navy);
-  background: #f4f9fe;
+  background: #f3f4fd;
 }
 
 .qre__badge {
@@ -2299,7 +2305,7 @@
 
 .qre__savings {
   font-weight: 700;
-  color: #1c6b31;
+  color: #4f8a20;
 }
 
 .qre__tier {

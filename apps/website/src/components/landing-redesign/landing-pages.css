@@ -2025,3 +2025,385 @@ a.lr-cell:hover {
 .plans .lr-phero__window--panel {
   box-shadow: none;
 }
+
+/* Podcast player — YouTube uploads embed as the hero panel */
+.lr-podcast .lr-podcast__player {
+  padding: 0.5rem;
+}
+
+.lr-podcast .lr-podcast__player iframe {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 0;
+  border-radius: calc(var(--lr-r-lg) - 0.5rem);
+}
+
+/* Get started flow — FlowShell dropped inside lr-panel lr-formwrap:
+   dissolve its own card, header gradient and footer tint so the
+   panel is the only box on the page. */
+.lr-flow .lr-formwrap > section {
+  max-width: none;
+}
+
+.lr-flow .lr-formwrap > section > div {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+  overflow: visible;
+}
+
+.lr-flow .lr-formwrap header {
+  background: transparent;
+  padding: 0 0 1.2rem;
+  border-color: var(--lr-line);
+}
+
+.lr-flow .lr-formwrap header p {
+  display: none;
+}
+
+.lr-flow .lr-formwrap header h3 {
+  font: 700 1.1rem/1.3 var(--lr-font);
+  letter-spacing: -0.015em;
+  color: var(--lr-ink);
+}
+
+.lr-flow .lr-formwrap header a {
+  font: 500 0.85rem/1 var(--lr-font);
+  color: var(--lr-ink-2);
+}
+
+.lr-flow .lr-formwrap > section > div > div {
+  padding-left: 0;
+  padding-right: 0;
+  min-height: 16rem;
+}
+
+.lr-flow .lr-formwrap footer {
+  background: transparent;
+  padding: 1.2rem 0 0;
+  border-color: var(--lr-line);
+}
+
+.lr-flow .lr-formwrap h4 {
+  font: 700 1.5rem/1.2 var(--lr-font);
+  letter-spacing: -0.025em;
+  color: var(--lr-ink);
+}
+
+/* Option tiles stay soft rectangles; only real actions are pills */
+.lr-flow .lr-formwrap button[type='button'].border-2 {
+  border-radius: 16px;
+}
+
+.lr-flow .lr-formwrap button[type='button'].border-2.border-blue-500 {
+  border-color: var(--lr-navy);
+  background: #eef0fb;
+  box-shadow: none;
+}
+
+/* ------------------------------------------------------------
+   Page-scoped: legal pages (.legal) and form indexes (.forms-index)
+   ------------------------------------------------------------ */
+
+/* State notices ledger reads at prose width, not the 34rem ledger cap */
+.legal .lr-notices {
+  max-width: 44rem;
+  margin-top: 0.5rem;
+}
+
+.legal .lr-notices p {
+  max-width: none;
+}
+
+/* Form index: the ledger title is the link */
+.forms-index .lr-ledger h3 a {
+  color: var(--lr-navy);
+  text-decoration: none;
+}
+
+.forms-index .lr-ledger h3 a:hover {
+  text-decoration: underline;
+}
+
+.forms-index .lr-body {
+  margin: 0 0 1.5rem;
+  max-width: 40rem;
+}
+
+/* ------------------------------------------------------------
+   Article pages (.lr-article: blog post, event, resource detail)
+   CMS-driven titles and HTML bodies of unknown length.
+   ------------------------------------------------------------ */
+
+.lr-article .lr-phero__title {
+  font-size: clamp(2.3rem, 4.8vw, 4rem);
+}
+
+.lr-article .lr-phero--center .lr-phero__content {
+  max-width: 50rem;
+}
+
+.lr-article__col {
+  max-width: 44rem;
+  margin: 0 auto;
+}
+
+.lr-article__col + .lr-article__col {
+  margin-top: 2.5rem;
+}
+
+.lr-article .lr-prose img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--lr-r);
+}
+
+.lr-article .lr-prose figure {
+  margin: 1.5rem 0;
+}
+
+.lr-article .lr-prose figcaption {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: #8a97a8;
+}
+
+.lr-article .lr-prose blockquote {
+  margin: 1.5rem 0;
+  padding-left: 1.25rem;
+  border-left: 2px solid var(--lr-navy);
+  font-weight: 500;
+  color: var(--lr-ink);
+}
+
+.lr-article .lr-prose h4 {
+  margin: 1.5rem 0 0.4rem;
+  font-size: 1.02rem;
+  font-weight: 700;
+  color: var(--lr-ink);
+}
+
+.lr-article .lr-prose table {
+  width: 100%;
+  margin: 0 0 1rem;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.lr-article .lr-prose th,
+.lr-article .lr-prose td {
+  padding: 0.6rem 0.4rem;
+  text-align: left;
+  border-bottom: 1px solid var(--lr-line);
+}
+
+.lr-article .lr-prose iframe {
+  max-width: 100%;
+}
+
+.lr-article__share {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 2.2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--lr-line);
+}
+
+.lr-article__author {
+  display: flex;
+  gap: 1.25rem;
+  align-items: flex-start;
+}
+
+.lr-article__avatar {
+  flex-shrink: 0;
+  width: 64px;
+  height: 64px;
+  border-radius: 999px;
+  object-fit: cover;
+  background: #e8eafb;
+}
+
+.lr-article__author h3 {
+  margin: 0;
+  font: 700 1.08rem/1.3 var(--lr-font);
+  color: var(--lr-ink);
+}
+
+.lr-article__author .lr-note {
+  margin-top: 0.15rem;
+}
+
+.lr-article__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.lr-article__video {
+  aspect-ratio: 16 / 9;
+  border-radius: var(--lr-r-lg);
+  overflow: hidden;
+  background: var(--lr-soft);
+}
+
+.lr-article__video iframe,
+.lr-article__video video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.lr-article .lr-tile--photo::after {
+  display: none;
+}
+
+.lr-article .lr-tile__body p {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.lr-article .lr-formwrap form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.lr-article .lr-formwrap form > * {
+  flex: 1 1 16rem;
+}
+
+/* ------------------------------------------------------------
+   Page-scoped: Support (.spt) — ledger titles are the task links
+   ------------------------------------------------------------ */
+
+.spt .lr-ledger h3 a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.spt .lr-ledger h3 a:hover {
+  color: var(--lr-navy);
+  text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 0.2em;
+}
+
+.spt .lr-phero__micro a,
+.jot .lr-phero__micro a,
+.jot .lr-note a {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+/* ------------------------------------------------------------
+   Page-scoped: Download app (.dla) — the phone screenshot sits in
+   the hero panel at its own 9:16 ratio instead of a cropped window
+   ------------------------------------------------------------ */
+
+.dla .lr-phero__window--panel {
+  width: auto;
+  height: min(66vh, 640px);
+  aspect-ratio: 9 / 16;
+  justify-self: center;
+  border-radius: var(--lr-r-lg);
+  overflow: hidden;
+  background: #f1f4f9;
+  box-shadow: var(--lr-shadow), 0 0 0 1px rgba(255, 255, 255, 0.18);
+}
+
+@media (min-width: 1000px) {
+  .dla .lr-phero__window--panel {
+    justify-self: end;
+  }
+}
+
+.dla .lr-phero__window--panel img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ------------------------------------------------------------
+   Page-scoped: feature detail (.fdt) and benefit detail (.bdt)
+   ------------------------------------------------------------ */
+
+/* "Included in" ledger: the plan name is the link */
+.fdt .lr-ledger h3 a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.fdt .lr-ledger h3 a:hover {
+  color: var(--lr-navy);
+}
+
+/* Nested checklists inside a ledger cell keep the cell's width */
+.fdt .lr-ledger .lr-checks,
+.bdt .lr-ledger .lr-checks {
+  max-width: 34rem;
+}
+
+/* Legacy plan finder (FlowShell) dropped inside a panel: dissolve its
+   own card chrome so the panel owns the border and gutter */
+.fdt .lr-flow > section {
+  max-width: none;
+}
+
+.fdt .lr-flow > section > div {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: visible;
+}
+
+.fdt .lr-flow header,
+.fdt .lr-flow footer {
+  padding-left: 0;
+  padding-right: 0;
+  background: transparent;
+}
+
+.fdt .lr-flow header > div > div:first-child > p {
+  display: none;
+}
+
+.fdt .lr-flow > section > div > div {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* Legacy interest form (BenefitInterestCTA): same treatment */
+.bdt .lr-benefitform > section > div {
+  max-width: none;
+  padding: 0;
+}
+
+.bdt .lr-benefitform > section > div > div {
+  padding: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.bdt .lr-benefitform form {
+  max-width: none;
+}
+
+.lr-article .lr-prose ul {
+  list-style: disc;
+}
+
+.lr-article .lr-prose ol {
+  list-style: decimal;
+}

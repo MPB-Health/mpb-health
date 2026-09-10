@@ -65,19 +65,19 @@ const PILLARS = [
   {
     title: 'Mental.',
     text: 'Access support for your mental and emotional well being.',
-    image: '/assets/vibegirlD.png',
+    image: '/assets/pillar-mental.jpg',
     to: '/features/mental-health',
   },
   {
     title: 'Physical.',
     text: 'Enjoy 30% off supplements and vitamins to support your overall health and wellness.',
-    image: '/assets/runnervibeD.png',
+    image: '/assets/runner-forest.jpg',
     to: '/features/preventive-care',
   },
   {
     title: 'Balance.',
     text: 'Modern healthcare and real life working together so you can thrive.',
-    image: '/assets/silouhettevibeD.png',
+    image: '/assets/pillar-balance.jpg',
     to: '/how-it-works',
   },
 ] as const;
@@ -406,10 +406,10 @@ export function LandingRedesign() {
             <Reveal>
               <div className="lr-intro__media">
                 <img
-                  src="/assets/vibegirlD.png"
+                  src="/assets/intro-community.jpg"
                   alt=""
-                  width={1512}
-                  height={1040}
+                  width={1080}
+                  height={1350}
                   loading="lazy"
                   decoding="async"
                 />
@@ -475,10 +475,10 @@ export function LandingRedesign() {
           <div className="lr-estimate__grid">
             <div className="lr-estimate__media">
               <img
-                src="/assets/runnervibeD.png"
+                src="/assets/runner-forest.jpg"
                 alt=""
-                width={1448}
-                height={1086}
+                width={2400}
+                height={1600}
                 loading="lazy"
                 decoding="async"
               />

@@ -1,22 +1,131 @@
 import React from 'react';
-import { useParams, Link, Navigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { ArrowLeft, CheckCircle2, Phone, ArrowRight, Sparkles, ChevronRight } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { healthcareFeatures } from '../data/healthcareFeaturesData';
-import { Button } from '../components/ui/button';
 import { FlowShell } from '../components/onboarding/FlowShell';
+import {
+  AuroraBand,
+  FaqSection,
+  LandingPage,
+  PageHero,
+  Reveal,
+  SectionHead,
+  Sheet,
+} from '../components/landing-redesign/page-kit';
+
+const NOT_INSURANCE =
+  'MPB Health memberships are not insurance and do not guarantee payment of medical expenses. Eligible expenses are shared according to the membership guidelines.';
+
+/** Short audience tag for the hero kicker, mirroring the /features filter groups. */
+const CATEGORY_BY_FEATURE: Record<string, string> = {
+  'health-sharing': 'Medical care',
+  'primary-care': 'Medical care',
+  'urgent-care': 'Medical care',
+  'maternity-care': 'Medical care',
+  'preventive-care': 'Wellness',
+  'mental-health': 'Wellness',
+  'medical-weight-loss-support': 'Wellness',
+  'membership-concierge': 'Support',
+  'pet-telehealth': 'Support',
+  'rx-benefits': 'Savings',
+  'hsa-compatibility': 'Savings',
+};
+
+const WEIGHT_LOSS_PATHWAYS = {
+  all: {
+    title: 'MPB Health virtual care access',
+    note: 'Available to all memberships. Virtual care provides access to a prescription. It does not include Rx Valet discounted pricing.',
+    steps: [
+      'Schedule a Virtual Primary Care appointment in the MPB Health app',
+      'Meet with a licensed provider for evaluation, and if appropriate receive a prescription',
+      'Fill your prescription at the pharmacy of your choice',
+      'Manage follow-ups directly with your provider',
+    ],
+  },
+  hsa: {
+    title: 'Rx Valet program',
+    note: 'Exclusive to Secure HSA members. Rx Valet provides member pricing and mail-order fulfillment.',
+    steps: [
+      'Select Rx Valet inside the MPB Health app',
+      'Choose Mail Order, then Order Here',
+      'Click Weight Loss Program at the top of the screen',
+      'Select either "I have a prescription" or "I need a prescription"',
+      'If needed, complete the qualifying questionnaire',
+      'If approved, your prescription for compounded Semaglutide or compounded Tirzepatide is sent to the Rx Valet mail-order pharmacy',
+      'Your medication is cold shipped via 2-day delivery',
+    ],
+  },
+} as const;
+
+const WEIGHT_LOSS_INCLUDED = {
+  all: [
+    'Virtual provider evaluation',
+    'Prescription eligibility determination',
+    'Ongoing medication management',
+    'Follow-up consultations',
+    'App-based scheduling and access',
+  ],
+  hsa: ['Access to Rx Valet', 'Mail-order pharmacy fulfillment', 'Monthly dosage verification', 'Member pricing'],
+} as const;
+
+const RX_PROGRAMS = [
+  {
+    title: 'Rx program: up to 80% off retail',
+    text: 'Immediate savings at the pharmacy counter, with no paperwork or claims to file.',
+    points: [
+      'Save up to 80% on prescription medications at over 65,000 pharmacies nationwide',
+      'No prior authorizations or formulary restrictions',
+      'Generic and brand-name medications included',
+      'Works at CVS, Walgreens, Walmart, Kroger, Costco, and most local pharmacies',
+    ],
+  },
+  {
+    title: 'Discounted supplements: 30% off all orders',
+    text: 'Easy online ordering with home delivery for your wellness needs.',
+    points: [
+      'Save 30% on high-quality vitamins and supplements',
+      'Premium brands and trusted formulations',
+      'Fast, reliable shipping direct to your door',
+      'Free shipping on orders over $50',
+    ],
+  },
+] as const;
 
 export const FeatureDetail: React.FC = () => {
   const { featureId } = useParams<{ featureId: string }>();
   const feature = healthcareFeatures.find((f) => f.id === featureId);
-  const [showLemonadeEngine, setShowLemonadeEngine] = React.useState(false);
   const [activePathway, setActivePathway] = React.useState<'all' | 'hsa'>('all');
 
   if (!feature) {
-    return <Navigate to="/features" replace />;
+    return (
+      <>
+        <Helmet>
+          <title>Feature not found | MPB Health</title>
+          <meta name="robots" content="noindex" />
+        </Helmet>
+        <LandingPage className="fdt">
+          <PageHero
+            ariaLabel="Feature not found"
+            align="center"
+            title="We couldn't find that feature."
+            lede="The link may be out of date. Every feature your membership can include is listed on one page."
+            actions={
+              <Link className="lr-btn lr-btn--white" to="/features">
+                See all features
+              </Link>
+            }
+          />
+        </LandingPage>
+      </>
+    );
   }
 
-  const Icon = feature.icon;
+  const isWeightLoss = feature.id === 'medical-weight-loss-support';
+  const showsIuaNote = feature.id !== 'urgent-care' && feature.id !== 'mental-health';
+  const stepCols = feature.howItWorks.length <= 4 ? feature.howItWorks.length : 3;
+  const pathway = WEIGHT_LOSS_PATHWAYS[activePathway];
+  const kicker = CATEGORY_BY_FEATURE[feature.id];
 
   return (
     <>
@@ -38,594 +147,282 @@ export const FeatureDetail: React.FC = () => {
         )}
       </Helmet>
 
-      <div className="min-h-screen bg-white">
-        <section className={`relative py-16 md:py-24 bg-gradient-to-br ${feature.gradientFrom} ${feature.gradientTo} text-white overflow-hidden`}>
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff08_1px,transparent_1px),linear-gradient(to_bottom,#ffffff08_1px,transparent_1px)] bg-[size:32px_32px]" />
+      <LandingPage className="fdt">
+        <PageHero
+          ariaLabel={feature.name}
+          kicker={kicker}
+          title={feature.name}
+          lede={feature.tagline}
+          media={{ type: 'image', src: feature.heroImage, alt: feature.name }}
+          actions={
+            <>
+              <Link className="lr-btn lr-btn--white" to="/get-a-quote">
+                Get your quote
+              </Link>
+              <Link className="lr-btn lr-btn--glass" to="/features">
+                See all features
+              </Link>
+            </>
+          }
+        />
 
-          <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="mb-6">
-              {feature.id === 'medical-weight-loss-support' ? (
-                <nav className="flex items-center gap-1.5 text-sm text-white/80">
-                  <Link to="/" className="hover:text-white transition-colors">Home</Link>
-                  <ChevronRight className="w-3.5 h-3.5" />
-                  <Link to="/features" className="hover:text-white transition-colors">Features</Link>
-                  <ChevronRight className="w-3.5 h-3.5" />
-                  <span className="text-white font-medium">Medical Weight Loss Support</span>
-                </nav>
-              ) : (
-                <Link
-                  to="/features"
-                  className="inline-flex items-center gap-2 text-white/90 hover:text-white transition-colors"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  Back to All Features
-                </Link>
-              )}
+        <Sheet>
+          <section className="lr-sec lr-sec--top" aria-label="About this feature">
+            <div className="lr-inner">
+              <Reveal>
+                <h2 className="lr-h2">What this feature gives you.</h2>
+                <div className="lr-prose">
+                  <p>{feature.detailedDescription}</p>
+                </div>
+              </Reveal>
+              <ul className="lr-ledger" style={{ marginTop: '2.5rem' }}>
+                {feature.keyPoints.map((point) => (
+                  <li key={point.title}>
+                    <h3>{point.title}</h3>
+                    <p>{point.description}</p>
+                  </li>
+                ))}
+              </ul>
             </div>
+          </section>
 
-            <div className="grid lg:grid-cols-2 gap-12 items-center">
-              <div className="space-y-6">
-                <div className="inline-flex w-20 h-20 bg-white/20 backdrop-blur-sm rounded-2xl items-center justify-center">
-                  <Icon className="w-12 h-12 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4">
-                    {feature.name}
-                  </h1>
-                  <p className="text-xl sm:text-2xl text-white/90 mb-6">
-                    {feature.tagline}
-                  </p>
-                  <p className="text-lg text-white/80 leading-relaxed">
-                    {feature.detailedDescription}
-                  </p>
-                </div>
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <Button
-                    size="lg"
-                    className="bg-white text-neutral-900 hover:bg-neutral-100 shadow-lg"
-                    onClick={() => {
-                      const element = document.getElementById('get-started-flow');
-                      element?.scrollIntoView({ behavior: 'smooth' });
-                      setShowLemonadeEngine(true);
-                    }}
-                  >
-                    <Sparkles className="w-5 h-5 mr-2" />
-                    {feature.id === 'medical-weight-loss-support' ? 'Get Started' : 'Find My Perfect Membership'}
-                  </Button>
-                  <Button
-                    size="lg"
-                    className="bg-white text-neutral-900 hover:bg-neutral-100 shadow-lg"
-                    asChild
-                  >
-                    <a href="tel:8558164650" className="inline-flex items-center">
-                      <Phone className="w-5 h-5 mr-2" />
-                      (855) 816-4650
-                    </a>
-                  </Button>
-                </div>
-              </div>
-
-              <div className="relative">
-                <div className="absolute -inset-4 bg-white rounded-3xl blur-2xl opacity-20" />
-                <div className="relative rounded-3xl overflow-hidden shadow-2xl">
-                  <img
-                    src={feature.heroImage}
-                    alt={feature.name}
-                    className="w-full h-auto object-cover"
+          {isWeightLoss ? (
+            <>
+              <section className="lr-sec lr-sec--soft" aria-label="How it works">
+                <div className="lr-inner">
+                  <SectionHead
+                    title="How it works."
+                    lede="Choose your pathway"
+                    ledeMuted="based on your membership type."
                   />
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="py-16 bg-neutral-50">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <h2 className="text-3xl md:text-4xl font-bold text-neutral-900 mb-12 text-center">
-              Key Benefits
-            </h2>
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {feature.keyPoints.map((point, index) => (
-                <div
-                  key={index}
-                  className="bg-white rounded-xl p-6 shadow-sm border border-neutral-200 hover:shadow-md transition-shadow"
-                >
-                  <div className={`inline-flex w-12 h-12 rounded-xl ${feature.bgColor} items-center justify-center mb-4`}>
-                    <CheckCircle2 className={`w-6 h-6 ${feature.color}`} />
-                  </div>
-                  <h3 className="text-lg font-bold text-neutral-900 mb-2">
-                    {point.title}
-                  </h3>
-                  <p className="text-sm text-neutral-600">
-                    {point.description}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {feature.id === 'medical-weight-loss-support' ? (
-          <>
-            <section className="py-16 bg-white">
-              <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                <h2 className="text-3xl md:text-4xl font-bold text-neutral-900 mb-4 text-center">
-                  How It Works
-                </h2>
-                <p className="text-center text-neutral-600 mb-10 max-w-2xl mx-auto">
-                  Choose your pathway based on your membership type.
-                </p>
-
-                <div className="flex justify-center mb-10">
-                  <div className="inline-flex rounded-xl bg-neutral-100 p-1">
+                  <div className="lr-chips" role="group" aria-label="Choose a pathway">
                     <button
+                      type="button"
+                      className={`lr-chip${activePathway === 'all' ? ' is-active' : ''}`}
+                      aria-pressed={activePathway === 'all'}
                       onClick={() => setActivePathway('all')}
-                      className={`px-6 py-3 rounded-lg text-sm font-semibold transition-all ${
-                        activePathway === 'all'
-                          ? 'bg-white text-neutral-900 shadow-sm'
-                          : 'text-neutral-600 hover:text-neutral-900'
-                      }`}
                     >
-                      All Memberships
+                      All memberships
                     </button>
                     <button
+                      type="button"
+                      className={`lr-chip${activePathway === 'hsa' ? ' is-active' : ''}`}
+                      aria-pressed={activePathway === 'hsa'}
                       onClick={() => setActivePathway('hsa')}
-                      className={`px-6 py-3 rounded-lg text-sm font-semibold transition-all ${
-                        activePathway === 'hsa'
-                          ? 'bg-white text-neutral-900 shadow-sm'
-                          : 'text-neutral-600 hover:text-neutral-900'
-                      }`}
                     >
-                      Secure HSA Members
+                      Secure HSA members
                     </button>
                   </div>
-                </div>
-
-                {activePathway === 'all' ? (
-                  <div className="max-w-3xl mx-auto">
-                    <div className="bg-gradient-to-br from-teal-50 to-emerald-50 rounded-2xl p-8 border border-teal-100">
-                      <h3 className="text-xl font-bold text-neutral-900 mb-2">
-                        MPB Health Virtual Care Access
-                      </h3>
-                      <p className="text-sm text-neutral-500 mb-6">Available to all memberships</p>
-                      <div className="space-y-4">
-                        {[
-                          'Schedule a Virtual Primary Care appointment in the MPB Health app',
-                          'Meet with a licensed provider for evaluation, and if appropriate receive a prescription',
-                          'Fill your prescription at the pharmacy of your choice',
-                          'Manage follow-ups directly with your provider'
-                        ].map((step, index) => (
-                          <div key={index} className="flex items-start gap-4">
-                            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center">
-                              <span className="text-sm font-bold text-teal-700">{index + 1}</span>
-                            </div>
-                            <p className="text-neutral-700 pt-1">{step}</p>
-                          </div>
-                        ))}
-                      </div>
-                      <p className="text-sm text-neutral-500 italic mt-6 pt-4 border-t border-teal-200">
-                        Virtual Care provides access to a prescription. It does not include Rx Valet discounted pricing.
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="max-w-3xl mx-auto">
-                    <div className="bg-gradient-to-br from-emerald-50 to-green-50 rounded-2xl p-8 border border-emerald-100">
-                      <h3 className="text-xl font-bold text-neutral-900 mb-2">
-                        Rx Valet Program
-                      </h3>
-                      <p className="text-sm text-neutral-500 mb-6">Exclusive to Secure HSA members</p>
-                      <div className="space-y-4">
-                        {[
-                          'Select Rx Valet inside the MPB Health App',
-                          'Choose Mail Order — Order Here',
-                          'Click Weight Loss Program at the top of the screen',
-                          'Select either: "I have a prescription" or "I need a prescription"',
-                          'If needed, complete the Qualifying Questionnaire',
-                          'If approved, your prescription for compounded Semaglutide or compounded Tirzepatide is sent to the Rx Valet mail-order pharmacy',
-                          'Your medication is cold shipped via 2-day delivery'
-                        ].map((step, index) => (
-                          <div key={index} className="flex items-start gap-4">
-                            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
-                              <span className="text-sm font-bold text-emerald-700">{index + 1}</span>
-                            </div>
-                            <p className="text-neutral-700 pt-1">{step}</p>
-                          </div>
-                        ))}
-                      </div>
-                      <p className="text-sm text-neutral-500 italic mt-6 pt-4 border-t border-emerald-200">
-                        Rx Valet provides member pricing and mail-order fulfillment.
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </section>
-
-            <section className="py-16 bg-neutral-50">
-              <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                <h2 className="text-3xl md:text-4xl font-bold text-neutral-900 mb-4 text-center">
-                  What's Included
-                </h2>
-                <p className="text-center text-neutral-600 mb-12 max-w-2xl mx-auto">
-                  See what's available with your membership — and what Secure HSA members get in addition.
-                </p>
-                <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-                  <div className="bg-white rounded-2xl p-8 border-2 border-neutral-200 shadow-sm">
-                    <div className="flex items-center gap-3 mb-6">
-                      <div className="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center">
-                        <CheckCircle2 className="w-6 h-6 text-teal-600" />
-                      </div>
-                      <h3 className="text-lg font-bold text-neutral-900">For All Memberships</h3>
-                    </div>
-                    <ul className="space-y-3">
-                      {[
-                        'Virtual provider evaluation',
-                        'Prescription eligibility determination',
-                        'Ongoing medication management',
-                        'Follow-up consultations',
-                        'App-based scheduling and access'
-                      ].map((item, index) => (
-                        <li key={index} className="flex items-start gap-3">
-                          <CheckCircle2 className="w-5 h-5 text-teal-600 flex-shrink-0 mt-0.5" />
-                          <span className="text-neutral-700">{item}</span>
+                  <div style={{ maxWidth: '52rem', margin: '2.5rem auto 0' }}>
+                    <h3 className="lr-h3">{pathway.title}</h3>
+                    <ol className="lr-steps" style={{ marginTop: '1rem' }}>
+                      {pathway.steps.map((step, i) => (
+                        <li key={step}>
+                          <span className="lr-steps__num">{i + 1}</span>
+                          <p>{step}</p>
                         </li>
                       ))}
-                    </ul>
-                  </div>
-
-                  <div className="bg-white rounded-2xl p-8 border-2 border-emerald-300 shadow-sm relative">
-                    <div className="absolute -top-3 right-6">
-                      <span className="bg-emerald-600 text-white text-xs font-bold px-3 py-1 rounded-full">
-                        Secure HSA
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3 mb-6">
-                      <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center">
-                        <Sparkles className="w-6 h-6 text-emerald-600" />
-                      </div>
-                      <h3 className="text-lg font-bold text-neutral-900">Additional Benefits</h3>
-                    </div>
-                    <ul className="space-y-3">
-                      {[
-                        'Access to Rx Valet',
-                        'Mail-order pharmacy fulfillment',
-                        'Monthly dosage verification',
-                        'Member pricing'
-                      ].map((item, index) => (
-                        <li key={index} className="flex items-start gap-3">
-                          <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-                          <span className="text-neutral-700">{item}</span>
-                        </li>
-                      ))}
-                    </ul>
+                    </ol>
+                    <p className="lr-note">{pathway.note}</p>
                   </div>
                 </div>
-              </div>
-            </section>
-          </>
-        ) : (
-        <section className="py-16 bg-white">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="grid lg:grid-cols-2 gap-12">
-              <div>
-                <h2 className="text-3xl font-bold text-neutral-900 mb-6">
-                  How It Works
-                </h2>
-                <div className="space-y-4">
-                  {feature.howItWorks.map((step, index) => (
-                    <div key={index} className="flex items-start gap-4">
-                      <div className={`flex-shrink-0 w-8 h-8 rounded-full ${feature.bgColor} flex items-center justify-center`}>
-                        <span className={`text-sm font-bold ${feature.color}`}>
-                          {index + 1}
-                        </span>
-                      </div>
-                      <p className="text-neutral-700 pt-1">{step}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              </section>
 
-              <div>
-                <h2 className="text-3xl font-bold text-neutral-900 mb-2">
-                  What's Included
-                </h2>
-                {feature.id !== 'urgent-care' && feature.id !== 'mental-health' && (
-                  <p className="text-sm text-neutral-500 italic mb-6">*After IUA is met</p>
-                )}
-                {(feature.id === 'urgent-care' || feature.id === 'mental-health') && (
-                  <div className="mb-6" />
-                )}
-                <ul className="space-y-3">
-                  {feature.membership.map((item, index) => (
-                    <li key={index} className="flex items-start gap-3">
-                      <CheckCircle2 className={`w-6 h-6 ${feature.color} flex-shrink-0 mt-0.5`} />
-                      <span className="text-neutral-700">{item}</span>
+              <section className="lr-sec" aria-label="What is included">
+                <div className="lr-inner">
+                  <SectionHead
+                    title="What's included."
+                    lede="See what's available with your membership,"
+                    ledeMuted="and what Secure HSA members get in addition."
+                    align="left"
+                  />
+                  <div className="lr-split">
+                    <Reveal>
+                      <h3 className="lr-h3">For all memberships</h3>
+                      <ul className="lr-checks" style={{ marginTop: '1rem' }}>
+                        {WEIGHT_LOSS_INCLUDED.all.map((item) => (
+                          <li key={item}>
+                            <Check strokeWidth={3} />
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </Reveal>
+                    <Reveal>
+                      <h3 className="lr-h3">Additional benefits for Secure HSA members</h3>
+                      <ul className="lr-checks" style={{ marginTop: '1rem' }}>
+                        {WEIGHT_LOSS_INCLUDED.hsa.map((item) => (
+                          <li key={item}>
+                            <Check strokeWidth={3} />
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </Reveal>
+                  </div>
+                </div>
+              </section>
+            </>
+          ) : (
+            <>
+              <section className="lr-sec lr-sec--soft" aria-label="How it works">
+                <div className="lr-inner">
+                  <SectionHead title="How it works." align="left" />
+                  <ol className="lr-steps lr-steps--cols" style={{ '--cols': stepCols } as React.CSSProperties}>
+                    {feature.howItWorks.map((step, i) => (
+                      <li key={step}>
+                        <span className="lr-steps__num">{i + 1}</span>
+                        <p>{step}</p>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              </section>
+
+              <section className="lr-sec" aria-label="What is included">
+                <div className="lr-inner">
+                  <SectionHead
+                    title="What's included."
+                    lede={showsIuaNote ? 'Eligible for sharing' : undefined}
+                    ledeMuted={showsIuaNote ? 'after your Initial Unshareable Amount (IUA) is met.' : undefined}
+                    align="left"
+                  />
+                  <ul className="lr-ledger lr-ledger--tight">
+                    {feature.membership.map((item) => (
+                      <li key={item}>
+                        <p>{item}</p>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </section>
+            </>
+          )}
+
+          <section className="lr-sec lr-sec--soft" aria-label="Memberships that include this feature">
+            <div className="lr-inner">
+              <SectionHead
+                title="Memberships that include this feature."
+                lede="Available on the following memberships."
+                ledeMuted="Find the one that fits your needs."
+                align="left"
+              />
+              <ul className="lr-ledger lr-ledger--3 lr-ledger--tight">
+                {feature.eligiblePlans.map((plan) => (
+                  <li key={plan}>
+                    <h3>
+                      <Link to="/plans">{plan}</Link>
+                    </h3>
+                  </li>
+                ))}
+              </ul>
+              <p style={{ margin: '2rem 0 0' }}>
+                <Link className="lr-btn lr-btn--ghost lr-btn--sm" to="/plans">
+                  Compare all memberships
+                </Link>
+              </p>
+            </div>
+          </section>
+
+          {feature.id === 'rx-benefits' && (
+            <section className="lr-sec" aria-label="Prescription savings programs">
+              <div className="lr-inner">
+                <SectionHead
+                  title="Two ways to save on medications."
+                  lede="A discount card that works at the counter,"
+                  ledeMuted="and a supplement program that ships to your door."
+                  align="left"
+                />
+                <ul className="lr-ledger">
+                  {RX_PROGRAMS.map((program) => (
+                    <li key={program.title}>
+                      <h3>{program.title}</h3>
+                      <p>{program.text}</p>
+                      <ul className="lr-checks" style={{ marginTop: '1.2rem' }}>
+                        {program.points.map((point) => (
+                          <li key={point}>
+                            <Check strokeWidth={3} />
+                            <span>{point}</span>
+                          </li>
+                        ))}
+                      </ul>
                     </li>
                   ))}
                 </ul>
+                <p className="lr-body" style={{ marginTop: '2rem', maxWidth: '44rem' }}>
+                  Members using both programs save an average of <strong>$1,200+ a year</strong> on
+                  prescriptions and supplements. The discount card works instantly at checkout, and the
+                  supplement program ships directly to your home.
+                </p>
               </div>
-            </div>
-          </div>
-        </section>
-        )}
+            </section>
+          )}
 
-        <section className="py-16 bg-neutral-50">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <h2 className="text-3xl md:text-4xl font-bold text-neutral-900 mb-6 text-center">
-              Memberships That Include This Feature
-            </h2>
-            <p className="text-center text-neutral-600 mb-12 max-w-3xl mx-auto">
-              This feature is available on the following memberships. Find the right fit for your needs.
-            </p>
-            <div className="flex flex-wrap justify-center gap-4">
-              {feature.eligiblePlans.map((plan, index) => (
-                <div
-                  key={index}
-                  className="bg-white rounded-xl px-6 py-4 border-2 border-neutral-200 hover:border-blue-500 transition-colors shadow-sm"
-                >
-                  <div className="flex items-center gap-3">
-                    <CheckCircle2 className="w-5 h-5 text-green-600" />
-                    <span className="font-semibold text-neutral-900">{plan}</span>
-                  </div>
-                </div>
-              ))}
+          {(feature.examples.length > 0 || feature.disclaimer) && (
+            <section className="lr-sec lr-sec--hair" aria-label="Real-world examples">
+              <div className="lr-inner">
+                {feature.examples.length > 0 && (
+                  <>
+                    <SectionHead title="Real-world examples." align="left" />
+                    <ul className="lr-ledger lr-ledger--1">
+                      {feature.examples.map((example) => (
+                        <li key={example}>
+                          <p>{example}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+                {feature.disclaimer && <p className="lr-note">{feature.disclaimer}</p>}
+              </div>
+            </section>
+          )}
+
+          {feature.faqs.length > 0 && (
+            <FaqSection items={feature.faqs} intro={`Answers to the questions members ask most about ${feature.name.toLowerCase()}.`} />
+          )}
+
+          <section className="lr-sec lr-sec--soft" aria-label="Find your membership" id="get-started-flow">
+            <div className="lr-inner">
+              <SectionHead
+                title="Find the membership that fits."
+                lede="Answer a few quick questions"
+                ledeMuted={`and we'll point you to the membership that includes ${feature.name.toLowerCase()} and the other features you need.`}
+              />
+              <div className="lr-panel lr-formwrap lr-flow">
+                <FlowShell />
+              </div>
+              <p className="lr-note" style={{ textAlign: 'center', marginInline: 'auto' }}>
+                Takes less than two minutes. No personal information required.
+              </p>
             </div>
-            <div className="text-center mt-12">
-              <Button
-                size="lg"
-                className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white shadow-lg"
-                asChild
-              >
-                <Link to="/plans" className="inline-flex items-center">
-                  Compare All Memberships
-                  <ArrowRight className="w-5 h-5 ml-2" />
+          </section>
+
+          <AuroraBand
+            title={
+              isWeightLoss
+                ? 'Ready to take control of your weight loss journey?'
+                : 'Questions? Talk to a specialist.'
+            }
+            lede={
+              isWeightLoss
+                ? 'Schedule a virtual visit with a licensed provider today, right from the MPB Health app.'
+                : 'Our healthcare specialists can help you understand your options and find the right membership for your needs.'
+            }
+            actions={
+              <>
+                <Link className="lr-btn lr-btn--white" to={isWeightLoss ? '/plans' : '/contact'}>
+                  {isWeightLoss ? 'See memberships' : 'Schedule a consultation'}
                 </Link>
-              </Button>
-            </div>
-          </div>
-        </section>
-
-{feature.id === 'rx-benefits' && (
-          <section className="py-16 bg-gradient-to-b from-white to-gray-50">
-            <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-              <div className="text-center mb-12">
-                <h2 className="text-3xl md:text-4xl font-bold text-neutral-900 mb-4">
-                  Your Prescription Savings Programs
-                </h2>
-                <p className="text-lg text-neutral-600 max-w-2xl mx-auto">
-                  Access two powerful programs designed to help you save on medications and supplements
-                </p>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-8">
-                <div className="bg-white rounded-2xl border-2 border-blue-200 shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-300">
-                  <div className="bg-gradient-to-br from-blue-500 to-cyan-600 p-6 text-white">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                        <CheckCircle2 className="w-7 h-7 text-white" />
-                      </div>
-                      <h3 className="text-2xl font-bold">RX Program</h3>
-                    </div>
-                    <p className="text-white/90 text-lg font-semibold">
-                      Discounts up to 80% off retail
-                    </p>
-                  </div>
-                  <div className="p-8">
-                    <ul className="space-y-4">
-                      <li className="flex items-start gap-3">
-                        <CheckCircle2 className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
-                        <span className="text-neutral-700">Save up to 80% on prescription medications at over 65,000 pharmacies nationwide</span>
-                      </li>
-                      <li className="flex items-start gap-3">
-                        <CheckCircle2 className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
-                        <span className="text-neutral-700">No prior authorizations or formulary restrictions</span>
-                      </li>
-                      <li className="flex items-start gap-3">
-                        <CheckCircle2 className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
-                        <span className="text-neutral-700">Generic and brand-name medications included</span>
-                      </li>
-                      <li className="flex items-start gap-3">
-                        <CheckCircle2 className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
-                        <span className="text-neutral-700">Works at CVS, Walgreens, Walmart, Kroger, Costco, and most local pharmacies</span>
-                      </li>
-                    </ul>
-                    <div className="mt-6 pt-6 border-t border-gray-200">
-                      <p className="text-sm text-neutral-600">
-                        <span className="font-semibold text-neutral-900">Immediate savings</span> at the pharmacy counter with no paperwork or claims to file
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-2xl border-2 border-green-200 shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-300">
-                  <div className="bg-gradient-to-br from-green-500 to-emerald-600 p-6 text-white">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                        <CheckCircle2 className="w-7 h-7 text-white" />
-                      </div>
-                      <h3 className="text-2xl font-bold">Discounted Supplements</h3>
-                    </div>
-                    <p className="text-white/90 text-lg font-semibold">
-                      30% off all orders
-                    </p>
-                  </div>
-                  <div className="p-8">
-                    <ul className="space-y-4">
-                      <li className="flex items-start gap-3">
-                        <CheckCircle2 className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
-                        <span className="text-neutral-700">Save 30% on high-quality vitamins and supplements</span>
-                      </li>
-                      <li className="flex items-start gap-3">
-                        <CheckCircle2 className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
-                        <span className="text-neutral-700">Premium brands and trusted formulations</span>
-                      </li>
-                      <li className="flex items-start gap-3">
-                        <CheckCircle2 className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
-                        <span className="text-neutral-700">Fast, reliable shipping direct to your door</span>
-                      </li>
-                      <li className="flex items-start gap-3">
-                        <CheckCircle2 className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
-                        <span className="text-neutral-700">Free shipping on orders over $50</span>
-                      </li>
-                    </ul>
-                    <div className="mt-6 pt-6 border-t border-gray-200">
-                      <p className="text-sm text-neutral-600">
-                        <span className="font-semibold text-neutral-900">Easy online ordering</span> with convenient home delivery for your wellness needs
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-12 bg-gradient-to-r from-blue-50 to-green-50 rounded-2xl p-8 border border-blue-100">
-                <div className="text-center">
-                  <h4 className="text-xl font-bold text-neutral-900 mb-3">
-                    Combined Savings Add Up Fast
-                  </h4>
-                  <p className="text-neutral-700 max-w-3xl mx-auto leading-relaxed">
-                    Members using both programs save an average of <span className="font-bold text-green-600">$1,200+ annually</span> on prescriptions and supplements. The discount card works instantly at checkout, and the supplement program ships directly to your home.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </section>
-        )}
-
-        {feature.examples.length > 0 && (
-          <section className="py-16 bg-white">
-            <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-              <h2 className="text-3xl md:text-4xl font-bold text-neutral-900 mb-12 text-center">
-                Real-World Examples
-              </h2>
-              <div className="space-y-4">
-                {feature.examples.map((example, index) => (
-                  <div
-                    key={index}
-                    className="bg-neutral-50 rounded-xl p-6 border border-neutral-200"
-                  >
-                    <div className="flex items-start gap-4">
-                      <div className={`flex-shrink-0 w-10 h-10 rounded-full ${feature.bgColor} flex items-center justify-center`}>
-                        <CheckCircle2 className={`w-6 h-6 ${feature.color}`} />
-                      </div>
-                      <p className="text-neutral-700 pt-2 leading-relaxed">
-                        {example}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              {feature.disclaimer && (
-                <div className="mt-8 text-center">
-                  <p className="text-sm text-neutral-500 italic">
-                    * {feature.disclaimer}
-                  </p>
-                </div>
-              )}
-            </div>
-          </section>
-        )}
-
-        <section className="py-16 bg-neutral-50">
-          <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-            <h2 className="text-3xl md:text-4xl font-bold text-neutral-900 mb-12 text-center">
-              Frequently Asked Questions
-            </h2>
-            <div className="space-y-6">
-              {feature.faqs.map((faq, index) => (
-                <div
-                  key={index}
-                  className="bg-white rounded-xl p-6 border border-neutral-200 shadow-sm"
-                >
-                  <h3 className="text-lg font-bold text-neutral-900 mb-3">
-                    {faq.question}
-                  </h3>
-                  <p className="text-neutral-700 leading-relaxed">
-                    {faq.answer}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section id="get-started-flow" className="py-16 bg-gradient-to-br from-blue-50 via-white to-teal-50">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-12">
-              <h2 className="text-4xl md:text-5xl font-bold text-neutral-900 mb-6">
-                Ready to Get Started?
-              </h2>
-              <p className="text-xl text-neutral-600 max-w-3xl mx-auto">
-                Answer a few quick questions to find the perfect membership that includes {feature.name.toLowerCase()} and other features you need.
-              </p>
-            </div>
-
-            {showLemonadeEngine ? (
-              <FlowShell />
-            ) : (
-              <div className="text-center">
-                <Button
-                  size="lg"
-                  className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white shadow-lg"
-                  onClick={() => setShowLemonadeEngine(true)}
-                >
-                  <Sparkles className="w-5 h-5 mr-2" />
-                  Find My Perfect Membership
-                </Button>
-                <p className="text-sm text-neutral-500 mt-4">
-                  Takes less than 2 minutes • No personal info required
-                </p>
-              </div>
-            )}
-          </div>
-        </section>
-
-        {feature.id === 'medical-weight-loss-support' && feature.disclaimer && (
-          <section className="py-8 bg-white">
-            <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-              <p className="text-xs text-neutral-400 leading-relaxed text-center">
-                {feature.disclaimer}
-              </p>
-            </div>
-          </section>
-        )}
-
-        <section className="py-16 bg-white border-t border-neutral-200">
-          <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center">
-            <h2 className="text-3xl md:text-4xl font-bold text-neutral-900 mb-6">
-              {feature.id === 'medical-weight-loss-support'
-                ? 'Ready to Take Control of Your Weight Loss Journey?'
-                : 'Have Questions?'}
-            </h2>
-            <p className="text-lg text-neutral-600 mb-8 max-w-2xl mx-auto">
-              {feature.id === 'medical-weight-loss-support'
-                ? 'Schedule a virtual visit with a licensed provider today — right from the MPB Health app.'
-                : 'Our healthcare specialists are here to help you understand your options and find the right coverage for your needs.'}
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button
-                size="lg"
-                variant="outline"
-                asChild
-              >
-                <a href="tel:8558164650" className="inline-flex items-center">
-                  <Phone className="w-5 h-5 mr-2" />
+                <a className="lr-btn lr-btn--glass" href="tel:+18558164650">
                   Call (855) 816-4650
                 </a>
-              </Button>
-              <Button
-                size="lg"
-                className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white shadow-lg"
-                asChild
-              >
-                <Link to={feature.id === 'medical-weight-loss-support' ? '/plans' : '/contact'}>
-                  {feature.id === 'medical-weight-loss-support' ? 'Get Started' : 'Schedule a Consultation'}
-                </Link>
-              </Button>
-            </div>
-          </div>
-        </section>
-      </div>
+              </>
+            }
+            note={NOT_INSURANCE}
+          />
+        </Sheet>
+      </LandingPage>
     </>
   );
 };

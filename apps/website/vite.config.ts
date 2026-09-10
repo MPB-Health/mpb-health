@@ -157,6 +157,8 @@ export default defineConfig(({ mode }) => {
       port: 3000,
       strictPort: false,
       open: false,
+      // Lets a Cloudflare quick tunnel (`cloudflared tunnel --url`) reach the dev server
+      allowedHosts: ['.trycloudflare.com'],
     },
   };
 });

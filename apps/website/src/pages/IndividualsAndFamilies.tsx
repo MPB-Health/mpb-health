@@ -214,10 +214,10 @@ const IndividualsAndFamilies = () => {
                 <Reveal>
                   <div className="lr-split__media lr-split__media--quote">
                     <img
-                      src="/assets/vibegirlD.png"
+                      src="/assets/pillar-mental.jpg"
                       alt=""
-                      width={1512}
-                      height={1040}
+                      width={1800}
+                      height={1200}
                       loading="lazy"
                       decoding="async"
                     />

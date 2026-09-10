@@ -276,9 +276,29 @@ const LANDING_CHROME_PATHS = new Set([
   '/about-us',
   '/contact',
   '/faq',
+  '/support',
+  '/join-our-team',
+  '/download-app',
+  '/podcast',
+  '/advisors-and-brokers',
+  '/privacy-policy',
+  '/terms-and-conditions',
+  '/state-notices',
+  '/washington-statement',
+  '/employer-forms',
+  '/member-forms',
+  '/get-started',
 ]);
-const usesLandingChrome = (pathname: string) =>
-  isHomePath(pathname) || LANDING_CHROME_PATHS.has(pathname.replace(/\/+$/, '') || '/');
+// Detail routes under these prefixes also render the landing chrome
+const LANDING_CHROME_PREFIXES = ['/features/', '/benefits/', '/plan-categories/', '/blog/', '/events/', '/resources/'];
+const usesLandingChrome = (pathname: string) => {
+  const path = pathname.replace(/\/+$/, '') || '/';
+  return (
+    isHomePath(path) ||
+    LANDING_CHROME_PATHS.has(path) ||
+    LANDING_CHROME_PREFIXES.some((prefix) => path.startsWith(prefix))
+  );
+};
 
 const ConditionalHeader: React.FC = () => {
   const location = useLocation();

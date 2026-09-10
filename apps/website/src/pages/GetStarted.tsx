@@ -1,59 +1,67 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { MarketingHydrationSeo } from '../components/MarketingHydrationSeo';
 import { FlowShell } from '../components/onboarding/FlowShell';
-import { Clock, Shield, CheckCircle2 } from 'lucide-react';
+import { Clock, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { AuroraBand, LandingPage, PageHero, Sheet } from '../components/landing-redesign/page-kit';
 
 export function GetStarted() {
   return (
     <>
       <MarketingHydrationSeo />
 
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-teal-50">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-3 bg-white/80 backdrop-blur-sm rounded-full px-6 py-3 mb-6 shadow-lg border border-blue-100">
-              <span className="text-blue-600 font-semibold tracking-wide">QUICK START</span>
+      <LandingPage className="lr-flow">
+        <PageHero
+          ariaLabel="Find your membership"
+          align="center"
+          title="Find the membership that fits."
+          lede="Answer a few questions and we'll recommend a membership. Takes about two minutes, no personal details needed."
+        />
+
+        <Sheet>
+          <section className="lr-sec lr-sec--top" aria-label="Membership finder">
+            <div className="lr-inner">
+              <h2 className="sr-only">Membership finder</h2>
+              <div className="lr-panel lr-formwrap">
+                <FlowShell />
+              </div>
+
+              <div className="lr-estimate__trust">
+                <span>
+                  <CheckCircle2 /> No personal info required
+                </span>
+                <span>
+                  <Clock /> Under two minutes
+                </span>
+                <span>
+                  <ShieldCheck /> Free and secure
+                </span>
+              </div>
+
+              <p className="lr-body" style={{ marginTop: '2rem', textAlign: 'center' }}>
+                Have questions? <a href="tel:+18558164650">Call (855) 816-4650</a> or{' '}
+                <Link to="/contact">contact us</Link>.
+              </p>
             </div>
-            <h1 className="text-5xl sm:text-6xl font-bold text-gray-900 mb-6 tracking-tight">
-              Find Your Perfect Membership
-            </h1>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-              Answer a few quick questions and we'll recommend the best health sharing membership for your needs.
-              <span className="block mt-2 text-lg font-medium text-blue-600">Takes less than 2 minutes</span>
-            </p>
+          </section>
 
-            <div className="flex flex-wrap justify-center gap-6 mt-8">
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
-                <span className="font-medium">No Personal Info Required</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Clock className="h-5 w-5 text-blue-600" />
-                <span className="font-medium">Less Than 2 Minutes</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Shield className="h-5 w-5 text-teal-600" />
-                <span className="font-medium">100% Free & Secure</span>
-              </div>
-            </div>
-          </div>
-
-          <FlowShell />
-
-          <div className="text-center mt-12">
-            <p className="text-sm text-gray-500">
-              Have questions?{' '}
-              <a href="tel:8558164650" className="text-blue-600 hover:text-blue-700 font-medium">
-                Call (855) 816-4650
-              </a>{' '}
-              or{' '}
-              <a href="/contact" className="text-blue-600 hover:text-blue-700 font-medium">
-                contact us
-              </a>
-            </p>
-          </div>
-        </div>
-      </div>
+          <AuroraBand
+            title="Prefer to talk it through?"
+            lede="A licensed advisor can walk you through the memberships and send a personalized quote within 24 hours. No obligation."
+            actions={
+              <>
+                <Link className="lr-btn lr-btn--white" to="/get-a-quote">
+                  Get a quote
+                </Link>
+                <a className="lr-btn lr-btn--glass" href="tel:+18558164650">
+                  Call (855) 816-4650
+                </a>
+              </>
+            }
+            note="MPB Health memberships are not insurance and do not guarantee payment of medical expenses. Eligible expenses are shared according to the membership guidelines."
+          />
+        </Sheet>
+      </LandingPage>
     </>
   );
 }

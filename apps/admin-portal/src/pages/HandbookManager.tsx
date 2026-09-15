@@ -417,7 +417,11 @@ export default function HandbookManager() {
                     />
                   </label>
                   <input type="text" value={form.pdf_path || ''} onChange={(e) => setForm((p) => ({ ...p, pdf_path: e.target.value }))} placeholder="Upload a PDF or paste a URL" className="w-full px-3 py-2.5 bg-surface-primary border border-th-border rounded-lg text-th-text-primary font-mono placeholder-th-text-tertiary focus:outline-none focus:ring-2 focus:ring-th-accent-500" />
-                  <p className="text-xs text-th-text-tertiary">Keep the slug the same to replace the file behind {form.slug ? `/3d-flip-book/${form.slug}` : '/3d-flip-book/<slug>'}.</p>
+                  <p className="text-xs text-th-text-tertiary">
+                    Keep the slug the same to replace the file behind{' '}
+                    {form.slug ? `/3d-flip-book/${form.slug}` : '/3d-flip-book/<slug>'}.
+                    Drive links work on the public page; upload to storage for the best in-document link experience.
+                  </p>
                 </div>
               </div>
               <div>

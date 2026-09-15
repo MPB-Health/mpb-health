@@ -278,10 +278,8 @@ function resolveHandbookSlug(slug: string): string {
 }
 
 // ============================================================================
-// Local PDF Preference
+// Row helpers
 // ============================================================================
-
-const STATIC_PDF_BY_SLUG = new Map(STATIC_HANDBOOKS.map((h) => [h.slug, h.pdf_path]));
 
 const HANDBOOK_BUCKET = 'advisor-documents';
 
@@ -306,34 +304,14 @@ function parseFeatures(features: unknown): string[] {
   return [];
 }
 
-/** Same-origin paths render in the native browser viewer (see HandbookViewer). */
-function isLocalPdfPath(pdfPath: string): boolean {
-  return pdfPath.startsWith('/docs/') || pdfPath.startsWith('/assets/');
-}
-
-function isCmsHostedPdfPath(pdfPath: string): boolean {
-  return (
-    isLocalPdfPath(pdfPath) ||
-    pdfPath.includes('/storage/v1/object/public/')
-  );
-}
-
 /**
- * Public pages keep the bundled /docs PDF while CMS still points at Drive.
- * Once an admin uploads to storage (or sets a local path), that file wins so
- * /3d-flip-book/:slug can stay the same while the document is replaced.
+ * Public pages show the CMS pdf_path as saved (Drive, storage, or /docs/).
+ * Bundled /docs PDFs are only used when the DB has no row / table is unavailable
+ * (STATIC_HANDBOOKS fallback) — never to silently override a CMS Drive/storage URL.
  */
-function resolvePublicPdfPath(slug: string, pdfPath: string): string {
-  if (isCmsHostedPdfPath(pdfPath)) {
-    return pdfPath;
-  }
-  return STATIC_PDF_BY_SLUG.get(slug) ?? pdfPath;
-}
-
-function mapHandbookRow(row: HandbookRecord, forPublic = false): HandbookRecord {
+function mapHandbookRow(row: HandbookRecord): HandbookRecord {
   return {
     ...row,
-    pdf_path: forPublic ? resolvePublicPdfPath(row.slug, row.pdf_path) : row.pdf_path,
     features: parseFeatures(row.features),
   };
 }
@@ -385,7 +363,7 @@ export async function getAllHandbooks(options?: {
       return allowStaticFallback ? STATIC_HANDBOOKS : [];
     }
 
-    const handbooks = data.map((h) => mapHandbookRow(h as HandbookRecord, false));
+    const handbooks = data.map((h) => mapHandbookRow(h as HandbookRecord));
 
     handbooksCache = handbooks;
     cacheTimestamp = Date.now();
@@ -401,9 +379,7 @@ export async function getAllHandbooks(options?: {
  */
 export async function getActiveHandbooks(): Promise<HandbookRecord[]> {
   const allHandbooks = await getAllHandbooks();
-  return allHandbooks
-    .filter((h) => h.is_active)
-    .map((h) => ({ ...h, pdf_path: resolvePublicPdfPath(h.slug, h.pdf_path) }));
+  return allHandbooks.filter((h) => h.is_active);
 }
 
 /**
@@ -412,9 +388,7 @@ export async function getActiveHandbooks(): Promise<HandbookRecord[]> {
 export async function getHandbookBySlug(slug: string): Promise<HandbookRecord | null> {
   const resolvedSlug = resolveHandbookSlug(slug);
   const allHandbooks = await getAllHandbooks();
-  const match = allHandbooks.find((h) => h.slug === resolvedSlug) || null;
-  if (!match) return null;
-  return { ...match, pdf_path: resolvePublicPdfPath(match.slug, match.pdf_path) };
+  return allHandbooks.find((h) => h.slug === resolvedSlug) || null;
 }
 
 /**

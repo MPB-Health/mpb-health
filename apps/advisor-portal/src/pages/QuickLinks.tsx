@@ -5,7 +5,6 @@ import { supabaseUrl } from '@mpbhealth/database';
 import {
   navigationService,
   HEALTHCARE_ADVISOR_MEETING_LINKS,
-  SECURE_HSA_WEBINAR_LINKS,
   type QuickLink,
 } from '@mpbhealth/advisor-core';
 import SafeImage from '../components/SafeImage';
@@ -216,41 +215,6 @@ export default function QuickLinks() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-1.5 px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap"
-              >
-                <ExternalLink className="w-3.5 h-3.5" />
-                Join Meeting
-              </a>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Secure HSA Webinar — separate series from Healthcare Advisor Meetings */}
-      <div className="rounded-xl border border-blue-200 dark:border-blue-800 bg-gradient-to-r from-blue-50 to-sky-50 dark:from-blue-950/40 dark:to-sky-950/30 overflow-hidden">
-        <div className="px-6 py-4 border-b border-blue-200 dark:border-blue-800 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center">
-            <Video className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h2 className="text-base font-bold text-th-text-primary">Secure HSA Webinar</h2>
-            <p className="text-xs text-th-text-secondary mt-0.5">Live recurring sessions — click to join via Microsoft Teams</p>
-          </div>
-        </div>
-        <div className="divide-y divide-blue-100 dark:divide-blue-900">
-          {SECURE_HSA_WEBINAR_LINKS.map((link) => (
-            <div key={link.id} className="flex items-center justify-between px-6 py-4 gap-4">
-              <div className="flex items-start gap-3">
-                <Calendar className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="font-semibold text-th-text-primary text-sm">{link.label}</p>
-                  <p className="text-xs text-th-text-secondary mt-0.5">{link.schedule}</p>
-                </div>
-              </div>
-              <a
-                href={link.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors whitespace-nowrap"
               >
                 <ExternalLink className="w-3.5 h-3.5" />
                 Join Meeting

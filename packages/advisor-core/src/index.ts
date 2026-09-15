@@ -14,10 +14,7 @@ export { MeetingService, meetingService } from './meetings/MeetingService';
 export {
   TEAMS_URL_SECOND_TUESDAY,
   TEAMS_URL_FOURTH_TUESDAY,
-  TEAMS_URL_HSA_WEBINAR_TUESDAY,
-  TEAMS_URL_HSA_WEBINAR_THURSDAY,
   HEALTHCARE_ADVISOR_MEETING_LINKS,
-  SECURE_HSA_WEBINAR_LINKS,
   getTuesdayOfMonth,
   getTeamsMeetingUrlForDate,
   getNextRecurringMeetingDate,

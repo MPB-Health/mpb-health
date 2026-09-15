@@ -812,7 +812,8 @@ const HandbookHub: React.FC = () => {
                   />
                 </div>
                 <p className="text-xs text-neutral-500 mt-1">
-                  Upload replaces the document. Keep the slug above so members keep the same link.
+                  Paste a Drive/storage URL or upload a PDF. The public page shows whatever is saved here.
+                  Keep the slug above so members keep the same <strong>/3d-flip-book/…</strong> link.
                 </p>
               </div>
 

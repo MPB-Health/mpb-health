@@ -9,6 +9,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { createLogger } from '../_shared/logger.ts';
 import { getCorsHeaders, handleCorsPreflightRequest } from '../_shared/cors.ts';
 import { checkRateLimit, getClientIdentifier, requireAuth } from '../_shared/security.ts';
+import { assertResourceBelongsToOrg } from '../_shared/crmOrgAuth.ts';
 
 const log = createLogger('send-crm-email-v2');
 
@@ -74,6 +75,13 @@ interface RequestBody {
   contact_id?: string;
   account_id?: string;
   thread_id?: string;
+  /**
+   * `crm_email_log.id` of the message being replied to. Drives the RFC 5322
+   * In-Reply-To / References headers so the reply threads in the recipient's
+   * mail client and their answer can be matched back by header on the way in.
+   * When omitted, the newest message in `thread_id` is used as the parent.
+   */
+  in_reply_to_email_id?: string;
   signature_id?: string;
   template_id?: string;
   /**
@@ -175,6 +183,7 @@ serve(async (req) => {
       contact_id,
       account_id,
       thread_id,
+      in_reply_to_email_id,
       signature_id,
       template_id,
       master_template_id,
@@ -193,6 +202,33 @@ serve(async (req) => {
     }
     if (!html) {
       throw new Error('Missing required field: html');
+    }
+
+    // The reply parent is read below for its Message-ID, so it is a tenant
+    // resource: without an ownership check a caller could point at another
+    // org's row and pull its Message-ID into their own headers.
+    if (in_reply_to_email_id) {
+      if (!org_id) {
+        return new Response(
+          JSON.stringify({ error: 'org_id is required when in_reply_to_email_id is supplied' }),
+          {
+            status: 400,
+            headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
+          }
+        );
+      }
+      const owned = await assertResourceBelongsToOrg(
+        supabase,
+        'crm_email_log',
+        in_reply_to_email_id,
+        org_id
+      );
+      if (!owned.ok) {
+        return new Response(JSON.stringify({ error: owned.error }), {
+          status: owned.status,
+          headers: { ...getCorsHeaders(req), 'Content-Type': 'application/json' },
+        });
+      }
     }
 
     // Generate tracking ID for this email
@@ -229,21 +265,55 @@ serve(async (req) => {
     const effectiveFromEmail = from_email || FROM_EMAIL;
     const effectiveFromName = from_name || FROM_NAME;
 
-    // Mint our own RFC 2822 Message-ID and pin it on the outbound message.
-    // `receive-crm-email` matches inbound replies by looking up the reply's
-    // In-Reply-To/References against crm_email_log.message_id; if we never set
-    // (and store) one, that lookup can never hit and every reply spawns a new
-    // thread instead of stitching to its parent. Domain is taken from the
-    // effective sender so the ID stays valid for the sending domain.
+    // ------------------------------------------------------------------
+    // RFC 5322 threading
+    // ------------------------------------------------------------------
+    // We stamp our own Message-ID rather than relying on Resend's, because the
+    // recipient's reply carries it back in In-Reply-To and inbound matching
+    // looks it up in crm_email_log.message_id. Without this the round trip has
+    // no header to match on and falls back to guessing by sender address.
     const messageIdDomain = effectiveFromEmail.split('@')[1] || 'mpb.health';
-    const rfcMessageId = `<${crypto.randomUUID()}@${messageIdDomain}>`;
+    const outboundMessageId = `<crm-${trackingId}@${messageIdDomain}>`;
+
+    // Resolve the parent message so replies thread in the recipient's client.
+    let parentMessageId: string | null = null;
+    let parentReferences: string | null = null;
+    if (in_reply_to_email_id || thread_id) {
+      let parentQuery = supabase
+        .from('crm_email_log')
+        .select('message_id, references_header')
+        .not('message_id', 'is', null)
+        .limit(1);
+      parentQuery = in_reply_to_email_id
+        ? parentQuery.eq('id', in_reply_to_email_id)
+        : parentQuery.eq('thread_id', thread_id!).order('sent_at', { ascending: false });
+
+      const { data: parent } = await parentQuery.maybeSingle();
+      if (parent?.message_id) {
+        parentMessageId = parent.message_id as string;
+        parentReferences = (parent.references_header as string | null) ?? null;
+      }
+    }
+
+    // References is the full chain: parent's chain + parent itself.
+    const referencesHeader = parentMessageId
+      ? [parentReferences, parentMessageId].filter(Boolean).join(' ')
+      : null;
+
+    const outboundHeaders: Record<string, string> = {
+      'Message-ID': outboundMessageId,
+    };
+    if (parentMessageId) {
+      outboundHeaders['In-Reply-To'] = parentMessageId;
+      outboundHeaders['References'] = referencesHeader!;
+    }
 
     const resendPayload: Record<string, unknown> = {
       from: `${effectiveFromName} <${effectiveFromEmail}>`,
       to,
       subject,
       html: finalHtml,
-      headers: { 'Message-ID': rfcMessageId },
+      headers: outboundHeaders,
     };
 
     // Optional fields
@@ -327,9 +397,11 @@ serve(async (req) => {
         body_html: html, // Store original HTML without tracking
         status,
         resend_email_id: resendEmailId,
-        // Persist the Message-ID we pinned above so inbound replies can match
-        // this row via In-Reply-To/References (see receive-crm-email).
-        message_id: rfcMessageId,
+        // Threading: stored so a reply carrying In-Reply-To can be matched back
+        // to this row by receive-crm-email.
+        message_id: outboundMessageId,
+        in_reply_to: parentMessageId,
+        references_header: referencesHeader,
         signature_id: signature_id || null,
         has_attachments: (attachments && attachments.length > 0) || (attachment_ids && attachment_ids.length > 0),
         attachment_count: (attachments?.length || 0) + (attachment_ids?.length || 0),

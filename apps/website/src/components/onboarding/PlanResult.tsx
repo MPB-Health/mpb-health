@@ -56,7 +56,7 @@ export function PlanResult({ recommendations, answers: _answers }: PlanResultPro
           <CardContent className="pt-6">
             <div className="space-y-4">
               <div>
-                <h4 className="font-semibold text-gray-900 mb-2">Why this plan?</h4>
+                <h4 className="font-semibold text-gray-900 mb-2">Why this membership?</h4>
                 <ul className="space-y-2">
                   {primary.rationale.map((reason, index) => (
                     <li key={index} className="flex items-start gap-2 text-gray-700">

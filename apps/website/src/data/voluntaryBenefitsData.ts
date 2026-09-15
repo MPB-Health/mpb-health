@@ -197,7 +197,7 @@ export const voluntaryBenefits: VoluntaryBenefit[] = [
       },
       {
         question: 'What conditions are typically covered?',
-        answer: 'Most policies cover heart attack, stroke, cancer, organ transplant, kidney failure, paralysis, and severe burns. Membership varies by policy, so review your specific plan details.'
+        answer: 'Most policies cover heart attack, stroke, cancer, organ transplant, kidney failure, paralysis, and severe burns. Coverage varies by policy, so review your specific policy details.'
       }
     ],
     color: 'text-red-600',

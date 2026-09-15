@@ -115,6 +115,7 @@ const HandbookHub: React.FC = () => {
     is_active: true,
   });
   const [featuresInput, setFeaturesInput] = useState('');
+  const [uploadingPdf, setUploadingPdf] = useState(false);
 
   useEffect(() => {
     checkTableAndLoadData();
@@ -129,7 +130,7 @@ const HandbookHub: React.FC = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      const allHandbooks = await handbooksService.getAllHandbooks();
+      const allHandbooks = await handbooksService.getAllHandbooks({ allowStaticFallback: false });
       setHandbooks(allHandbooks);
     } catch (error) {
       console.error('Error loading handbooks:', error);
@@ -212,7 +213,7 @@ const HandbookHub: React.FC = () => {
       if (editingHandbook) {
         result = await handbooksService.updateHandbook(editingHandbook.id, input);
       } else {
-        result = await handbooksService.createHandbook(input);
+        result = await handbooksService.upsertHandbookBySlug(input);
       }
 
       if (result.success) {
@@ -246,6 +247,28 @@ const HandbookHub: React.FC = () => {
       toast.error('Failed to delete handbook');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handlePdfUpload = async (file: File | undefined) => {
+    if (!file) return;
+    setUploadingPdf(true);
+    try {
+      const result = await handbooksService.uploadHandbookPdf(
+        file,
+        formData.slug?.trim() || formData.name?.trim() || '',
+      );
+      if (!result.success || !result.data) {
+        toast.error(result.error || 'Failed to upload PDF');
+        return;
+      }
+      setFormData((prev) => ({ ...prev, pdf_path: result.data }));
+      toast.success('PDF uploaded. Save to publish it on the existing handbook link.');
+    } catch (error) {
+      console.error('Error uploading handbook PDF:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to upload PDF');
+    } finally {
+      setUploadingPdf(false);
     }
   };
 
@@ -382,7 +405,7 @@ const HandbookHub: React.FC = () => {
         <meta name="description" content="Manage member handbooks - add, edit, hide, and share" />
       </Helmet>
 
-      <MigratedToAdminPortal adminPath="/content/handbooks" sectionName="Member Handbooks" />
+      <MigratedToAdminPortal adminPath="/content/handbooks" sectionName="Member Handbooks" keepBoth />
 
       <div>
         <AdminBreadcrumb currentPage="Member Handbooks" />
@@ -699,7 +722,7 @@ const HandbookHub: React.FC = () => {
             </li>
             <li className="flex items-start gap-2">
               <Check className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
-              <span>PDF files should be uploaded to the <strong>/docs/</strong> folder</span>
+              <span>Upload a new PDF on an existing slug to replace the file while keeping <strong>/3d-flip-book/…</strong></span>
             </li>
             <li className="flex items-start gap-2">
               <Check className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
@@ -751,22 +774,46 @@ const HandbookHub: React.FC = () => {
                     }
                     placeholder="careplus"
                     className="flex-1"
+                    disabled={Boolean(editingHandbook)}
                   />
                 </div>
+                <p className="text-xs text-neutral-500 mt-1">
+                  {editingHandbook
+                    ? 'Slug is locked so the public handbook link does not change.'
+                    : 'This becomes the public link: /3d-flip-book/your-slug'}
+                </p>
               </div>
 
               {/* PDF Path */}
               <div>
                 <label className="block text-sm font-medium text-neutral-700 mb-1">
-                  PDF File Path <span className="text-red-500">*</span>
+                  Handbook PDF <span className="text-red-500">*</span>
                 </label>
-                <Input
-                  value={formData.pdf_path || ''}
-                  onChange={(e) => setFormData({ ...formData, pdf_path: e.target.value })}
-                  placeholder="/docs/My-Handbook.pdf"
-                />
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <label className="inline-flex items-center justify-center gap-2 rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50 cursor-pointer">
+                    {uploadingPdf ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
+                    {uploadingPdf ? 'Uploading…' : 'Upload PDF'}
+                    <input
+                      type="file"
+                      accept="application/pdf,.pdf"
+                      className="sr-only"
+                      disabled={uploadingPdf || saving}
+                      onChange={(e) => {
+                        void handlePdfUpload(e.target.files?.[0]);
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
+                  <Input
+                    value={formData.pdf_path || ''}
+                    onChange={(e) => setFormData({ ...formData, pdf_path: e.target.value })}
+                    placeholder="/docs/My-Handbook.pdf or uploaded storage URL"
+                    className="flex-1"
+                  />
+                </div>
                 <p className="text-xs text-neutral-500 mt-1">
-                  Upload PDFs to the /docs/ folder, then enter the path here
+                  Paste a Drive/storage URL or upload a PDF. The public page shows whatever is saved here.
+                  Keep the slug above so members keep the same <strong>/3d-flip-book/…</strong> link.
                 </p>
               </div>
 

@@ -1,62 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import {
-  Home,
-  Layers,
-  Users,
-  Building2,
-  Briefcase,
-  GitCompare,
-  CircleHelp,
-  Sparkles,
-  Award,
-  BookOpen,
-  Newspaper,
-  Library,
-  Mic2,
-  Calendar,
-  Heart,
-  HelpCircle,
-  Info,
-  Mail,
-  LayoutDashboard,
-  Wrench,
-  ExternalLink,
-  FileText,
-  UserCog,
-  Zap,
-  UserPlus,
-  MessageSquare,
-  Star,
-  Phone,
-  LifeBuoy,
-  ClipboardList,
-  UserMinus,
-  UserCircle,
-  Shield,
-  MapPin,
-  Calculator,
-  MessageCircle,
-  Edit3,
-  CreditCard,
-  Pill,
-  XCircle,
-  PartyPopper,
-  Book,
-  type LucideIcon,
-} from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { getIconComponent, type SiteNavItem } from '../../lib/useSiteNav';
 
-interface NavigationItem {
-  id: string;
-  label: string;
-  href: string;
-  description?: string;
-  icon?: string;
-  external: boolean;
-  badge?: string;
-  children?: NavigationItem[];
-}
+type NavigationItem = SiteNavItem;
 
 interface MegaMenuV2Props {
   items: NavigationItem[];
@@ -66,22 +13,6 @@ interface MegaMenuV2Props {
   columns?: 2 | 3 | 4;
   featuredContent?: React.ReactNode;
 }
-
-// Icon map for navigation-driven dynamic icon rendering (avoids wildcard import)
-const navIconMap: Record<string, LucideIcon> = {
-  Home, Layers, Users, Building2, Briefcase, GitCompare, CircleHelp,
-  Sparkles, Award, BookOpen, Newspaper, Library, Mic2, Calendar, Heart,
-  HelpCircle, Info, Mail, LayoutDashboard, Wrench, ExternalLink, FileText,
-  UserCog, Zap, UserPlus, UserCircle, MessageSquare, Star, Phone, LifeBuoy,
-  ClipboardList, UserMinus, Shield, MapPin, Calculator, MessageCircle,
-  Edit3, CreditCard, Pill, XCircle, PartyPopper, Book,
-};
-
-/** Resolves string keys from nav config; falls back so every link keeps a visible icon */
-const getIconComponent = (iconName?: string): LucideIcon => {
-  if (!iconName) return FileText;
-  return navIconMap[iconName] ?? FileText;
-};
 
 export const MegaMenuV2: React.FC<MegaMenuV2Props> = ({
   items,

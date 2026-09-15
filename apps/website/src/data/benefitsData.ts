@@ -119,7 +119,7 @@ export const maternityDetails: MaternityDetails = {
       details: [
         'Access to any licensed provider nationwide',
         '24/7 nurse hotline for questions',
-        'Complications and emergencies covered',
+        'Complications and emergencies eligible for sharing',
         'No network restrictions for specialists',
       ],
     },
@@ -133,11 +133,11 @@ export const maternityDetails: MaternityDetails = {
   ],
   sharingInfo: {
     prenatalCare: 'Prenatal visits and routine care eligible after waiting period',
-    deliveryHospital: 'Hospital delivery and associated costs shared according to plan terms',
-    postnatalCare: 'Mother and newborn care covered for standard recovery period',
+    deliveryHospital: 'Hospital delivery and associated costs shared according to membership terms',
+    postnatalCare: 'Mother and newborn care shared for standard recovery period',
     additionalBenefits: [
       'Complications during pregnancy are eligible immediately',
-      'Emergency services covered regardless of waiting period',
+      'Emergency services shared regardless of waiting period',
       'NICU care for newborns when medically necessary',
       'Virtual behavioral health support during and after pregnancy',
     ],

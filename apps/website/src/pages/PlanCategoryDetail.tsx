@@ -59,7 +59,7 @@ const PlanCategoryDetail: React.FC = () => {
       <div className="min-h-screen flex items-center justify-center bg-neutral-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-neutral-600">Loading plan details...</p>
+          <p className="text-neutral-600">Loading membership details...</p>
         </div>
       </div>
     );
@@ -70,8 +70,8 @@ const PlanCategoryDetail: React.FC = () => {
       <div className="min-h-screen flex items-center justify-center bg-neutral-50">
         <div className="text-center max-w-md mx-auto px-4">
           <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-neutral-900 mb-2">Plan Not Found</h1>
-          <p className="text-neutral-600 mb-6">{error || 'The plan you are looking for does not exist.'}</p>
+          <h1 className="text-2xl font-bold text-neutral-900 mb-2">Membership Not Found</h1>
+          <p className="text-neutral-600 mb-6">{error || 'The membership you are looking for does not exist.'}</p>
           <Button asChild>
             <Link to="/">
               <ArrowLeft className="mr-2 h-4 w-4" />
@@ -102,7 +102,7 @@ const PlanCategoryDetail: React.FC = () => {
               className="inline-flex items-center text-sm text-neutral-600 hover:text-blue-600 transition-colors"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to All Plans
+              Back to All Memberships
             </Link>
           </div>
         </div>
@@ -176,7 +176,7 @@ const PlanCategoryDetail: React.FC = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
               <Card className="p-8">
                 <h2 className="text-2xl font-bold text-neutral-900 mb-6">
-                  Who This Plan Is For
+                  Who This Membership Is For
                 </h2>
                 <ul className="space-y-4">
                   {category.profiles.map((profile) => (
@@ -252,7 +252,7 @@ const PlanCategoryDetail: React.FC = () => {
                   className="bg-transparent text-white border-2 border-white hover:bg-white hover:text-blue-700 shadow-lg hover:shadow-xl transition-all duration-300"
                 >
                   <Link to="/individuals-and-families" className="inline-flex items-center">
-                    Compare All Plans
+                    Compare All Memberships
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Link>
                 </Button>
@@ -268,7 +268,7 @@ const PlanCategoryDetail: React.FC = () => {
                 Ready to Get Started?
               </h2>
               <p className="text-xl mb-8 text-primary-50 max-w-2xl mx-auto">
-                Our healthcare advisors are here to help you choose the perfect plan for your needs.
+                Our healthcare advisors are here to help you choose the perfect membership for your needs.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button

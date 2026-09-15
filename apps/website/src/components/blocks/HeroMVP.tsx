@@ -33,7 +33,7 @@ export function HeroMVP() {
                 href="#plans"
                 className="inline-flex items-center justify-center rounded-xl px-5 py-3 text-sm md:text-base font-medium bg-white text-gray-900 shadow ring-1 ring-gray-200 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-colors"
               >
-                Compare Plans
+                Compare Memberships
               </a>
               <Link
                 to="/advisors"
@@ -94,7 +94,7 @@ export function HeroMVP() {
                 </button>
               </form>
               <p className="mt-3 text-xs text-gray-500">
-                This is a quick estimate. See plan details for specifics.
+                This is a quick estimate. See membership details for specifics.
               </p>
             </div>
           </div>

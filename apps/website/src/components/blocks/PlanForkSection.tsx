@@ -80,7 +80,7 @@ export function PlanForkSection({ onSeeRates }: PlanForkSectionProps) {
             Choose Your Membership
           </h2>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            All plans include transparent pricing by Age Band and IUA. Tobacco/vape household surcharge: +$50/mo (applied once per household).
+            All memberships include transparent pricing by Age Band and IUA. Tobacco/vape household surcharge: +$50/mo (applied once per household).
           </p>
         </div>
 

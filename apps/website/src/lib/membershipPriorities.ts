@@ -30,7 +30,7 @@ export const membershipPriorities: MembershipPriority[] = [
   {
     id: 'medical-cost-sharing',
     label: 'Medical Cost Sharing',
-    shortLabel: 'Hospital & surgery coverage',
+    shortLabel: 'Hospital & surgery care',
     icon: Shield,
     description: 'Hospital, surgery, major medical — community shares eligible expenses',
     keywords: ['hospital', 'surgery', 'major medical', 'catastrophic', 'medical cost sharing'],
@@ -46,9 +46,9 @@ export const membershipPriorities: MembershipPriority[] = [
   {
     id: 'aca-compliance',
     label: 'ACA Employer Compliance',
-    shortLabel: 'Small business / employer coverage',
+    shortLabel: 'Small business / employer care',
     icon: Building2,
-    description: 'Minimum Essential Care — satisfies employer mandate',
+    description: 'Preventive Care — satisfies employer mandate',
     keywords: ['ACA', 'MEC', 'employer mandate', 'small business', 'compliance'],
   },
   {
@@ -137,7 +137,7 @@ const planDetails: Record<string, { name: string; tagline: string; bestFor: stri
     bestFor: ['Those with existing medical debt', 'Debt Dismissal Program eligible', 'Virtual care + discounts only'],
   },
   'mec-essentials': {
-    name: 'MEC+ Essentials',
+    name: 'HSA Essentials',
     tagline: 'ACA MEC + Debt Dismissal + HSA',
     bestFor: ['Small businesses (2–50 employees)', 'ACA employer mandate', 'Self-employed needing HSA + debt relief'],
   },

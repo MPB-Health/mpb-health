@@ -82,12 +82,12 @@ export const SEOHead: React.FC<SEOHeadProps> = ({
 }) => {
   const seo = pathname ? getSEOForPage(pathname) : null;
 
-  const title = customTitle || titleProp || seo?.title || 'MPB Health - Affordable Health Sharing Plans';
+  const title = customTitle || titleProp || seo?.title || 'MPB Health - Affordable Health Sharing Memberships';
   const description =
     customDescription ||
     descriptionProp ||
     seo?.description ||
-    'Join thousands of families saving on healthcare with MPB Health sharing plans.';
+    'Join thousands of families saving on healthcare with MPB Health sharing memberships.';
   const keywords =
     customKeywords || seo?.keywords || 'health sharing, healthcare costs, insurance alternative';
   const canonicalUrl = seo?.canonicalUrl || 'https://mpb.health';
@@ -98,7 +98,7 @@ export const SEOHead: React.FC<SEOHeadProps> = ({
   const hasStaticPrerender = pathname ? isPrerenderedRoute(pathname) : false;
 
   // AI-optimized content snippets for featured snippets and AI summaries
-  const aiSummary = `MPB Health offers affordable health sharing plans starting at $49.95/month. Save up to 60% vs traditional insurance. Plans include: Essentials (preventive care), Care Plus (comprehensive), Direct (enhanced), Secure HSA (tax-advantaged). Serving all 50 US states. Call 855-816-4650.`;
+  const aiSummary = `MPB Health offers affordable health sharing memberships starting at $49.95/month. Save up to 60% vs traditional insurance. Memberships include: Essentials (preventive care), Care Plus (comprehensive), Direct (enhanced), Secure HSA (tax-advantaged). Serving all 50 US states. Call 855-816-4650.`;
 
   // Generate structured data based on type
   const getStructuredDataForType = () => {

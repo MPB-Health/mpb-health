@@ -52,7 +52,7 @@ export const StaticShell: React.FC = () => (
           <PageSkeleton title="For Individuals & Families" description="Affordable health sharing memberships designed for your family's unique healthcare needs." />
         } />
         <Route path="/businesses-and-organizations" element={
-          <PageSkeleton title="For Businesses & Organizations" description="Offer your team affordable healthcare alternatives with flexible group health sharing plans." />
+          <PageSkeleton title="For Businesses & Organizations" description="Offer your team affordable healthcare alternatives with flexible group health sharing memberships." />
         } />
         <Route path="/faq" element={
           <PageSkeleton title="Frequently Asked Questions" description="Get answers to common questions about health sharing, memberships, and how MPB Health works." />

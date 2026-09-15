@@ -43,7 +43,7 @@ export function PlanCardsMVP() {
             href="/plans"
             className="hidden md:inline-flex items-center rounded-xl px-4 py-2 text-sm font-medium ring-1 ring-gray-200 hover:bg-gray-50 transition-colors"
           >
-            Compare plans →
+            Compare memberships →
           </a>
         </div>
 
@@ -68,7 +68,7 @@ export function PlanCardsMVP() {
                 href={p.href}
                 className="mt-5 inline-flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 px-4 py-2 text-sm font-medium text-white hover:from-blue-700 hover:to-cyan-700 shadow-lg hover:shadow-xl transition-all duration-300"
               >
-                See plan details
+                See membership details
               </a>
             </li>
           ))}
@@ -79,7 +79,7 @@ export function PlanCardsMVP() {
             href="/plans"
             className="inline-flex items-center rounded-xl px-4 py-2 text-sm font-medium ring-1 ring-gray-200 hover:bg-gray-50 transition-colors"
           >
-            Compare plans →
+            Compare memberships →
           </a>
         </div>
 

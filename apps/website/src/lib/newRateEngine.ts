@@ -177,7 +177,7 @@ const PLAN_METADATA: Record<string, { label: string; description: string; popula
     enrollUrl: getPlanEnrollUrl('essentials'),
   },
   'mec-essentials': {
-    label: 'MEC+ Essentials',
+    label: 'HSA Essentials',
     description: 'ACA MEC + Debt Dismissal + HSA. No medical cost sharing.',
     enrollUrl: getPlanEnrollUrl('mec-essentials'),
   },

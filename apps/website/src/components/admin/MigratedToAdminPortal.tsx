@@ -5,6 +5,8 @@ interface Props {
   adminPath: string;
   /** Human-readable name of the section, e.g. "Blog Posts" */
   sectionName: string;
+  /** When true, both this page and the Admin Portal stay first-class. */
+  keepBoth?: boolean;
 }
 
 /**
@@ -12,24 +14,43 @@ interface Props {
  * been superseded by the canonical admin portal at admin.mpb.health.
  * The page keeps working — this just surfaces the better alternative.
  */
-export default function MigratedToAdminPortal({ adminPath, sectionName }: Props) {
+export default function MigratedToAdminPortal({ adminPath, sectionName, keepBoth = false }: Props) {
   const href = `https://admin.mpb.health${adminPath}`;
 
   return (
     <div className="mb-6 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm">
       <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
       <div className="flex-1 text-amber-800">
-        <span className="font-medium">Heads up:</span> {sectionName} is now managed in the{' '}
-        <a
-          href={href}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1 font-medium underline underline-offset-2 hover:text-amber-900"
-        >
-          Admin Portal
-          <ExternalLink className="h-3.5 w-3.5" />
-        </a>
-        . This page still works but will be removed in a future update.
+        {keepBoth ? (
+          <>
+            <span className="font-medium">Same list in both places:</span> {sectionName} can be
+            managed here or in the{' '}
+            <a
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 font-medium underline underline-offset-2 hover:text-amber-900"
+            >
+              Admin Portal
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+            . Upload a new PDF on an existing slug to keep the public link.
+          </>
+        ) : (
+          <>
+            <span className="font-medium">Heads up:</span> {sectionName} is now managed in the{' '}
+            <a
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 font-medium underline underline-offset-2 hover:text-amber-900"
+            >
+              Admin Portal
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+            . This page still works but will be removed in a future update.
+          </>
+        )}
       </div>
     </div>
   );

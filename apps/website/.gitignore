@@ -8,3 +8,5 @@
 # Build artifacts
 website-deployment.zip
 *.zip
+
+.vercel

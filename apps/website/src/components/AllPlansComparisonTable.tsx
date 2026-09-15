@@ -61,7 +61,7 @@ const PLAN_SELL: Record<string, { tagline: string; bullets: { lead: string; deta
     tagline: 'Complete peace of mind for families',
     bullets: [
       { lead: '$0 unlimited virtual care', detail: '24/7 urgent, primary, and behavioral health — included in every plan' },
-      { lead: 'Full medical cost sharing', detail: 'Hospital, surgery, no lifetime limits' },
+      { lead: 'Full medical cost sharing', detail: 'Hospital, surgery, no lifetime sharing maximums' },
       { lead: 'Maternity sharing', detail: 'Real support after 6 months when you need it' },
       { lead: 'Any doctor, any hospital', detail: 'No network restrictions — your choice' },
     ],
@@ -186,7 +186,7 @@ export const AllPlansComparisonTable: React.FC<AllPlansComparisonTableProps> = (
       <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-4 p-5 rounded-2xl bg-white/80 backdrop-blur-sm border border-slate-200/80 shadow-sm">
         <div>
           <h3 className="text-xl font-bold text-slate-900">
-            {leadGenMode ? 'Your Plan Matches' : 'Rate Comparison'}
+            {leadGenMode ? 'Your Membership Matches' : 'Rate Comparison'}
           </h3>
           <p className="text-slate-600 mt-1 flex items-center gap-2">
             <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-sm font-medium">

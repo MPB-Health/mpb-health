@@ -13,10 +13,10 @@ interface SearchResult {
 }
 
 const searchableContent: SearchResult[] = [
-  { id: '1', title: 'Individuals & Families', description: 'Health sharing plans for individuals', url: '/individuals-and-families', type: 'page' },
+  { id: '1', title: 'Individuals & Families', description: 'Health sharing memberships for individuals', url: '/individuals-and-families', type: 'page' },
   { id: '2', title: 'Businesses & Organizations', description: 'Group health sharing solutions', url: '/businesses-and-organizations', type: 'page' },
   { id: '3', title: 'How It Works', description: 'Understanding health sharing', url: '/how-it-works', type: 'page' },
-  { id: '4', title: 'Plans & Pricing', description: 'Compare our plans', url: '/plans', type: 'page' },
+  { id: '4', title: 'Memberships & Pricing', description: 'Compare our memberships', url: '/plans', type: 'page' },
   { id: '5', title: 'Get a Quote', description: 'Calculate your savings', url: '/get-started', type: 'page' },
   { id: '6', title: 'Member Portal', description: 'Access your account', url: '/member', type: 'page' },
   { id: '7', title: 'Contact Us', description: 'Get in touch', url: '/contact', type: 'page' },
@@ -27,7 +27,7 @@ const searchableContent: SearchResult[] = [
   { id: '12', title: 'Advisor Directory', description: 'Find an advisor', url: '/advisor-directory', type: 'page' },
 ];
 
-const popularSearches = ['plans', 'pricing', 'quote', 'contact', 'how it works'];
+const popularSearches = ['memberships', 'pricing', 'quote', 'contact', 'how it works'];
 
 interface GlobalSearchProps {
   className?: string;

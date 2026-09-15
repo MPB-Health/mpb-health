@@ -21,7 +21,7 @@ const MemberPortal = () => {
               Member Portal Access
             </h1>
             <p className="text-xl text-neutral-600 max-w-3xl mx-auto leading-relaxed">
-              Access your member dashboard to manage your healthcare benefits, view your coverage details, and stay connected with your care.
+              Access your member dashboard to manage your healthcare benefits, view your membership details, and stay connected with your care.
             </p>
           </div>
 
@@ -36,7 +36,7 @@ const MemberPortal = () => {
               </h2>
 
               <p className="text-neutral-600 mb-6 leading-relaxed">
-                For memberships <strong>without</strong> Minimum Essential Care (non-MEC).
+                For memberships <strong>without</strong> Preventive Care (non-MEC).
               </p>
 
               <div className="mb-8 pb-8 border-b border-neutral-200">
@@ -78,7 +78,7 @@ const MemberPortal = () => {
               </h2>
 
               <p className="text-neutral-600 mb-6 leading-relaxed">
-                For memberships <strong>with</strong> Minimum Essential Care (MEC-Based).
+                For memberships <strong>with</strong> Preventive Care (MEC-Based).
               </p>
 
               <div className="mb-8 pb-8 border-b border-neutral-200">
@@ -86,7 +86,7 @@ const MemberPortal = () => {
                   Available for these membership types:
                 </p>
                 <ul className="space-y-2">
-                  {['MEC+Essentials', 'Secure HSA'].map((plan, index) => (
+                  {['HSA Essentials', 'Secure HSA'].map((plan, index) => (
                     <li key={index} className="flex items-center text-neutral-700">
                       <div className="w-2 h-2 bg-primary rounded-full mr-3"></div>
                       {plan}

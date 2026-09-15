@@ -27,6 +27,7 @@ export const QUICK_LINKS: QuickLink[] = [
       { name: 'Lyric', url: 'https://portal.getlyric.com/lyric/login' },
       { name: 'Zion', url: 'https://zionhealthshare.org/members/' },
       { name: 'Sedera', url: 'https://sedera.my.site.com/MemberPortal/s/login/' },
+      { name: 'HSA Portal', url: 'https://portal.hsahealthshare.com/' },
       { name: 'EverTrust', url: 'https://evertrusthealth.org/' },
       { name: 'ShareWell', url: 'https://sharewellhealth.org/' },
     ],
@@ -76,6 +77,9 @@ export const QUICK_LINKS: QuickLink[] = [
       { name: 'Healthcare Bluebook', url: 'https://www.healthcarebluebook.com/ui/signinpublic' },
       { name: 'MD Save', url: 'https://www.mdsave.com/' },
       { name: 'Colonoscopy Assist', url: 'https://colonoscopyassist.com/' },
+      { name: 'Surgery Estimates', url: 'https://evertrusthealth.org/surgery-estimate/' },
+      { name: 'Dental Terminology', url: '/docs/Dental_Terminology.pdf' },
+      { name: 'Dental Info', url: '/docs/Dental_Info.pdf' },
     ],
   },
 ];

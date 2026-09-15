@@ -39,7 +39,7 @@ const Contact: React.FC = () => {
               </span>
             </h1>
             <p className="text-xl text-neutral-600 mb-12 max-w-3xl mx-auto leading-relaxed">
-              Have questions about medical cost sharing? Our experienced healthcare advisors are here to help you find affordable, comprehensive coverage for you and your family.
+              Have questions about medical cost sharing? Our experienced healthcare advisors are here to help you find an affordable, comprehensive membership for you and your family.
             </p>
 
             {/* Stats */}

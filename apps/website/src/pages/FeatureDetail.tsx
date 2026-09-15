@@ -90,7 +90,7 @@ export const FeatureDetail: React.FC = () => {
                     }}
                   >
                     <Sparkles className="w-5 h-5 mr-2" />
-                    {feature.id === 'medical-weight-loss-support' ? 'Get Started' : 'Find My Perfect Plan'}
+                    {feature.id === 'medical-weight-loss-support' ? 'Get Started' : 'Find My Perfect Membership'}
                   </Button>
                   <Button
                     size="lg"
@@ -378,7 +378,7 @@ export const FeatureDetail: React.FC = () => {
                 asChild
               >
                 <Link to="/plans" className="inline-flex items-center">
-                  Compare All Plans
+                  Compare All Memberships
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Link>
               </Button>
@@ -556,7 +556,7 @@ export const FeatureDetail: React.FC = () => {
                 Ready to Get Started?
               </h2>
               <p className="text-xl text-neutral-600 max-w-3xl mx-auto">
-                Answer a few quick questions to find the perfect plan that includes {feature.name.toLowerCase()} and other features you need.
+                Answer a few quick questions to find the perfect membership that includes {feature.name.toLowerCase()} and other features you need.
               </p>
             </div>
 
@@ -570,7 +570,7 @@ export const FeatureDetail: React.FC = () => {
                   onClick={() => setShowLemonadeEngine(true)}
                 >
                   <Sparkles className="w-5 h-5 mr-2" />
-                  Find My Perfect Plan
+                  Find My Perfect Membership
                 </Button>
                 <p className="text-sm text-neutral-500 mt-4">
                   Takes less than 2 minutes • No personal info required

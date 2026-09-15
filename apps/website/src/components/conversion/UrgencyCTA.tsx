@@ -96,7 +96,7 @@ export const UrgencyCTA: React.FC<UrgencyCTAProps> = ({
           Only {spotsLeft} Spots Left This Month
         </h3>
         <p className="text-white/90 mb-6">
-          High demand for our health sharing plans. Secure your spot before enrollment closes.
+          High demand for our health sharing memberships. Secure your spot before enrollment closes.
         </p>
 
         <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 mb-6">

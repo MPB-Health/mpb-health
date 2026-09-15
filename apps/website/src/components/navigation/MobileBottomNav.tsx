@@ -21,7 +21,7 @@ const navItems: NavItem[] = [
   },
   {
     id: 'plans',
-    label: 'Plans',
+    label: 'Memberships',
     href: '/plans',
     icon: Layers,
   },

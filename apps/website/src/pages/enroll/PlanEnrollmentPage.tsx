@@ -24,7 +24,7 @@ export default function PlanEnrollmentPage() {
               <Link to="/plans">
                 <Button variant="ghost" size="sm" className="text-[#0a4c8f] hover:text-[#083d73]">
                   <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back to Plans
+                  Back to Memberships
                 </Button>
               </Link>
             </div>

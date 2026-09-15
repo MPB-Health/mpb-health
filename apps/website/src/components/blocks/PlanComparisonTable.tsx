@@ -1,14 +1,11 @@
 import { usePlanComparison } from '@/hooks/usePlans';
 import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/button';
 import {
   getAllUniqueCategories,
   getCategoryLabel,
-  getPlanBadges,
   getFeatureForPlan,
 } from '@/lib/planUtils';
-import { Check, X, ExternalLink } from 'lucide-react';
+import { Check, X } from 'lucide-react';
 
 interface PlanComparisonTableProps {
   planSlugs: string[];
@@ -24,8 +21,8 @@ function missingFeatureTreatAsIncluded(
 ): boolean {
   return (
     plan.slug === MEC_ESSENTIALS_PLAN_SLUG &&
-    category === 'Minimum Essential Coverage' &&
-    featureName.trim().toLowerCase() === 'minimum essential coverage'
+    category === 'Preventive Care' &&
+    featureName.trim().toLowerCase() === 'preventive care'
   );
 }
 
@@ -64,60 +61,6 @@ export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-8 mb-16 md:mb-20 px-2 sm:px-6 lg:px-8">
-      {/* Plan hero cards — plans only (no Features cell); equal width */}
-      <div className="w-full overflow-x-auto [-webkit-overflow-scrolling:touch] pb-1">
-        <div
-          className="grid gap-3 sm:gap-4 items-stretch w-full mx-auto"
-          style={{
-            gridTemplateColumns: `repeat(${plans.length}, minmax(11rem, 1fr))`,
-          }}
-        >
-          {plans.map((plan, index) => (
-          <Card
-            key={plan.id}
-            className="p-6 h-full flex flex-col bg-gradient-to-br from-white via-primary-50/20 to-white border-2 border-primary-200 shadow-xl hover:shadow-2xl transition-all duration-300 animate-slide-up"
-            style={{ animationDelay: `${(index + 1) * 100}ms` }}
-          >
-            <div className="flex flex-col gap-4 flex-1 min-h-0">
-              <div className="relative shrink-0">
-                <div className="absolute -top-3 -right-3 w-20 h-20 bg-gradient-to-br from-primary-200/30 to-success-200/30 rounded-full blur-2xl"></div>
-                <h3 className="text-2xl font-bold bg-gradient-to-r from-primary-700 via-primary-600 to-primary-500 bg-clip-text text-transparent relative">
-                  {plan.name}
-                </h3>
-                {plan.tagline && (
-                  <p className="text-sm text-neutral-600 mt-2 leading-relaxed">{plan.tagline}</p>
-                )}
-              </div>
-
-              <div className="flex flex-wrap gap-2 shrink-0 min-h-[1.75rem] content-start">
-                {getPlanBadges(plan).map((badge, idx) => (
-                  <Badge
-                    key={idx}
-                    variant={badge.variant}
-                    className="shadow-sm hover:shadow-md transition-shadow duration-200"
-                  >
-                    {badge.label}
-                  </Badge>
-                ))}
-              </div>
-
-              <div className="mt-auto pt-1 w-full shrink-0">
-                <Button
-                  className="w-full bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02]"
-                  asChild
-                >
-                  <a href={`/${plan.slug}`} className="inline-flex items-center justify-center gap-2">
-                    View Details
-                    <ExternalLink className="h-4 w-4 shrink-0" />
-                  </a>
-                </Button>
-              </div>
-            </div>
-          </Card>
-        ))}
-        </div>
-      </div>
-
       {/* Feature matrix — isolate + opaque backdrop so sticky columns do not composite with content below */}
       <div className="w-full overflow-x-auto [-webkit-overflow-scrolling:touch] relative z-[1] isolate">
         <div className="rounded-2xl border border-neutral-200 shadow-lg bg-white w-full relative">
@@ -258,10 +201,10 @@ export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
                   </td>
                 </tr>
 
-                {/* Lifetime Cap Row */}
+                {/* Lifetime Sharing Maximum Row */}
                 <tr className="bg-white hover:bg-primary-50/50 transition-colors">
                   <td className="py-4 px-6 text-sm font-medium text-neutral-800 sticky left-0 z-20 bg-white shadow-[4px_0_8px_-4px_rgba(0,0,0,0.06)]">
-                    Lifetime Cap
+                    Lifetime Sharing Maximum
                   </td>
                   {plans.map(plan => (
                     <td key={`lifetime-${plan.id}`} className="py-4 px-4 text-center">
@@ -271,14 +214,14 @@ export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
                             <div className="w-6 h-6 rounded-full bg-amber-200 flex items-center justify-center flex-shrink-0">
                               <X className="h-4 w-4 text-amber-600" />
                             </div>
-                            <span className="text-sm text-amber-700 font-medium">Has cap</span>
+                            <span className="text-sm text-amber-700 font-medium">Has maximum</span>
                           </div>
                         ) : (
                           <div className="flex items-center justify-center gap-2">
                             <div className="w-6 h-6 rounded-full bg-gradient-to-br from-success-500 to-success-600 flex items-center justify-center shadow-sm flex-shrink-0">
                               <Check className="h-4 w-4 text-white" />
                             </div>
-                            <span className="text-sm font-bold text-success-600">No cap</span>
+                            <span className="text-sm font-bold text-success-600">No maximum</span>
                           </div>
                         )
                       ) : (
@@ -293,10 +236,10 @@ export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
                   ))}
                 </tr>
 
-                {/* Annual Cap Row */}
+                {/* Annual Sharing Maximum Row */}
                 <tr className="bg-neutral-50 hover:bg-primary-50/50 transition-colors">
                   <td className="py-4 px-6 text-sm font-medium text-neutral-800 sticky left-0 z-20 bg-neutral-50 shadow-[4px_0_8px_-4px_rgba(0,0,0,0.06)]">
-                    Annual Cap
+                    Annual Sharing Maximum
                   </td>
                   {plans.map(plan => (
                     <td key={`annual-${plan.id}`} className="py-4 px-4 text-center">
@@ -306,14 +249,14 @@ export function PlanComparisonTable({ planSlugs }: PlanComparisonTableProps) {
                             <div className="w-6 h-6 rounded-full bg-amber-200 flex items-center justify-center flex-shrink-0">
                               <X className="h-4 w-4 text-amber-600" />
                             </div>
-                            <span className="text-sm text-amber-700 font-medium">Has cap</span>
+                            <span className="text-sm text-amber-700 font-medium">Has maximum</span>
                           </div>
                         ) : (
                           <div className="flex items-center justify-center gap-2">
                             <div className="w-6 h-6 rounded-full bg-gradient-to-br from-success-500 to-success-600 flex items-center justify-center shadow-sm flex-shrink-0">
                               <Check className="h-4 w-4 text-white" />
                             </div>
-                            <span className="text-sm font-bold text-success-600">No cap</span>
+                            <span className="text-sm font-bold text-success-600">No maximum</span>
                           </div>
                         )
                       ) : (

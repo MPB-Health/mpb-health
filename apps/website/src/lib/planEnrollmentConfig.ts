@@ -43,8 +43,8 @@ export const PLAN_ENROLLMENT_CONFIGS: PlanEnrollmentConfig[] = [
   {
     id: 'mec-essentials',
     slug: 'mec-essentials',
-    label: 'MEC+ Essentials',
-    title: 'Enroll in MEC+ Essentials',
+    label: 'HSA Essentials',
+    title: 'Enroll in HSA Essentials',
     description: 'ACA MEC coverage with debt dismissal and HSA options — enroll your business or 1099 team.',
     embedUrl: 'https://mec.enrollmpb.com/',
     estimatedMinutes: 15,

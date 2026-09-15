@@ -336,7 +336,7 @@ const PRICING_DATA_BASE: Record<string, ProductPricing> = {
   },
   'mec-essentials': {
     productId: '45388',
-    productLabel: 'MEC+ ESSENTIALS',
+    productLabel: 'HSA ESSENTIALS',
     enrollmentFee: 100,
     annualMembershipFee: 25,
     tobaccoSurcharge: 0,

@@ -27,7 +27,7 @@ interface PlanData {
 
 const businessPlansData: PlanData[] = [
   {
-    name: 'MEC+Essentials',
+    name: 'HSA Essentials',
     planId: 'mec-essentials',
     price: '$125',
     description: 'MEC + Debt Dismissal + HSA for small businesses (2–50 employees).',
@@ -38,7 +38,7 @@ const businessPlansData: PlanData[] = [
     features: [
       { name: 'HSA Compatible', category: 'financial', tooltip: 'Contribute pre-tax dollars to a Health Savings Account' },
       { name: 'Tax Advantages', category: 'financial', tooltip: 'Potential tax deductions for self-employed individuals' },
-      { name: 'Minimum Essential Care', category: 'financial', tooltip: 'Satisfies ACA employer mandate for applicable large employers' },
+      { name: 'Preventive Care', category: 'financial', tooltip: 'Satisfies ACA employer mandate for applicable large employers' },
       { name: 'Debt Dismissal Program', category: 'financial', tooltip: 'Assistance with qualifying medical debt' },
       { name: 'Virtual Urgent Care', category: 'virtual-care', tooltip: 'Access to urgent care physicians' },
       { name: 'Virtual Primary Care', category: 'virtual-care', tooltip: 'Continuous care with dedicated primary care physicians' },
@@ -65,7 +65,7 @@ const businessPlansData: PlanData[] = [
       { name: 'Tax Advantages', category: 'financial', tooltip: 'Potential tax deductions for self-employed individuals' },
       { name: 'Annual Wellness Visit ($0 copay)', category: 'sharing', tooltip: 'Annual wellness visit at no cost' },
       { name: 'RX Benefits ($0-$15)', category: 'financial', tooltip: 'Prescription medications at $0-$15' },
-      { name: 'Minimum Essential Care', category: 'financial', tooltip: 'Satisfies ACA individual mandate requirements' },
+      { name: 'Preventive Care', category: 'financial', tooltip: 'Satisfies ACA individual mandate requirements' },
       { name: 'High-Deductible Protection', category: 'sharing', tooltip: 'Medical cost sharing after high deductible' },
       { name: 'Preventive Care (ACA mandated)', category: 'sharing', tooltip: 'ACA-required preventive services at no cost' },
       { name: 'Medical Cost Sharing', category: 'sharing', tooltip: 'Share eligible medical expenses after Initial Unshareable Amount' },
@@ -85,36 +85,36 @@ const comparisonFeatures = [
   {
     category: 'Financial Benefits',
     features: [
-      { name: 'Minimum Essential Care', plans: { 'MEC+Essentials': true, 'Secure HSA': true } },
-      { name: 'HSA Compatible', plans: { 'MEC+Essentials': true, 'Secure HSA': true } },
-      { name: 'Tax Advantages', plans: { 'MEC+Essentials': true, 'Secure HSA': true } },
-      { name: 'Debt Dismissal Program', plans: { 'MEC+Essentials': true, 'Secure HSA': false } },
-      { name: 'Pharmacy Discounts', plans: { 'MEC+Essentials': true, 'Secure HSA': true } },
-      { name: 'Vitamin Discounts', plans: { 'MEC+Essentials': true, 'Secure HSA': true } },
+      { name: 'Preventive Care', plans: { 'HSA Essentials': true, 'Secure HSA': true } },
+      { name: 'HSA Compatible', plans: { 'HSA Essentials': true, 'Secure HSA': true } },
+      { name: 'Tax Advantages', plans: { 'HSA Essentials': true, 'Secure HSA': true } },
+      { name: 'Debt Dismissal Program', plans: { 'HSA Essentials': true, 'Secure HSA': false } },
+      { name: 'Pharmacy Discounts', plans: { 'HSA Essentials': true, 'Secure HSA': true } },
+      { name: 'Vitamin Discounts', plans: { 'HSA Essentials': true, 'Secure HSA': true } },
     ],
   },
   {
     category: 'Medical Sharing',
     features: [
-      { name: 'Medical Cost Sharing', plans: { 'MEC+Essentials': false, 'Secure HSA': true } },
-      { name: 'Preventive Care (ACA)', plans: { 'MEC+Essentials': false, 'Secure HSA': true } },
-      { name: 'High-Deductible Protection', plans: { 'MEC+Essentials': false, 'Secure HSA': true } },
+      { name: 'Medical Cost Sharing', plans: { 'HSA Essentials': false, 'Secure HSA': true } },
+      { name: 'Preventive Care (ACA)', plans: { 'HSA Essentials': false, 'Secure HSA': true } },
+      { name: 'High-Deductible Protection', plans: { 'HSA Essentials': false, 'Secure HSA': true } },
     ],
   },
   {
     category: 'Virtual Healthcare',
     features: [
-      { name: 'Virtual Urgent Care', plans: { 'MEC+Essentials': true, 'Secure HSA': true } },
-      { name: 'Virtual Primary Care', plans: { 'MEC+Essentials': true, 'Secure HSA': true } },
-      { name: 'Virtual Behavioral Health', plans: { 'MEC+Essentials': true, 'Secure HSA': true } },
+      { name: 'Virtual Urgent Care', plans: { 'HSA Essentials': true, 'Secure HSA': true } },
+      { name: 'Virtual Primary Care', plans: { 'HSA Essentials': true, 'Secure HSA': true } },
+      { name: 'Virtual Behavioral Health', plans: { 'HSA Essentials': true, 'Secure HSA': true } },
     ],
   },
   {
     category: 'Support & Additional Services',
     features: [
-      { name: 'MPB Concierge Assistance', plans: { 'MEC+Essentials': true, 'Secure HSA': true } },
-      { name: 'Virtual Pet Care', plans: { 'MEC+Essentials': true, 'Secure HSA': true } },
-      { name: 'DNA Test Discounts', plans: { 'MEC+Essentials': true, 'Secure HSA': true } },
+      { name: 'MPB Concierge Assistance', plans: { 'HSA Essentials': true, 'Secure HSA': true } },
+      { name: 'Virtual Pet Care', plans: { 'HSA Essentials': true, 'Secure HSA': true } },
+      { name: 'DNA Test Discounts', plans: { 'HSA Essentials': true, 'Secure HSA': true } },
     ],
   },
 ];

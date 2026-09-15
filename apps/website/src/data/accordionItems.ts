@@ -2,13 +2,13 @@ export const accordionItems = [
   {
     title: "Early Roots of Health Sharing",
     contentHtml: `
-      <p>Long before health insurance existed, communities relied on a system of mutual aid. Friends, neighbors, and religious communities would contribute money to help members cover medical expenses. This system emphasized <strong>community support, trust, and shared responsibility</strong>—the core principles that <a href="https://mpb.health/2025/07/02/medical-cost-sharing-alternative-health-insurance/">health sharing</a> still embodies today.</p>
+      <p>Long before health insurance existed, communities relied on a system of mutual aid. Friends, neighbors, and religious communities would contribute money to help members pay medical expenses. This system emphasized <strong>community support, trust, and shared responsibility</strong>—the core principles that <a href="https://mpb.health/2025/07/02/medical-cost-sharing-alternative-health-insurance/">health sharing</a> still embodies today.</p>
     `
   },
   {
     title: "The Rise of Formal Health Sharing Programs",
     contentHtml: `
-      <p>In the 20th century, formal <a href="https://mpb.health/2025/07/02/medical-cost-sharing-alternative-health-insurance/">health sharing</a> programs began to appear. Members could voluntarily contribute a set amount each month to a shared fund that helped cover medical costs for the group. These programs focused on:</p>
+      <p>In the 20th century, formal <a href="https://mpb.health/2025/07/02/medical-cost-sharing-alternative-health-insurance/">health sharing</a> programs began to appear. Members could voluntarily contribute a set amount each month to a shared fund that helped pay medical costs for the group. These programs focused on:</p>
       <ul>
         <li>Financial support for unexpected medical costs</li>
         <li>Encouraging preventive care and healthy habits</li>
@@ -48,7 +48,7 @@ export const accordionItems = [
       <p>MPB Health takes the long-standing principles of <a href="https://mpb.health/2025/07/02/medical-cost-sharing-alternative-health-insurance/">health sharing</a> and combines them with modern, flexible membership-based healthcare solutions. Here's how our memberships work:</p>
       <ul>
         <li><strong>Shared Medical Cost Pool:</strong> Members contribute a monthly share into a collective pool. When a member has an eligible medical need, funds from the pool are used to help pay for those expenses.</li>
-        <li><strong>Comprehensive membership options:</strong> By combining flexibility, member empowerment, and plan diversity, members can gain access to urgent, preventive, virtual behavioral health, telehealth, and pharmacy benefits, all with no lifetime caps and lower costs compared to traditional insurance.</li>
+        <li><strong>Comprehensive membership options:</strong> By combining flexibility, member empowerment, and plan diversity, members can gain access to urgent, preventive, virtual behavioral health, telehealth, and pharmacy benefits, all with no lifetime sharing maximums and lower costs compared to traditional insurance.</li>
         <li><strong>Virtual Care Integration:</strong> Members can consult with healthcare professionals online, making doctor visits easier and more convenient.</li>
         <li><strong>Supportive Member Community:</strong> MPB Health fosters a network of members who share similar goals of wellness and cost-conscious healthcare, keeping the spirit of mutual support alive.</li>
       </ul>

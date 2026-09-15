@@ -264,14 +264,37 @@ const AnalyticsTracker: React.FC<{ children: React.ReactNode }> = ({ children })
   return <>{children}</>;
 };
 
-// Conditional footer - hide on admin and advisor dashboard routes
+// Conditional chrome — homepage redesign owns its own header/footer
+const isHomePath = (pathname: string) => pathname === '/';
+
+// Pages that render the landing-redesign header themselves (no global header, no top padding)
+const usesLandingChrome = (pathname: string) =>
+  isHomePath(pathname) ||
+  pathname === '/how-it-works' ||
+  pathname === '/advisor-directory' ||
+  pathname === '/features' ||
+  pathname === '/resources' ||
+  pathname === '/blog' ||
+  pathname === '/events' ||
+  pathname === '/member-stories' ||
+  pathname === '/podcast' ||
+  pathname === '/about-us' ||
+  pathname === '/join-our-team';
+
+const ConditionalHeader: React.FC = () => {
+  const location = useLocation();
+  if (usesLandingChrome(location.pathname)) return null;
+  return <HeaderWithAuth />;
+};
+
+// Conditional footer - hide on admin, advisor dashboard, and homepage redesign
 const ConditionalFooter: React.FC = () => {
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith('/admin');
   const isAdvisorRoute = location.pathname.startsWith('/advisor');
   
-  // Don't render footer on admin or advisor dashboard
-  if (isAdminRoute || isAdvisorRoute) {
+  // Don't render footer on admin, advisor dashboard, or landing-chrome pages (they own their footer)
+  if (isAdminRoute || isAdvisorRoute || usesLandingChrome(location.pathname)) {
     return null;
   }
   
@@ -280,6 +303,16 @@ const ConditionalFooter: React.FC = () => {
       <AppDownloadSection />
       <Footer />
     </>
+  );
+};
+
+const AppMain: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const location = useLocation();
+  const landingChrome = usesLandingChrome(location.pathname);
+  return (
+    <main className={`flex-1 overflow-x-hidden${landingChrome ? '' : ' pt-[104px]'}`}>
+      {children}
+    </main>
   );
 };
 
@@ -345,8 +378,8 @@ const App = () => {
             <ScrollToTop />
             <StateEligibilityBanner />
             <div className="min-h-screen flex flex-col">
-              <HeaderWithAuth />
-            <main className="flex-1 overflow-x-hidden pt-[104px]">
+              <ConditionalHeader />
+            <AppMain>
               <LazyLoadErrorBoundary>
                 <Suspense fallback={<PageSpinner />}>
                   <Routes>
@@ -856,7 +889,7 @@ const App = () => {
                   </Routes>
                 </Suspense>
               </LazyLoadErrorBoundary>
-            </main>
+            </AppMain>
             <ConditionalFooter />
             <BackToTop />
             <DashboardToggle />

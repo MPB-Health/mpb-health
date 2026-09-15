@@ -115,10 +115,10 @@ export const InteractivePlanComparison: React.FC = () => {
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div>
             <h2 className="text-2xl font-bold text-neutral-900 mb-2">
-              Compare Plans Side-by-Side
+              Compare Memberships Side-by-Side
             </h2>
             <p className="text-neutral-600">
-              Select up to 4 plans to compare features and pricing
+              Select up to 4 memberships to compare features and pricing
             </p>
           </div>
 

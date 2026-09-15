@@ -33,7 +33,7 @@ const fallbackPlans: PlanWithFeatures[] = [
   {
     id: 'fallback-2',
     slug: 'mec-essentials',
-    name: 'MEC+ Essentials',
+    name: 'HSA Essentials',
     tagline: 'ACA MEC + Debt Dismissal + HSA',
     target_audience: 'Individuals seeking ACA compliance',
     plan_type: 'individual',

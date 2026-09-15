@@ -52,7 +52,7 @@ export default function Welcome() {
                   <p className="text-slate-700 text-lg leading-relaxed">
                     <span className="font-semibold text-blue-700">Individual programs</span> typically range from{' '}
                     <span className="font-bold text-slate-900">$160 to $350 per month</span>, while{' '}
-                    <span className="font-semibold text-blue-700">family plans</span> range from{' '}
+                    <span className="font-semibold text-blue-700">family memberships</span> range from{' '}
                     <span className="font-bold text-slate-900">$400 to $1,050 monthly</span>, depending on your specific medical needs.
                   </p>
                 </div>

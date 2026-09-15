@@ -98,9 +98,9 @@ export const generatePageMetaTags = (
       ogUrl: baseUrl,
     },
     plans: {
-      title: 'Health Sharing Plans | Compare Options | MPB Health',
-      description: 'Explore MPB Health sharing plans starting at $49.95/month. Find the perfect plan for your family with flexible IUA options.',
-      keywords: 'health sharing plans, affordable health plans, MPB plans, healthcare options',
+      title: 'Health Sharing Memberships | Compare Options | MPB Health',
+      description: 'Explore MPB Health sharing memberships starting at $49.95/month. Find the perfect membership for your family with flexible IUA options.',
+      keywords: 'health sharing memberships, affordable health memberships, MPB memberships, healthcare options',
       ogImage: defaultImage,
       ogUrl: `${baseUrl}/plans`,
     },

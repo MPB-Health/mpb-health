@@ -15,10 +15,10 @@ export function GetStarted() {
               <span className="text-blue-600 font-semibold tracking-wide">QUICK START</span>
             </div>
             <h1 className="text-5xl sm:text-6xl font-bold text-gray-900 mb-6 tracking-tight">
-              Find Your Perfect Plan
+              Find Your Perfect Membership
             </h1>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-              Answer a few quick questions and we'll recommend the best health sharing plan for your needs.
+              Answer a few quick questions and we'll recommend the best health sharing membership for your needs.
               <span className="block mt-2 text-lg font-medium text-blue-600">Takes less than 2 minutes</span>
             </p>
 

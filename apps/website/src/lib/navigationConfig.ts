@@ -36,7 +36,7 @@ export const prospectNavigation: NavigationItem[] = [
         id: 'individuals-families',
         label: 'Individuals & Families',
         href: '/individuals-and-families',
-        description: 'Comprehensive plans for you and your loved ones',
+        description: 'Comprehensive memberships for you and your loved ones',
         icon: 'Users',
       },
       {
@@ -55,9 +55,9 @@ export const prospectNavigation: NavigationItem[] = [
       },
       {
         id: 'compare-plans',
-        label: 'Compare Plans',
+        label: 'Compare Memberships',
         href: '/compare-plans',
-        description: 'Side-by-side plan comparison',
+        description: 'Side-by-side membership comparison',
         icon: 'GitCompare',
       },
     ],
@@ -101,9 +101,9 @@ export const prospectNavigation: NavigationItem[] = [
       },
       {
         id: 'plan-comparison',
-        label: 'Plan Comparison',
+        label: 'Membership Comparison',
         href: '/plans/compare',
-        description: 'Compare plans side-by-side',
+        description: 'Compare memberships side-by-side',
         icon: 'GitCompare',
       },
       {
@@ -315,7 +315,7 @@ export const mobileQuickLinks: NavigationItem[] = [
   },
   {
     id: 'quick-plans',
-    label: 'Plans',
+    label: 'Memberships',
     href: '/plans',
     icon: 'Layers',
   },
@@ -336,7 +336,7 @@ export const mobileQuickLinks: NavigationItem[] = [
 export const footerNavigation: NavigationSection[] = [
   {
     id: 'plans-footer',
-    title: 'Plans',
+    title: 'Memberships',
     items: [
       {
         id: 'footer-individuals',

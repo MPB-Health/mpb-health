@@ -16,7 +16,7 @@ export function StickyHeaderMVP() {
     <div className="fixed inset-x-0 top-0 z-40 border-b border-gray-200 bg-white/80 backdrop-blur">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-3">
         <div className="text-sm font-medium text-gray-900">
-          HealthShare Plans Built for You
+          HealthShare Memberships Built for You
         </div>
         <div className="flex items-center gap-2">
           <a

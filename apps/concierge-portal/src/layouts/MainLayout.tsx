@@ -15,16 +15,29 @@ import {
   Globe,
   BarChart3,
   FileSpreadsheet,
+  Settings2,
+  type LucideIcon,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { QUICK_LINKS } from '@mpbhealth/concierge-core';
+import { useConciergeAccess } from '../hooks/useConciergeAccess';
 
-const MPB_NAV_ITEMS = [
+interface NavItem {
+  name: string;
+  href: string;
+  icon: LucideIcon;
+  external?: boolean;
+  /** Only shown to concierge managers (super_admin/admin/is_manager). */
+  managerOnly?: boolean;
+}
+
+const MPB_NAV_ITEMS: NavItem[] = [
   { name: 'Daily Logs', href: '/daily-logs', icon: ClipboardList },
   { name: 'Reports', href: '/reports', icon: BarChart3 },
   { name: 'July Billing', href: '/reports?tab=julyBilling', icon: FileSpreadsheet },
   { name: 'Resources', href: '/', icon: LayoutDashboard },
   { name: 'Tickets', href: '/tickets', icon: Headphones },
+  { name: 'Manage', href: '/management', icon: Settings2, managerOnly: true },
   { name: 'Member Portal', href: 'https://app.mpb.health/', icon: Globe, external: true },
   { name: 'Profile', href: '/profile', icon: UserCircle },
 ];
@@ -33,7 +46,8 @@ export default function MainLayout() {
   const location = useLocation();
   const toPath = useTenantPath();
 
-  const navItems = MPB_NAV_ITEMS;
+  const { isManager } = useConciergeAccess();
+  const navItems = MPB_NAV_ITEMS.filter((item) => !item.managerOnly || isManager);
   const quickLinks = QUICK_LINKS;
   const branding = { appName: 'Concierge Portal', logoText: 'MPB' };
   const [user, setUser] = useState<{ email: string } | null>(null);

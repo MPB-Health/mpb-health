@@ -37,7 +37,7 @@ const pathExplainers: PathExplainerData[] = [
     whatYouDont: [
       "Limited sharing for major medical events",
       "Higher out-of-pocket for hospital stays",
-      "May not cover all specialist visits",
+      "May not include all specialist visits",
       "Not suitable for chronic conditions requiring frequent care"
     ],
     bestFor: "Individuals and families who prioritize everyday wellness, preventive care, and virtual access while keeping monthly costs low.",
@@ -63,7 +63,7 @@ const pathExplainers: PathExplainerData[] = [
       "Pre-membership conditions have waiting periods",
       "Initial Unshareable Amount (IUA) applies first",
       "Some elective procedures may not be shared",
-      "Sharing limits apply per medical need"
+      "Sharing maximums apply per medical need"
     ],
     bestFor: "Members who want strong protection against large medical bills while maintaining affordable monthly contributions and community-based sharing.",
   },
@@ -123,7 +123,7 @@ const PathExplainers = forwardRef<PathExplainersHandle>((props, ref) => {
             Understand Your Options
           </h2>
           <p className="text-lg text-neutral-600 max-w-2xl mx-auto">
-            Explore detailed information about each plan family to find the perfect fit for your healthcare needs.
+            Explore detailed information about each membership family to find the perfect fit for your healthcare needs.
           </p>
         </div>
 
@@ -209,7 +209,7 @@ const PathExplainers = forwardRef<PathExplainersHandle>((props, ref) => {
                     <Button
                       asChild
                       className={`flex-1 bg-gradient-to-r ${explainer.gradient} hover:opacity-90 text-white shadow-lg hover:shadow-xl transition-all duration-300 font-semibold`}
-                      aria-label="View detailed plan comparison"
+                      aria-label="View detailed membership comparison"
                     >
                       <Link to="/individuals-and-families" className="inline-flex items-center justify-center">
                         Compare Details

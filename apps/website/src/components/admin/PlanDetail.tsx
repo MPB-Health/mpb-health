@@ -304,11 +304,11 @@ export const PlanDetail: React.FC<PlanDetailProps> = ({
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                 <div>
-                  <span className="text-neutral-500">Annual Cap</span>
+                  <span className="text-neutral-500">Annual Sharing Maximum</span>
                   <p className="font-medium">{plan.sharing_details.has_annual_cap ? 'Yes' : 'No'}</p>
                 </div>
                 <div>
-                  <span className="text-neutral-500">Lifetime Cap</span>
+                  <span className="text-neutral-500">Lifetime Sharing Maximum</span>
                   <p className="font-medium">{plan.sharing_details.has_lifetime_cap ? 'Yes' : 'No'}</p>
                 </div>
                 <div>
@@ -316,7 +316,7 @@ export const PlanDetail: React.FC<PlanDetailProps> = ({
                   <p className="font-medium">{plan.sharing_details.has_international_coverage ? 'Yes' : 'No'}</p>
                 </div>
                 <div>
-                  <span className="text-neutral-500">Pre-existing Lookback</span>
+                  <span className="text-neutral-500">Pre-membership Lookback</span>
                   <p className="font-medium">{plan.sharing_details.preexisting_lookback_months != null ? `${plan.sharing_details.preexisting_lookback_months} months` : 'N/A'}</p>
                 </div>
                 <div>

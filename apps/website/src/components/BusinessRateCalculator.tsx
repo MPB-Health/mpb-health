@@ -58,7 +58,7 @@ const businessTypes = [
 ];
 
 const plans = [
-  { value: 'mec-essentials', label: 'MEC+ Essentials', description: 'ACA compliant, cost-effective', icon: Shield },
+  { value: 'mec-essentials', label: 'HSA Essentials', description: 'ACA compliant, cost-effective', icon: Shield },
   { value: 'secure-hsa', label: 'Secure HSA', description: 'HSA-compatible, tax advantages', icon: TrendingDown },
 ];
 
@@ -183,7 +183,7 @@ export default function BusinessRateCalculator() {
           </h2>
           <p className={`${typography.body.large} text-gray-600 max-w-3xl mx-auto`}>
             Get an estimate for your small business or 1099 team in just 60 seconds.
-            <span className="block mt-2 text-lg font-medium text-blue-600">Compare MEC+ Essentials and Secure HSA plans.</span>
+            <span className="block mt-2 text-lg font-medium text-blue-600">Compare HSA Essentials and Secure HSA plans.</span>
           </p>
 
           <div className="flex flex-wrap justify-center gap-6 mt-8">
@@ -305,7 +305,7 @@ export default function BusinessRateCalculator() {
                 </div>
 
                 <div className="space-y-3">
-                  <Label className="text-base font-semibold text-gray-900">Who's Covered? (Per Membership) *</Label>
+                  <Label className="text-base font-semibold text-gray-900">Who's Included? (Per Membership) *</Label>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     {householdTypes.map((type) => (
                       <button
@@ -410,7 +410,7 @@ export default function BusinessRateCalculator() {
                       Oldest child/dependent age *
                     </Label>
                     <p className="text-xs text-gray-500">
-                      Per membership, pricing uses the oldest age among all covered members.
+                      Per membership, pricing uses the oldest age among all included members.
                     </p>
                     <Input
                       id="oldestDependentAge"

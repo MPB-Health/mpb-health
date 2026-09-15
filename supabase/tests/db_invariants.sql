@@ -119,6 +119,105 @@ END
 $$;
 
 -- ---------------------------------------------------------------------------
+-- 5. Reporting / compatibility views must use security_invoker so they
+--    honor the querying user's RLS instead of the postgres owner.
+--    Skip views that are absent on a given environment (roster is live-only).
+-- ---------------------------------------------------------------------------
+DO $$
+DECLARE
+    v_name text;
+    v_options text[];
+    bad_list text := '';
+    bad_count int := 0;
+BEGIN
+    FOREACH v_name IN ARRAY ARRAY[
+        'crm_v_pipeline_movement',
+        'crm_v_application_dropoff',
+        'crm_v_conversion_by_source',
+        'crm_v_special_project_rollup',
+        'crm_v_call_breakdown',
+        'crm_salesperson_roster',
+        'organizations_unified'
+    ]
+    LOOP
+        SELECT c.reloptions INTO v_options
+          FROM pg_class c
+          JOIN pg_namespace n ON n.oid = c.relnamespace
+         WHERE n.nspname = 'public'
+           AND c.relname = v_name
+           AND c.relkind = 'v';
+
+        IF NOT FOUND THEN
+            CONTINUE;
+        END IF;
+
+        IF v_options IS NULL
+           OR NOT EXISTS (
+                SELECT 1
+                  FROM unnest(v_options) opt
+                 WHERE opt IN ('security_invoker=true', 'security_invoker=on')
+           )
+        THEN
+            bad_count := bad_count + 1;
+            bad_list := bad_list || v_name || E'\n  ';
+        END IF;
+    END LOOP;
+
+    IF bad_count > 0 THEN
+        RAISE EXCEPTION
+          E'INVARIANT: % public view(s) missing security_invoker=true:\n  %',
+          bad_count, bad_list;
+    END IF;
+END
+$$;
+
+-- ---------------------------------------------------------------------------
+-- 6. Org-reconcile backup tables must not be public API surfaces:
+--    RLS on, no anon/authenticated privileges.
+-- ---------------------------------------------------------------------------
+DO $$
+DECLARE
+    t_name text;
+BEGIN
+    FOREACH t_name IN ARRAY ARRAY[
+        '_backup_org_reconcile_20260701_lead_submissions',
+        '_backup_org_reconcile_20260701_advisor_profiles'
+    ]
+    LOOP
+        IF NOT EXISTS (
+            SELECT 1
+              FROM pg_class c
+              JOIN pg_namespace n ON n.oid = c.relnamespace
+             WHERE n.nspname = 'public'
+               AND c.relname = t_name
+               AND c.relkind = 'r'
+        ) THEN
+            CONTINUE;
+        END IF;
+
+        IF NOT EXISTS (
+            SELECT 1
+              FROM pg_class c
+              JOIN pg_namespace n ON n.oid = c.relnamespace
+             WHERE n.nspname = 'public'
+               AND c.relname = t_name
+               AND c.relrowsecurity
+        ) THEN
+            RAISE EXCEPTION
+              'INVARIANT: public.% must have RLS enabled', t_name;
+        END IF;
+
+        IF has_table_privilege('anon', format('public.%I', t_name), 'SELECT')
+           OR has_table_privilege('authenticated', format('public.%I', t_name), 'SELECT')
+        THEN
+            RAISE EXCEPTION
+              'INVARIANT: public.% must not grant SELECT to anon or authenticated', t_name;
+        END IF;
+    END LOOP;
+END
+$$;
+
+-- ---------------------------------------------------------------------------
 -- All checks passed.
 -- ---------------------------------------------------------------------------
 DO $$

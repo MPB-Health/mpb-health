@@ -29,7 +29,7 @@ export const CompactMembershipPrioritySelector: React.FC<CompactMembershipPriori
   return (
     <div className={cn('space-y-3', className)}>
       <p className="text-xs text-gray-500">
-        Tap to select — pick 1–3 that matter most. All plans include $0 virtual care.
+        Tap to select — pick 1–3 that matter most. All memberships include $0 virtual care.
       </p>
 
       <div className="grid grid-cols-2 gap-2">

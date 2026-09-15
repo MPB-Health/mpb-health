@@ -11,7 +11,7 @@ interface BlogCTAProps {
 }
 
 export const BlogCTA: React.FC<BlogCTAProps> = ({
-  headline = 'Unlock smarter wellness and coverage insights',
+  headline = 'Unlock smarter wellness and healthcare insights',
   subheadline = 'Join thousands of families discovering affordable, faith-based healthcare solutions.',
   buttonText = 'Join MPB Health',
   buttonRoute = '/plans',

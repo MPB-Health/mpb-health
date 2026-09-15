@@ -377,6 +377,12 @@ verify_jwt = true
 [functions.analytics-hub-proxy]
 verify_jwt = false
 
+# membership-analytics-proxy verifies the caller's admin role itself before
+# touching the service-role key. Same reason as above: verify_jwt = false so
+# the browser's CORS preflight, which carries no JWT, reaches the handler.
+[functions.membership-analytics-proxy]
+verify_jwt = false
+
 # send-ticket-notification is called server-side (via service role) so its
 # requests never carry a user JWT. Disable gateway JWT verification and rely
 # on the function's own secret/signature check instead.

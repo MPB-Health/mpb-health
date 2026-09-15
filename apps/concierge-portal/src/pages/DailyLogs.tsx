@@ -1,4 +1,11 @@
-import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import {
+  useState,
+  useMemo,
+  useCallback,
+  useEffect,
+  useRef,
+  type ClipboardEvent,
+} from 'react';
 import {
   addDays,
   format,
@@ -36,6 +43,7 @@ import {
 import toast from 'react-hot-toast';
 import { useLocation } from 'react-router-dom';
 import { useConciergeNavigate } from '../hooks/useConciergeNavigate';
+import { useConciergeAccess } from '../hooks/useConciergeAccess';
 import { safeRemoveChannel } from '@mpbhealth/database';
 import {
   loadConciergeWorkspace,
@@ -55,7 +63,16 @@ import {
   subscribeConciergeDailyLogEntries,
   mergeConciergeLogEntry,
   normalizeConciergeInstant,
+  requiresCrmActivityProof,
+  requiresCrmFollowupScreenshot,
+  validateCrmNotesPaste,
+  CRM_ACTIVITY_PROOF_REP,
 } from '../lib/concierge-api';
+import {
+  dailyLogsPathWithoutCrmPrefill,
+  hasCrmDailyLogPrefill,
+  memberNameFromCrmSearch,
+} from '../lib/crmDeepLinkPrefill';
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -229,6 +246,16 @@ const REPORTS_URL_TAB_IDS = ['weekly', 'performance', 'analytics', 'julyBilling'
 function isReportsUrlTab(tab: TabId): tab is (typeof REPORTS_URL_TAB_IDS)[number] {
   return (REPORTS_URL_TAB_IDS as readonly string[]).includes(tab);
 }
+
+/** Concierge feature key gating each tab (deny-list). 'log' is always available. */
+const TAB_FEATURE: Partial<Record<TabId, string>> = {
+  weekly: 'reports.weekly',
+  performance: 'reports.performance',
+  analytics: 'reports.analytics',
+  julyBilling: 'reports.july_billing',
+  trends: 'reports.member_issues',
+  team: 'team.view',
+};
 
 function tabIdFromLocation(pathname: string, search: string): TabId {
   const q = new URLSearchParams(search).get('tab');
@@ -487,6 +514,17 @@ function logCreatedMs(entry: LogEntry): number | null {
   return Number.isFinite(t) ? t : null;
 }
 
+/** Display when the row was saved (`created_at`). Falls back to — if missing/legacy. */
+function formatEnteredAt(entry: LogEntry): { short: string; full: string } | null {
+  const ms = logCreatedMs(entry);
+  if (ms === null) return null;
+  const d = new Date(ms);
+  return {
+    short: format(d, 'h:mm a'),
+    full: format(d, 'PPpp'),
+  };
+}
+
 /**
  * Newest save first (`created_at` DESC).
  * Stable for equal timestamps via **input order**: keep fetch order (already newest-first) and prepend
@@ -676,6 +714,7 @@ function ShareModal({
     const headers = [
       'Period',
       'Date',
+      'Entered At',
       'Team Member',
       'Channel',
       'Member Name',
@@ -693,6 +732,7 @@ function ShareModal({
     const rows = weekLogs.map((l) => [
       periodTitle,
       l.date,
+      formatEnteredAt(l)?.full ?? '',
       l.teamMember,
       l.channel,
       l.memberName,
@@ -807,6 +847,102 @@ function ShareModal({
   );
 }
 
+/** File upload + clipboard paste for CRM follow-up screenshot (client gate only). */
+function CrmFollowupProofInput({
+  file,
+  onFile,
+  hint,
+}: {
+  file: File | null;
+  onFile: (file: File | null) => void;
+  hint: string;
+}) {
+  const zoneRef = useRef<HTMLDivElement>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!file) {
+      setPreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
+
+  const acceptImageFile = (next: File | null) => {
+    if (!next) {
+      onFile(null);
+      return;
+    }
+    if (!next.type.startsWith('image/')) {
+      toast.error('Paste or upload an image screenshot (PNG, JPG, or WebP)');
+      return;
+    }
+    onFile(next);
+  };
+
+  const onPaste = (e: ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items?.length) return;
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.type.startsWith('image/')) {
+        e.preventDefault();
+        const pasted = item.getAsFile();
+        if (pasted) {
+          const named =
+            pasted.name && pasted.name !== 'image.png'
+              ? pasted
+              : new File([pasted], `pasted-screenshot-${Date.now()}.png`, {
+                  type: pasted.type || 'image/png',
+                });
+          acceptImageFile(named);
+          toast.success('Screenshot pasted');
+        }
+        return;
+      }
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      <div
+        ref={zoneRef}
+        tabIndex={0}
+        role="button"
+        onClick={() => zoneRef.current?.focus()}
+        onPaste={onPaste}
+        className="rounded-lg border border-dashed border-[#A8B8AC]/60 bg-white px-3 py-3 text-sm text-slate-600 outline-none focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 cursor-text"
+      >
+        <p className="text-xs font-medium text-slate-700">
+          Click here, then paste screenshot (Ctrl/Cmd+V)
+        </p>
+        <p className="text-[10px] text-slate-500 mt-0.5">Or choose a file below</p>
+        {previewUrl ? (
+          <img
+            src={previewUrl}
+            alt="CRM follow-up screenshot preview"
+            className="mt-2 max-h-40 rounded-md border border-[#A8B8AC]/30 object-contain"
+          />
+        ) : null}
+      </div>
+      <input
+        type="file"
+        accept="image/png,image/jpeg,image/webp,image/gif"
+        onChange={(e) => acceptImageFile(e.target.files?.[0] ?? null)}
+        className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-[#4A7C8A] file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white"
+      />
+      <p className="text-[10px] text-slate-500">{hint}</p>
+      {file && (
+        <p className="text-[11px] text-emerald-700">
+          Ready: {file.name.startsWith('pasted-screenshot') ? 'Pasted screenshot' : file.name}
+        </p>
+      )}
+    </div>
+  );
+}
+
 // ── Edit log entry (from Recent Entries) ───────────────────────────────
 
 function EditLogEntryModal({
@@ -839,6 +975,14 @@ function EditLogEntryModal({
   const [specialProjectDurationMinutes, setSpecialProjectDuration] = useState(
     log.specialProjectDurationMinutes || 0,
   );
+  /** Client-only proof gates — not persisted. */
+  const [crmNotesPaste, setCrmNotesPaste] = useState('');
+  const [proofFile, setProofFile] = useState<File | null>(null);
+  const needsCrmProof = requiresCrmActivityProof(teamMember);
+  const needsFollowupShot =
+    needsCrmProof && requiresCrmFollowupScreenshot(reason);
+  const crmPasteStatus =
+    needsCrmProof && crmNotesPaste.trim() ? validateCrmNotesPaste(crmNotesPaste) : null;
 
   const handleSave = async () => {
     if (!date || !teamMember) {
@@ -856,6 +1000,17 @@ function EditLogEntryModal({
       }
     } else if (!memberName.trim()) {
       toast.error('Please fill in Member Name');
+      return;
+    }
+    if (needsCrmProof) {
+      const pasteCheck = validateCrmNotesPaste(crmNotesPaste);
+      if (!pasteCheck.ok) {
+        toast.error(pasteCheck.error);
+        return;
+      }
+    }
+    if (needsFollowupShot && !proofFile) {
+      toast.error('Attach a screenshot of the CRM follow-up task before saving');
       return;
     }
     const memberNameNorm =
@@ -878,8 +1033,8 @@ function EditLogEntryModal({
       otherNotes: reason === 'Other' ? otherNotes : '',
       additionalNotes,
       timesSpokeWithMember: reason === 'Special Project' ? log.timesSpokeWithMember : parsedTouches,
-      crmNotes,
-      followUp,
+      crmNotes: needsCrmProof ? true : crmNotes,
+      followUp: needsFollowupShot ? true : followUp,
       reviewLink,
       escalatedIssue,
       specialProjectDescription: reason === 'Special Project' ? specialProjectDescription.trim() : '',
@@ -1077,6 +1232,52 @@ function EditLogEntryModal({
                 className="w-full px-3 py-2 rounded-lg border border-[#A8B8AC]/40 focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm"
               />
             </div>
+            {needsCrmProof && (
+              <div className="sm:col-span-2 space-y-3 rounded-xl border border-amber-200 bg-amber-50/60 p-3">
+                <p className="text-xs font-semibold text-amber-900">
+                  CRM completion check for {CRM_ACTIVITY_PROOF_REP}
+                </p>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">
+                    Paste CRM notes <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    value={crmNotesPaste}
+                    onChange={(e) => {
+                      setCrmNotesPaste(e.target.value);
+                      if (e.target.value.trim()) setCrmNotes(true);
+                    }}
+                    rows={4}
+                    placeholder="Copy the note you logged in the CRM and paste it here."
+                    className="w-full px-3 py-2 rounded-lg border border-[#A8B8AC]/40 focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm"
+                  />
+                  {crmPasteStatus?.ok ? (
+                    <p className="text-[11px] text-emerald-700 mt-1">Looks like a coherent CRM note.</p>
+                  ) : crmPasteStatus && !crmPasteStatus.ok ? (
+                    <p className="text-[11px] text-amber-800 mt-1">{crmPasteStatus.error}</p>
+                  ) : (
+                    <p className="text-[10px] text-slate-500 mt-1">
+                      Must be a real, unique CRM note (not keyboard mash or filler).
+                    </p>
+                  )}
+                </div>
+                {needsFollowupShot && (
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1">
+                      Screenshot of CRM follow-up task <span className="text-red-500">*</span>
+                    </label>
+                    <CrmFollowupProofInput
+                      file={proofFile}
+                      onFile={(f) => {
+                        setProofFile(f);
+                        if (f) setFollowUp(true);
+                      }}
+                      hint="Required for Sharing, Rx, Labs, Imaging, and billing issues."
+                    />
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           <div className="flex flex-wrap items-center gap-4 pt-1 border-t border-[#A8B8AC]/15">
             <label className="flex items-center gap-2 text-sm cursor-pointer">
@@ -1084,6 +1285,7 @@ function EditLogEntryModal({
                 type="checkbox"
                 checked={crmNotes}
                 onChange={(e) => setCrmNotes(e.target.checked)}
+                disabled={needsCrmProof}
                 className="rounded border-[#A8B8AC] text-[#4A7C8A] focus:ring-[#4A7C8A]/30"
               />
               Notes in CRM?
@@ -1093,6 +1295,7 @@ function EditLogEntryModal({
                 type="checkbox"
                 checked={followUp}
                 onChange={(e) => setFollowUp(e.target.checked)}
+                disabled={needsFollowupShot}
                 className="rounded border-[#A8B8AC] text-[#4A7C8A] focus:ring-[#4A7C8A]/30"
               />
               Follow-up Task?
@@ -1126,7 +1329,7 @@ function EditLogEntryModal({
             </button>
             <button
               type="button"
-              onClick={handleSave}
+              onClick={() => void handleSave()}
               className="px-4 py-2 rounded-lg bg-[#4A7C8A] text-white text-sm font-medium hover:bg-[#3D6773]"
             >
               Save changes
@@ -1149,6 +1352,10 @@ function DailyLogTab({
   onEscalationFromLog,
   currentUserId,
   onRefresh,
+  canWrite = true,
+  canEditAny = true,
+  canDeleteAny = true,
+  canImport = true,
 }: {
   logs: LogEntry[];
   onAddLog: (entry: LogEntry) => Promise<LogEntry>;
@@ -1158,29 +1365,61 @@ function DailyLogTab({
   onEscalationFromLog: (item: EscalationItem) => Promise<void>;
   currentUserId: string | null;
   onRefresh: () => Promise<void>;
+  /** Feature gates (deny-list). Managers/unrestricted reps pass all as true. */
+  canWrite?: boolean;
+  canEditAny?: boolean;
+  canDeleteAny?: boolean;
+  canImport?: boolean;
 }) {
+  const location = useLocation();
+  const navigate = useConciergeNavigate();
+  /** Roster name of the signed-in rep — used to decide row ownership for gating. */
+  const myRosterName =
+    (currentUserId && rosterTeam.find((m) => m.userId === currentUserId)?.name) || null;
   const today = formatLocalYmd(new Date());
   /** Roster row matching the logged-in user (when linked); falls back to roster[0]. */
   const defaultTeamMemberName =
     (currentUserId && rosterTeam.find((m) => m.userId === currentUserId)?.name) ||
     rosterTeam[0]?.name ||
     '';
-  const [form, setForm] = useState<Omit<LogEntry, 'id'>>({
-    date: today,
-    teamMember: defaultTeamMemberName,
-    channel: 'Phone',
-    memberName: '',
-    reason: 'Sharing Requests',
-    otherNotes: '',
-    crmNotes: false,
-    followUp: false,
-    reviewLink: false,
-    additionalNotes: '',
-    timesSpokeWithMember: 1,
-    escalatedIssue: false,
-    specialProjectDescription: '',
-    specialProjectDurationMinutes: 0,
+  const [form, setForm] = useState<Omit<LogEntry, 'id'>>(() => {
+    const prefilledName =
+      typeof window !== 'undefined' ? memberNameFromCrmSearch(window.location.search) : '';
+    return {
+      date: today,
+      teamMember: defaultTeamMemberName,
+      channel: 'Phone',
+      memberName: prefilledName,
+      reason: 'Sharing Requests',
+      otherNotes: '',
+      crmNotes: false,
+      followUp: false,
+      reviewLink: false,
+      additionalNotes: '',
+      timesSpokeWithMember: 1,
+      escalatedIssue: false,
+      specialProjectDescription: '',
+      specialProjectDurationMinutes: 0,
+    };
   });
+  /** Client-only proof gates — discarded after save; not written to Supabase. */
+  const [crmNotesPaste, setCrmNotesPaste] = useState('');
+  const [proofFile, setProofFile] = useState<File | null>(null);
+
+  // Prefill Member Name from CRM deep-link params, then strip them from the URL.
+  useEffect(() => {
+    if (!hasCrmDailyLogPrefill(location.search)) return;
+    const name = memberNameFromCrmSearch(location.search);
+    if (name) {
+      setForm((f) => (f.memberName.trim() ? f : { ...f, memberName: name }));
+    }
+    navigate(dailyLogsPathWithoutCrmPrefill(location.search), { replace: true });
+  }, [location.search, navigate]);
+  const needsCrmProof = requiresCrmActivityProof(form.teamMember);
+  const needsFollowupShot =
+    needsCrmProof && requiresCrmFollowupScreenshot(form.reason);
+  const crmPasteStatus =
+    needsCrmProof && crmNotesPaste.trim() ? validateCrmNotesPaste(crmNotesPaste) : null;
 
   const handleAdd = async () => {
     if (!form.date || !form.teamMember) {
@@ -1201,6 +1440,17 @@ function DailyLogTab({
       toast.error('Please fill in Date, Team Member, and Member Name');
       return;
     }
+    if (needsCrmProof) {
+      const pasteCheck = validateCrmNotesPaste(crmNotesPaste);
+      if (!pasteCheck.ok) {
+        toast.error(pasteCheck.error);
+        return;
+      }
+    }
+    if (needsFollowupShot && !proofFile) {
+      toast.error('Attach a screenshot of the CRM follow-up task before adding this activity');
+      return;
+    }
     const id = uid();
     const memberNameNorm =
       form.reason === 'Special Project' && !form.memberName.trim()
@@ -1217,6 +1467,8 @@ function DailyLogTab({
         form.reason === 'Special Project'
           ? Math.min(99999, Math.max(1, Math.floor(Number(form.specialProjectDurationMinutes) || 0)))
           : 0,
+      crmNotes: needsCrmProof ? true : form.crmNotes,
+      followUp: needsFollowupShot ? true : form.followUp,
     });
     try {
       const saved = await onAddLog(entry);
@@ -1253,6 +1505,8 @@ function DailyLogTab({
         specialProjectDescription: '',
         specialProjectDurationMinutes: 0,
       }));
+      setCrmNotesPaste('');
+      setProofFile(null);
       const savedOnTodaysSheet = saved.date === today;
       toast.success(
         savedOnTodaysSheet
@@ -1595,6 +1849,54 @@ function DailyLogTab({
               className="w-full px-3 py-2 rounded-lg border border-[#A8B8AC]/40 focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm"
             />
           </div>
+          {needsCrmProof && (
+            <div className="sm:col-span-2 lg:col-span-3 space-y-3 rounded-xl border border-amber-200 bg-amber-50/60 p-4">
+              <p className="text-xs font-semibold text-amber-900">
+                CRM completion check for {CRM_ACTIVITY_PROOF_REP}
+              </p>
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">
+                  Paste CRM notes <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={crmNotesPaste}
+                  onChange={(e) => {
+                    setCrmNotesPaste(e.target.value);
+                    if (e.target.value.trim()) {
+                      setForm((f) => ({ ...f, crmNotes: true }));
+                    }
+                  }}
+                  rows={4}
+                  placeholder="Copy the note you logged in the CRM and paste it here."
+                  className="w-full px-3 py-2 rounded-lg border border-[#A8B8AC]/40 focus:border-[#4A7C8A] focus:ring-2 focus:ring-[#4A7C8A]/15 text-sm bg-white"
+                />
+                {crmPasteStatus?.ok ? (
+                  <p className="text-[11px] text-emerald-700 mt-1">Looks like a coherent CRM note.</p>
+                ) : crmPasteStatus && !crmPasteStatus.ok ? (
+                  <p className="text-[11px] text-amber-800 mt-1">{crmPasteStatus.error}</p>
+                ) : (
+                  <p className="text-[10px] text-slate-500 mt-1">
+                    Must be a real, unique CRM note (not keyboard mash or filler).
+                  </p>
+                )}
+              </div>
+              {needsFollowupShot && (
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">
+                    Screenshot of CRM follow-up task <span className="text-red-500">*</span>
+                  </label>
+                  <CrmFollowupProofInput
+                    file={proofFile}
+                    onFile={(f) => {
+                      setProofFile(f);
+                      if (f) setForm((prev) => ({ ...prev, followUp: true }));
+                    }}
+                    hint="Required for Sharing Requests, Rx, Labs, Imaging, Preventive/Billing, and July Billing Issue."
+                  />
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="flex flex-wrap items-center gap-4 mt-4">
@@ -1603,6 +1905,7 @@ function DailyLogTab({
               type="checkbox"
               checked={form.crmNotes}
               onChange={(e) => setForm((f) => ({ ...f, crmNotes: e.target.checked }))}
+              disabled={needsCrmProof}
               className="rounded border-[#A8B8AC] text-[#4A7C8A] focus:ring-[#4A7C8A]/30"
             />
             Notes in CRM?
@@ -1612,6 +1915,7 @@ function DailyLogTab({
               type="checkbox"
               checked={form.followUp}
               onChange={(e) => setForm((f) => ({ ...f, followUp: e.target.checked }))}
+              disabled={needsFollowupShot}
               className="rounded border-[#A8B8AC] text-[#4A7C8A] focus:ring-[#4A7C8A]/30"
             />
             Follow-up Task?
@@ -1640,8 +1944,10 @@ function DailyLogTab({
             Escalated Member Issue
           </label>
           <button
-            onClick={handleAdd}
-            className="ml-auto flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#4A7C8A] text-white text-sm font-medium hover:bg-[#3D6773] transition-colors"
+            onClick={() => void handleAdd()}
+            disabled={!canWrite}
+            title={canWrite ? undefined : 'Logging new entries has been restricted for your account'}
+            className="ml-auto flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#4A7C8A] text-white text-sm font-medium hover:bg-[#3D6773] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Plus className="w-4 h-4" />
             Add Entry
@@ -1675,7 +1981,7 @@ function DailyLogTab({
               </span>
             </h3>
             <div className="flex items-center gap-2 flex-wrap">
-              {legacyState.rawLogCount > 0 && (
+              {canImport && legacyState.rawLogCount > 0 && (
                 <button
                   type="button"
                   onClick={handleForceImport}
@@ -1689,15 +1995,17 @@ function DailyLogTab({
                     : `Recover ${legacyState.rawLogCount} from this browser`}
                 </button>
               )}
-              <button
-                type="button"
-                onClick={() => setShowJsonImport(true)}
-                title="Paste a rep's localStorage JSON dump and attribute every entry to them"
-                className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[#4A7C8A]/40 bg-[#4A7C8A]/5 text-[#2F3E2F] text-sm font-medium hover:bg-[#4A7C8A]/10 transition-colors"
-              >
-                <Upload className="w-4 h-4" />
-                Import JSON for rep
-              </button>
+              {canImport && (
+                <button
+                  type="button"
+                  onClick={() => setShowJsonImport(true)}
+                  title="Paste a rep's localStorage JSON dump and attribute every entry to them"
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[#4A7C8A]/40 bg-[#4A7C8A]/5 text-[#2F3E2F] text-sm font-medium hover:bg-[#4A7C8A]/10 transition-colors"
+                >
+                  <Upload className="w-4 h-4" />
+                  Import JSON for rep
+                </button>
+              )}
               <button
                 type="button"
                 onClick={handleRefresh}
@@ -1828,6 +2136,9 @@ function DailyLogTab({
                 <tr className="bg-[#A8B8AC]/10 text-left text-xs font-medium text-[#2F3E2F] uppercase tracking-wide">
                   <th className="px-3 py-3 whitespace-nowrap">Wk</th>
                   <th className="px-3 py-3 whitespace-nowrap">Date</th>
+                  <th className="px-3 py-3 whitespace-nowrap" title="When this entry was saved">
+                    Entered
+                  </th>
                   <th className="px-3 py-3 whitespace-nowrap">Rep</th>
                   <th className="px-3 py-3 whitespace-nowrap">Channel</th>
                   <th className="px-3 py-3 whitespace-nowrap min-w-[7rem]">Member</th>
@@ -1844,10 +2155,17 @@ function DailyLogTab({
                 {filteredLogs.map((log) => {
                   const pd = parseLogDate(log.date);
                   const wk = !isNaN(pd.getTime()) ? String(getISOWeek(pd)) : '—';
+                  const entered = formatEnteredAt(log);
                   return (
                     <tr key={log.id} className="hover:bg-[#A8B8AC]/5 transition-colors">
                       <td className="px-3 py-2.5 text-slate-500 tabular-nums whitespace-nowrap align-top">{wk}</td>
                       <td className="px-3 py-2.5 text-slate-600 tabular-nums whitespace-nowrap align-top">{log.date}</td>
+                      <td
+                        className="px-3 py-2.5 text-slate-600 tabular-nums whitespace-nowrap align-top"
+                        title={entered?.full}
+                      >
+                        {entered?.short ?? '—'}
+                      </td>
                       <td className="px-3 py-2.5 font-medium text-[#2F3E2F] align-top min-w-[7rem]">
                         <div className="flex flex-col items-start gap-0.5">
                           <span>{log.teamMember}</span>
@@ -1900,22 +2218,26 @@ function DailyLogTab({
                       </td>
                       <td className="px-3 py-2.5 align-top">
                         <div className="flex items-center justify-end gap-0.5">
-                          <button
-                            type="button"
-                            onClick={() => setEditingLog(log)}
-                            className="p-1 hover:bg-[#4A7C8A]/10 rounded text-slate-400 hover:text-[#4A7C8A] transition-colors"
-                            aria-label="Edit entry"
-                          >
-                            <Pencil className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDelete(log.id)}
-                            className="p-1 hover:bg-red-50 rounded text-slate-400 hover:text-red-500 transition-colors"
-                            aria-label="Delete entry"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          {(canEditAny || (myRosterName != null && log.teamMember === myRosterName)) && (
+                            <button
+                              type="button"
+                              onClick={() => setEditingLog(log)}
+                              className="p-1 hover:bg-[#4A7C8A]/10 rounded text-slate-400 hover:text-[#4A7C8A] transition-colors"
+                              aria-label="Edit entry"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                          {(canDeleteAny || (myRosterName != null && log.teamMember === myRosterName)) && (
+                            <button
+                              type="button"
+                              onClick={() => handleDelete(log.id)}
+                              className="p-1 hover:bg-red-50 rounded text-slate-400 hover:text-red-500 transition-colors"
+                              aria-label="Delete entry"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -3139,6 +3461,7 @@ function JulyBillingReportTab({ logs }: { logs: LogEntry[] }) {
   const exportDetailCsv = () => {
     const headers = [
       'Date',
+      'Entered At',
       'Member Name',
       'Team Member',
       'Channel',
@@ -3161,6 +3484,7 @@ function JulyBillingReportTab({ logs }: { logs: LogEntry[] }) {
       })
       .map((l) => [
         l.date,
+        formatEnteredAt(l)?.full ?? '',
         l.memberName,
         l.teamMember,
         l.channel,
@@ -3662,10 +3986,19 @@ function TeamTab({
 export default function DailyLogs() {
   const navigate = useConciergeNavigate();
   const location = useLocation();
+  const { can } = useConciergeAccess();
   const activeTab = useMemo(
     () => tabIdFromLocation(location.pathname, location.search),
     [location.pathname, location.search],
   );
+  const canSeeTab = useCallback(
+    (id: TabId) => {
+      const key = TAB_FEATURE[id];
+      return !key || can(key);
+    },
+    [can],
+  );
+  const visibleTabs = useMemo(() => TABS.filter((t) => canSeeTab(t.id)), [canSeeTab]);
   const [showShare, setShowShare] = useState(false);
   const [weekNumber, setWeekNumber] = useState(() => getISOWeek(new Date()));
   const [hydrated, setHydrated] = useState(false);
@@ -4014,21 +4347,25 @@ export default function DailyLogs() {
               )}
             </div>
 
-            <button
-              type="button"
-              onClick={() => setShowShare(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#4A7C8A] text-white text-sm font-medium hover:bg-[#3D6773] transition-colors"
-            >
-              <Send className="w-4 h-4" />
-              Share Report
-            </button>
+            {can('reports.share') && (
+              <button
+                type="button"
+                onClick={() => setShowShare(true)}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#4A7C8A] text-white text-sm font-medium hover:bg-[#3D6773] transition-colors"
+              >
+                <Send className="w-4 h-4" />
+                Share Report
+              </button>
+            )}
 
+            {can('data.export') && (
             <button
               type="button"
               onClick={() => {
                 const headers = [
                   'Week',
                   'Date',
+                  'Entered At',
                   'Team Member',
                   'Channel',
                   'Member Name',
@@ -4048,6 +4385,7 @@ export default function DailyLogs() {
                   return [
                   String(isNaN(pd.getTime()) ? '' : getISOWeek(pd)),
                   l.date,
+                  formatEnteredAt(l)?.full ?? '',
                   l.teamMember,
                   l.channel,
                   l.memberName,
@@ -4080,6 +4418,7 @@ export default function DailyLogs() {
               <Download className="w-4 h-4" />
               Export All
             </button>
+            )}
           </div>
         </div>
 
@@ -4091,7 +4430,7 @@ export default function DailyLogs() {
 
       {/* Tabs */}
       <div className="flex gap-1 overflow-x-auto border-b border-[#A8B8AC]/30 pb-px">
-        {TABS.map((tab) => {
+        {visibleTabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
           return (
@@ -4113,6 +4452,11 @@ export default function DailyLogs() {
       </div>
 
       {/* Tab Content */}
+      {!canSeeTab(activeTab) && (
+        <div className="text-center py-16 bg-white rounded-2xl border border-dashed border-[#A8B8AC]/40">
+          <p className="text-sm text-slate-500">This section has been restricted for your account.</p>
+        </div>
+      )}
       {activeTab === 'log' && (
         <DailyLogTab
           logs={logs}
@@ -4123,9 +4467,13 @@ export default function DailyLogs() {
           onEscalationFromLog={onEscalationFromLog}
           currentUserId={currentUserId}
           onRefresh={onRefreshLogs}
+          canWrite={can('daily_log.write')}
+          canEditAny={can('daily_log.edit_any')}
+          canDeleteAny={can('daily_log.delete_any')}
+          canImport={can('data.import')}
         />
       )}
-      {activeTab === 'weekly' && (
+      {activeTab === 'weekly' && canSeeTab('weekly') && (
         <WeeklyReportTab
           reportLogs={reportLogs}
           allLogsCount={logs.length}
@@ -4140,10 +4488,10 @@ export default function DailyLogs() {
           setWeeklyExtras={setWeeklyExtras}
         />
       )}
-      {activeTab === 'performance' && (
+      {activeTab === 'performance' && canSeeTab('performance') && (
         <PerformanceTab logs={logs} team={team} weekNumber={weekNumber} />
       )}
-      {activeTab === 'analytics' && (
+      {activeTab === 'analytics' && canSeeTab('analytics') && (
         <AnalyticsTab
           team={team}
           weekLogs={reportLogs}
@@ -4151,11 +4499,11 @@ export default function DailyLogs() {
           periodLabel={periodLabel}
         />
       )}
-      {activeTab === 'julyBilling' && <JulyBillingReportTab logs={logs} />}
-      {activeTab === 'trends' && (
+      {activeTab === 'julyBilling' && canSeeTab('julyBilling') && <JulyBillingReportTab logs={logs} />}
+      {activeTab === 'trends' && canSeeTab('trends') && (
         <TrendsTab logs={logs} escalations={escalations} onSaveEscalation={onSaveEscalation} />
       )}
-      {activeTab === 'team' && <TeamTab team={team} setTeam={setTeam} />}
+      {activeTab === 'team' && canSeeTab('team') && <TeamTab team={team} setTeam={setTeam} />}
 
       {/* Share Modal */}
       {showShare && (

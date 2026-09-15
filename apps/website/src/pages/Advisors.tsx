@@ -45,7 +45,7 @@ export function Advisors() {
         <title>Find a Local Advisor | MPB Health</title>
         <meta
           name="description"
-          content="Connect with licensed MPB Health advisors in your state. Get personalized guidance on health sharing plans and enrollment."
+          content="Connect with licensed MPB Health advisors in your state. Get personalized guidance on health sharing memberships and enrollment."
         />
       </Helmet>
 

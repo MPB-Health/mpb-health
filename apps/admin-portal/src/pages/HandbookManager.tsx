@@ -15,6 +15,9 @@ import {
   ArrowDown,
   FileText,
   ExternalLink,
+  Upload,
+  Copy,
+  Check,
 } from 'lucide-react';
 import {
   handbookAdminService,
@@ -62,11 +65,17 @@ export default function HandbookManager() {
   const [form, setForm] = useState<HandbookCreateInput>(EMPTY_FORM);
   const [featuresText, setFeaturesText] = useState('');
   const [saving, setSaving] = useState(false);
+  const [uploadingPdf, setUploadingPdf] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => { loadData(); }, []);
 
+  const publicLink = (slug: string) => `https://mpb.health/3d-flip-book/${slug}`;
+
   const loadData = async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const [handbooksData, statsData] = await Promise.all([
         handbookAdminService.getAll(),
@@ -74,8 +83,10 @@ export default function HandbookManager() {
       ]);
       setHandbooks(handbooksData);
       setStats({ total: statsData.total, active: statsData.active, inactive: statsData.total - statsData.active });
-    } catch {
-      toast.error('Failed to load handbooks');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to load handbooks';
+      setLoadError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -148,6 +159,32 @@ export default function HandbookManager() {
     setShowModal(true);
   };
 
+  const copyLink = async (slug: string, id: string) => {
+    try {
+      await navigator.clipboard.writeText(publicLink(slug));
+      setCopiedId(id);
+      toast.success('Public link copied');
+      window.setTimeout(() => setCopiedId(null), 2000);
+    } catch {
+      toast.error('Could not copy link');
+    }
+  };
+
+  const handlePdfUpload = async (file: File | undefined) => {
+    if (!file) return;
+    setUploadingPdf(true);
+    try {
+      const url = await handbookAdminService.uploadPdf(file, form.slug || form.name);
+      setForm((prev) => ({ ...prev, pdf_path: url }));
+      toast.success('PDF uploaded. Save to publish it on the handbook link.');
+    } catch (error) {
+      console.error('Handbook PDF upload failed', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to upload PDF');
+    } finally {
+      setUploadingPdf(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!form.name?.trim()) { toast.error('Name is required'); return; }
     if (!form.slug?.trim()) { toast.error('Slug is required'); return; }
@@ -159,41 +196,31 @@ export default function HandbookManager() {
         .map((f) => f.trim())
         .filter(Boolean);
 
+      const payload = {
+        slug: form.slug.trim(),
+        name: form.name.trim(),
+        description: form.description?.trim() || null,
+        pdf_path: form.pdf_path.trim(),
+        flipbook_url: form.flipbook_url?.trim() || null,
+        plan_type: form.plan_type,
+        color: form.color?.trim() || '',
+        icon: form.icon?.trim() || '',
+        features,
+        is_active: form.is_active,
+        sort_order: form.sort_order,
+      };
+
       if (editingHandbook) {
-        await handbookAdminService.update(editingHandbook.id, {
-          slug: form.slug.trim(),
-          name: form.name.trim(),
-          description: form.description?.trim() || null,
-          pdf_path: form.pdf_path.trim(),
-          flipbook_url: form.flipbook_url?.trim() || null,
-          plan_type: form.plan_type,
-          color: form.color?.trim() || '',
-          icon: form.icon?.trim() || '',
-          features,
-          is_active: form.is_active,
-          sort_order: form.sort_order,
-        });
-        toast.success('Updated!');
+        await handbookAdminService.update(editingHandbook.id, payload);
+        toast.success('Updated! The public handbook link is unchanged.');
       } else {
-        await handbookAdminService.create({
-          slug: form.slug.trim(),
-          name: form.name.trim(),
-          description: form.description?.trim() || null,
-          pdf_path: form.pdf_path.trim(),
-          flipbook_url: form.flipbook_url?.trim() || null,
-          plan_type: form.plan_type,
-          color: form.color?.trim() || '',
-          icon: form.icon?.trim() || '',
-          features,
-          is_active: form.is_active,
-          sort_order: form.sort_order,
-        });
-        toast.success('Created!');
+        await handbookAdminService.upsertBySlug(payload);
+        toast.success('Saved! Members keep /3d-flip-book/' + payload.slug);
       }
       setShowModal(false);
       loadData();
-    } catch {
-      toast.error('Failed to save');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to save');
     } finally {
       setSaving(false);
     }
@@ -214,7 +241,7 @@ export default function HandbookManager() {
         <div>
           <h1 className="text-2xl font-bold text-th-text-primary">Handbook Manager</h1>
           <p className="text-th-text-tertiary text-sm mt-1">
-            Manage plan handbooks, their details, and display order
+            Same list as the website admin. Upload a new PDF on an existing slug to keep the public link.
           </p>
         </div>
         <button type="button" onClick={openCreate} className="flex items-center space-x-2 px-4 py-2.5 bg-th-accent-600 text-white rounded-xl font-medium hover:bg-th-accent-700 transition-colors">
@@ -241,8 +268,13 @@ export default function HandbookManager() {
       </div>
 
       <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-3 text-sm text-blue-800 dark:text-blue-300">
-        Handbooks are displayed to members on the website. Toggle active status, reorder, and configure plan details.
+        Members open <span className="font-mono">mpb.health/3d-flip-book/&lt;slug&gt;</span>. Replace the PDF here — do not change the slug if you want that link to stay the same.
       </div>
+      {loadError && (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300">
+          {loadError}
+        </div>
+      )}
 
       {/* Handbook List */}
       <div className="bg-surface-primary rounded-xl border border-th-border">
@@ -296,6 +328,9 @@ export default function HandbookManager() {
                     )}
                   </div>
                   <div className="flex items-center gap-3 mt-0.5">
+                    <p className="text-xs text-th-text-tertiary truncate font-mono">
+                      /3d-flip-book/{handbook.slug}
+                    </p>
                     {handbook.description && <p className="text-xs text-th-text-tertiary truncate">{handbook.description}</p>}
                     <div className="flex items-center gap-2 flex-shrink-0">
                       {handbook.pdf_path && (
@@ -315,6 +350,12 @@ export default function HandbookManager() {
                 </div>
 
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                  <button type="button" onClick={() => copyLink(handbook.slug, handbook.id)} title="Copy public link" className="p-1.5 rounded-lg text-th-text-tertiary hover:bg-surface-tertiary transition-colors">
+                    {copiedId === handbook.id ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                  </button>
+                  <a href={publicLink(handbook.slug)} target="_blank" rel="noopener noreferrer" title="Open public handbook" className="p-1.5 rounded-lg text-th-text-tertiary hover:bg-surface-tertiary transition-colors">
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
                   <button type="button" onClick={() => handleToggleActive(handbook)} title={handbook.is_active ? 'Deactivate' : 'Activate'} className="p-1.5 rounded-lg text-th-text-tertiary hover:bg-surface-tertiary transition-colors">
                     {handbook.is_active ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                   </button>
@@ -347,7 +388,7 @@ export default function HandbookManager() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-th-text-secondary mb-1">Slug *</label>
-                  <input type="text" value={form.slug || ''} onChange={(e) => setForm((p) => ({ ...p, slug: e.target.value }))} placeholder="e.g. individual-plan" className="w-full px-3 py-2.5 bg-surface-primary border border-th-border rounded-lg text-th-text-primary font-mono placeholder-th-text-tertiary focus:outline-none focus:ring-2 focus:ring-th-accent-500" />
+                  <input type="text" value={form.slug || ''} onChange={(e) => setForm((p) => ({ ...p, slug: e.target.value }))} placeholder="e.g. careplus" disabled={!isNew} className="w-full px-3 py-2.5 bg-surface-primary border border-th-border rounded-lg text-th-text-primary font-mono placeholder-th-text-tertiary focus:outline-none focus:ring-2 focus:ring-th-accent-500 disabled:opacity-70" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-th-text-secondary mb-1">Name *</label>
@@ -359,8 +400,29 @@ export default function HandbookManager() {
                 <textarea rows={2} value={form.description || ''} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} placeholder="Brief description of the handbook" className="w-full px-3 py-2.5 bg-surface-primary border border-th-border rounded-lg text-th-text-primary placeholder-th-text-tertiary focus:outline-none focus:ring-2 focus:ring-th-accent-500" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-th-text-secondary mb-1">PDF Path *</label>
-                <input type="text" value={form.pdf_path || ''} onChange={(e) => setForm((p) => ({ ...p, pdf_path: e.target.value }))} placeholder="/handbooks/plan-handbook.pdf" className="w-full px-3 py-2.5 bg-surface-primary border border-th-border rounded-lg text-th-text-primary font-mono placeholder-th-text-tertiary focus:outline-none focus:ring-2 focus:ring-th-accent-500" />
+                <label className="block text-sm font-medium text-th-text-secondary mb-1">Handbook PDF *</label>
+                <div className="flex flex-col gap-2">
+                  <label className="inline-flex w-fit items-center gap-2 px-3 py-2 rounded-lg border border-th-border text-sm text-th-text-secondary hover:bg-surface-tertiary cursor-pointer">
+                    {uploadingPdf ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                    {uploadingPdf ? 'Uploading…' : 'Upload PDF'}
+                    <input
+                      type="file"
+                      accept="application/pdf,.pdf"
+                      className="sr-only"
+                      disabled={uploadingPdf || saving}
+                      onChange={(e) => {
+                        void handlePdfUpload(e.target.files?.[0]);
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
+                  <input type="text" value={form.pdf_path || ''} onChange={(e) => setForm((p) => ({ ...p, pdf_path: e.target.value }))} placeholder="Upload a PDF or paste a URL" className="w-full px-3 py-2.5 bg-surface-primary border border-th-border rounded-lg text-th-text-primary font-mono placeholder-th-text-tertiary focus:outline-none focus:ring-2 focus:ring-th-accent-500" />
+                  <p className="text-xs text-th-text-tertiary">
+                    Keep the slug the same to replace the file behind{' '}
+                    {form.slug ? `/3d-flip-book/${form.slug}` : '/3d-flip-book/<slug>'}.
+                    Drive links work on the public page; upload to storage for the best in-document link experience.
+                  </p>
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-th-text-secondary mb-1">Flipbook URL</label>

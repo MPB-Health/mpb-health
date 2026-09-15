@@ -171,8 +171,8 @@ export default function RateCalculator() {
             <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white rounded-xl p-4 border border-gray-200 shadow-sm">
               <div className="text-center sm:text-left">
                 <p className="text-sm text-gray-600">
-                  Showing rates for <span className="font-semibold">{allEstimates.inputSummary.householdType}</span> coverage,{' '}
-                  <span className="font-semibold">{allEstimates.inputSummary.pricingAge}</span> (oldest covered age)
+                  Showing rates for <span className="font-semibold">{allEstimates.inputSummary.householdType}</span> membership,{' '}
+                  <span className="font-semibold">{allEstimates.inputSummary.pricingAge}</span> (oldest member age)
                   {allEstimates.inputSummary.primaryAge !== allEstimates.inputSummary.pricingAge && (
                     <> — primary <span className="font-semibold">{allEstimates.inputSummary.primaryAge}</span></>
                   )}
@@ -367,7 +367,7 @@ export default function RateCalculator() {
                       Oldest child/dependent age *
                     </Label>
                     <p className="text-xs text-gray-500">
-                      Quote uses the oldest age among everyone covered, including children.
+                      Quote uses the oldest age among everyone on the membership, including children.
                     </p>
                     <Input
                       id="oldestDependentAge"

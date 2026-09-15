@@ -52,7 +52,7 @@ export function SimpleComparisonView({ plans, onClose }: SimpleComparisonViewPro
       <div className="bg-white rounded-xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         <div className="flex items-center justify-between p-6 border-b border-neutral-200">
           <h2 className="text-2xl font-bold text-neutral-900">
-            Compare Plans
+            Compare Memberships
           </h2>
           <button
             onClick={onClose}

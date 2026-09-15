@@ -22,7 +22,7 @@ export function estimateBusinessMonthly(input: BusinessRateCalculatorInput): Bus
 
     const lineItems = [
       {
-        description: `${input.selectedPlan === 'mec-essentials' ? 'MEC+ Essentials' : 'Secure HSA'} - Per Membership`,
+        description: `${input.selectedPlan === 'mec-essentials' ? 'HSA Essentials' : 'Secure HSA'} - Per Membership`,
         amount: perEmployeeCost
       },
       ...rateResult.lineItems.slice(1).map(item => ({
@@ -43,7 +43,7 @@ export function estimateBusinessMonthly(input: BusinessRateCalculatorInput): Bus
       annualBusinessCost,
       lineItems,
       disclaimer: input.selectedPlan === 'mec-essentials'
-        ? 'MEC+ Essentials satisfies ACA employer mandate for applicable large employers. Estimates are informational. Final costs determined at enrollment.'
+        ? 'HSA Essentials satisfies ACA employer mandate for applicable large employers. Estimates are informational. Final costs determined at enrollment.'
         : 'Secure HSA is HSA-compatible with potential tax advantages. 1099 or business ID required. Estimates are informational. Final costs determined at enrollment.'
     };
 

@@ -167,7 +167,7 @@ export const HealthcareFeaturesSection: React.FC = () => {
             <div className="mt-8 p-6 rounded-xl bg-gradient-to-br from-blue-50 to-cyan-50 border border-blue-100">
               <p className="text-sm text-gray-700 leading-relaxed">
                 <span className="font-semibold text-gray-900">Need help choosing?</span>{' '}
-                Our licensed benefit specialists can guide you through each feature and help you find the perfect coverage for your needs.
+                Our licensed benefit specialists can guide you through each feature and help you find the perfect membership for your needs.
               </p>
               <Link
                 to="/contact"

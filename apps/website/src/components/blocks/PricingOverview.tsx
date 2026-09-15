@@ -145,7 +145,7 @@ const PricingOverview = () => {
         <div className="mt-16 text-center">
           <div className="bg-slate-50 rounded-2xl p-8 max-w-4xl mx-auto">
             <h3 className="text-lg font-semibold text-slate-900 mb-4">
-              All Plans Include
+              All Memberships Include
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm text-slate-600">
               <div className="flex items-center justify-center space-x-2">

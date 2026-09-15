@@ -85,6 +85,114 @@ export interface LogEntry {
   updatedAt?: string;
 }
 
+/** @deprecated Acelyn CRM paste/screenshot gates retired — kept for call-site compatibility. */
+export const CRM_ACTIVITY_PROOF_REP = 'Acelyn Calderon';
+
+/** Reasons that previously required a CRM follow-up screenshot for the proof-gated rep. */
+export const CRM_FOLLOWUP_PROOF_REASONS = [
+  'Sharing Requests',
+  'Rx Request',
+  'Labs Request',
+  'Imaging Request',
+  'Preventive/Billing',
+  'July Billing Issue',
+] as const;
+
+/** CRM notes-paste gate — disabled (no longer required for any rep). */
+export function requiresCrmActivityProof(_teamMemberName: string): boolean {
+  return false;
+}
+
+/** CRM follow-up screenshot gate — disabled with activity proof. */
+export function requiresCrmFollowupScreenshot(_reason: string): boolean {
+  return false;
+}
+
+const KEYBOARD_SMASH =
+  /(?:asdf|qwer|zxcv|hjkl|uiop|bnm,|1234|abcd|xxxx|zzzz|aaaa|testtest|lorem|asdfgh|qwerty)/i;
+
+/**
+ * Client-only quality gate for pasted CRM notes.
+ * Rejects empty / too-short / repeated / keyboard-smash gibberish.
+ * Does not persist the paste — used only to unlock Add/Save.
+ */
+export function validateCrmNotesPaste(
+  raw: string,
+): { ok: true } | { ok: false; error: string } {
+  const text = raw.replace(/\s+/g, ' ').trim();
+  if (text.length < 40) {
+    return {
+      ok: false,
+      error: 'Paste a fuller CRM note (at least ~40 characters of real content).',
+    };
+  }
+
+  const words = text
+    .toLowerCase()
+    .split(/[^a-z0-9']+/)
+    .filter((w) => w.length >= 2);
+  if (words.length < 6) {
+    return {
+      ok: false,
+      error: 'Paste a coherent CRM note with at least 6 real words.',
+    };
+  }
+
+  const uniqueWords = new Set(words);
+  if (uniqueWords.size < 4) {
+    return {
+      ok: false,
+      error: 'Notes look repetitive — paste unique CRM note content, not the same words over and over.',
+    };
+  }
+  if (uniqueWords.size / words.length < 0.35) {
+    return {
+      ok: false,
+      error: 'Notes look copy-pasted gibberish or filler. Paste the actual unique CRM note.',
+    };
+  }
+
+  if (KEYBOARD_SMASH.test(text.replace(/\s/g, ''))) {
+    return {
+      ok: false,
+      error: 'That looks like keyboard mash / placeholder text. Paste real CRM notes.',
+    };
+  }
+
+  if (/(.)\1{5,}/.test(text.replace(/\s/g, ''))) {
+    return {
+      ok: false,
+      error: 'Notes contain long repeated characters. Paste real CRM notes.',
+    };
+  }
+
+  const letters = text.toLowerCase().replace(/[^a-z]/g, '');
+  if (letters.length < 28) {
+    return {
+      ok: false,
+      error: 'Paste more actual written CRM note text (not just numbers/symbols).',
+    };
+  }
+
+  const vowels = (letters.match(/[aeiou]/g) ?? []).length;
+  if (vowels / letters.length < 0.22) {
+    return {
+      ok: false,
+      error: 'That does not look like coherent English notes. Paste the real CRM note.',
+    };
+  }
+
+  const wordsWithoutVowels = words.filter((w) => !/[aeiou]/.test(w) && w.length >= 4).length;
+  if (wordsWithoutVowels / words.length > 0.45) {
+    return {
+      ok: false,
+      error: 'Too many unreadable words. Paste coherent CRM notes from the member record.',
+    };
+  }
+
+  return { ok: true };
+}
+
 export interface EscalationItem {
   id: string;
   memberName: string;

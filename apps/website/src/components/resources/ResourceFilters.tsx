@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, X, Filter, ChevronDown } from 'lucide-react';
 import { ResourceType, TargetAudience, SortOption, ResourceFilters as IResourceFilters, ResourceTopic } from '../../lib/supabase';
-import { Select } from '../ui/Select';
-import { Badge } from '../ui/Badge';
 
 interface ResourceFiltersProps {
   filters: IResourceFilters;
@@ -93,187 +91,167 @@ export const ResourceFilters: React.FC<ResourceFiltersProps> = ({
     filters.topics.length > 0;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col lg:flex-row gap-4">
-        <div className="flex-1">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-neutral-400" />
-            <input
-              type="text"
-              placeholder="Search resources..."
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-            />
-          </div>
+    <div>
+      <div className="rl-filters__row">
+        <div className="rl-filters__search">
+          <Search aria-hidden="true" />
+          <input
+            type="text"
+            className="rl-filters__input"
+            placeholder="Search resources..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+          />
         </div>
 
-        <div className="flex flex-wrap gap-3">
-          <div className="relative">
-            <button
-              onClick={() => setShowTypeDropdown(!showTypeDropdown)}
-              className="px-4 py-3 border border-neutral-300 rounded-lg bg-white hover:bg-neutral-50 transition-colors flex items-center gap-2 min-w-[140px]"
-            >
-              <Filter className="h-4 w-4 text-neutral-600" />
-              <span className="text-sm font-medium text-neutral-700">
-                {filters.types.length > 0 ? `Type (${filters.types.length})` : 'All Types'}
-              </span>
-              <ChevronDown className="h-4 w-4 text-neutral-400 ml-auto" />
-            </button>
-            {showTypeDropdown && (
-              <div className="absolute top-full mt-2 w-64 bg-white border border-neutral-200 rounded-lg shadow-lg z-20">
-                <div className="p-2 space-y-1">
-                  {RESOURCE_TYPES.map((type) => (
-                    <label
-                      key={type.value}
-                      className="flex items-center gap-2 px-3 py-2 hover:bg-neutral-50 rounded cursor-pointer"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={filters.types.includes(type.value)}
-                        onChange={() => toggleType(type.value)}
-                        className="rounded border-neutral-300 text-primary focus:ring-primary"
-                      />
-                      <span className="text-sm text-neutral-700">{type.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+        <div className="rl-filters__dd">
+          <button
+            type="button"
+            className="rl-filters__btn"
+            onClick={() => setShowTypeDropdown(!showTypeDropdown)}
+          >
+            <Filter aria-hidden="true" />
+            {filters.types.length > 0 ? `Type (${filters.types.length})` : 'All Types'}
+            <ChevronDown aria-hidden="true" />
+          </button>
+          {showTypeDropdown && (
+            <div className="rl-filters__menu">
+              {RESOURCE_TYPES.map((type) => (
+                <label key={type.value} className="rl-filters__option">
+                  <input
+                    type="checkbox"
+                    checked={filters.types.includes(type.value)}
+                    onChange={() => toggleType(type.value)}
+                  />
+                  {type.label}
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
 
-          <div className="relative">
-            <button
-              onClick={() => setShowAudienceDropdown(!showAudienceDropdown)}
-              className="px-4 py-3 border border-neutral-300 rounded-lg bg-white hover:bg-neutral-50 transition-colors flex items-center gap-2 min-w-[160px]"
-            >
-              <Filter className="h-4 w-4 text-neutral-600" />
-              <span className="text-sm font-medium text-neutral-700">
-                {filters.audiences.length > 0
-                  ? `Audience (${filters.audiences.length})`
-                  : 'All Audiences'}
-              </span>
-              <ChevronDown className="h-4 w-4 text-neutral-400 ml-auto" />
-            </button>
-            {showAudienceDropdown && (
-              <div className="absolute top-full mt-2 w-64 bg-white border border-neutral-200 rounded-lg shadow-lg z-20">
-                <div className="p-2 space-y-1">
-                  {AUDIENCES.map((audience) => (
-                    <label
-                      key={audience.value}
-                      className="flex items-center gap-2 px-3 py-2 hover:bg-neutral-50 rounded cursor-pointer"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={filters.audiences.includes(audience.value)}
-                        onChange={() => toggleAudience(audience.value)}
-                        className="rounded border-neutral-300 text-primary focus:ring-primary"
-                      />
-                      <span className="text-sm text-neutral-700">{audience.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+        <div className="rl-filters__dd">
+          <button
+            type="button"
+            className="rl-filters__btn"
+            onClick={() => setShowAudienceDropdown(!showAudienceDropdown)}
+          >
+            <Filter aria-hidden="true" />
+            {filters.audiences.length > 0
+              ? `Audience (${filters.audiences.length})`
+              : 'All Audiences'}
+            <ChevronDown aria-hidden="true" />
+          </button>
+          {showAudienceDropdown && (
+            <div className="rl-filters__menu">
+              {AUDIENCES.map((audience) => (
+                <label key={audience.value} className="rl-filters__option">
+                  <input
+                    type="checkbox"
+                    checked={filters.audiences.includes(audience.value)}
+                    onChange={() => toggleAudience(audience.value)}
+                  />
+                  {audience.label}
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
 
-          <div className="relative">
-            <button
-              onClick={() => setShowTopicDropdown(!showTopicDropdown)}
-              className="px-4 py-3 border border-neutral-300 rounded-lg bg-white hover:bg-neutral-50 transition-colors flex items-center gap-2 min-w-[140px]"
-            >
-              <Filter className="h-4 w-4 text-neutral-600" />
-              <span className="text-sm font-medium text-neutral-700">
-                {filters.topics.length > 0 ? `Topics (${filters.topics.length})` : 'All Topics'}
-              </span>
-              <ChevronDown className="h-4 w-4 text-neutral-400 ml-auto" />
-            </button>
-            {showTopicDropdown && (
-              <div className="absolute top-full mt-2 w-64 bg-white border border-neutral-200 rounded-lg shadow-lg z-20 max-h-96 overflow-y-auto">
-                <div className="p-2 space-y-1">
-                  {topics.map((topic) => (
-                    <label
-                      key={topic.slug}
-                      className="flex items-center gap-2 px-3 py-2 hover:bg-neutral-50 rounded cursor-pointer"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={filters.topics.includes(topic.name)}
-                        onChange={() => toggleTopic(topic.name)}
-                        className="rounded border-neutral-300 text-primary focus:ring-primary"
-                      />
-                      <span className="text-sm text-neutral-700">{topic.name}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+        <div className="rl-filters__dd">
+          <button
+            type="button"
+            className="rl-filters__btn"
+            onClick={() => setShowTopicDropdown(!showTopicDropdown)}
+          >
+            <Filter aria-hidden="true" />
+            {filters.topics.length > 0 ? `Topics (${filters.topics.length})` : 'All Topics'}
+            <ChevronDown aria-hidden="true" />
+          </button>
+          {showTopicDropdown && (
+            <div className="rl-filters__menu">
+              {topics.map((topic) => (
+                <label key={topic.slug} className="rl-filters__option">
+                  <input
+                    type="checkbox"
+                    checked={filters.topics.includes(topic.name)}
+                    onChange={() => toggleTopic(topic.name)}
+                  />
+                  {topic.name}
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
 
-          <Select
+        <div className="rl-filters__select-wrap">
+          <select
+            className="rl-filters__select"
             value={filters.sortBy}
             onChange={(e) =>
               onFiltersChange({ ...filters, sortBy: e.target.value as SortOption })
             }
-            className="min-w-[160px]"
           >
             {SORT_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
             ))}
-          </Select>
+          </select>
+          <ChevronDown aria-hidden="true" />
         </div>
       </div>
 
       {hasActiveFilters && (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm text-neutral-600 font-medium">Active Filters:</span>
+        <div className="rl-filters__chips">
+          <span className="rl-filters__chips-label">Active Filters:</span>
           {filters.types.map((type) => (
-            <Badge key={type} variant="default" className="flex items-center gap-1">
+            <span key={type} className="rl-chip">
               {type}
               <button
+                type="button"
+                className="rl-chip__x"
                 onClick={() => toggleType(type)}
-                className="ml-1 hover:bg-neutral-300 rounded-full p-0.5"
+                aria-label={`Remove ${type} filter`}
               >
-                <X className="h-3 w-3" />
+                <X aria-hidden="true" />
               </button>
-            </Badge>
+            </span>
           ))}
           {filters.audiences.map((audience) => (
-            <Badge key={audience} variant="default" className="flex items-center gap-1">
+            <span key={audience} className="rl-chip">
               {audience}
               <button
+                type="button"
+                className="rl-chip__x"
                 onClick={() => toggleAudience(audience)}
-                className="ml-1 hover:bg-neutral-300 rounded-full p-0.5"
+                aria-label={`Remove ${audience} filter`}
               >
-                <X className="h-3 w-3" />
+                <X aria-hidden="true" />
               </button>
-            </Badge>
+            </span>
           ))}
           {filters.topics.map((topic) => (
-            <Badge key={topic} variant="default" className="flex items-center gap-1">
+            <span key={topic} className="rl-chip">
               {topic}
               <button
+                type="button"
+                className="rl-chip__x"
                 onClick={() => toggleTopic(topic)}
-                className="ml-1 hover:bg-neutral-300 rounded-full p-0.5"
+                aria-label={`Remove ${topic} filter`}
               >
-                <X className="h-3 w-3" />
+                <X aria-hidden="true" />
               </button>
-            </Badge>
+            </span>
           ))}
-          <button
-            onClick={clearAllFilters}
-            className="text-sm text-primary hover:text-primary/80 font-medium ml-2"
-          >
+          <button type="button" className="rl-filters__clear-all" onClick={clearAllFilters}>
             Clear All
           </button>
         </div>
       )}
 
-      <div className="text-sm text-neutral-600">
-        Showing <span className="font-semibold text-neutral-900">{totalCount}</span>{' '}
-        {totalCount === 1 ? 'resource' : 'resources'}
+      <div className="rl-filters__count">
+        Showing <strong>{totalCount}</strong> {totalCount === 1 ? 'resource' : 'resources'}
       </div>
     </div>
   );

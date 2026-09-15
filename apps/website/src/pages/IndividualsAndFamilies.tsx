@@ -25,18 +25,18 @@ const IndividualsAndFamilies = () => {
 
   const directSchema = generateHealthSharePlanSchema(
     'Direct',
-    'Enhanced health sharing plan with direct provider payment and comprehensive family coverage options.',
+    'Enhanced health sharing membership with direct provider payment and comprehensive family membership options.',
     201,
     1006,
-    ['Direct Provider Payment', 'Lower IUA Options', 'Family Coverage', 'Specialist Access', 'Comprehensive Benefits']
+    ['Direct Provider Payment', 'Lower IUA Options', 'Family Memberships', 'Specialist Access', 'Comprehensive Benefits']
   );
 
   const secureHSASchema = generateHealthSharePlanSchema(
     'Secure HSA',
-    'HSA-compatible health sharing plan for tax-advantaged healthcare savings combined with medical cost sharing.',
+    'HSA-compatible health sharing membership for tax-advantaged healthcare savings combined with medical cost sharing.',
     239,
     1070,
-    ['HSA Compatible', 'Tax Advantages', 'Medical Cost Sharing', 'Family Plans', 'Flexible IUA Options']
+    ['HSA Compatible', 'Tax Advantages', 'Medical Cost Sharing', 'Family Memberships', 'Flexible IUA Options']
   );
 
   const orgSchema = generateOrganizationSchema();
@@ -82,10 +82,10 @@ const IndividualsAndFamilies = () => {
                 <GitCompare className="w-8 h-8 text-white" />
               </div>
               <h2 className="text-3xl md:text-4xl font-bold text-primary-900">
-                Need Help Comparing Plans?
+                Need Help Comparing Memberships?
               </h2>
               <p className="text-lg text-neutral-600 max-w-2xl mx-auto">
-                View all plans side-by-side to find the perfect fit for your family's healthcare needs.
+                View all memberships side-by-side to find the perfect fit for your family's healthcare needs.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
                 <Link
@@ -93,7 +93,7 @@ const IndividualsAndFamilies = () => {
                   className="inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-primary-600 to-primary-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl hover:from-primary-700 hover:to-primary-800 transition-all duration-300 transform hover:scale-105"
                 >
                   <GitCompare className="w-5 h-5 mr-2" />
-                  Compare Plans Online
+                  Compare Memberships Online
                 </Link>
                 <a
                   href="/docs/plan-comparison-guide.html"
@@ -112,8 +112,8 @@ const IndividualsAndFamilies = () => {
 
       {/* Embedded Plan Comparison Guide */}
       <PlanComparisonGuide 
-        title="Compare All Plans Side-by-Side"
-        subtitle="See exactly what each plan offers to find the perfect fit for your family"
+        title="Compare All Memberships Side-by-Side"
+        subtitle="See exactly what each membership offers to find the perfect fit for your family"
       />
 
       {/* Features of the Plan Section */}

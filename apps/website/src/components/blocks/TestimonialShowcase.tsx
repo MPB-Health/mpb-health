@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Star, Quote, ChevronLeft, ChevronRight, Play, MapPin, Users, Heart, TrendingUp, Award, ArrowRight } from 'lucide-react';
-import { Badge } from '../ui/Badge';
 
 interface Testimonial {
   id: number;
@@ -182,217 +181,145 @@ const TestimonialShowcase: React.FC = () => {
 
   return (
     <>
-      <section className="relative pt-20 pb-10 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-cyan-50/50" />
-        <div className="absolute inset-0 opacity-30">
-          <img
-            src="https://images.pexels.com/photos/3184325/pexels-photo-3184325.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2"
-            alt="Member Stories"
-            className="w-full h-full object-cover"
-          />
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-r from-white/95 via-white/90 to-white/80" />
+      {/* Featured testimonial carousel */}
+      <section className="hiw-section" aria-label="Member testimonials">
+        <div className="hiw-inner">
+          <div className="ms-feature">
+            <div className="ms-feature__media">
+              {showVideo && current.videoUrl ? (
+                <video controls autoPlay playsInline>
+                  <source src={current.videoUrl} type="video/mp4" />
+                </video>
+              ) : (
+                <>
+                  <img src={current.imageUrl} alt={current.name} loading="lazy" decoding="async" />
+                  <div className="ms-feature__scrim" />
 
-        <div className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-          <div className="max-w-2xl">
-            <Badge className="mb-4 bg-blue-100 text-blue-700 border-0">
-              <Heart className="w-3 h-3 mr-1" />
-              Member Stories
-            </Badge>
+                  {current.videoUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setShowVideo(true)}
+                      className="ms-feature__play"
+                      aria-label={`Play ${current.name} video`}
+                    >
+                      <span className="ms-feature__play-circle">
+                        <Play aria-hidden="true" />
+                      </span>
+                    </button>
+                  )}
 
-            <h1 className="text-4xl sm:text-5xl font-bold mb-4 text-gray-900 text-balance">
-              Real Families. Real Savings.
-            </h1>
+                  <div className="ms-feature__caption">
+                    <div className="ms-feature__stars" aria-label={`${current.rating} out of 5 stars`}>
+                      {[...Array(current.rating)].map((_, i) => (
+                        <Star key={i} aria-hidden="true" />
+                      ))}
+                    </div>
+                    <h3 className="ms-feature__name">{current.name}</h3>
+                    <div className="ms-feature__badges">
+                      <span className="ms-badge--glass">
+                        <MapPin aria-hidden="true" />
+                        {current.location}
+                      </span>
+                      <span className="ms-badge--glass">
+                        <Users aria-hidden="true" />
+                        {current.familySize}
+                      </span>
+                      <span className="ms-badge--glass">
+                        <Award aria-hidden="true" />
+                        Since {current.memberSince}
+                      </span>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
 
-            <p className="text-lg text-gray-600 mb-6 leading-relaxed">
-              Hear directly from members whose lives have been changed by community health sharing.
-            </p>
+            <div className="ms-feature__body">
+              <div className="ms-feature__tags">
+                <span className="ms-badge--savings">{current.savings} Saved</span>
+                {current.condition && <span className="ms-badge--topic">{current.condition}</span>}
+              </div>
 
-            <div className="inline-flex items-center gap-6 text-sm text-gray-600">
-              <span className="flex items-center gap-1">
-                <Star className="w-4 h-4 text-yellow-500 fill-current" />
-                4.9/5 Rating
-              </span>
-              <span className="flex items-center gap-1">
-                <TrendingUp className="w-4 h-4 text-green-600" />
-                $3,400 Avg. Savings
-              </span>
-              <span className="flex items-center gap-1">
-                <Users className="w-4 h-4 text-blue-600" />
-                12K+ Members
-              </span>
+              <div className="ms-feature__quote-wrap">
+                <Quote className="ms-feature__quote-icon" aria-hidden="true" />
+                <p className="ms-feature__quote">"{current.quote}"</p>
+              </div>
+
+              <h4 className="ms-feature__story-title">
+                <span className="ms-feature__story-icon">
+                  <Heart aria-hidden="true" />
+                </span>
+                Their Story
+              </h4>
+              <p className="ms-feature__story">{current.story}</p>
+
+              <div className="ms-feature__nav">
+                <button type="button" onClick={prevTestimonial} className="ms-feature__btn">
+                  <ChevronLeft aria-hidden="true" />
+                  <span>Previous</span>
+                </button>
+
+                <div className="ms-feature__dots">
+                  {testimonials.map((_, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => {
+                        setActiveTestimonial(index);
+                        setShowVideo(false);
+                      }}
+                      className={`ms-feature__dot${index === activeTestimonial ? ' ms-feature__dot--active' : ''}`}
+                      aria-label={`Go to testimonial ${index + 1}`}
+                    />
+                  ))}
+                </div>
+
+                <button type="button" onClick={nextTestimonial} className="ms-feature__btn">
+                  <span>Next</span>
+                  <ChevronRight aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Stats trio */}
+          <div className="ms-stats-grid">
+            <div className="ms-stat-card">
+              <div className="ms-stat-card__icon">
+                <Star aria-hidden="true" style={{ fill: 'currentColor' }} />
+              </div>
+              <div className="ms-stat-card__value">4.9/5</div>
+              <div className="ms-stat-card__caption">Average Member Rating</div>
+            </div>
+            <div className="ms-stat-card">
+              <div className="ms-stat-card__icon ms-stat-card__icon--green">
+                <TrendingUp aria-hidden="true" />
+              </div>
+              <div className="ms-stat-card__value">$3,400</div>
+              <div className="ms-stat-card__caption">Average Annual Savings</div>
+            </div>
+            <div className="ms-stat-card">
+              <div className="ms-stat-card__icon">
+                <Heart aria-hidden="true" style={{ fill: 'currentColor' }} />
+              </div>
+              <div className="ms-stat-card__value">12,000+</div>
+              <div className="ms-stat-card__caption">Verified Reviews</div>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="py-24 bg-gradient-to-b from-white to-gray-50">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-200 hover:shadow-3xl transition-all duration-500">
-            <div className="grid lg:grid-cols-2">
-              <div className="relative bg-gradient-to-br from-blue-100 to-cyan-100 lg:min-h-[700px]">
-                {showVideo && current.videoUrl ? (
-                  <video
-                    className="absolute inset-0 w-full h-full object-cover"
-                    controls
-                    autoPlay
-                    playsInline
-                  >
-                    <source src={current.videoUrl} type="video/mp4" />
-                  </video>
-                ) : (
-                  <>
-                    <img
-                      src={current.imageUrl}
-                      alt={current.name}
-                      className="absolute inset-0 w-full h-full object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-gray-900/40 to-transparent" />
-
-                    {current.videoUrl && (
-                      <button
-                        onClick={() => setShowVideo(true)}
-                        className="absolute inset-0 flex items-center justify-center group"
-                      >
-                        <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-2xl group-hover:scale-110 transition-all duration-300">
-                          <Play className="w-10 h-10 text-blue-600 ml-1" />
-                        </div>
-                      </button>
-                    )}
-
-                    <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
-                      <div className="flex items-center gap-1 mb-3">
-                        {[...Array(current.rating)].map((_, i) => (
-                          <Star key={i} className="w-5 h-5 fill-current text-yellow-400" />
-                        ))}
-                      </div>
-                      <h3 className="text-3xl font-bold mb-3">{current.name}</h3>
-                      <div className="flex flex-wrap items-center gap-4 text-sm">
-                        <Badge className="bg-white/20 text-white border-white/30">
-                          <MapPin className="w-3 h-3 mr-1" />
-                          {current.location}
-                        </Badge>
-                        <Badge className="bg-white/20 text-white border-white/30">
-                          <Users className="w-3 h-3 mr-1" />
-                          {current.familySize}
-                        </Badge>
-                        <Badge className="bg-white/20 text-white border-white/30">
-                          <Award className="w-3 h-3 mr-1" />
-                          Since {current.memberSince}
-                        </Badge>
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-
-              <div className="p-8 lg:p-12 flex flex-col">
-                <div className="flex-1">
-                  <div className="flex flex-wrap gap-3 mb-6">
-                    <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0 px-4 py-2 text-lg font-bold shadow-lg">
-                      {current.savings} Saved
-                    </Badge>
-                    {current.condition && (
-                      <Badge className="bg-blue-100 text-blue-700 border-blue-200 px-4 py-2">
-                        {current.condition}
-                      </Badge>
-                    )}
-                  </div>
-
-                  <div className="relative mb-8">
-                    <Quote className="absolute -top-4 -left-2 w-12 h-12 text-blue-200" />
-                    <p className="text-2xl font-medium text-gray-900 leading-relaxed pl-8">
-                      "{current.quote}"
-                    </p>
-                  </div>
-
-                  <div className="mb-8">
-                    <h4 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                      <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <Heart className="w-4 h-4 text-blue-600" />
-                      </div>
-                      Their Story
-                    </h4>
-                    <p className="text-gray-700 leading-relaxed text-lg">
-                      {current.story}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between pt-8 border-t border-gray-200">
-                  <button
-                    onClick={prevTestimonial}
-                    className="flex items-center gap-2 px-6 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all duration-300 font-medium group"
-                  >
-                    <ChevronLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-                    <span>Previous</span>
-                  </button>
-
-                  <div className="flex items-center gap-2">
-                    {testimonials.map((_, index) => (
-                      <button
-                        key={index}
-                        onClick={() => {
-                          setActiveTestimonial(index);
-                          setShowVideo(false);
-                        }}
-                        className={`h-2 rounded-full transition-all duration-300 ${
-                          index === activeTestimonial
-                            ? 'bg-blue-600 w-8'
-                            : 'bg-gray-300 hover:bg-gray-400 w-2'
-                        }`}
-                        aria-label={`Go to testimonial ${index + 1}`}
-                      />
-                    ))}
-                  </div>
-
-                  <button
-                    onClick={nextTestimonial}
-                    className="flex items-center gap-2 px-6 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all duration-300 font-medium group"
-                  >
-                    <span>Next</span>
-                    <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8 mt-16">
-            <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-3xl p-8 text-center border border-blue-200 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-              <div className="w-16 h-16 bg-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-                <Star className="w-8 h-8 text-white fill-current" />
-              </div>
-              <div className="text-4xl font-bold text-blue-600 mb-2">4.9/5</div>
-              <div className="text-gray-600 font-medium">Average Member Rating</div>
-            </div>
-            <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-3xl p-8 text-center border border-green-200 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-              <div className="w-16 h-16 bg-green-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-                <TrendingUp className="w-8 h-8 text-white" />
-              </div>
-              <div className="text-4xl font-bold text-green-600 mb-2">$3,400</div>
-              <div className="text-gray-600 font-medium">Average Annual Savings</div>
-            </div>
-            <div className="bg-gradient-to-br from-rose-50 to-pink-50 rounded-3xl p-8 text-center border border-rose-200 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
-              <div className="w-16 h-16 bg-rose-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-                <Heart className="w-8 h-8 text-white fill-current" />
-              </div>
-              <div className="text-4xl font-bold text-rose-600 mb-2">12,000+</div>
-              <div className="text-gray-600 font-medium">Verified Reviews</div>
-            </div>
-          </div>
-
-          <div className="mt-16 text-center">
-            <a
-              href="/get-started"
-              className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white px-10 py-5 rounded-2xl font-bold text-lg hover:from-blue-700 hover:to-cyan-700 transition-all duration-300 shadow-2xl hover:shadow-cyan-500/50 hover:scale-105 group"
-            >
+      {/* CTA */}
+      <section className="ms-cta" aria-label="Start your savings story">
+        <div className="ms-cta__card">
+          <h2 className="ms-cta__title">
+            Join 50,000+ families already saving with MPB Health
+          </h2>
+          <div className="ms-cta__actions">
+            <a href="/get-started" className="ms-cta__btn">
               Start Your Savings Story
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              <ArrowRight aria-hidden="true" />
             </a>
-            <p className="mt-6 text-gray-600 text-lg">
-              Join <span className="font-bold text-gray-900">50,000+ families</span> already saving with MPB Health
-            </p>
           </div>
         </div>
       </section>

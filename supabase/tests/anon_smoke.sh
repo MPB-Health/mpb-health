@@ -97,4 +97,45 @@ case "$direct_response" in
     ;;
 esac
 
+# ---------------------------------------------------------------------------
+# 3. Anon must not read CRM reporting views or org-reconcile backups.
+#    These were SECURITY DEFINER / RLS-off leaks on the live project.
+# ---------------------------------------------------------------------------
+assert_anon_denied_or_empty() {
+  local path="$1"
+  local code
+  code=$(curl -sS -o /tmp/anon_read_body.json -w '%{http_code}' \
+    -X GET "${SUPABASE_URL%/}/rest/v1/${path}?select=*&limit=1" \
+    -H "apikey: ${SUPABASE_ANON_KEY}" \
+    -H "Authorization: Bearer ${SUPABASE_ANON_KEY}")
+
+  case "$code" in
+    401|403|404)
+      ok "anon GET ${path} denied ($code)"
+      ;;
+    200|206)
+      if grep -qE '^\[\]$' /tmp/anon_read_body.json; then
+        ok "anon GET ${path} empty ($code)"
+      else
+        echo "--- response body ---" >&2
+        cat /tmp/anon_read_body.json >&2
+        echo >&2
+        die "anon GET ${path} returned rows ($code). Must not leak via PostgREST."
+      fi
+      ;;
+    *)
+      echo "--- response body ---" >&2
+      cat /tmp/anon_read_body.json >&2 || true
+      echo >&2
+      die "anon GET ${path} returned unexpected status $code"
+      ;;
+  esac
+}
+
+assert_anon_denied_or_empty "crm_v_pipeline_movement"
+assert_anon_denied_or_empty "crm_v_application_dropoff"
+assert_anon_denied_or_empty "crm_v_conversion_by_source"
+assert_anon_denied_or_empty "_backup_org_reconcile_20260701_lead_submissions"
+assert_anon_denied_or_empty "_backup_org_reconcile_20260701_advisor_profiles"
+
 echo "anon-smoke: all assertions passed."

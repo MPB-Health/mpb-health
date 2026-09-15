@@ -198,9 +198,9 @@ const HowItWorksTimeline: React.FC = () => {
           }}
           variant="outline"
           className="w-full sm:w-auto border-2 border-neutral-300 text-neutral-700 hover:bg-neutral-50 hover:border-neutral-400 font-semibold transition-all duration-300"
-          aria-label="Compare available plans"
+          aria-label="Compare available memberships"
         >
-          Compare Plans
+          Compare Memberships
         </Button>
       </div>
     </section>

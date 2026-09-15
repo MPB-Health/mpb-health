@@ -252,14 +252,12 @@ const HandbookHub: React.FC = () => {
 
   const handlePdfUpload = async (file: File | undefined) => {
     if (!file) return;
-    const slug = formData.slug?.trim();
-    if (!slug) {
-      toast.error('Enter the URL slug first so the public link stays the same');
-      return;
-    }
     setUploadingPdf(true);
     try {
-      const result = await handbooksService.uploadHandbookPdf(file, slug);
+      const result = await handbooksService.uploadHandbookPdf(
+        file,
+        formData.slug?.trim() || formData.name?.trim() || '',
+      );
       if (!result.success || !result.data) {
         toast.error(result.error || 'Failed to upload PDF');
         return;
@@ -268,7 +266,7 @@ const HandbookHub: React.FC = () => {
       toast.success('PDF uploaded. Save to publish it on the existing handbook link.');
     } catch (error) {
       console.error('Error uploading handbook PDF:', error);
-      toast.error('Failed to upload PDF');
+      toast.error(error instanceof Error ? error.message : 'Failed to upload PDF');
     } finally {
       setUploadingPdf(false);
     }

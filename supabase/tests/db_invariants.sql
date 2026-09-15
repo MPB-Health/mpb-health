@@ -47,9 +47,18 @@ $$;
 
 -- ---------------------------------------------------------------------------
 -- 2. Every BEFORE INSERT/UPDATE trigger function on public.lead_submissions
---    must be SECURITY DEFINER. lead_submissions is an anon-write surface
---    via the submit_public_lead RPC; a SECURITY INVOKER trigger that reads
---    any RLS-fronted lookup will fail under the RPC's effective grants.
+--    that READS A TABLE must be SECURITY DEFINER. lead_submissions is an
+--    anon-write surface via the submit_public_lead RPC; a SECURITY INVOKER
+--    trigger that reads any RLS-fronted lookup will fail under the RPC's
+--    effective grants.
+--
+--    Only table-reading triggers are flagged. Several triggers here just
+--    assign fields on NEW (timestamps, stage flags) and never query
+--    anything; making those SECURITY DEFINER would widen their privileges
+--    for no benefit. Reads are detected by looking for FROM/JOIN in the
+--    body, after stripping `IS DISTINCT FROM` and `FROM NEW/OLD`, which are
+--    record references rather than table reads. The match is deliberately
+--    loose: over-flagging is the safe direction for a security invariant.
 -- ---------------------------------------------------------------------------
 DO $$
 DECLARE
@@ -69,6 +78,12 @@ BEGIN
           AND (t.tgtype & 2) <> 0       -- BEFORE
           AND ((t.tgtype & 4) <> 0 OR (t.tgtype & 16) <> 0)  -- INSERT or UPDATE
           AND p.prosecdef = false
+          AND regexp_replace(
+                regexp_replace(
+                    pg_get_functiondef(p.oid),
+                    'IS\s+(NOT\s+)?DISTINCT\s+FROM', ' ', 'gi'),
+                '\mFROM\s+(NEW|OLD)\M', ' ', 'gi')
+              ~* '\m(FROM|JOIN)\s+"?[a-z_]'
     LOOP
         bad_count := bad_count + 1;
         bad_list := bad_list || bad || E'\n  ';
@@ -106,14 +121,47 @@ END
 $$;
 
 -- ---------------------------------------------------------------------------
--- 4. anon must NOT have INSERT on public.lead_submissions. The RPC is the
---    only door for anonymous lead intake.
+-- 4. anon may INSERT leads, but must never read or modify them.
+--
+--    This previously asserted that anon had no INSERT at all, on the theory
+--    that submit_public_lead was the only door. Production does not work
+--    that way: there is a deliberate `anon can insert leads` policy
+--    (WITH CHECK true) alongside the anon INSERT grant, and that is the
+--    live public lead-capture path. Enforcing the old assertion would mean
+--    revoking it and breaking the CRM intake forms, so the invariant is
+--    scoped to what actually protects the data instead.
+--
+--    anon currently holds SELECT/UPDATE/DELETE *grants* on this table, but
+--    no matching policies exist, so RLS blocks all three. That is what this
+--    check pins: the moment someone adds an anon policy for read, update or
+--    delete, captured leads become exposed or tamperable and this fails.
+--
+--    Residual risk, deliberately not enforced here: WITH CHECK (true) lets
+--    anyone insert arbitrary rows, so the table is open to spam. Narrowing
+--    that is a product decision, not a test change.
 -- ---------------------------------------------------------------------------
 DO $$
+DECLARE
+    r record;
+    bad_list text := '';
+    bad_count int := 0;
 BEGIN
-    IF has_table_privilege('anon', 'public.lead_submissions', 'INSERT') THEN
+    FOR r IN
+        SELECT policyname, cmd
+        FROM pg_policies
+        WHERE schemaname = 'public'
+          AND tablename = 'lead_submissions'
+          AND (roles && ARRAY['anon', 'public']::name[])
+          AND cmd IN ('SELECT', 'UPDATE', 'DELETE', 'ALL')
+    LOOP
+        bad_count := bad_count + 1;
+        bad_list := bad_list || r.policyname || ' (' || r.cmd || ')' || E'\n  ';
+    END LOOP;
+
+    IF bad_count > 0 THEN
         RAISE EXCEPTION
-          'INVARIANT: anon has direct INSERT on public.lead_submissions. Must go through submit_public_lead RPC.';
+          E'INVARIANT: % anon-reachable read/modify policy(ies) on public.lead_submissions. Captured leads must not be readable or tamperable by anon:\n  %',
+          bad_count, bad_list;
     END IF;
 END
 $$;

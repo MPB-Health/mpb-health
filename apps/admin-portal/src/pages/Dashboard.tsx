@@ -805,7 +805,6 @@ async function loadContentStats(): Promise<ContentStats> {
       .from('handbooks')
       .select('id', { count: 'exact', head: true })
       .eq('is_active', true)
-      .eq('org_id', orgId)
       .then((r) => r.count || 0),
   ]);
 

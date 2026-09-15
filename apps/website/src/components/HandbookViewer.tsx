@@ -9,9 +9,13 @@ interface HandbookViewerProps {
   description?: string;
 }
 
-/** Same-origin PDFs use the browser viewer so in-document links and forms work. */
+/** Same-origin and CMS storage PDFs use the browser viewer so in-document links work. */
 function isLocalPdf(pdfPath: string): boolean {
-  return pdfPath.startsWith('/docs/') || pdfPath.startsWith('/assets/');
+  return (
+    pdfPath.startsWith('/docs/') ||
+    pdfPath.startsWith('/assets/') ||
+    pdfPath.includes('/storage/v1/object/public/')
+  );
 }
 
 /** Encode path segments so +, spaces, and parentheses resolve correctly in embeds. */

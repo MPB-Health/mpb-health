@@ -283,21 +283,59 @@ function resolveHandbookSlug(slug: string): string {
 
 const STATIC_PDF_BY_SLUG = new Map(STATIC_HANDBOOKS.map((h) => [h.slug, h.pdf_path]));
 
+const HANDBOOK_BUCKET = 'advisor-documents';
+
+function isUuid(id: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
+}
+
+function normalizeSlug(slug: string): string {
+  return slug.replace(/^\/+|\/+$/g, '').toLowerCase().replace(/[^a-z0-9-]/g, '-');
+}
+
+function parseFeatures(features: unknown): string[] {
+  if (Array.isArray(features)) return features.map(String);
+  if (typeof features === 'string') {
+    try {
+      const parsed = JSON.parse(features);
+      return Array.isArray(parsed) ? parsed.map(String) : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
 /** Same-origin paths render in the native browser viewer (see HandbookViewer). */
 function isLocalPdfPath(pdfPath: string): boolean {
   return pdfPath.startsWith('/docs/') || pdfPath.startsWith('/assets/');
 }
 
+function isCmsHostedPdfPath(pdfPath: string): boolean {
+  return (
+    isLocalPdfPath(pdfPath) ||
+    pdfPath.includes('/storage/v1/object/public/')
+  );
+}
+
 /**
- * Prefer the bundled same-origin PDF over remote URLs stored in the database.
- * Remote embeds (e.g. Google Drive) can 403 or break in-document links, so a
- * DB row only wins when it points at a local path itself.
+ * Public pages keep the bundled /docs PDF while CMS still points at Drive.
+ * Once an admin uploads to storage (or sets a local path), that file wins so
+ * /3d-flip-book/:slug can stay the same while the document is replaced.
  */
-function preferLocalPdfPath(slug: string, pdfPath: string): string {
-  if (isLocalPdfPath(pdfPath)) {
+function resolvePublicPdfPath(slug: string, pdfPath: string): string {
+  if (isCmsHostedPdfPath(pdfPath)) {
     return pdfPath;
   }
   return STATIC_PDF_BY_SLUG.get(slug) ?? pdfPath;
+}
+
+function mapHandbookRow(row: HandbookRecord, forPublic = false): HandbookRecord {
+  return {
+    ...row,
+    pdf_path: forPublic ? resolvePublicPdfPath(row.slug, row.pdf_path) : row.pdf_path,
+    features: parseFeatures(row.features),
+  };
 }
 
 // ============================================================================
@@ -320,10 +358,15 @@ export async function isHandbooksTableAvailable(): Promise<boolean> {
 }
 
 /**
- * Get all handbooks from database, fallback to static config
+ * Get all handbooks from database.
+ * Admin callers should pass { allowStaticFallback: false } so they edit real rows.
  */
-export async function getAllHandbooks(): Promise<HandbookRecord[]> {
-  if (isCacheValid() && handbooksCache) {
+export async function getAllHandbooks(options?: {
+  allowStaticFallback?: boolean;
+}): Promise<HandbookRecord[]> {
+  const allowStaticFallback = options?.allowStaticFallback !== false;
+
+  if (allowStaticFallback && isCacheValid() && handbooksCache) {
     return handbooksCache;
   }
 
@@ -335,26 +378,21 @@ export async function getAllHandbooks(): Promise<HandbookRecord[]> {
 
     if (error) {
       console.warn('Failed to fetch handbooks from database, using static fallback:', error);
-      return STATIC_HANDBOOKS;
+      return allowStaticFallback ? STATIC_HANDBOOKS : [];
     }
 
     if (!data || data.length === 0) {
-      return STATIC_HANDBOOKS;
+      return allowStaticFallback ? STATIC_HANDBOOKS : [];
     }
 
-    // Parse features from JSONB if it's a string
-    const handbooks = data.map((h) => ({
-      ...h,
-      pdf_path: preferLocalPdfPath(h.slug, h.pdf_path),
-      features: Array.isArray(h.features) ? h.features : JSON.parse(h.features || '[]'),
-    }));
+    const handbooks = data.map((h) => mapHandbookRow(h as HandbookRecord, false));
 
     handbooksCache = handbooks;
     cacheTimestamp = Date.now();
     return handbooks;
   } catch (error) {
     console.error('Error fetching handbooks:', error);
-    return STATIC_HANDBOOKS;
+    return allowStaticFallback ? STATIC_HANDBOOKS : [];
   }
 }
 
@@ -363,7 +401,9 @@ export async function getAllHandbooks(): Promise<HandbookRecord[]> {
  */
 export async function getActiveHandbooks(): Promise<HandbookRecord[]> {
   const allHandbooks = await getAllHandbooks();
-  return allHandbooks.filter((h) => h.is_active);
+  return allHandbooks
+    .filter((h) => h.is_active)
+    .map((h) => ({ ...h, pdf_path: resolvePublicPdfPath(h.slug, h.pdf_path) }));
 }
 
 /**
@@ -372,7 +412,9 @@ export async function getActiveHandbooks(): Promise<HandbookRecord[]> {
 export async function getHandbookBySlug(slug: string): Promise<HandbookRecord | null> {
   const resolvedSlug = resolveHandbookSlug(slug);
   const allHandbooks = await getAllHandbooks();
-  return allHandbooks.find((h) => h.slug === resolvedSlug) || null;
+  const match = allHandbooks.find((h) => h.slug === resolvedSlug) || null;
+  if (!match) return null;
+  return { ...match, pdf_path: resolvePublicPdfPath(match.slug, match.pdf_path) };
 }
 
 /**
@@ -418,7 +460,7 @@ export async function getHandbooksByPlanType(planType: PlanType): Promise<Handbo
 export async function createHandbook(input: CreateHandbookInput): Promise<ServiceResult<HandbookRecord>> {
   try {
     // Normalize slug (no leading/trailing slashes)
-    const slug = input.slug.replace(/^\/+|\/+$/g, '');
+    const slug = normalizeSlug(input.slug);
 
     const { data, error } = await supabase
       .from('handbooks')
@@ -438,6 +480,12 @@ export async function createHandbook(input: CreateHandbookInput): Promise<Servic
       .single();
 
     if (error) {
+      if (error.code === '23505') {
+        return {
+          success: false,
+          error: `A handbook with slug "${slug}" already exists. Edit that row to replace the PDF and keep the same public link.`,
+        };
+      }
       return { success: false, error: error.message };
     }
 
@@ -446,7 +494,7 @@ export async function createHandbook(input: CreateHandbookInput): Promise<Servic
       success: true,
       data: {
         ...data,
-        features: Array.isArray(data.features) ? data.features : JSON.parse(data.features || '[]'),
+        features: parseFeatures(data.features),
       },
     };
   } catch (_error) {
@@ -460,9 +508,24 @@ export async function createHandbook(input: CreateHandbookInput): Promise<Servic
 export async function updateHandbook(id: string, input: UpdateHandbookInput): Promise<ServiceResult<HandbookRecord>> {
   try {
     // Normalize slug if provided
+    if (!isUuid(id)) {
+      return upsertHandbookBySlug({
+        slug: input.slug || '',
+        name: input.name || '',
+        description: input.description,
+        pdf_path: input.pdf_path || '',
+        plan_type: input.plan_type || 'general',
+        color: input.color,
+        icon: input.icon,
+        features: input.features,
+        is_active: input.is_active,
+        sort_order: input.sort_order,
+      });
+    }
+
     const updateData = { ...input };
     if (updateData.slug) {
-      updateData.slug = updateData.slug.replace(/^\/+|\/+$/g, '');
+      updateData.slug = normalizeSlug(updateData.slug);
     }
 
     const { data, error } = await supabase
@@ -481,12 +544,60 @@ export async function updateHandbook(id: string, input: UpdateHandbookInput): Pr
       success: true,
       data: {
         ...data,
-        features: Array.isArray(data.features) ? data.features : JSON.parse(data.features || '[]'),
+        features: parseFeatures(data.features),
       },
     };
   } catch (_error) {
     return { success: false, error: 'Failed to update handbook' };
   }
+}
+
+export async function upsertHandbookBySlug(input: CreateHandbookInput): Promise<ServiceResult<HandbookRecord>> {
+  const slug = normalizeSlug(input.slug);
+  if (!slug || !input.name || !input.pdf_path) {
+    return { success: false, error: 'Slug, name, and PDF are required' };
+  }
+
+  const { data: existing, error: lookupError } = await supabase
+    .from('handbooks')
+    .select('id')
+    .eq('slug', slug)
+    .maybeSingle();
+
+  if (lookupError) {
+    return { success: false, error: lookupError.message };
+  }
+
+  if (existing?.id) {
+    return updateHandbook(existing.id, { ...input, slug });
+  }
+
+  return createHandbook({ ...input, slug });
+}
+
+export async function uploadHandbookPdf(file: File, slug: string): Promise<ServiceResult<string>> {
+  const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+  if (!isPdf) {
+    return { success: false, error: 'Please upload a PDF file' };
+  }
+
+  const safeSlug = normalizeSlug(slug) || 'handbook';
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '-').replace(/-+/g, '-').slice(0, 80);
+  const path = `handbooks/${safeSlug}/${Date.now()}-${safeName}`;
+
+  const { error } = await supabase.storage.from(HANDBOOK_BUCKET).upload(path, file, {
+    contentType: 'application/pdf',
+    upsert: true,
+    cacheControl: '3600',
+  });
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  const { data } = supabase.storage.from(HANDBOOK_BUCKET).getPublicUrl(path);
+  invalidateCache();
+  return { success: true, data: data.publicUrl };
 }
 
 /**
@@ -558,6 +669,8 @@ export const handbooksService = {
   getHandbooksByPlanType,
   createHandbook,
   updateHandbook,
+  upsertHandbookBySlug,
+  uploadHandbookPdf,
   deleteHandbook,
   toggleHandbookVisibility,
   reorderHandbooks,

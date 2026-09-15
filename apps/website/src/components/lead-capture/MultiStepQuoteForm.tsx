@@ -3,6 +3,7 @@ import { ArrowRight, ArrowLeft, Check, User, Users, DollarSign, MapPin } from 'l
 import { cn } from '../../lib/utils';
 import { trackFormInteraction, trackQuoteRequest } from '../../lib/conversionTracking';
 import { leadSubmissionService } from '../../lib/leadSubmissionService';
+import { getLeadAttribution } from '../../lib/leadAttribution';
 import { EnrollNowPrompt } from '../lead-capture/EnrollNowPrompt';
 
 interface FormData {
@@ -88,6 +89,7 @@ export const MultiStepQuoteForm: React.FC = () => {
       );
 
       const result = await leadSubmissionService.submitLead({
+        ...getLeadAttribution(),
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,

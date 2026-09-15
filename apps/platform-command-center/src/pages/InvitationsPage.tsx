@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -13,12 +13,12 @@ export default function InvitationsPage() {
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<OrgRole>('member');
 
-  const reload = async () => {
+  const reload = useCallback(async () => {
     const [invRows, orgRows] = await Promise.all([listInvitations(), listOrganizations()]);
     setInvites(invRows);
     setOrgs(orgRows);
-    if (!orgId && orgRows[0]) setOrgId(orgRows[0].id);
-  };
+    setOrgId((current) => current || orgRows[0]?.id || '');
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -34,7 +34,7 @@ export default function InvitationsPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [reload]);
 
   const onCreate = async (e: FormEvent) => {
     e.preventDefault();

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { CheckCircle2, Loader2 } from 'lucide-react';
 import { leadSubmissionService } from '../../lib/leadSubmissionService';
+import { getLeadAttribution } from '../../lib/leadAttribution';
 import { Button } from '../ui/button';
 import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
@@ -40,6 +41,7 @@ export const BenefitInterestCTA: React.FC<BenefitInterestCTAProps> = ({
     try {
       const [firstName, ...lastParts] = formData.name.trim().split(/\s+/);
       const result = await leadSubmissionService.submitLead({
+        ...getLeadAttribution(),
         firstName: firstName || formData.name,
         // ARYX submit_public_lead requires a non-empty last name.
         lastName: lastParts.join(' ') || 'Interest',

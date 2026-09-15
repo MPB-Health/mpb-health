@@ -86,6 +86,13 @@ serve(async (req) => {
       );
     }
 
+    // Mint our own RFC 2822 Message-ID and pin it on the outbound message so
+    // `receive-crm-email` can match inbound replies (In-Reply-To/References)
+    // back to this row via crm_email_log.message_id. Without it, every reply
+    // starts a new thread instead of stitching to its parent.
+    const messageIdDomain = FROM_EMAIL.split('@')[1] || 'mpb.health';
+    const rfcMessageId = `<${crypto.randomUUID()}@${messageIdDomain}>`;
+
     // Send via Resend
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -99,6 +106,7 @@ serve(async (req) => {
         subject,
         html,
         text: text || undefined,
+        headers: { 'Message-ID': rfcMessageId },
         tags: [
           { name: 'type', value: 'crm_email' },
           ...(template_id ? [{ name: 'template_id', value: template_id }] : []),
@@ -133,6 +141,8 @@ serve(async (req) => {
       body_preview: html.replace(/<[^>]*>/g, '').substring(0, 200),
       status,
       resend_email_id: resendEmailId,
+      // Persist the pinned Message-ID so inbound replies can match this row.
+      message_id: rfcMessageId,
       sent_by: sentBy,
     });
 

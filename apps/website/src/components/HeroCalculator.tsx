@@ -26,6 +26,7 @@ import { useAnalytics, AnalyticsEvents } from '../lib/analytics';
 import { CompactMembershipPrioritySelector } from './CompactMembershipPrioritySelector';
 import { recommendPlans } from '../lib/membershipPriorities';
 import { leadSubmissionService } from '../lib/leadSubmissionService';
+import { getLeadAttribution } from '../lib/leadAttribution';
 import { getQuoteCalculatorSessionId, recordQuoteCalculatorEvent } from '../lib/quoteCalculatorTracking';
 import { getHouseholdPricingAge } from '../lib/householdPricingAge';
 import { cn, fmtMoney } from '../lib/utils';
@@ -308,6 +309,7 @@ export default function HeroCalculator() {
       else if (watchedHouseholdType === 'member-family') householdSize = 2 + (watchedDependentsCount || 0);
 
       const result = await leadSubmissionService.submitLead({
+        ...getLeadAttribution(),
         firstName: watchedFirstName,
         lastName: watchedLastName,
         email: watchedEmail,

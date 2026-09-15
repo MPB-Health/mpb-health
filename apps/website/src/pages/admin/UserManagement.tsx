@@ -67,6 +67,7 @@ const RoleIcons: Record<UserRole, React.FC<{ className?: string }>> = {
   advisor: Briefcase,
   crm_user: Building2,
   concierge: Headphones,
+  staff_hr: UserCog,
   member: User,
 };
 

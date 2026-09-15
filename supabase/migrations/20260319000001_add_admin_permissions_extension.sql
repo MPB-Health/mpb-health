@@ -8,6 +8,18 @@
 -- ============================================================================
 
 BEGIN;
+
+-- Fresh local stacks do not seed the MPB org that production already has.
+-- role_permissions.org_id references public.orgs(id).
+INSERT INTO public.orgs (id, name, slug, status)
+VALUES (
+  '00000000-0000-4000-a000-000000000001',
+  'MPB Health',
+  'mpb-health',
+  'active'
+)
+ON CONFLICT (id) DO NOTHING;
+
 -- ============================================================================
 -- SECTION A: INSERT NEW PERMISSION DEFINITIONS
 -- ============================================================================

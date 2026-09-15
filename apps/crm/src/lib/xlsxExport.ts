@@ -1,4 +1,4 @@
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 
 export interface ExportColumn {
   header: string;
@@ -7,38 +7,65 @@ export interface ExportColumn {
   format?: 'number' | 'currency' | 'percent' | 'date';
 }
 
+function cellValue(
+  row: Record<string, unknown>,
+  col: ExportColumn,
+): string | number | Date {
+  const val = row[col.key];
+  if (val === null || val === undefined) return '';
+  if (col.format === 'percent' && typeof val === 'number') {
+    return `${val.toFixed(1)}%`;
+  }
+  if (val instanceof Date) return val;
+  if (typeof val === 'number' || typeof val === 'string') return val;
+  return String(val);
+}
+
+function addSheet(
+  wb: ExcelJS.Workbook,
+  name: string,
+  columns: ExportColumn[],
+  rows: Record<string, unknown>[],
+): void {
+  const ws = wb.addWorksheet(name.slice(0, 31));
+  ws.columns = columns.map((col) => ({
+    header: col.header,
+    key: col.key,
+    width: col.width || Math.max(col.header.length + 2, 12),
+  }));
+  for (const row of rows) {
+    const mapped: Record<string, string | number | Date> = {};
+    for (const col of columns) {
+      mapped[col.key] = cellValue(row, col);
+    }
+    ws.addRow(mapped);
+  }
+}
+
+async function saveWorkbook(wb: ExcelJS.Workbook, filename: string): Promise<void> {
+  const buffer = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename.endsWith('.xlsx') ? filename : `${filename}.xlsx`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 export function exportToXLSX(
   columns: ExportColumn[],
   rows: Record<string, unknown>[],
   sheetName: string,
   filename: string
 ): void {
-  const headers = columns.map((c) => c.header);
-  const data = rows.map((row) =>
-    columns.map((col) => {
-      const val = row[col.key];
-      if (val === null || val === undefined) return '';
-      if (col.format === 'percent' && typeof val === 'number') {
-        return `${val.toFixed(1)}%`;
-      }
-      if (col.format === 'currency' && typeof val === 'number') {
-        return val;
-      }
-      return val;
-    })
-  );
-
-  const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
-
-  const colWidths = columns.map((col) => ({
-    wch: col.width || Math.max(col.header.length + 2, 12),
-  }));
-  ws['!cols'] = colWidths;
-
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, sheetName.slice(0, 31));
-
-  XLSX.writeFile(wb, filename.endsWith('.xlsx') ? filename : `${filename}.xlsx`);
+  const wb = new ExcelJS.Workbook();
+  addSheet(wb, sheetName, columns, rows);
+  void saveWorkbook(wb, filename);
 }
 
 export function exportMultiSheetXLSX(
@@ -49,28 +76,9 @@ export function exportMultiSheetXLSX(
   }>,
   filename: string
 ): void {
-  const wb = XLSX.utils.book_new();
-
+  const wb = new ExcelJS.Workbook();
   for (const sheet of sheets) {
-    const headers = sheet.columns.map((c) => c.header);
-    const data = sheet.rows.map((row) =>
-      sheet.columns.map((col) => {
-        const val = row[col.key];
-        if (val === null || val === undefined) return '';
-        if (col.format === 'percent' && typeof val === 'number') {
-          return `${val.toFixed(1)}%`;
-        }
-        return val;
-      })
-    );
-
-    const ws = XLSX.utils.aoa_to_sheet([headers, ...data]);
-    ws['!cols'] = sheet.columns.map((col) => ({
-      wch: col.width || Math.max(col.header.length + 2, 12),
-    }));
-
-    XLSX.utils.book_append_sheet(wb, ws, sheet.name.slice(0, 31));
+    addSheet(wb, sheet.name, sheet.columns, sheet.rows);
   }
-
-  XLSX.writeFile(wb, filename.endsWith('.xlsx') ? filename : `${filename}.xlsx`);
+  void saveWorkbook(wb, filename);
 }

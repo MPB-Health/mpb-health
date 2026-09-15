@@ -1,4 +1,4 @@
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 
 type YearSnap = {
   year: number;
@@ -17,6 +17,35 @@ type SalesRow = {
   pre_cancellations: number;
 };
 
+function addJsonSheet(
+  wb: ExcelJS.Workbook,
+  name: string,
+  rows: Record<string, unknown>[],
+): void {
+  const ws = wb.addWorksheet(name.slice(0, 31));
+  if (rows.length === 0) return;
+  const keys = Object.keys(rows[0]);
+  ws.columns = keys.map((key) => ({ header: key, key, width: Math.max(key.length + 2, 14) }));
+  for (const row of rows) {
+    ws.addRow(row);
+  }
+}
+
+async function saveWorkbook(wb: ExcelJS.Workbook, filename: string): Promise<void> {
+  const buffer = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 export async function downloadPrimaryMembershipExcel(opts: {
   allMembers: any[];
   pastInactives: any[];
@@ -24,9 +53,11 @@ export async function downloadPrimaryMembershipExcel(opts: {
   salesMonthly: SalesRow[];
 }): Promise<void> {
   const { allMembers, pastInactives, yearSnapshots, salesMonthly } = opts;
-  const wb = XLSX.utils.book_new();
+  const wb = new ExcelJS.Workbook();
 
-  const snapSheet = XLSX.utils.json_to_sheet(
+  addJsonSheet(
+    wb,
+    'Year snapshots',
     yearSnapshots.map((r) => ({
       Year: r.year,
       YTD: r.isCurrentYear ? 'Y' : '',
@@ -37,9 +68,10 @@ export async function downloadPrimaryMembershipExcel(opts: {
       CancellationsInYear: r.cancellationsInYear,
     })),
   );
-  XLSX.utils.book_append_sheet(wb, snapSheet, 'Year snapshots');
 
-  const salesSheet = XLSX.utils.json_to_sheet(
+  addJsonSheet(
+    wb,
+    'Sales monthly',
     salesMonthly.map((r) => ({
       MonthKey: r.month_key,
       MonthLabel: r.month_label,
@@ -47,33 +79,36 @@ export async function downloadPrimaryMembershipExcel(opts: {
       PreCancellations: r.pre_cancellations,
     })),
   );
-  XLSX.utils.book_append_sheet(wb, salesSheet, 'Sales monthly');
 
-  const liveSample = allMembers.slice(0, 5000).map((m) => ({
-    MemberId: m.member_id,
-    First: m.first_name,
-    Last: m.last_name,
-    AgentId: m.agent_id,
-    Created: m.created_date,
-    Active: m.active_date,
-    Inactive: m.inactive_date,
-    IsActive: m.is_active,
-    Product: m.product_label,
-  }));
-  const liveSheet = XLSX.utils.json_to_sheet(liveSample);
-  XLSX.utils.book_append_sheet(wb, liveSheet, 'Live primaries (sample)');
+  addJsonSheet(
+    wb,
+    'Live primaries (sample)',
+    allMembers.slice(0, 5000).map((m) => ({
+      MemberId: m.member_id,
+      First: m.first_name,
+      Last: m.last_name,
+      AgentId: m.agent_id,
+      Created: m.created_date,
+      Active: m.active_date,
+      Inactive: m.inactive_date,
+      IsActive: m.is_active,
+      Product: m.product_label,
+    })),
+  );
 
-  const pastSample = pastInactives.slice(0, 5000).map((p) => ({
-    MemberId: p.member_id,
-    InactiveDate: p.inactive_date,
-    Reason: p.inactive_reason,
-    ActiveDate: p.active_date,
-    MemberCreated: p.member_created_date,
-    AgentId: p.agent_id,
-  }));
-  const pastSheet = XLSX.utils.json_to_sheet(pastSample);
-  XLSX.utils.book_append_sheet(wb, pastSheet, 'Past inactives (sample)');
+  addJsonSheet(
+    wb,
+    'Past inactives (sample)',
+    pastInactives.slice(0, 5000).map((p) => ({
+      MemberId: p.member_id,
+      InactiveDate: p.inactive_date,
+      Reason: p.inactive_reason,
+      ActiveDate: p.active_date,
+      MemberCreated: p.member_created_date,
+      AgentId: p.agent_id,
+    })),
+  );
 
   const name = `primary_membership_${new Date().toISOString().slice(0, 10)}.xlsx`;
-  XLSX.writeFile(wb, name);
+  await saveWorkbook(wb, name);
 }

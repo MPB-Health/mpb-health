@@ -30,6 +30,25 @@ jobs:
         with:
           version: latest
 
+      - name: Park incremental migrations already in the baseline dump
+        # 20260101000001_baseline_schema.sql is a 2026-03-18 production dump, so
+        # it already contains Jan–mid-Mar objects. Replaying those files on a
+        # fresh `supabase start` fails with "already exists". Production has
+        # them applied; this only affects the local CI stack.
+        run: |
+          mkdir -p /tmp/pre-dump-migrations
+          for f in supabase/migrations/2026*.sql; do
+            base="$(basename "$f")"
+            case "$base" in
+              20260101000000_.sql|20260101000001_baseline_schema.sql) continue ;;
+            esac
+            day="${base:0:8}"
+            if [ "$day" -lt 20260318 ]; then
+              mv "$f" /tmp/pre-dump-migrations/
+            fi
+          done
+          echo "Parked $(ls /tmp/pre-dump-migrations | wc -l) pre-dump migrations"
+
       - name: Boot local Supabase stack
         # `supabase start` brings up Postgres + PostgREST + GoTrue + Storage etc.
         # Migrations under supabase/migrations/ are applied automatically.

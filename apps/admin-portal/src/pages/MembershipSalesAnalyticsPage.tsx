@@ -9,7 +9,7 @@ export default function MembershipSalesAnalyticsPage() {
           <h1 className="text-2xl font-bold text-th-text-primary">Membership &amp; Sales Analytics</h1>
           <InfoTip
             size="md"
-            content="Connects to the external Supabase project set in VITE_MEMBERSHIP_ANALYTICS_SUPABASE_URL. Uses the anon key in the browser; ensure RLS allows reads for views and RPCs you rely on."
+            content="Reads the external membership Supabase project through the membership-analytics-proxy edge function, which verifies your admin role and runs read-only queries server-side."
           />
         </div>
         <p className="text-sm text-th-text-tertiary mt-1">

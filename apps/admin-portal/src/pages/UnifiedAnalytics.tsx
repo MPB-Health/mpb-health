@@ -57,7 +57,7 @@ export default function UnifiedAnalytics() {
   const [ga4, setGA4] = useState<GA4Overview | null>(null);
   const [championTrends, setChampionTrends] = useState<ChampionTrends | null>(null);
   const [mobileTrends, setMobileTrends] = useState<MobileTrends | null>(null);
-  /** Net registered app users from membership DB (users table), when Mobile App tab uses VITE_MEMBERSHIP_ANALYTICS_* */
+  /** Net registered app users from the membership DB (users table), read through the analytics proxy */
   const [membershipAppRegisteredNet, setMembershipAppRegisteredNet] = useState<number | null>(null);
 
   const loadData = async (isRefresh = false) => {
@@ -117,7 +117,7 @@ export default function UnifiedAnalytics() {
               <h1 className="text-2xl font-bold text-th-text-primary">Unified Analytics</h1>
               <InfoTip
                 size="md"
-                content="Membership & sales metrics use a separate Supabase project (VITE_MEMBERSHIP_ANALYTICS_*). All queries use the anon key from the browser; ensure RLS policies allow the operations you need."
+                content="Membership & sales metrics come from the mobile app Supabase project, read through the membership-analytics-proxy edge function. The proxy checks your admin role and runs read-only, allow-listed queries server-side; the browser never holds a key for that project."
               />
             </div>
             <p className="text-sm text-th-text-tertiary mt-1">Primary membership, sales, predictive, and advisor views</p>
@@ -378,8 +378,8 @@ export default function UnifiedAnalytics() {
                 <InfoTip
                   content={
                     isMembershipAnalyticsConfigured
-                      ? 'App membership metrics from VITE_MEMBERSHIP_ANALYTICS_*: registered users (users table), active primary, plans, and V2.3 next-month prediction. Read-only via anon key; ensure RLS allows these reads.'
-                      : 'Legacy path: Mobile App Supabase via analytics-hub proxy (service role on the server). Configure VITE_MEMBERSHIP_ANALYTICS_* for the dashboard-style app metrics instead.'
+                      ? 'App membership metrics read through the membership-analytics-proxy edge function: registered users (users table), active primary, plans, and V2.3 next-month prediction.'
+                      : 'Legacy path: Mobile App Supabase via analytics-hub proxy (service role on the server).'
                   }
                 />
                 {!isMembershipAnalyticsConfigured && !mobile?.configured && (
@@ -448,9 +448,8 @@ export default function UnifiedAnalytics() {
                 <NotConfiguredBanner
                   source="Mobile App"
                   secretNames={[
-                    'VITE_MEMBERSHIP_ANALYTICS_SUPABASE_URL',
-                    'VITE_MEMBERSHIP_ANALYTICS_SUPABASE_ANON_KEY',
-                    '(or legacy MOBILE_APP_SUPABASE_URL + MOBILE_APP_SERVICE_ROLE_KEY on Edge)',
+                    'MOBILE_APP_SUPABASE_URL',
+                    'MOBILE_APP_SERVICE_ROLE_KEY',
                   ]}
                 />
               )}

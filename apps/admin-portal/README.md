@@ -30,9 +30,24 @@ Central staff admin command center for MPB Health operations. Provides user mana
 |----------|-------------|
 | `VITE_SUPABASE_URL` | Supabase project URL |
 | `VITE_SUPABASE_ANON_KEY` | Supabase anonymous/public key |
-| `VITE_MEMBERSHIP_ANALYTICS_SUPABASE_URL` | Membership analytics Supabase URL |
-| `VITE_MEMBERSHIP_ANALYTICS_SUPABASE_ANON_KEY` | Membership analytics Supabase key |
 | `VITE_RICH_TICKET_EDITOR` | Enable rich text ticket editor |
+
+### Membership analytics proxy
+
+Membership analytics data lives in the mobile app Supabase project. That
+project's `anon` role has no grants on the analytics tables — which is why
+querying it directly from the browser returned 401s — and its `authenticated`
+role can read every member record, so no key for it may ship in the bundle.
+
+Membership & Sales and the mobile-app dashboard therefore talk to the
+`membership-analytics-proxy` edge function on the primary project. It verifies
+the caller is an `admin` or `super_admin`, then performs a read-only,
+allow-listed PostgREST query upstream using the service-role key. Its URL is
+derived from `VITE_SUPABASE_URL`, so no extra client config is needed.
+
+Deploying it requires `MOBILE_APP_SUPABASE_URL` and
+`MOBILE_APP_SERVICE_ROLE_KEY` as secrets on the primary project — the same pair
+`analytics-hub-proxy` already uses.
 
 ### Development
 

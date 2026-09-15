@@ -205,9 +205,8 @@ export default function MembershipUnifiedMobileAppPanel({ onStatsLoaded }: Props
       <div className="card-premium p-6 text-center">
         <p className="text-th-text-primary font-medium">Membership analytics not configured</p>
         <p className="text-sm text-th-text-tertiary mt-1">
-          Set <code className="text-xs font-mono">VITE_MEMBERSHIP_ANALYTICS_SUPABASE_URL</code> and{' '}
-          <code className="text-xs font-mono">VITE_MEMBERSHIP_ANALYTICS_SUPABASE_ANON_KEY</code> in{' '}
-          <code className="text-xs font-mono">.env.local</code>.
+          Set <code className="text-xs font-mono">VITE_SUPABASE_URL</code> so the
+          membership-analytics-proxy edge function can be reached.
         </p>
       </div>
     );
@@ -249,9 +248,9 @@ export default function MembershipUnifiedMobileAppPanel({ onStatsLoaded }: Props
         <p className="text-sm text-th-text-secondary flex items-center gap-2">
           <InfoTip
             size="sm"
-            content="Same Supabase project as Membership & Sales (VITE_MEMBERSHIP_ANALYTICS_*). Counts use sales_analytics_view, users, members, and past_inactives — not the legacy analytics-hub mobile proxy."
+            content="Same Supabase project as Membership & Sales. Counts use sales_analytics_view, users, members, and past_inactives."
           />
-          Data from membership / app database (anon key + RLS).
+          Data from the membership / app database via the admin-authorized proxy.
         </p>
         <button
           type="button"

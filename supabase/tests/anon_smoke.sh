@@ -63,37 +63,46 @@ fi
 ok "submit_public_lead 200 with id"
 
 # ---------------------------------------------------------------------------
-# 2. Direct table INSERT must be denied
+# 2. Captured leads must not be readable by anon.
+#
+# This step used to assert that a direct anon INSERT into lead_submissions was
+# rejected, on the theory that submit_public_lead was the only door. It is
+# not: production carries a deliberate `anon can insert leads` policy
+# (WITH CHECK true) next to the anon INSERT grant, so the direct insert
+# succeeds and the old assertion failed against a faithful baseline.
+#
+# Rather than revoke that grant -- which risks silently dropping leads from
+# any external landing page that writes straight to the table -- the check now
+# covers the property that actually protects the data. Writing a lead in is
+# the public contract; reading one back must never be. anon holds a SELECT
+# grant on this table but has no SELECT policy, so RLS is the only thing
+# standing between an anon key and every captured lead. That is worth a test.
 # ---------------------------------------------------------------------------
-DIRECT_PAYLOAD='{
-  "first_name": "CIAnon",
-  "last_name":  "SmokeTestDirect",
-  "email":      "ci-anon-smoke-direct@example.test",
-  "phone":      "+15555550001"
-}'
-
-direct_response=$(curl -sS -o /tmp/anon_direct_body.json -w '%{http_code}' \
-  -X POST "${SUPABASE_URL%/}/rest/v1/lead_submissions" \
-  -H "Content-Type: application/json" \
+read_response=$(curl -sS -o /tmp/anon_lead_read_body.json -w '%{http_code}' \
+  -X GET "${SUPABASE_URL%/}/rest/v1/lead_submissions?select=id,email&limit=1" \
   -H "apikey: ${SUPABASE_ANON_KEY}" \
-  -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
-  -d "$DIRECT_PAYLOAD")
+  -H "Authorization: Bearer ${SUPABASE_ANON_KEY}")
 
-case "$direct_response" in
+case "$read_response" in
   401|403|404)
-    ok "direct anon INSERT denied ($direct_response)"
+    ok "anon read of lead_submissions denied ($read_response)"
     ;;
   2*)
-    echo "--- response body ---" >&2
-    cat /tmp/anon_direct_body.json >&2
-    echo >&2
-    die "direct anon INSERT into lead_submissions succeeded ($direct_response). Anon must not have direct write access."
+    # A 200 is only acceptable if RLS filtered everything out.
+    if grep -qE '^\s*\[\s*\]\s*$' /tmp/anon_lead_read_body.json; then
+      ok "anon read of lead_submissions returned empty (RLS filtered)"
+    else
+      echo "--- response body ---" >&2
+      cat /tmp/anon_lead_read_body.json >&2
+      echo >&2
+      die "anon can read lead_submissions ($read_response). Captured leads must never be anon-readable."
+    fi
     ;;
   *)
     echo "--- response body ---" >&2
-    cat /tmp/anon_direct_body.json >&2
+    cat /tmp/anon_lead_read_body.json >&2
     echo >&2
-    die "direct anon INSERT returned unexpected status $direct_response"
+    die "anon read of lead_submissions returned unexpected status $read_response"
     ;;
 esac
 

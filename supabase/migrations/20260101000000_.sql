@@ -1,5 +1,5 @@
 -- ============================================================
--- PRE-BASELINE: extensions required by 20260101000001_baseline_schema.sql
+-- PRE-BASELINE: prerequisites for 20260101000001_baseline_schema.sql
 -- ============================================================
 -- The baseline was produced with `supabase db dump --schema public`, which
 -- emits references to the extensions schema but never the CREATE EXTENSION
@@ -24,3 +24,23 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
 
 -- uuid_generate_v4, still used by a few column defaults.
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA extensions;
+
+-- net.http_post, used by the outbound sync triggers (ITSTS user/advisor
+-- mirroring) that fire on lead and profile writes. Without it those triggers
+-- abort the whole transaction with 'schema "net" does not exist', which made
+-- submit_public_lead fail in anon_smoke.sh. Same schema as production.
+CREATE EXTENSION IF NOT EXISTS pg_net WITH SCHEMA extensions;
+
+-- ------------------------------------------------------------
+-- Roles
+-- ------------------------------------------------------------
+-- The baseline GRANTs to board_sync_reader, and a dump never emits CREATE
+-- ROLE (roles are cluster-wide, not schema objects). Production already has
+-- it; a fresh stack does not, so the baseline failed on the first grant.
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'board_sync_reader') THEN
+    CREATE ROLE board_sync_reader LOGIN;
+  END IF;
+END
+$$;

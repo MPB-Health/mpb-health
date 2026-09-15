@@ -19,6 +19,7 @@ import { membershipPriorities, recommendPlans } from '../../lib/membershipPriori
 import { estimateAllMemberships, type AllMembershipsEstimate } from '../../lib/newRateEngine';
 import { getHouseholdPricingAge } from '../../lib/householdPricingAge';
 import { leadSubmissionService } from '../../lib/leadSubmissionService';
+import { getLeadAttribution } from '../../lib/leadAttribution';
 import { getQuoteCalculatorSessionId, recordQuoteCalculatorEvent } from '../../lib/quoteCalculatorTracking';
 import { fmtMoney } from '../../lib/utils';
 
@@ -231,6 +232,7 @@ export function QuickRateEstimateForm() {
       else if (householdType === 'member-family') householdSize = 2 + (dependentsCount || 0);
 
       const lead = await leadSubmissionService.submitLead({
+        ...getLeadAttribution(),
         firstName,
         lastName,
         email,

@@ -172,16 +172,13 @@ export default function HandbookManager() {
 
   const handlePdfUpload = async (file: File | undefined) => {
     if (!file) return;
-    if (!form.slug?.trim()) {
-      toast.error('Enter the slug first so the public /3d-flip-book/ link stays the same');
-      return;
-    }
     setUploadingPdf(true);
     try {
-      const url = await handbookAdminService.uploadPdf(file, form.slug);
+      const url = await handbookAdminService.uploadPdf(file, form.slug || form.name);
       setForm((prev) => ({ ...prev, pdf_path: url }));
-      toast.success('PDF uploaded. Save to publish it on the existing handbook link.');
+      toast.success('PDF uploaded. Save to publish it on the handbook link.');
     } catch (error) {
+      console.error('Handbook PDF upload failed', error);
       toast.error(error instanceof Error ? error.message : 'Failed to upload PDF');
     } finally {
       setUploadingPdf(false);

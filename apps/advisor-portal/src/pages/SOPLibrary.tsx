@@ -138,9 +138,9 @@ const HANDBOOK_LINKS: { title: string; url: string; description: string }[] = [
     description: 'Interactive handbook for the Essentials health sharing plan.',
   },
   {
-    title: 'MEC Essentials Handbook',
+    title: 'HSA Essentials Handbook',
     url: 'https://mpb.health/3d-flip-book/mecessentials-handbook',
-    description: 'Interactive handbook for the MEC Essentials plan.',
+    description: 'Interactive handbook for the HSA Essentials plan.',
   },
 ];
 

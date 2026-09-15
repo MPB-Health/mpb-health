@@ -2,9 +2,9 @@
  * Recurring advisor Teams meetings — single source of truth.
  *
  * Healthcare Advisor Meetings: 2nd and 4th Tuesday each month, each with its
- * own Teams join link (Sept 2025 advisor bulletin). Secure HSA Webinars are a
- * separate series. All portal surfaces (Live Meeting button, Dashboard, Quick
- * Links) must read from this module — do not hardcode Teams URLs elsewhere.
+ * own Teams join link (Sept 2025 advisor bulletin). All portal surfaces (Live
+ * Meeting button, Dashboard, Quick Links) must read from this module — do not
+ * hardcode Teams URLs elsewhere.
  */
 
 /** Healthcare Advisor Meeting — 2nd Tuesday of each month */
@@ -14,14 +14,6 @@ export const TEAMS_URL_SECOND_TUESDAY =
 /** Healthcare Advisor Meeting — 4th Tuesday of each month */
 export const TEAMS_URL_FOURTH_TUESDAY =
   'https://teams.microsoft.com/l/meetup-join/19%3ameeting_ODY1ZGM0NjEtYWIwNi00YzdmLTg1MjEtZWRiODEwZDc3NDVh%40thread.v2/0?context=%7b%22Tid%22%3a%22ad4e49c8-3dea-4d37-8be6-ee2fdc324f04%22%2c%22Oid%22%3a%22ad01a7ba-787a-4389-97d2-90b3ec45896c%22%7d';
-
-/** Secure HSA Webinar — 1st & 3rd Tuesday at 12 PM ET */
-export const TEAMS_URL_HSA_WEBINAR_TUESDAY =
-  'https://teams.microsoft.com/l/meetup-join/19%3ameeting_NzZkOTcxZWQtMTJmOC00MThlLWEwZWQtNTI3MTM4NjZkZjcx%40thread.v2/0?context=%7b%22Tid%22%3a%22ad4e49c8-3dea-4d37-8be6-ee2fdc324f04%22%2c%22Oid%22%3a%22790aa558-4c20-46ec-8708-30d8168cfa5d%22%7d';
-
-/** Secure HSA Webinar — 2nd & 4th Thursday at 4 PM ET */
-export const TEAMS_URL_HSA_WEBINAR_THURSDAY =
-  'https://teams.microsoft.com/l/meetup-join/19%3ameeting_ODgxYmZiOTItZjBlMy00NWE4LWE3ZjUtMWFkZTBmYjEwZWEy%40thread.v2/0?context=%7b%22Tid%22%3a%22ad4e49c8-3dea-4d37-8be6-ee2fdc324f04%22%2c%22Oid%22%3a%22790aa558-4c20-46ec-8708-30d8168cfa5d%22%7d';
 
 export type MeetingLinkRow = {
   id: string;
@@ -43,21 +35,6 @@ export const HEALTHCARE_ADVISOR_MEETING_LINKS: readonly MeetingLinkRow[] = [
     label: '4th Tuesday',
     schedule: '4th Tuesday each month',
     url: TEAMS_URL_FOURTH_TUESDAY,
-  },
-];
-
-export const SECURE_HSA_WEBINAR_LINKS: readonly MeetingLinkRow[] = [
-  {
-    id: 'hsa-tuesday',
-    label: 'Tuesdays at 12 PM ET',
-    schedule: '1st & 3rd Tuesday each month',
-    url: TEAMS_URL_HSA_WEBINAR_TUESDAY,
-  },
-  {
-    id: 'hsa-thursday',
-    label: 'Thursdays at 4 PM ET',
-    schedule: '2nd & 4th Thursday each month',
-    url: TEAMS_URL_HSA_WEBINAR_THURSDAY,
   },
 ];
 

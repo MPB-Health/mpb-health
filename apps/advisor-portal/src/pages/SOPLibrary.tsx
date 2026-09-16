@@ -133,6 +133,16 @@ const HANDBOOK_LINKS: { title: string; url: string; description: string }[] = [
     description: 'Interactive handbook for the Secure HSA plan.',
   },
   {
+    title: 'Premium HSA Handbook',
+    url: 'https://mpb.health/3d-flip-book/premium-hsa',
+    description: 'Interactive handbook for the Premium HSA plan.',
+  },
+  {
+    title: 'Premium Care Handbook',
+    url: 'https://mpb.health/3d-flip-book/premium-care',
+    description: 'Interactive handbook for the Premium Care plan.',
+  },
+  {
     title: 'Essentials Handbook',
     url: 'https://mpb.health/3d-flip-book/essentials',
     description: 'Interactive handbook for the Essentials health sharing plan.',

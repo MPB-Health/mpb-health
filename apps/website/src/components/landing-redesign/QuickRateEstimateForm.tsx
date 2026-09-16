@@ -110,6 +110,8 @@ export function QuickRateEstimateForm() {
   });
 
   const householdType = watch('householdType');
+  const needsSpouse = householdType === 'member-spouse' || householdType === 'member-family';
+  const needsKids = householdType === 'member-child' || householdType === 'member-family';
   const state = watch('state');
   const primaryAge = watch('primaryAge');
   const spouseAge = watch('spouseAge');
@@ -362,8 +364,13 @@ export function QuickRateEstimateForm() {
               </label>
             </div>
 
-            {(householdType === 'member-spouse' || householdType === 'member-family') && (
-              <div className="qre__panel qre__panel--spouse">
+            {/* Both household panels stay mounted so the form (and the photo
+                beside it) keeps one height no matter which option is picked;
+                the ones that don't apply are hidden but still take up space. */}
+            <div
+              className={`qre__panel qre__panel--spouse${needsSpouse ? '' : ' is-off'}`}
+              aria-hidden={!needsSpouse}
+            >
                 <label className="qre__field">
                   <span className="qre__label">Spouse Age</span>
                   <input
@@ -372,15 +379,18 @@ export function QuickRateEstimateForm() {
                     min={18}
                     max={64}
                     placeholder="e.g., 33"
+                    disabled={!needsSpouse}
+                    tabIndex={needsSpouse ? undefined : -1}
                     {...register('spouseAge', { valueAsNumber: true })}
                   />
                   {errors.spouseAge ? <span className="qre__error">{errors.spouseAge.message}</span> : null}
                 </label>
-              </div>
-            )}
+            </div>
 
-            {(householdType === 'member-child' || householdType === 'member-family') && (
-              <div className="qre__panel qre__panel--kids">
+            <div
+              className={`qre__panel qre__panel--kids${needsKids ? '' : ' is-off'}`}
+              aria-hidden={!needsKids}
+            >
                 <div className="qre__fields">
                   <label className="qre__field">
                     <span className="qre__label">Children less than 26</span>
@@ -390,6 +400,8 @@ export function QuickRateEstimateForm() {
                       min={1}
                       max={10}
                       placeholder="e.g., 2"
+                      disabled={!needsKids}
+                      tabIndex={needsKids ? undefined : -1}
                       {...register('dependentsCount', { valueAsNumber: true })}
                     />
                     {errors.dependentsCount ? (
@@ -404,6 +416,8 @@ export function QuickRateEstimateForm() {
                       min={0}
                       max={64}
                       placeholder="e.g., 18"
+                      disabled={!needsKids}
+                      tabIndex={needsKids ? undefined : -1}
                       {...register('oldestDependentAge', { valueAsNumber: true })}
                     />
                     {errors.oldestDependentAge ? (
@@ -412,8 +426,7 @@ export function QuickRateEstimateForm() {
                   </label>
                 </div>
                 <p className="qre__note">We price using the oldest age in the household.</p>
-              </div>
-            )}
+            </div>
           </div>
         )}
 

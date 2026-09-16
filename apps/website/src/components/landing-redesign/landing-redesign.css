@@ -24,10 +24,17 @@
   --lr-shadow-sm: 0 10px 34px -18px rgba(15, 27, 45, 0.28);
   --lr-font: 'Figtree', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --lr-ease: cubic-bezier(0.16, 1, 0.3, 1);
-  --lr-aurora: linear-gradient(115deg, #1a4fd6 0%, #2cb7dc 34%, #a3e475 64%, #7fd3c9 82%, #a3e475 104%);
-  /* Primary action gradient: lime leads, settles into the brand blue */
-  --lr-cta: linear-gradient(90deg, #a3e475 0%, #2cb7dc 55%, #1a4fd6 100%);
-  --lr-cta-hover: linear-gradient(90deg, #b4ec8a 0%, #3cc3e6 55%, #2a5fe0 100%);
+  --lr-aurora: linear-gradient(115deg, #0668e1 0%, #1a87e8 28%, #1cb1e1 50%, #52e3e3 70%, #7dd997 92%, #5ad9c0 108%);
+  /* Primary action gradient: the logo mesh in miniature — mint left edge,
+     turquoise, azure core sitting right of centre (colours sampled from the tile) */
+  --lr-cta:
+    radial-gradient(120% 150% at 84% 50%, #0668e1 0%, #1a87e8 32%, rgba(26, 135, 232, 0) 64%),
+    radial-gradient(70% 130% at 52% 110%, #1cb1e1 0%, rgba(28, 177, 225, 0) 62%),
+    linear-gradient(100deg, #7dd997 0%, #52e3e3 34%, #1cb1e1 60%, #1a87e8 100%);
+  --lr-cta-hover:
+    radial-gradient(120% 150% at 84% 50%, #1774ea 0%, #2b92ee 32%, rgba(43, 146, 238, 0) 64%),
+    radial-gradient(70% 130% at 52% 110%, #2fbde8 0%, rgba(47, 189, 232, 0) 62%),
+    linear-gradient(100deg, #8ae0a4 0%, #66e8e8 34%, #2fbde8 60%, #2b92ee 100%);
 }
 
 .lr {
@@ -658,15 +665,16 @@
 }
 
 .lr-hero::after {
+  /* Light veil only: the logo mesh is bright, so keep the aurora luminous */
   content: '';
   position: absolute;
   inset: 0;
   z-index: -1;
   background: linear-gradient(
     to bottom,
-    rgba(8, 20, 40, 0.44) 0%,
-    rgba(8, 20, 40, 0.12) 40%,
-    rgba(8, 20, 40, 0.52) 100%
+    rgba(8, 20, 40, 0.22) 0%,
+    rgba(8, 20, 40, 0.04) 40%,
+    rgba(8, 20, 40, 0.26) 100%
   );
 }
 
@@ -1263,7 +1271,7 @@
 
 .lr-statement {
   position: relative;
-  background: #1a4fd6;
+  background: #0f6fe6;
   padding: 7rem 0;
   color: #fff;
   overflow: hidden;
@@ -1348,8 +1356,8 @@
   z-index: 0;
   background: radial-gradient(
     75% 85% at 50% 42%,
-    rgba(8, 20, 40, 0.42),
-    rgba(8, 20, 40, 0.12) 75%
+    rgba(8, 20, 40, 0.22),
+    rgba(8, 20, 40, 0.04) 75%
   );
   pointer-events: none;
 }
@@ -2106,6 +2114,12 @@
 
 .qre__panel--kids {
   background: #eef9e0;
+}
+
+/* Reserved slot: keeps the step's height constant across household choices */
+.qre__panel.is-off {
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .qre__note {

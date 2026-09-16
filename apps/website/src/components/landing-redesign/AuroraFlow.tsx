@@ -4,8 +4,8 @@ const MeshGradient = lazy(() =>
   import('@paper-design/shaders-react').then((m) => ({ default: m.MeshGradient })),
 );
 
-// Lime appears twice so the mesh reads blue → cyan → lime with green weight
-const AURORA_COLORS = ['#1a4fd6', '#2cb7dc', '#a3e475', '#2cb7dc', '#7fd3c9', '#a3e475'];
+// Sampled from the square logo mesh (k-means over the tile): blue core, azure, turquoise, mint
+const AURORA_COLORS = ['#0668e1', '#1a87e8', '#1cb1e1', '#52e3e3', '#7dd997', '#5ad9c0'];
 
 /**
  * Animated WebGL mesh gradient (brand aurora).

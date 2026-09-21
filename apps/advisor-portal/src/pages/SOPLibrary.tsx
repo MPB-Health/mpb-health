@@ -115,8 +115,16 @@ const fallbackSectionConfig: Record<string, SectionEntry> = {
   },
 };
 
+type HandbookLink = {
+  title: string;
+  url: string;
+  description: string;
+  /** ISO timestamp; card stays hidden until this instant (America/New_York). */
+  visibleAfter?: string;
+};
+
 // Hardcoded handbook links (external 3D flip-book URLs, not CMS documents)
-const HANDBOOK_LINKS: { title: string; url: string; description: string }[] = [
+const HANDBOOK_LINKS: HandbookLink[] = [
   {
     title: 'Care+ Handbook',
     url: 'https://mpb.health/3d-flip-book/careplus',
@@ -152,7 +160,24 @@ const HANDBOOK_LINKS: { title: string; url: string; description: string }[] = [
     url: 'https://mpb.health/3d-flip-book/mecessentials-handbook',
     description: 'Interactive handbook for the HSA Essentials plan.',
   },
+  {
+    title: 'MPB Flow',
+    url: 'https://mpb.health/3d-flip-book/flow',
+    description: 'Interactive handbook for the MPB Flow plan.',
+    visibleAfter: '2026-09-22T16:00:00-04:00',
+  },
+  {
+    title: 'MPB Flow + HSA',
+    url: 'https://mpb.health/3d-flip-book/flow-hsa',
+    description: 'Interactive handbook for the MPB Flow + HSA plan.',
+    visibleAfter: '2026-09-22T16:00:00-04:00',
+  },
 ];
+
+function isHandbookVisible(book: HandbookLink): boolean {
+  if (!book.visibleAfter) return true;
+  return Date.now() >= Date.parse(book.visibleAfter);
+}
 
 /** Build section config dynamically from CMS categories, falling back to hardcoded defaults */
 function buildSectionConfig(categories: SOPCategory[]): Record<string, SectionEntry> {
@@ -238,6 +263,8 @@ export default function SOPLibrary({ section }: SOPLibraryProps) {
 
   // Render hardcoded handbook links for the /sops/handbooks section
   if (section === 'handbooks') {
+    const visibleHandbooks = HANDBOOK_LINKS.filter(isHandbookVisible);
+
     return (
       <div className="space-y-6">
         {/* Header */}
@@ -260,7 +287,7 @@ export default function SOPLibrary({ section }: SOPLibraryProps) {
             gap: '1rem',
           }}
         >
-          {HANDBOOK_LINKS.map((book) => (
+          {visibleHandbooks.map((book) => (
             <a
               key={book.url}
               href={book.url}

@@ -196,13 +196,11 @@ const LOCAL_FLYERS: HandbookLink[] = [
     title: 'MPB Flow Flyer',
     url: `/assets/${encodeURIComponent('MPB FLOW FLYER.pdf')}`,
     description: 'Marketing flyer for the MPB Flow plan.',
-    visibleAfter: '2026-09-22T16:00:00-04:00',
   },
   {
     title: 'MPB Flow + HSA Flyer',
     url: `/assets/${encodeURIComponent('MPB FLOW+HSA FLYER.pdf')}`,
     description: 'Marketing flyer for the MPB Flow + HSA plan.',
-    visibleAfter: '2026-09-22T16:00:00-04:00',
   },
 ];
 
@@ -309,16 +307,14 @@ export default function SOPLibrary({ section }: SOPLibraryProps) {
 
   const localFlyerDocuments =
     section === 'flyers'
-      ? LOCAL_FLYERS.filter(isHandbookVisible)
-          .filter((flyer) => {
-            if (!searchQuery) return true;
-            const q = searchQuery.toLowerCase();
-            return (
-              flyer.title.toLowerCase().includes(q) ||
-              flyer.description.toLowerCase().includes(q)
-            );
-          })
-          .map(localFlyerToDocument)
+      ? LOCAL_FLYERS.filter((flyer) => {
+          if (!searchQuery) return true;
+          const q = searchQuery.toLowerCase();
+          return (
+            flyer.title.toLowerCase().includes(q) ||
+            flyer.description.toLowerCase().includes(q)
+          );
+        }).map(localFlyerToDocument)
       : [];
   const displayedDocuments = [...localFlyerDocuments, ...filteredDocuments];
 

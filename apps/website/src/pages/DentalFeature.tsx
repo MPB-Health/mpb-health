@@ -82,6 +82,15 @@ function SavingsScale() {
   );
 }
 
+/** App and portal names are set in bold in the approved FAQ copy. */
+const BOLD_TERMS = /(MPB Health App|Member Portal)/;
+
+function withBoldTerms(text: string): React.ReactNode {
+  return text.split(BOLD_TERMS).map((part, i) => (i % 2 ? <strong key={i}>{part}</strong> : part));
+}
+
+const FAQ_ITEMS = DENTAL_FAQS.map((f) => ({ question: f.question, answer: <p>{withBoldTerms(f.answer)}</p> }));
+
 export const DentalFeature: React.FC = () => {
   return (
     <>
@@ -337,7 +346,7 @@ export const DentalFeature: React.FC = () => {
           </section>
 
           <FaqSection
-            items={DENTAL_FAQS}
+            items={FAQ_ITEMS}
             intro="What members ask most about dental savings and teledentistry."
           />
 

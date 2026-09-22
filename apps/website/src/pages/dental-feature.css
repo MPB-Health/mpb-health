@@ -646,3 +646,14 @@
 .dnt .dnt-legal strong {
   color: var(--lr-ink);
 }
+
+/* ——— FAQ ——— */
+
+.dnt .lr-faq__answer p {
+  margin: 0;
+}
+
+.dnt .lr-faq__answer strong {
+  font-weight: 700;
+  color: var(--lr-ink);
+}

@@ -174,7 +174,7 @@ const HANDBOOK_LINKS: HandbookLink[] = [
 const LOCAL_FLYERS: HandbookLink[] = [
   {
     title: 'MPB Flow Flyer',
-    url: `/assets/${encodeURIComponent('MPB FLOW FLYER.pdf')}`,
+    url: `/assets/${encodeURIComponent('MPB FLOW FLYER.png')}`,
     description: 'Marketing flyer for the MPB Flow plan.',
     image: '/images/flyers/mpb-flow-flyer-thumb.png',
   },

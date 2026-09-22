@@ -191,6 +191,40 @@ function isHandbookVisible(book: HandbookLink): boolean {
   return Date.now() >= Date.parse(book.visibleAfter);
 }
 
+const LOCAL_FLYERS: HandbookLink[] = [
+  {
+    title: 'MPB Flow Flyer',
+    url: `/assets/${encodeURIComponent('MPB FLOW FLYER.pdf')}`,
+    description: 'Marketing flyer for the MPB Flow plan.',
+    visibleAfter: '2026-09-22T16:00:00-04:00',
+  },
+  {
+    title: 'MPB Flow + HSA Flyer',
+    url: `/assets/${encodeURIComponent('MPB FLOW+HSA FLYER.pdf')}`,
+    description: 'Marketing flyer for the MPB Flow + HSA plan.',
+    visibleAfter: '2026-09-22T16:00:00-04:00',
+  },
+];
+
+function localFlyerToDocument(flyer: HandbookLink): SOPDocument {
+  return {
+    id: `local-flyer-${flyer.title}`,
+    title: flyer.title,
+    description: flyer.description,
+    category: 'flyers',
+    content: '',
+    content_type: 'pdf',
+    file_url: flyer.url,
+    image_url: null,
+    version: '1.0',
+    is_published: true,
+    tags: ['flyers', 'mpb flow'],
+    view_count: 0,
+    created_at: '',
+    updated_at: '',
+  };
+}
+
 /** Build section config dynamically from CMS categories, falling back to hardcoded defaults */
 function buildSectionConfig(categories: SOPCategory[]): Record<string, SectionEntry> {
   if (categories.length === 0) return fallbackSectionConfig;
@@ -272,6 +306,21 @@ export default function SOPLibrary({ section }: SOPLibraryProps) {
       doc.tags?.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()));
     return matchesSearch;
   });
+
+  const localFlyerDocuments =
+    section === 'flyers'
+      ? LOCAL_FLYERS.filter(isHandbookVisible)
+          .filter((flyer) => {
+            if (!searchQuery) return true;
+            const q = searchQuery.toLowerCase();
+            return (
+              flyer.title.toLowerCase().includes(q) ||
+              flyer.description.toLowerCase().includes(q)
+            );
+          })
+          .map(localFlyerToDocument)
+      : [];
+  const displayedDocuments = [...localFlyerDocuments, ...filteredDocuments];
 
   // Render hardcoded handbook links for the /sops/handbooks section
   if (section === 'handbooks') {
@@ -392,8 +441,8 @@ export default function SOPLibrary({ section }: SOPLibraryProps) {
 
       {/* Cards grid - matches Resource Center layout */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-        {filteredDocuments.length > 0 ? (
-          filteredDocuments.map((doc) => {
+        {displayedDocuments.length > 0 ? (
+          displayedDocuments.map((doc) => {
             const url = doc.file_url?.toLowerCase() || '';
             const isPPTX = url.match(/\.pptx?$/) !== null;
             const isXLSX = url.match(/\.xlsx?$/) !== null;

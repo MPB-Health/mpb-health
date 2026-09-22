@@ -19,7 +19,7 @@ export const DENTAL_FEATURE = {
     'Good oral health is an important part of your overall well-being. That is why select MPB Health memberships include access to the Careington POS dental network and DialCare Teledentistry, giving you more ways to save on dental care and connect with a licensed dental provider whenever you need one.',
     'Whether it is time for your next cleaning, you are planning dental work, or you have an unexpected toothache, these services are here to help.',
   ],
-  eligiblePlans: ['MPB Membership', 'MPB HSA Membership'],
+  eligiblePlans: ['MPB Flow', 'MPB Flow+HSA'],
 } as const;
 
 export const CAREINGTON = {

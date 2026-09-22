@@ -365,7 +365,7 @@ export const DentalFeature: React.FC = () => {
           <AuroraBand
             ariaLabel="Explore memberships"
             title="More ways to care for your smile."
-            lede="Dental savings and teledentistry come with the MPB Membership and MPB HSA Membership."
+            lede={`Dental savings and teledentistry come with ${DENTAL_FEATURE.eligiblePlans.join(' and ')}.`}
             actions={
               <>
                 <Link className="lr-btn lr-btn--white" to="/plans">

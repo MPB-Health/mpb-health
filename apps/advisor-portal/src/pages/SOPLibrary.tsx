@@ -221,6 +221,7 @@ function localFlyerToDocument(flyer: HandbookLink): SOPDocument {
     is_published: true,
     tags: ['flyers', 'mpb flow'],
     view_count: 0,
+    metadata: { overlay_title: true },
     created_at: '',
     updated_at: '',
   };

@@ -176,7 +176,7 @@ const LOCAL_FLYERS: HandbookLink[] = [
     title: 'MPB Flow Flyer',
     url: `/assets/${encodeURIComponent('MPB FLOW FLYER.png')}`,
     description: 'Marketing flyer for the MPB Flow plan.',
-    image: '/images/flyers/mpb-flow-flyer-thumb.png',
+    image: `/assets/${encodeURIComponent('MPB FLOW FLYER.png')}`,
   },
   {
     title: 'MPB Flow + HSA Flyer',

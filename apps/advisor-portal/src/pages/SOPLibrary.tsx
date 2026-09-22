@@ -206,13 +206,13 @@ const LOCAL_SHARING_GUIDELINES: HandbookLink[] = [
     title: 'MPB Flow Member Guidelines',
     url: `/assets/${encodeURIComponent('MPB Flow Member Guidelines.pdf')}`,
     description: 'Member guidelines for the MPB Flow plan.',
-    image: '/images/guidelines/mpb-flow-member-guidelines-thumb.png',
+    image: '/images/guidelines/mpb-flow-member-guidelines-thumb.png?v=2',
   },
   {
     title: 'MPB Flow + HSA Member Guidelines',
     url: `/assets/${encodeURIComponent('MPB FLOW+HSA Membership Member Guidelines.pdf')}`,
     description: 'Member guidelines for the MPB Flow + HSA plan.',
-    image: '/images/guidelines/mpb-flow-hsa-member-guidelines-thumb.png',
+    image: '/images/guidelines/mpb-flow-hsa-member-guidelines-thumb.png?v=2',
   },
 ];
 

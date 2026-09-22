@@ -66,18 +66,21 @@ const PILLARS = [
     title: 'Mental.',
     text: 'Access support for your mental and emotional well being.',
     image: '/assets/pillar-mental.jpg',
+    position: '50% 50%',
     to: '/features/mental-health',
   },
   {
     title: 'Physical.',
     text: 'Enjoy 30% off supplements and vitamins to support your overall health and wellness.',
-    image: '/assets/runner-forest.jpg',
+    image: '/assets/pillar-physical.jpg',
+    position: '38% 50%',
     to: '/features/preventive-care',
   },
   {
     title: 'Balance.',
     text: 'Modern healthcare and real life working together so you can thrive.',
     image: '/assets/pillar-balance.jpg',
+    position: '50% 50%',
     to: '/how-it-works',
   },
 ] as const;
@@ -351,7 +354,7 @@ export function LandingRedesign() {
   // The pillar panel climbs over the aurora as the page scrolls, and a navy
   // smoke fades in over the glass so the whole card reads darker en route.
   const panelRise = useTransform(heroProgress, [0, 1], [0, -140]);
-  const panelTint = useTransform(heroProgress, [0.12, 0.9], [0, 0.28]);
+  const panelTint = useTransform(heroProgress, [0.12, 0.9], [0, 0.18]);
 
   const scrollTrack = (dir: 1 | -1) => {
     const el = trackRef.current;
@@ -479,6 +482,7 @@ export function LandingRedesign() {
                 alt=""
                 width={2400}
                 height={1600}
+                style={{ objectPosition: '62% 52%' }}
                 loading="lazy"
                 decoding="async"
               />
@@ -519,7 +523,13 @@ export function LandingRedesign() {
               <Reveal key={card.title} delay={i * 0.08}>
                 <Link to={card.to} className="lr-gallery__card">
                   <div className="lr-gallery__imgwrap">
-                    <img src={card.image} alt="" loading="lazy" decoding="async" />
+                    <img
+                      src={card.image}
+                      alt=""
+                      style={{ objectPosition: card.position }}
+                      loading="lazy"
+                      decoding="async"
+                    />
                   </div>
                   <div className="lr-gallery__body">
                     <h3 className="lr-gallery__name">{card.title}</h3>

@@ -179,6 +179,15 @@ const entries = [
     'Medical weight loss support including GLP-1 prescriptions through virtual care visits with licensed providers.',
   ),
 
+  entry('/features/dental', {
+    title: 'Dental Savings & Teledentistry – Healthcare Features | MPB Health',
+    h1: 'Dental Savings & Teledentistry',
+    description:
+      'Select MPB Health memberships include access to the Careington POS dental network and DialCare Teledentistry, giving you more ways to save on dental care and connect with a licensed dental provider 24/7/365.',
+    keywords: 'MPB Health, dental savings, dental discount plan, Careington POS dental network, DialCare Teledentistry, teledentistry',
+    ogImage: `${SITE}/assets/feature-dental.jpg`,
+  }),
+
   // ── Voluntary benefits ───────────────────────────────────────────────
   benefit('disability', 'Disability', 'Protect your income if you cannot work', 'Income protection when illness or injury prevents you from working.'),
   benefit('critical-illness', 'Critical Illness', 'Lump-sum benefit for serious diagnoses', 'Financial support when diagnosed with a covered critical illness like cancer, heart attack, or stroke.'),

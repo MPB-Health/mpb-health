@@ -59,6 +59,7 @@ const HealthyCarePodcast = lazyAuto(() => import('./pages/HealthyCarePodcast'));
 const BenefitDetail = lazyAuto(() => import('./pages/BenefitDetail'));
 const Features = lazyAuto(() => import('./pages/Features'));
 const FeatureDetail = lazyAuto(() => import('./pages/FeatureDetail'));
+const DentalFeature = lazyAuto(() => import('./pages/DentalFeature'));
 const PlanCategoryDetail = lazyAuto(() => import('./pages/PlanCategoryDetail'));
 
 // Resources
@@ -576,6 +577,7 @@ const App = () => {
                   />
                   <Route path="/resources/:slug" element={<ResourceDetail />} />
                   <Route path="/benefits/:benefitId" element={<BenefitDetail />} />
+                  <Route path="/features/dental" element={<DentalFeature />} />
                   <Route path="/features/:featureId" element={<FeatureDetail />} />
                   <Route path="/plan-categories/:slug" element={<PlanCategoryDetail />} />
                   <Route path="/newsletter/unsubscribe" element={<NewsletterUnsubscribe />} />

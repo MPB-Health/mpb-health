@@ -33,6 +33,7 @@ const CATEGORY_BY_FEATURE: Record<string, CategoryId> = {
   'pet-telehealth': 'support',
   'rx-benefits': 'savings',
   'hsa-compatibility': 'savings',
+  dental: 'savings',
 };
 
 export const Features: React.FC = () => {
@@ -123,7 +124,7 @@ export const Features: React.FC = () => {
                         <Link to={`/features/${feature.id}`} className="ftr-card">
                           <div className="ftr-card__media">
                             <img
-                              src={feature.heroImage}
+                              src={feature.cardImage ?? feature.heroImage}
                               alt=""
                               width={400}
                               height={192}

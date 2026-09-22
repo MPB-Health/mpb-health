@@ -1,5 +1,6 @@
-import { Stethoscope, Ambulance, Brain, Baby, Pill, Wallet, ShieldCheck, Headphones, PawPrint, Heart, Video, Scale } from 'lucide-react';
+import { Smile, Stethoscope, Ambulance, Brain, Baby, Pill, Wallet, ShieldCheck, Headphones, PawPrint, Heart, Video, Scale } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { CAREINGTON, DENTAL_FAQS, DENTAL_FEATURE, DIALCARE, HOW_IT_WORKS } from './dentalFeatureData';
 
 export interface FeatureKeyPoint {
   title: string;
@@ -18,6 +19,8 @@ export interface HealthcareFeature {
   tagline: string;
   shortDescription: string;
   heroImage: string;
+  /** Optional 16:9 crop for the /features grid when the hero photo is portrait. */
+  cardImage?: string;
   detailedDescription: string;
   keyPoints: FeatureKeyPoint[];
   howItWorks: string[];
@@ -867,6 +870,27 @@ export const healthcareFeatures: HealthcareFeature[] = [
       'Coordination of prescription fulfillment through Rx Valet (Secure HSA members)'
     ],
     disclaimer: 'Weight loss medications are prescribed at the discretion of a licensed provider based on medical appropriateness. Prescription must be written for compounded Semaglutide or compounded Tirzepatide to qualify for the Rx Valet program. Rx Valet access available to Secure HSA members only.'
+  },
+  {
+    // Rendered by the dedicated /features/dental page; this entry lists it on /features.
+    id: DENTAL_FEATURE.id,
+    name: DENTAL_FEATURE.name,
+    icon: Smile,
+    tagline: DENTAL_FEATURE.tagline,
+    shortDescription: DENTAL_FEATURE.shortDescription,
+    heroImage: DENTAL_FEATURE.heroImage,
+    cardImage: DENTAL_FEATURE.cardImage,
+    detailedDescription: DENTAL_FEATURE.intro.join(' '),
+    keyPoints: [...CAREINGTON.features, ...DIALCARE.features].map((f) => ({ ...f })),
+    howItWorks: HOW_IT_WORKS.map((s) => `${s.title} ${s.text}`),
+    eligiblePlans: [...DENTAL_FEATURE.eligiblePlans],
+    membership: [],
+    faqs: DENTAL_FAQS.map((f) => ({ ...f })),
+    color: 'text-cyan-600',
+    bgColor: 'bg-cyan-50',
+    gradientFrom: 'from-cyan-600',
+    gradientTo: 'to-emerald-500',
+    examples: [],
   }
 ];
 

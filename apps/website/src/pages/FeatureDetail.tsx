@@ -30,6 +30,7 @@ const CATEGORY_BY_FEATURE: Record<string, string> = {
   'pet-telehealth': 'Support',
   'rx-benefits': 'Savings',
   'hsa-compatibility': 'Savings',
+  dental: 'Savings',
 };
 
 const WEIGHT_LOSS_PATHWAYS = {

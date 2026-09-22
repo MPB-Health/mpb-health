@@ -120,8 +120,6 @@ type HandbookLink = {
   url: string;
   description: string;
   image?: string;
-  /** ISO timestamp; card stays hidden until this instant (America/New_York). */
-  visibleAfter?: string;
 };
 
 // Hardcoded handbook links (external 3D flip-book URLs, not CMS documents)
@@ -165,32 +163,23 @@ const HANDBOOK_LINKS: HandbookLink[] = [
     title: 'MPB Flow',
     url: 'https://mpb.health/3d-flip-book/flow',
     description: 'Interactive handbook for the MPB Flow plan.',
-    visibleAfter: '2026-09-22T16:00:00-04:00',
   },
   {
     title: 'MPB Flow + HSA',
     url: 'https://mpb.health/3d-flip-book/flow-hsa',
     description: 'Interactive handbook for the MPB Flow + HSA plan.',
-    visibleAfter: '2026-09-22T16:00:00-04:00',
   },
   {
     title: 'MPB Flow Guidelines',
     url: 'https://mpb.health/3d-flip-book/flow-guidelines',
     description: 'Guidelines for the MPB Flow plan.',
-    visibleAfter: '2026-09-22T16:00:00-04:00',
   },
   {
     title: 'MPB Flow + HSA Guidelines',
     url: 'https://mpb.health/3d-flip-book/flow-hsa-guidelines',
     description: 'Guidelines for the MPB Flow + HSA plan.',
-    visibleAfter: '2026-09-22T16:00:00-04:00',
   },
 ];
-
-function isHandbookVisible(book: HandbookLink): boolean {
-  if (!book.visibleAfter) return true;
-  return Date.now() >= Date.parse(book.visibleAfter);
-}
 
 const LOCAL_FLYERS: HandbookLink[] = [
   {
@@ -361,8 +350,6 @@ export default function SOPLibrary({ section }: SOPLibraryProps) {
 
   // Render hardcoded handbook links for the /sops/handbooks section
   if (section === 'handbooks') {
-    const visibleHandbooks = HANDBOOK_LINKS.filter(isHandbookVisible);
-
     return (
       <div className="space-y-6">
         {/* Header */}
@@ -385,7 +372,7 @@ export default function SOPLibrary({ section }: SOPLibraryProps) {
             gap: '1rem',
           }}
         >
-          {visibleHandbooks.map((book) => (
+          {HANDBOOK_LINKS.map((book) => (
             <a
               key={book.url}
               href={book.url}

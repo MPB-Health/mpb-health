@@ -18,7 +18,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Play,
-  Info,
   AlertTriangle,
   CheckCircle2,
   AlertCircle,
@@ -49,7 +48,6 @@ import SafeImage from '../components/SafeImage';
 import AdvisorAtAGlance from '../components/dashboard/AdvisorAtAGlance';
 
 const JOIN_MPB_BASE = 'https://join.mpb.health';
-const INCENTIVE_FLYER_VISIBLE_AFTER = Date.parse('2026-09-22T16:00:00-04:00');
 const INCENTIVE_FLYER_SRC = '/images/incentive-trip-key-west-2027.jpg';
 
 interface FallbackQuickLink {
@@ -425,24 +423,6 @@ export default function Dashboard() {
               <p className="text-th-text-tertiary text-sm max-w-md">
                 Empowering Healthcare Advisors — Making a Difference Every Day.
               </p>
-              {Date.now() < INCENTIVE_FLYER_VISIBLE_AFTER && (
-                <div className="!mt-4 flex items-start gap-3 rounded-xl border border-blue-200 dark:border-blue-800/40 bg-gradient-to-r from-blue-50 via-sky-50 to-indigo-50 dark:from-blue-900/20 dark:via-sky-900/15 dark:to-indigo-900/20 p-4 shadow-sm">
-                  <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0">
-                    <Info className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-blue-800 dark:text-blue-300">
-                      MPB Health Billing Update
-                    </p>
-                    <p className="text-sm text-blue-700/90 dark:text-blue-300/80 leading-relaxed mt-0.5">
-                      If your account was affected by the recent billing issue, your refund has been
-                      processed. Please allow your financial institution time to post the refund to
-                      your account, as processing times may vary. We appreciate your patience and
-                      will continue to provide updates as needed.
-                    </p>
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Quick-access actions */}
@@ -484,15 +464,13 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {Date.now() >= INCENTIVE_FLYER_VISIBLE_AFTER && (
-            <div className="mt-5">
-              <SafeImage
-                src={INCENTIVE_FLYER_SRC}
-                alt="Sell the new memberships. Wake up in Key West. Incentive trip at Opal Key West Resort & Marina, May 13–17, 2027."
-                className="w-full rounded-xl border border-th-border-subtle shadow-sm"
-              />
-            </div>
-          )}
+          <div className="mt-5">
+            <SafeImage
+              src={INCENTIVE_FLYER_SRC}
+              alt="Sell the new memberships. Wake up in Key West. Incentive trip at Opal Key West Resort & Marina, May 13–17, 2027."
+              className="w-full rounded-xl border border-th-border-subtle shadow-sm"
+            />
+          </div>
 
           {/* Stat pills */}
           <div className="mt-5 pt-5 border-t border-th-border-subtle flex flex-wrap gap-2.5">

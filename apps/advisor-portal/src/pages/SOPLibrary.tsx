@@ -182,7 +182,7 @@ const LOCAL_FLYERS: HandbookLink[] = [
     title: 'MPB Flow + HSA Flyer',
     url: `/assets/${encodeURIComponent('MPB FLOW+HSA FLYER.pdf')}`,
     description: 'Marketing flyer for the MPB Flow + HSA plan.',
-    image: '/images/flyers/mpb-flow-hsa-flyer-thumb.png',
+    image: '/images/flyers/mpb-flow-hsa-flyer-thumb.png?v=2',
   },
 ];
 

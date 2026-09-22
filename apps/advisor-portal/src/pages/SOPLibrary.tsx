@@ -191,13 +191,13 @@ const LOCAL_PRICING_CHARTS: HandbookLink[] = [
     title: 'MPB Flow Price Sheet',
     url: `/assets/${encodeURIComponent('MPB FLOW PRICE SHEET.pdf')}`,
     description: 'Pricing chart for the MPB Flow plan.',
-    image: '/images/pricing/mpb-flow-price-sheet-thumb.png',
+    image: '/images/pricing/mpb-flow-price-sheet-thumb.png?v=2',
   },
   {
     title: 'MPB Flow + HSA Price Sheet',
     url: `/assets/${encodeURIComponent('MPB HSA PRICE SHEET.pdf')}`,
     description: 'Pricing chart for the MPB Flow + HSA plan.',
-    image: '/images/pricing/mpb-flow-hsa-price-sheet-thumb.png',
+    image: '/images/pricing/mpb-flow-hsa-price-sheet-thumb.png?v=2',
   },
 ];
 

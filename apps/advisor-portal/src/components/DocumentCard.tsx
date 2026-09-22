@@ -74,18 +74,17 @@ export default function DocumentCard({ doc, onClick }: DocumentCardProps) {
           <SafeImage
             src={doc.image_url!}
             alt={doc.title}
-            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            className="relative z-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
             style={{ objectPosition: (doc.metadata?.image_position as string) || 'center top' }}
             fallbackClassName="w-full h-full flex items-center justify-center bg-surface-tertiary text-th-text-tertiary"
           />
-          {doc.metadata?.overlay_title && (
-            <div className="absolute top-4 left-[4.25rem] right-4 pointer-events-none">
-              <p className="text-white text-base font-semibold tracking-wide drop-shadow-md leading-tight">
+          {(doc.metadata?.overlay_title || doc.image_url?.includes('/images/flyers/')) && (
+            <div className="absolute inset-x-0 bottom-0 z-20 pointer-events-none bg-black/55 px-3 py-2">
+              <p className="text-white text-sm font-semibold leading-tight">
                 {doc.title}
               </p>
             </div>
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
         </div>
       ) : (
         <div

@@ -80,7 +80,8 @@ export default function DocumentCard({ doc, onClick }: DocumentCardProps) {
           />
           {(doc.metadata?.overlay_title ||
             doc.image_url?.includes('/images/flyers/') ||
-            doc.image_url?.includes('/images/pricing/')) && (
+            doc.image_url?.includes('/images/pricing/') ||
+            doc.image_url?.includes('/images/guidelines/')) && (
             <div className="absolute inset-x-0 bottom-0 z-20 pointer-events-none bg-black/55 px-3 py-2">
               <p className="text-white text-sm font-semibold leading-tight">
                 {doc.title}

@@ -222,6 +222,21 @@ const LOCAL_PRICING_CHARTS: HandbookLink[] = [
   },
 ];
 
+const LOCAL_SHARING_GUIDELINES: HandbookLink[] = [
+  {
+    title: 'MPB Flow Member Guidelines',
+    url: `/assets/${encodeURIComponent('MPB Flow Member Guidelines.pdf')}`,
+    description: 'Member guidelines for the MPB Flow plan.',
+    image: '/images/guidelines/mpb-flow-member-guidelines-thumb.png',
+  },
+  {
+    title: 'MPB Flow + HSA Member Guidelines',
+    url: `/assets/${encodeURIComponent('MPB FLOW+HSA Membership Member Guidelines.pdf')}`,
+    description: 'Member guidelines for the MPB Flow + HSA plan.',
+    image: '/images/guidelines/mpb-flow-hsa-member-guidelines-thumb.png',
+  },
+];
+
 function localResourceToDocument(item: HandbookLink, category: string): SOPDocument {
   return {
     id: `local-${category}-${item.title}`,
@@ -339,7 +354,9 @@ export default function SOPLibrary({ section }: SOPLibraryProps) {
       ? filterLocalResources(LOCAL_FLYERS, searchQuery, 'flyers')
       : section === 'pricing-charts'
         ? filterLocalResources(LOCAL_PRICING_CHARTS, searchQuery, 'pricing-charts')
-        : [];
+        : section === 'sharing-guidelines'
+          ? filterLocalResources(LOCAL_SHARING_GUIDELINES, searchQuery, 'sharing-guidelines')
+          : [];
   const displayedDocuments = [...localDocuments, ...filteredDocuments];
 
   // Render hardcoded handbook links for the /sops/handbooks section

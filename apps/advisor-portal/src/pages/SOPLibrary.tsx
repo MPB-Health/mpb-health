@@ -169,16 +169,6 @@ const HANDBOOK_LINKS: HandbookLink[] = [
     url: 'https://mpb.health/3d-flip-book/flow-hsa',
     description: 'Interactive handbook for the MPB Flow + HSA plan.',
   },
-  {
-    title: 'MPB Flow Guidelines',
-    url: 'https://mpb.health/3d-flip-book/flow-guidelines',
-    description: 'Guidelines for the MPB Flow plan.',
-  },
-  {
-    title: 'MPB Flow + HSA Guidelines',
-    url: 'https://mpb.health/3d-flip-book/flow-hsa-guidelines',
-    description: 'Guidelines for the MPB Flow + HSA plan.',
-  },
 ];
 
 const LOCAL_FLYERS: HandbookLink[] = [

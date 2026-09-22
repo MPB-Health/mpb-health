@@ -119,6 +119,7 @@ type HandbookLink = {
   title: string;
   url: string;
   description: string;
+  image?: string;
   /** ISO timestamp; card stays hidden until this instant (America/New_York). */
   visibleAfter?: string;
 };
@@ -196,11 +197,13 @@ const LOCAL_FLYERS: HandbookLink[] = [
     title: 'MPB Flow Flyer',
     url: `/assets/${encodeURIComponent('MPB FLOW FLYER.pdf')}`,
     description: 'Marketing flyer for the MPB Flow plan.',
+    image: '/images/flyers/mpb-flow-flyer-thumb.png',
   },
   {
     title: 'MPB Flow + HSA Flyer',
     url: `/assets/${encodeURIComponent('MPB FLOW+HSA FLYER.pdf')}`,
     description: 'Marketing flyer for the MPB Flow + HSA plan.',
+    image: '/images/flyers/mpb-flow-hsa-flyer-thumb.png',
   },
 ];
 
@@ -213,7 +216,7 @@ function localFlyerToDocument(flyer: HandbookLink): SOPDocument {
     content: '',
     content_type: 'pdf',
     file_url: flyer.url,
-    image_url: null,
+    image_url: flyer.image || null,
     version: '1.0',
     is_published: true,
     tags: ['flyers', 'mpb flow'],

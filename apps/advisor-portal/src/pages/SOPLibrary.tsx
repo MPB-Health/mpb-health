@@ -207,24 +207,49 @@ const LOCAL_FLYERS: HandbookLink[] = [
   },
 ];
 
-function localFlyerToDocument(flyer: HandbookLink): SOPDocument {
+const LOCAL_PRICING_CHARTS: HandbookLink[] = [
+  {
+    title: 'MPB Flow Price Sheet',
+    url: `/assets/${encodeURIComponent('MPB FLOW PRICE SHEET.pdf')}`,
+    description: 'Pricing chart for the MPB Flow plan.',
+    image: '/images/pricing/mpb-flow-price-sheet-thumb.png',
+  },
+  {
+    title: 'MPB Flow + HSA Price Sheet',
+    url: `/assets/${encodeURIComponent('MPB HSA PRICE SHEET.pdf')}`,
+    description: 'Pricing chart for the MPB Flow + HSA plan.',
+    image: '/images/pricing/mpb-flow-hsa-price-sheet-thumb.png',
+  },
+];
+
+function localResourceToDocument(item: HandbookLink, category: string): SOPDocument {
   return {
-    id: `local-flyer-${flyer.title}`,
-    title: flyer.title,
-    description: flyer.description,
-    category: 'flyers',
+    id: `local-${category}-${item.title}`,
+    title: item.title,
+    description: item.description,
+    category,
     content: '',
     content_type: 'pdf',
-    file_url: flyer.url,
-    image_url: flyer.image || null,
+    file_url: item.url,
+    image_url: item.image || null,
     version: '1.0',
     is_published: true,
-    tags: ['flyers', 'mpb flow'],
+    tags: [category, 'mpb flow'],
     view_count: 0,
     metadata: { overlay_title: true },
     created_at: '',
     updated_at: '',
   };
+}
+
+function filterLocalResources(items: HandbookLink[], searchQuery: string, category: string): SOPDocument[] {
+  const q = searchQuery.toLowerCase();
+  return items
+    .filter((item) => {
+      if (!searchQuery) return true;
+      return item.title.toLowerCase().includes(q) || item.description.toLowerCase().includes(q);
+    })
+    .map((item) => localResourceToDocument(item, category));
 }
 
 /** Build section config dynamically from CMS categories, falling back to hardcoded defaults */
@@ -309,18 +334,13 @@ export default function SOPLibrary({ section }: SOPLibraryProps) {
     return matchesSearch;
   });
 
-  const localFlyerDocuments =
+  const localDocuments =
     section === 'flyers'
-      ? LOCAL_FLYERS.filter((flyer) => {
-          if (!searchQuery) return true;
-          const q = searchQuery.toLowerCase();
-          return (
-            flyer.title.toLowerCase().includes(q) ||
-            flyer.description.toLowerCase().includes(q)
-          );
-        }).map(localFlyerToDocument)
-      : [];
-  const displayedDocuments = [...localFlyerDocuments, ...filteredDocuments];
+      ? filterLocalResources(LOCAL_FLYERS, searchQuery, 'flyers')
+      : section === 'pricing-charts'
+        ? filterLocalResources(LOCAL_PRICING_CHARTS, searchQuery, 'pricing-charts')
+        : [];
+  const displayedDocuments = [...localDocuments, ...filteredDocuments];
 
   // Render hardcoded handbook links for the /sops/handbooks section
   if (section === 'handbooks') {

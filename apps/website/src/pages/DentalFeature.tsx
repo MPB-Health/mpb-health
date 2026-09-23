@@ -134,7 +134,7 @@ export const DentalFeature: React.FC = () => {
           <section className="lr-sec lr-sec--top dnt-intro" aria-label="About dental savings and teledentistry">
             <div className="lr-inner">
               <p className="dnt-intro__lead">
-                {DENTAL_FEATURE.intro[0]} <span>{DENTAL_FEATURE.intro[1]}</span>
+                {DENTAL_FEATURE.intro.join(' ')}
               </p>
               <ul className="dnt-paths">
                 <li>

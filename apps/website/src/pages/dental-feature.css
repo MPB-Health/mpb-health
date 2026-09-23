@@ -36,10 +36,6 @@
   text-wrap: pretty;
 }
 
-.dnt .dnt-intro__lead span {
-  color: #9aa7b6;
-}
-
 .dnt .dnt-paths {
   display: grid;
   gap: 1rem;

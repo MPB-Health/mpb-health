@@ -9,6 +9,9 @@ export interface PlanEnrollmentConfig {
   audience: string;
 }
 
+/** Unified member enrollment portal (all plans). */
+export const JOIN_MPB_ENROLL_URL = 'https://joinmpb.com/';
+
 export const PLAN_ENROLLMENT_CONFIGS: PlanEnrollmentConfig[] = [
   {
     id: 'essentials',

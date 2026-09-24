@@ -1,25 +1,49 @@
 -- ============================================================
--- BASELINE SCHEMA -- MPB Health Advisor Portal
+-- BASELINE SCHEMA -- MPB Health monorepo
 -- ============================================================
--- Canonical starting point for new local environments.
--- Replaces the 88 pre-2026 migrations archived in supabase/migrations/archive/
+-- Canonical starting point for new environments (CI, fresh local stacks).
 --
 -- Source:        dtmnkzllidaiqyheguhl (production)
--- Baseline date: 2026-01-01
--- Generated:     2026-03-18 (supabase db dump --linked --schema public)
+-- Generated:     2026-09-15 (supabase db dump --linked, schemas public + storage)
+-- Represents:    production through migration 20260826131737
 --
--- Production:    Already marked applied in supabase_migrations.schema_migrations
---                (version '20260101000000' inserted 2026-03-18)
+-- WHY THIS FILE KEEPS THE 20260101000001 VERSION
+-- ----------------------------------------------------------
+-- The version number is deliberately NOT bumped to the generation date.
+-- 20260101000001 is already recorded in production's
+-- supabase_migrations.schema_migrations, so leaving it alone means this file
+-- can never re-run against production -- no stamping step, no prod write.
+-- The trade-off is that the version no longer matches the content date; the
+-- "Represents" line above is the authoritative marker.
+--
+-- The previous revision of this file was dumped on 2026-03-18 but kept the
+-- same early version, so the 174 migrations dated between 2026-01-06 and
+-- 2026-03-18 replayed on top of a schema that already contained them. That is
+-- why `supabase start` failed on a duplicate policy and the DB workflow had
+-- never gone green. Every migration already represented here is now in
+-- supabase/migrations/archive/.
+--
+-- WHAT IS AND IS NOT INCLUDED
+-- ----------------------------------------------------------
+-- Included: the full public schema (tables, functions, views, indexes,
+--           policies, grants, default privileges), plus the storage buckets
+--           and storage RLS policies that `--schema public` does not capture.
+--
+-- Excluded: pg_cron jobs. Production schedules six jobs that POST to live
+--           edge function URLs; recreating them in a local or CI stack would
+--           have every developer machine calling production every few
+--           minutes. They stay configured on production only.
+--
+-- Excluded: the managed storage internals (storage.objects, storage.buckets
+--           table definitions, storage triggers). The local stack provisions
+--           those itself; only our own buckets and policies are replayed.
+--
+-- Extensions are created by 20260101000000_.sql, which runs immediately
+-- before this file.
 -- ============================================================
---
--- BEFORE RUNNING db push ON ANY NEW ENVIRONMENT:
--- The baseline is pre-applied on production. Mark it applied on the target:
---
---   INSERT INTO supabase_migrations.schema_migrations (version)
---   VALUES ('20260101000000')
---   ON CONFLICT DO NOTHING;
---
--- ============================================================
+
+
+
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -115,6 +139,15 @@ CREATE TYPE "public"."case_status" AS ENUM (
 
 
 ALTER TYPE "public"."case_status" OWNER TO "postgres";
+
+
+CREATE TYPE "public"."crm_rep_role_type" AS ENUM (
+    'inside_sales',
+    'lead_eligible_non_inside_sales'
+);
+
+
+ALTER TYPE "public"."crm_rep_role_type" OWNER TO "postgres";
 
 
 CREATE TYPE "public"."domain_verification_status" AS ENUM (
@@ -242,6 +275,85 @@ CREATE TYPE "public"."notification_priority" AS ENUM (
 ALTER TYPE "public"."notification_priority" OWNER TO "postgres";
 
 
+CREATE TYPE "public"."staff_attendance_punch_action" AS ENUM (
+    'clock_in',
+    'clock_out'
+);
+
+
+ALTER TYPE "public"."staff_attendance_punch_action" OWNER TO "postgres";
+
+
+CREATE TYPE "public"."staff_attendance_session_status" AS ENUM (
+    'open',
+    'closed',
+    'forced_closed'
+);
+
+
+ALTER TYPE "public"."staff_attendance_session_status" OWNER TO "postgres";
+
+
+CREATE TYPE "public"."staff_punch_method" AS ENUM (
+    'office_geo',
+    'remote',
+    'hr_manual'
+);
+
+
+ALTER TYPE "public"."staff_punch_method" OWNER TO "postgres";
+
+
+CREATE TYPE "public"."staff_remote_status" AS ENUM (
+    'ineligible',
+    'pending',
+    'approved',
+    'revoked'
+);
+
+
+ALTER TYPE "public"."staff_remote_status" OWNER TO "postgres";
+
+
+CREATE TYPE "public"."staff_time_document_kind" AS ENUM (
+    'doctors_note',
+    'supporting'
+);
+
+
+ALTER TYPE "public"."staff_time_document_kind" OWNER TO "postgres";
+
+
+CREATE TYPE "public"."staff_time_request_status" AS ENUM (
+    'pending',
+    'approved',
+    'denied',
+    'cancelled'
+);
+
+
+ALTER TYPE "public"."staff_time_request_status" OWNER TO "postgres";
+
+
+CREATE TYPE "public"."staff_time_request_type" AS ENUM (
+    'pto',
+    'sick',
+    'doctor_appointment',
+    'leave_early',
+    'arrive_late',
+    'remote',
+    'bereavement',
+    'jury_duty',
+    'unpaid_leave',
+    'personal',
+    'parental',
+    'other'
+);
+
+
+ALTER TYPE "public"."staff_time_request_type" OWNER TO "postgres";
+
+
 CREATE TYPE "public"."user_role_type" AS ENUM (
     'super_admin',
     'admin',
@@ -250,7 +362,9 @@ CREATE TYPE "public"."user_role_type" AS ENUM (
     'manager',
     'staff',
     'guest',
-    'crm_user'
+    'crm_user',
+    'concierge',
+    'staff_hr'
 );
 
 
@@ -319,6 +433,46 @@ ALTER FUNCTION "public"."accept_org_invite"("invite_token" "text") OWNER TO "pos
 
 COMMENT ON FUNCTION "public"."accept_org_invite"("invite_token" "text") IS 'Accepts an org invite using the token';
 
+
+
+CREATE OR REPLACE FUNCTION "public"."activate_module_for_org"("p_org_id" "uuid", "p_module_slug" "text", "p_license_source" "text" DEFAULT 'addon'::"text", "p_trial_days" integer DEFAULT NULL::integer) RETURNS "uuid"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    AS $$
+DECLARE
+    v_module_id UUID;
+    v_license_id UUID;
+    v_status TEXT := 'active';
+    v_trial_start TIMESTAMPTZ;
+    v_trial_end TIMESTAMPTZ;
+BEGIN
+    SELECT id INTO v_module_id FROM product_modules WHERE slug = p_module_slug AND is_active = true;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'Module % not found or inactive', p_module_slug;
+    END IF;
+
+    IF p_trial_days IS NOT NULL THEN
+        v_status := 'trialing';
+        v_trial_start := now();
+        v_trial_end := now() + (p_trial_days || ' days')::INTERVAL;
+    END IF;
+
+    INSERT INTO org_module_licenses (org_id, module_id, status, license_source, trial_start, trial_end)
+    VALUES (p_org_id, v_module_id, v_status, p_license_source, v_trial_start, v_trial_end)
+    ON CONFLICT (org_id, module_id) DO UPDATE SET
+        status = EXCLUDED.status,
+        license_source = EXCLUDED.license_source,
+        trial_start = EXCLUDED.trial_start,
+        trial_end = EXCLUDED.trial_end,
+        activated_at = now(),
+        updated_at = now()
+    RETURNING id INTO v_license_id;
+
+    RETURN v_license_id;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."activate_module_for_org"("p_org_id" "uuid", "p_module_slug" "text", "p_license_source" "text", "p_trial_days" integer) OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."add_custom_module_column"("p_org_id" "uuid", "p_api_name" "text", "p_field_api_name" "text", "p_field_type" "text") RETURNS "void"
@@ -421,6 +575,193 @@ $$;
 ALTER FUNCTION "public"."add_to_priority_lane"("p_org_id" "uuid", "p_lane_id" "uuid", "p_lead_id" "uuid", "p_reason" "text", "p_owner_user_id" "uuid") OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."admin_purge_user_dependencies"("p_user_id" "uuid") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $_$
+DECLARE
+  r record;
+  aid uuid;
+  sql text;
+  rows_deleted bigint;
+  tables_touched int := 0;
+  warnings text[] := ARRAY[]::text[];
+BEGIN
+  IF p_user_id IS NULL THEN
+    RAISE EXCEPTION 'user_id is required';
+  END IF;
+
+  -- Tables that must be cleared (no ON DELETE CASCADE from auth.users)
+  BEGIN
+    DELETE FROM public.impersonation_log
+    WHERE admin_id = p_user_id OR target_user_id = p_user_id;
+  EXCEPTION WHEN OTHERS THEN
+    warnings := array_append(warnings, 'impersonation_log: ' || SQLERRM);
+  END;
+
+  BEGIN
+    DELETE FROM public.phi_access_log WHERE user_id = p_user_id;
+  EXCEPTION WHEN OTHERS THEN
+    warnings := array_append(warnings, 'phi_access_log: ' || SQLERRM);
+  END;
+
+  -- Purge rows blocking advisor_profiles deletion (before auth cascade).
+  FOR aid IN
+    SELECT id FROM public.advisor_profiles
+    WHERE id = p_user_id OR user_id = p_user_id
+  LOOP
+    FOR r IN
+      SELECT att.attname AS column_name, cl.relname AS table_name
+      FROM pg_constraint con
+      JOIN pg_class cl ON cl.oid = con.conrelid
+      JOIN pg_namespace ns ON ns.oid = cl.relnamespace
+      JOIN pg_class ref_cl ON ref_cl.oid = con.confrelid
+      JOIN pg_namespace ref_ns ON ref_ns.oid = ref_cl.relnamespace
+      JOIN LATERAL unnest(con.conkey) AS ck(attnum) ON true
+      JOIN pg_attribute att ON att.attrelid = con.conrelid AND att.attnum = ck.attnum
+      WHERE con.contype = 'f'
+        AND ref_ns.nspname = 'public'
+        AND ref_cl.relname = 'advisor_profiles'
+        AND ns.nspname = 'public'
+        AND con.confdeltype IN ('a', 'r')
+    LOOP
+      BEGIN
+        sql := format('DELETE FROM public.%I WHERE %I = $1', r.table_name, r.column_name);
+        EXECUTE sql USING aid;
+        GET DIAGNOSTICS rows_deleted = ROW_COUNT;
+        IF rows_deleted > 0 THEN
+          tables_touched := tables_touched + 1;
+        END IF;
+      EXCEPTION WHEN OTHERS THEN
+        warnings := array_append(
+          warnings,
+          format('%s.%s (advisor %s): %s', r.table_name, r.column_name, aid, SQLERRM)
+        );
+      END;
+    END LOOP;
+  END LOOP;
+
+  -- Purge rows blocking public.profiles deletion.
+  IF EXISTS (SELECT 1 FROM public.profiles WHERE id = p_user_id) THEN
+    FOR r IN
+      SELECT att.attname AS column_name, cl.relname AS table_name
+      FROM pg_constraint con
+      JOIN pg_class cl ON cl.oid = con.conrelid
+      JOIN pg_namespace ns ON ns.oid = cl.relnamespace
+      JOIN pg_class ref_cl ON ref_cl.oid = con.confrelid
+      JOIN pg_namespace ref_ns ON ref_ns.oid = ref_cl.relnamespace
+      JOIN LATERAL unnest(con.conkey) AS ck(attnum) ON true
+      JOIN pg_attribute att ON att.attrelid = con.conrelid AND att.attnum = ck.attnum
+      WHERE con.contype = 'f'
+        AND ref_ns.nspname = 'public'
+        AND ref_cl.relname = 'profiles'
+        AND ns.nspname = 'public'
+        AND con.confdeltype IN ('a', 'r')
+    LOOP
+      BEGIN
+        sql := format('DELETE FROM public.%I WHERE %I = $1', r.table_name, r.column_name);
+        EXECUTE sql USING p_user_id;
+        GET DIAGNOSTICS rows_deleted = ROW_COUNT;
+        IF rows_deleted > 0 THEN
+          tables_touched := tables_touched + 1;
+        END IF;
+      EXCEPTION WHEN OTHERS THEN
+        warnings := array_append(
+          warnings,
+          format('%s.%s (profile): %s', r.table_name, r.column_name, SQLERRM)
+        );
+      END;
+    END LOOP;
+  END IF;
+
+  -- Purge all public tables with RESTRICT/NO ACTION FKs to auth.users.
+  FOR r IN
+    SELECT att.attname AS column_name, cl.relname AS table_name
+    FROM pg_constraint con
+    JOIN pg_class cl ON cl.oid = con.conrelid
+    JOIN pg_namespace ns ON ns.oid = cl.relnamespace
+    JOIN pg_class ref_cl ON ref_cl.oid = con.confrelid
+    JOIN pg_namespace ref_ns ON ref_ns.oid = ref_cl.relnamespace
+    JOIN LATERAL unnest(con.conkey) AS ck(attnum) ON true
+    JOIN pg_attribute att ON att.attrelid = con.conrelid AND att.attnum = ck.attnum
+    WHERE con.contype = 'f'
+      AND ref_ns.nspname = 'auth'
+      AND ref_cl.relname = 'users'
+      AND ns.nspname = 'public'
+      AND con.confdeltype IN ('a', 'r')
+  LOOP
+    BEGIN
+      sql := format('DELETE FROM public.%I WHERE %I = $1', r.table_name, r.column_name);
+      EXECUTE sql USING p_user_id;
+      GET DIAGNOSTICS rows_deleted = ROW_COUNT;
+      IF rows_deleted > 0 THEN
+        tables_touched := tables_touched + 1;
+      END IF;
+    EXCEPTION WHEN OTHERS THEN
+      warnings := array_append(
+        warnings,
+        format('%s.%s (auth.users): %s', r.table_name, r.column_name, SQLERRM)
+      );
+    END;
+  END LOOP;
+
+  -- Identity rows (safe to remove before auth delete; advisor_profiles cascades from auth if any remain).
+  BEGIN
+    DELETE FROM public.user_roles WHERE user_id = p_user_id;
+  EXCEPTION WHEN OTHERS THEN
+    warnings := array_append(warnings, 'user_roles: ' || SQLERRM);
+  END;
+
+  BEGIN
+    DELETE FROM public.admin_users WHERE id = p_user_id;
+  EXCEPTION WHEN OTHERS THEN
+    warnings := array_append(warnings, 'admin_users: ' || SQLERRM);
+  END;
+
+  BEGIN
+    DELETE FROM public.advisor_profiles WHERE id = p_user_id OR user_id = p_user_id;
+  EXCEPTION WHEN OTHERS THEN
+    warnings := array_append(warnings, 'advisor_profiles: ' || SQLERRM);
+  END;
+
+  BEGIN
+    DELETE FROM public.profiles WHERE id = p_user_id;
+  EXCEPTION WHEN OTHERS THEN
+    warnings := array_append(warnings, 'profiles: ' || SQLERRM);
+  END;
+
+  RETURN jsonb_build_object(
+    'ok', true,
+    'tables_with_deletions', tables_touched,
+    'warnings', to_jsonb(warnings)
+  );
+END;
+$_$;
+
+
+ALTER FUNCTION "public"."admin_purge_user_dependencies"("p_user_id" "uuid") OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."admin_purge_user_dependencies"("p_user_id" "uuid") IS 'Removes public-schema rows referencing auth.users before admin-delete-user hard-deletes the auth account.';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."advisor_can_access_lead"("p_lead_id" "uuid") RETURNS boolean
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.lead_submissions ls
+    WHERE ls.id = p_lead_id
+      AND ls.assigned_to = auth.uid()
+  );
+$$;
+
+
+ALTER FUNCTION "public"."advisor_can_access_lead"("p_lead_id" "uuid") OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."aggregate_daily_analytics"("target_date" "date") RETURNS "void"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public', 'pg_temp'
@@ -511,8 +852,9 @@ CREATE OR REPLACE FUNCTION "public"."assign_user_role"("target_user_id" "uuid", 
 DECLARE
     new_row user_roles%ROWTYPE;
     default_org UUID := '00000000-0000-4000-a000-000000000001';
+    mpb_org UUID;
+    already_had boolean := false;
 BEGIN
-    -- Verify caller is super_admin
     IF NOT EXISTS (
         SELECT 1 FROM user_roles
         WHERE user_id = auth.uid() AND role = 'super_admin'
@@ -520,29 +862,30 @@ BEGIN
         RAISE EXCEPTION 'Access denied: super_admin role required';
     END IF;
 
-    -- Validate role value
-    IF target_role NOT IN ('super_admin', 'admin', 'advisor', 'member', 'crm_user') THEN
+    IF target_role NOT IN (
+      'super_admin', 'admin', 'advisor', 'member', 'crm_user', 'concierge', 'staff_hr'
+    ) THEN
         RAISE EXCEPTION 'Invalid role: %', target_role;
     END IF;
 
-    -- Insert (or no-op on conflict)
+    SELECT id INTO mpb_org FROM public.organizations WHERE slug = 'mpb-health' LIMIT 1;
+    IF mpb_org IS NULL THEN
+      mpb_org := default_org;
+    END IF;
+
     INSERT INTO user_roles (user_id, role, granted_by)
-    VALUES (target_user_id, target_role::user_role_type, auth.uid())
+    VALUES (target_user_id, target_role, auth.uid())
     ON CONFLICT (user_id, role) DO NOTHING
     RETURNING * INTO new_row;
 
     IF new_row.id IS NULL THEN
-        -- Role already assigned, but still ensure org_memberships is correct
-        IF target_role = 'crm_user' THEN
-            INSERT INTO org_memberships (user_id, org_id, role, status, joined_at)
-            VALUES (target_user_id, default_org, 'member', 'active', now())
-            ON CONFLICT (user_id, org_id)
-            DO UPDATE SET status = 'active', joined_at = COALESCE(org_memberships.joined_at, now());
-        END IF;
-        RETURN jsonb_build_object('success', true, 'message', 'Role already assigned');
+        already_had := true;
+        SELECT * INTO new_row
+        FROM user_roles
+        WHERE user_id = target_user_id AND role = target_role
+        LIMIT 1;
     END IF;
 
-    -- Sync org_memberships for CRM users
     IF target_role = 'crm_user' THEN
         INSERT INTO org_memberships (user_id, org_id, role, status, joined_at)
         VALUES (target_user_id, default_org, 'member', 'active', now())
@@ -550,13 +893,63 @@ BEGIN
         DO UPDATE SET status = 'active', joined_at = COALESCE(org_memberships.joined_at, now());
     END IF;
 
-    -- Sync admin_users for admin/super_admin roles
     IF target_role IN ('admin', 'super_admin') THEN
         INSERT INTO admin_users (id, email, role, status)
         SELECT target_user_id, u.email, target_role, 'active'
         FROM auth.users u WHERE u.id = target_user_id
         ON CONFLICT (id)
-        DO UPDATE SET status = 'active';
+        DO UPDATE SET status = 'active', role = EXCLUDED.role;
+    END IF;
+
+    -- HR Staff Admin: keep/create Staff Hub identity + roster profile
+    IF target_role = 'staff_hr' THEN
+        INSERT INTO admin_users (id, email, role, status, first_name, last_name)
+        SELECT
+          target_user_id,
+          u.email,
+          COALESCE(NULLIF(au.role, ''), 'staff'),
+          'active',
+          COALESCE(au.first_name, split_part(u.email, '@', 1)),
+          COALESCE(au.last_name, '')
+        FROM auth.users u
+        LEFT JOIN public.admin_users au ON au.id = u.id
+        WHERE u.id = target_user_id
+        ON CONFLICT (id) DO UPDATE
+          SET status = 'active',
+              email = EXCLUDED.email;
+
+        INSERT INTO public.staff_profiles (
+          org_id, user_id, display_name, email, title, is_active
+        )
+        SELECT
+          mpb_org,
+          au.id,
+          COALESCE(
+            NULLIF(trim(concat_ws(' ', au.first_name, au.last_name)), ''),
+            split_part(au.email, '@', 1)
+          ),
+          lower(au.email),
+          au.title,
+          true
+        FROM public.admin_users au
+        WHERE au.id = target_user_id
+        ON CONFLICT (org_id, user_id) DO UPDATE
+          SET is_active = true,
+              email = EXCLUDED.email,
+              display_name = CASE
+                WHEN staff_profiles.display_name = '' THEN EXCLUDED.display_name
+                ELSE staff_profiles.display_name
+              END;
+    END IF;
+
+    IF already_had THEN
+        RETURN jsonb_build_object(
+          'success', true,
+          'message', 'Role already assigned',
+          'id', new_row.id,
+          'user_id', new_row.user_id,
+          'role', new_row.role::text
+        );
     END IF;
 
     RETURN jsonb_build_object(
@@ -582,6 +975,20 @@ $$;
 
 
 ALTER FUNCTION "public"."auth_uid"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."board_list_schema_migrations"() RETURNS TABLE("version" "text", "name" "text")
+    LANGUAGE "sql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+  select m.version::text, m.name::text
+  from supabase_migrations.schema_migrations m
+  where m.name is not null
+  order by m.version;
+$$;
+
+
+ALTER FUNCTION "public"."board_list_schema_migrations"() OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."calculate_enrollment_progress"() RETURNS "trigger"
@@ -685,7 +1092,7 @@ DECLARE
   v_factors JSONB := '[]'::jsonb;
   v_score INTEGER := 0;
 BEGIN
-  SELECT * INTO v_lead FROM zoho_lead_submissions WHERE id = p_lead_id;
+  SELECT * INTO v_lead FROM lead_submissions WHERE id = p_lead_id;
   
   IF NOT FOUND THEN
     RETURN NULL;
@@ -878,14 +1285,14 @@ DECLARE
 BEGIN
   -- Count previous submissions with same email
   SELECT COUNT(*) INTO email_count
-  FROM zoho_lead_submissions
+  FROM lead_submissions
   WHERE LOWER(email) = LOWER(p_email)
     AND created_at < now() - interval '5 minutes';
   
   -- Count previous submissions with same phone (if provided)
   IF p_phone IS NOT NULL AND p_phone != '' THEN
     SELECT COUNT(*) INTO phone_count
-    FROM zoho_lead_submissions
+    FROM lead_submissions
     WHERE phone = p_phone
       AND created_at < now() - interval '5 minutes';
   ELSE
@@ -901,6 +1308,19 @@ $$;
 
 
 ALTER FUNCTION "public"."check_repeat_lead"("p_email" "text", "p_phone" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."clean_expired_rate_limits"() RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    AS $$
+BEGIN
+  DELETE FROM public.auth_rate_limits
+  WHERE blocked_until IS NOT NULL AND blocked_until < NOW();
+END;
+$$;
+
+
+ALTER FUNCTION "public"."clean_expired_rate_limits"() OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."cleanup_old_page_views"() RETURNS "void"
@@ -952,6 +1372,114 @@ $$;
 
 
 ALTER FUNCTION "public"."clear_must_change_password_after_reset"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."cms_forms_set_updated_at"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+  NEW.updated_at := now();
+  RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."cms_forms_set_updated_at"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."cms_global_blocks_set_updated_at"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+  NEW.updated_at := now();
+  RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."cms_global_blocks_set_updated_at"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."cms_media_set_updated_at"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+  NEW.updated_at := now();
+  RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."cms_media_set_updated_at"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."cms_pages_set_updated_at"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+  NEW.updated_at := now();
+  RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."cms_pages_set_updated_at"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."cms_popups_set_updated_at"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+  NEW.updated_at := now();
+  RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."cms_popups_set_updated_at"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."cms_redirects_set_updated_at"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN NEW.updated_at := now(); RETURN NEW; END; $$;
+
+
+ALTER FUNCTION "public"."cms_redirects_set_updated_at"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."cms_templates_set_updated_at"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+  NEW.updated_at := now();
+  RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."cms_templates_set_updated_at"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."cms_theme_set_updated_at"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+  NEW.updated_at := now();
+  RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."cms_theme_set_updated_at"() OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."complete_priority_item"("p_item_id" "uuid", "p_reason" "text" DEFAULT NULL::"text") RETURNS boolean
@@ -1131,17 +1659,15 @@ DECLARE
   v_meeting advisor_meetings;
   v_room_name TEXT;
 BEGIN
-  -- Generate unique room name
   v_room_name := 'mpb-instant-' || SUBSTRING(gen_random_uuid()::TEXT, 1, 8);
 
-  -- Create the meeting
   INSERT INTO advisor_meetings (
     title,
     description,
     scheduled_at,
     duration_minutes,
     status,
-    jitsi_room_name,
+    room_name,
     visibility,
     meeting_type,
     host_id,
@@ -1160,11 +1686,9 @@ BEGIN
   )
   RETURNING * INTO v_meeting;
 
-  -- Invite specific advisors if provided
   IF p_advisor_ids IS NOT NULL AND array_length(p_advisor_ids, 1) > 0 THEN
     PERFORM invite_advisors_to_meeting(v_meeting.id, p_advisor_ids);
   ELSIF p_visibility = 'all' THEN
-    -- Invite all advisors for 'all' visibility meetings
     PERFORM invite_all_advisors_to_meeting(v_meeting.id);
   END IF;
 
@@ -1204,111 +1728,2576 @@ COMMENT ON FUNCTION "public"."create_organization_with_owner"("org_name" "text",
 
 
 
+CREATE OR REPLACE FUNCTION "public"."crm_active_pipeline_stages"("p_org_id" "uuid") RETURNS TABLE("id" "uuid", "name" "text", "display_name" "text", "sort_order" integer, "is_won_stage" boolean, "is_lost_stage" boolean, "is_terminal" boolean, "routes_to_subsection" "text")
+    LANGUAGE "sql" STABLE
+    AS $$
+    SELECT id, name, display_name, sort_order,
+           is_won_stage, is_lost_stage, is_terminal, routes_to_subsection
+      FROM public.crm_pipeline_stages
+     WHERE is_active = true
+       AND (org_id IS NULL OR org_id = p_org_id)
+     ORDER BY sort_order ASC, name ASC
+$$;
+
+
+ALTER FUNCTION "public"."crm_active_pipeline_stages"("p_org_id" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_activity_cadence_pause"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+    IF NEW.activity_type IN ('meeting', 'presentation') AND NEW.lead_id IS NOT NULL THEN
+        UPDATE public.crm_lead_cadence_state
+           SET paused = true,
+               paused_reason = 'activity_' || NEW.activity_type
+         WHERE lead_id = NEW.lead_id
+           AND paused = false
+           AND completed_at IS NULL;
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_activity_cadence_pause"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_activity_summary_filtered"("p_org_id" "uuid", "p_month" integer, "p_year" integer, "p_rep_ids" "uuid"[] DEFAULT NULL::"uuid"[]) RETURNS TABLE("rep_id" "uuid", "rep_name" "text", "activity_type" "text", "actual" bigint, "target" integer)
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+    RETURN QUERY
+    SELECT r.*
+    FROM public.crm_activity_summary_vs_targets(p_org_id, p_month, p_year) r
+    WHERE p_rep_ids IS NULL OR r.rep_id = ANY(p_rep_ids);
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_activity_summary_filtered"("p_org_id" "uuid", "p_month" integer, "p_year" integer, "p_rep_ids" "uuid"[]) OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_activity_summary_vs_targets"("p_org_id" "uuid", "p_month" integer, "p_year" integer) RETURNS TABLE("rep_id" "uuid", "rep_name" "text", "activity_type" "text", "actual" bigint, "target" integer)
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+    v_start timestamptz;
+    v_end timestamptz;
+BEGIN
+    v_start := make_timestamptz(p_year, p_month, 1, 0, 0, 0, 'UTC');
+    v_end := (v_start + interval '1 month');
+
+    RETURN QUERY
+    SELECT
+        u.id AS rep_id,
+        COALESCE(u.raw_user_meta_data->>'full_name', u.email)::text AS rep_name,
+        la.activity_type::text,
+        COUNT(*)::bigint AS actual,
+        COALESCE(
+            (SELECT (t.targets->>la.activity_type)::integer
+             FROM public.crm_activity_targets t
+             WHERE t.org_id = p_org_id
+               AND t.target_type = 'monthly_rep'
+               AND t.rep_id = u.id
+               AND t.period_start = v_start::date
+             LIMIT 1),
+            0
+        ) AS target
+    FROM auth.users u
+    INNER JOIN public.org_memberships om ON om.user_id = u.id AND om.org_id = p_org_id
+    INNER JOIN public.lead_activities la
+        ON la.created_by = u.id
+        AND la.created_at >= v_start AND la.created_at < v_end
+    GROUP BY u.id, u.email, u.raw_user_meta_data, la.activity_type
+    ORDER BY rep_name, la.activity_type;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_activity_summary_vs_targets"("p_org_id" "uuid", "p_month" integer, "p_year" integer) OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_advisor_performance"("p_org_id" "uuid") RETURNS TABLE("advisor_id" "uuid", "advisor_email" "text", "advisor_name" "text", "total_leads" bigint, "new_leads_this_month" bigint, "converted_leads" bigint, "open_tasks" bigint, "overdue_tasks" bigint, "activities_this_month" bigint)
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        u.id AS advisor_id,
+        u.email::text AS advisor_email,
+        COALESCE(u.raw_user_meta_data->>'full_name', u.email)::text AS advisor_name,
+        COUNT(DISTINCT l.id)::bigint AS total_leads,
+        COUNT(DISTINCT l.id) FILTER (
+            WHERE l.created_at >= date_trunc('month', CURRENT_DATE)
+        )::bigint AS new_leads_this_month,
+        COUNT(DISTINCT l.id) FILTER (
+            WHERE l.pipeline_stage IN ('converted', 'won', 'closed_won')
+        )::bigint AS converted_leads,
+        (
+            SELECT COUNT(*)::bigint
+            FROM public.lead_tasks t
+            WHERE t.assigned_to = u.id
+            AND t.completed = false
+        ) AS open_tasks,
+        (
+            SELECT COUNT(*)::bigint
+            FROM public.lead_tasks t
+            WHERE t.assigned_to = u.id
+            AND t.completed = false
+            AND t.due_date < CURRENT_DATE
+        ) AS overdue_tasks,
+        (
+            SELECT COUNT(*)::bigint
+            FROM public.lead_activities a
+            WHERE a.created_by = u.id
+            AND a.created_at >= date_trunc('month', CURRENT_DATE)
+        ) AS activities_this_month
+    FROM auth.users u
+    INNER JOIN public.org_memberships om ON om.user_id = u.id AND om.org_id = p_org_id
+    LEFT JOIN public.lead_submissions l ON l.assigned_to = u.id AND l.org_id = p_org_id
+    GROUP BY u.id, u.email, u.raw_user_meta_data
+    ORDER BY total_leads DESC;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_advisor_performance"("p_org_id" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_age_to_nurture"("p_org_id" "uuid") RETURNS TABLE("lead_id" "uuid", "prior_stage" "text")
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+BEGIN
+    RETURN QUERY
+    WITH targets AS (
+        SELECT id, pipeline_stage
+          FROM public.lead_submissions
+         WHERE org_id = p_org_id
+           AND pipeline_stage IN ('working', 'engaged')
+           AND COALESCE(do_not_contact, false) = false
+           AND COALESCE(opt_out_detected_at, '-infinity'::timestamptz) < (now() - interval '90 days')
+           AND engagement_detected_at IS NULL
+           AND COALESCE(stage_changed_at, created_at) < (now() - interval '30 days')
+    ),
+    updated AS (
+        UPDATE public.lead_submissions ls
+           SET pipeline_stage = 'nurture',
+               workflow_subsection = 'nurture',
+               stage_changed_at = now(),
+               updated_at = now()
+          FROM targets t
+         WHERE ls.id = t.id
+        RETURNING ls.id, t.pipeline_stage AS prior_stage
+    )
+    SELECT u.id, u.prior_stage FROM updated u;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_age_to_nurture"("p_org_id" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_annual_conversion_by_rep"("p_org_id" "uuid", "p_year" integer) RETURNS TABLE("rep_id" "uuid", "rep_name" "text", "total_leads" bigint, "total_closed" bigint, "overall_conv_pct" numeric, "inhouse_conv_pct" numeric, "selfgen_conv_pct" numeric)
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+    v_start timestamptz;
+    v_end timestamptz;
+BEGIN
+    v_start := make_timestamptz(p_year, 1, 1, 0, 0, 0, 'UTC');
+    v_end := make_timestamptz(p_year + 1, 1, 1, 0, 0, 0, 'UTC');
+
+    RETURN QUERY
+    SELECT
+        u.id AS rep_id,
+        COALESCE(u.raw_user_meta_data->>'full_name', u.email)::text AS rep_name,
+        COUNT(ls.id)::bigint AS total_leads,
+        COUNT(ls.id) FILTER (WHERE ls.pipeline_stage IN ('won','converted','closed_won'))::bigint AS total_closed,
+        CASE WHEN COUNT(ls.id) > 0
+            THEN ROUND(COUNT(ls.id) FILTER (WHERE ls.pipeline_stage IN ('won','converted','closed_won'))::numeric * 100.0 / COUNT(ls.id), 1)
+            ELSE 0 END AS overall_conv_pct,
+        CASE WHEN COUNT(ls.id) FILTER (WHERE ls.is_self_generated = false) > 0
+            THEN ROUND(COUNT(ls.id) FILTER (WHERE ls.is_self_generated = false AND ls.pipeline_stage IN ('won','converted','closed_won'))::numeric * 100.0 /
+                 NULLIF(COUNT(ls.id) FILTER (WHERE ls.is_self_generated = false), 0), 1)
+            ELSE 0 END AS inhouse_conv_pct,
+        CASE WHEN COUNT(ls.id) FILTER (WHERE ls.is_self_generated = true) > 0
+            THEN ROUND(COUNT(ls.id) FILTER (WHERE ls.is_self_generated = true AND ls.pipeline_stage IN ('won','converted','closed_won'))::numeric * 100.0 /
+                 NULLIF(COUNT(ls.id) FILTER (WHERE ls.is_self_generated = true), 0), 1)
+            ELSE 0 END AS selfgen_conv_pct
+    FROM auth.users u
+    INNER JOIN public.org_memberships om ON om.user_id = u.id AND om.org_id = p_org_id
+    LEFT JOIN public.lead_submissions ls
+        ON ls.assigned_to = u.id AND ls.org_id = p_org_id
+        AND ls.created_at >= v_start AND ls.created_at < v_end
+    GROUP BY u.id, u.email, u.raw_user_meta_data
+    ORDER BY rep_name;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_annual_conversion_by_rep"("p_org_id" "uuid", "p_year" integer) OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_annual_lead_trend"("p_org_id" "uuid", "p_year" integer) RETURNS TABLE("month_num" integer, "month_label" "text", "lead_count" bigint)
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        m.n AS month_num,
+        TO_CHAR(make_date(p_year, m.n, 1), 'Mon')::text AS month_label,
+        (SELECT COUNT(*)::bigint FROM public.lead_submissions ls
+         WHERE ls.org_id = p_org_id
+         AND ls.created_at >= make_timestamptz(p_year, m.n, 1, 0, 0, 0, 'UTC')
+         AND ls.created_at < make_timestamptz(p_year, m.n, 1, 0, 0, 0, 'UTC') + interval '1 month'
+        ) AS lead_count
+    FROM generate_series(1, 12) AS m(n)
+    ORDER BY m.n;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_annual_lead_trend"("p_org_id" "uuid", "p_year" integer) OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_annual_revenue_trend"("p_org_id" "uuid", "p_year" integer) RETURNS TABLE("rep_id" "uuid", "rep_name" "text", "month_num" integer, "revenue" numeric)
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        u.id AS rep_id,
+        COALESCE(u.raw_user_meta_data->>'full_name', u.email)::text AS rep_name,
+        m.n AS month_num,
+        COALESCE(SUM(dd.amount), 0)::numeric AS revenue
+    FROM auth.users u
+    INNER JOIN public.org_memberships om ON om.user_id = u.id AND om.org_id = p_org_id
+    CROSS JOIN generate_series(1, 12) AS m(n)
+    LEFT JOIN public.crm_deals dd
+        ON dd.owner_id = u.id AND dd.org_id = p_org_id
+        AND dd.won_at >= make_timestamptz(p_year, m.n, 1, 0, 0, 0, 'UTC')
+        AND dd.won_at < make_timestamptz(p_year, m.n, 1, 0, 0, 0, 'UTC') + interval '1 month'
+    LEFT JOIN public.crm_deal_stages dds
+        ON dds.id = dd.stage_id AND dds.is_won_stage = true
+    WHERE (dd.id IS NULL OR dds.id IS NOT NULL)
+    GROUP BY u.id, u.email, u.raw_user_meta_data, m.n
+    ORDER BY rep_name, m.n;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_annual_revenue_trend"("p_org_id" "uuid", "p_year" integer) OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_annual_source_distribution"("p_org_id" "uuid", "p_year" integer) RETURNS TABLE("source_label" "text", "total_leads" bigint, "converted" bigint, "conversion_pct" numeric)
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+    v_start timestamptz;
+    v_end timestamptz;
+BEGIN
+    v_start := make_timestamptz(p_year, 1, 1, 0, 0, 0, 'UTC');
+    v_end := make_timestamptz(p_year + 1, 1, 1, 0, 0, 0, 'UTC');
+
+    RETURN QUERY
+    SELECT
+        COALESCE(ls.lead_source, 'unknown')::text AS source_label,
+        COUNT(*)::bigint AS total_leads,
+        COUNT(*) FILTER (WHERE ls.pipeline_stage IN ('won','converted','closed_won'))::bigint AS converted,
+        CASE WHEN COUNT(*) > 0
+            THEN ROUND(COUNT(*) FILTER (WHERE ls.pipeline_stage IN ('won','converted','closed_won'))::numeric * 100.0 / COUNT(*), 1)
+            ELSE 0
+        END AS conversion_pct
+    FROM public.lead_submissions ls
+    WHERE ls.org_id = p_org_id
+      AND ls.created_at >= v_start AND ls.created_at < v_end
+    GROUP BY ls.lead_source
+    ORDER BY total_leads DESC;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_annual_source_distribution"("p_org_id" "uuid", "p_year" integer) OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_apply_enrollment_won"("p_lead_id" "uuid") RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+    v_org uuid;
+BEGIN
+    SELECT org_id INTO v_org FROM public.lead_submissions WHERE id = p_lead_id;
+    IF v_org IS NULL OR NOT public.is_org_member(v_org) THEN
+        RAISE EXCEPTION 'not_found_or_denied';
+    END IF;
+
+    UPDATE public.lead_submissions
+    SET
+        pipeline_stage = 'won',
+        enrollment_approved_at = now(),
+        converted_at = COALESCE(converted_at, now()),
+        concierge_handoff_at = COALESCE(concierge_handoff_at, now()),
+        stage_changed_at = now(),
+        updated_at = now()
+    WHERE id = p_lead_id;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_apply_enrollment_won"("p_lead_id" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_apply_lead_opt_out"("p_lead_id" "uuid", "p_reason" "text" DEFAULT 'opt_out_signal'::"text", "p_phrase" "text" DEFAULT NULL::"text") RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+    v_org uuid;
+BEGIN
+    SELECT org_id INTO v_org FROM public.lead_submissions WHERE id = p_lead_id;
+    IF v_org IS NULL OR NOT public.is_org_member(v_org) THEN
+        RAISE EXCEPTION 'not_found_or_denied';
+    END IF;
+
+    UPDATE public.lead_submissions
+    SET
+        pipeline_stage         = 'lost',
+        lost_reason            = COALESCE(p_reason, lost_reason),
+        opt_out_reason         = COALESCE(p_reason, opt_out_reason),
+        opt_out_phrase         = COALESCE(p_phrase, opt_out_phrase),
+        opt_out_detected_at    = COALESCE(opt_out_detected_at, now()),
+        do_not_contact         = true,
+        workflow_subsection    = 'do_not_contact',
+        last_opt_out_signal_at = now(),
+        stage_changed_at       = now(),
+        updated_at             = now()
+    WHERE id = p_lead_id;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_apply_lead_opt_out"("p_lead_id" "uuid", "p_reason" "text", "p_phrase" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_assign_leads_round_robin"("p_lead_ids" "uuid"[], "p_org_id" "uuid" DEFAULT NULL::"uuid") RETURNS TABLE("lead_id" "uuid", "assigned_to" "uuid", "position_at_assignment" integer, "was_skip" boolean)
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+DECLARE
+    v_rr            RECORD;
+    v_pool          jsonb;
+    v_pool_len      int;
+    v_pos           int;
+    v_candidate     jsonb;
+    v_attempts      int;
+    v_was_skip      boolean;
+    v_chosen_id     uuid;
+    v_new_pos       int;
+    v_lead_id       uuid;
+    v_lead_org      uuid;
+    v_authorized    boolean;
+    v_first_lead    uuid;
+BEGIN
+    IF p_lead_ids IS NULL OR cardinality(p_lead_ids) = 0 THEN
+        RETURN;
+    END IF;
+
+    IF p_org_id IS NULL THEN
+        v_first_lead := p_lead_ids[1];
+        SELECT ls.org_id
+          INTO v_lead_org
+          FROM public.lead_submissions ls
+         WHERE ls.id = v_first_lead;
+        p_org_id := v_lead_org;
+    END IF;
+
+    IF p_org_id IS NULL THEN
+        RAISE EXCEPTION 'crm_assign_leads_round_robin: unable to resolve org_id (lead not found or missing org_id)'
+            USING ERRCODE = '22023';
+    END IF;
+
+    v_authorized := COALESCE(public.has_org_permission(p_org_id, 'leads.assign'), false)
+                    OR COALESCE(public.current_user_has_admin_access(), false);
+    IF NOT v_authorized THEN
+        RAISE EXCEPTION 'crm_assign_leads_round_robin: not authorized (need leads.assign on org or admin)'
+            USING ERRCODE = '42501';
+    END IF;
+
+    SELECT * INTO v_rr
+      FROM public.crm_round_robin_config
+     WHERE org_id = p_org_id
+       AND is_active = true
+     LIMIT 1;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'crm_assign_leads_round_robin: no active round-robin config for org %', p_org_id
+            USING ERRCODE = '22023';
+    END IF;
+
+    v_pool     := v_rr.pool_members;
+    v_pool_len := COALESCE(jsonb_array_length(v_pool), 0);
+
+    IF v_pool_len = 0 THEN
+        RAISE EXCEPTION 'crm_assign_leads_round_robin: pool is empty for org %', p_org_id
+            USING ERRCODE = '22023';
+    END IF;
+
+    v_pos     := COALESCE(v_rr.current_position, -1);
+    v_new_pos := v_pos;
+
+    FOREACH v_lead_id IN ARRAY p_lead_ids LOOP
+        PERFORM 1
+          FROM public.lead_submissions ls
+         WHERE ls.id = v_lead_id
+           AND ls.org_id = p_org_id
+           AND ls.assigned_to IS NULL;
+        IF NOT FOUND THEN
+            CONTINUE;
+        END IF;
+
+        v_chosen_id := NULL;
+        v_was_skip  := false;
+        v_attempts  := 0;
+
+        LOOP
+            EXIT WHEN v_attempts >= v_pool_len;
+            v_attempts := v_attempts + 1;
+            v_pos := (v_pos + 1) % v_pool_len;
+            v_candidate := v_pool -> v_pos;
+
+            IF (v_candidate ->> 'is_active')::boolean = true
+               AND COALESCE((v_candidate ->> 'is_paused')::boolean, false) = false THEN
+                v_chosen_id := (v_candidate ->> 'user_id')::uuid;
+                v_new_pos := v_pos;
+                EXIT;
+            END IF;
+            v_was_skip := true;
+        END LOOP;
+
+        IF v_chosen_id IS NULL THEN
+            EXIT;
+        END IF;
+
+        UPDATE public.lead_submissions
+           SET assigned_to = v_chosen_id,
+               updated_at  = now()
+         WHERE id = v_lead_id
+           AND assigned_to IS NULL;
+
+        IF FOUND THEN
+            INSERT INTO public.crm_round_robin_audit
+                (org_id, lead_id, assigned_to, position_at_assignment, was_skip,
+                 skip_reason, override_by, created_at)
+            VALUES
+                (p_org_id, v_lead_id, v_chosen_id, v_new_pos, v_was_skip,
+                 CASE WHEN v_was_skip THEN 'inactive_or_paused_pool_member' ELSE NULL END,
+                 auth.uid(), now());
+
+            lead_id                := v_lead_id;
+            assigned_to            := v_chosen_id;
+            position_at_assignment := v_new_pos;
+            was_skip               := v_was_skip;
+            RETURN NEXT;
+        END IF;
+    END LOOP;
+
+    IF v_new_pos <> COALESCE(v_rr.current_position, -1) THEN
+        UPDATE public.crm_round_robin_config
+           SET current_position = v_new_pos,
+               updated_at       = now()
+         WHERE id = v_rr.id;
+    END IF;
+
+    RETURN;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_assign_leads_round_robin"("p_lead_ids" "uuid"[], "p_org_id" "uuid") OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."crm_assign_leads_round_robin"("p_lead_ids" "uuid"[], "p_org_id" "uuid") IS 'Retroactive round-robin assigner. Walks crm_round_robin_config.pool_members and fills lead_submissions.assigned_to on the given leads, only when currently NULL. Emits matching crm_round_robin_audit rows so the bulk reassignment is observable in the same audit log used by Phase 2''s insert-time round-robin trigger. Requires leads.assign on the org or global admin access.';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_award_xp"("p_user_id" "uuid", "p_org_id" "uuid", "p_action" "text", "p_xp_amount" integer, "p_entity_type" "text" DEFAULT NULL::"text", "p_entity_id" "uuid" DEFAULT NULL::"uuid", "p_description" "text" DEFAULT NULL::"text") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    AS $$
+declare
+  v_new_total bigint;
+  v_old_level int;
+  v_new_level int;
+  v_level_name text;
+  v_result jsonb;
+begin
+  -- Upsert XP record
+  insert into crm_user_xp (user_id, org_id, total_xp, daily_xp, weekly_xp, monthly_xp, last_active_date)
+  values (p_user_id, p_org_id, p_xp_amount, p_xp_amount, p_xp_amount, p_xp_amount, current_date)
+  on conflict (user_id, org_id)
+  do update set
+    total_xp = crm_user_xp.total_xp + p_xp_amount,
+    daily_xp = case
+      when crm_user_xp.last_active_date = current_date then crm_user_xp.daily_xp + p_xp_amount
+      else p_xp_amount
+    end,
+    weekly_xp = case
+      when crm_user_xp.last_active_date >= date_trunc('week', current_date)::date then crm_user_xp.weekly_xp + p_xp_amount
+      else p_xp_amount
+    end,
+    monthly_xp = case
+      when crm_user_xp.last_active_date >= date_trunc('month', current_date)::date then crm_user_xp.monthly_xp + p_xp_amount
+      else p_xp_amount
+    end,
+    last_active_date = current_date,
+    updated_at = now()
+  returning total_xp, level into v_new_total, v_old_level;
+
+  -- Calculate new level (sqrt curve: level = floor(sqrt(total_xp / 100)) + 1)
+  v_new_level := greatest(1, floor(sqrt(v_new_total::float / 100.0))::int + 1);
+  v_level_name := case
+    when v_new_level >= 25 then 'Legend'
+    when v_new_level >= 20 then 'Elite'
+    when v_new_level >= 15 then 'Master'
+    when v_new_level >= 10 then 'Champion'
+    when v_new_level >= 7 then 'Veteran'
+    when v_new_level >= 5 then 'Pro'
+    when v_new_level >= 3 then 'Closer'
+    else 'Rookie'
+  end;
+
+  -- Update level if changed
+  if v_new_level != v_old_level then
+    update crm_user_xp
+    set level = v_new_level, level_name = v_level_name
+    where user_id = p_user_id and org_id = p_org_id;
+  end if;
+
+  -- Log XP event
+  insert into crm_xp_events (user_id, org_id, action, xp_amount, entity_type, entity_id, description)
+  values (p_user_id, p_org_id, p_action, p_xp_amount, p_entity_type, p_entity_id, p_description);
+
+  v_result := jsonb_build_object(
+    'total_xp', v_new_total,
+    'xp_earned', p_xp_amount,
+    'level', v_new_level,
+    'level_name', v_level_name,
+    'leveled_up', v_new_level > v_old_level
+  );
+
+  return v_result;
+end;
+$$;
+
+
+ALTER FUNCTION "public"."crm_award_xp"("p_user_id" "uuid", "p_org_id" "uuid", "p_action" "text", "p_xp_amount" integer, "p_entity_type" "text", "p_entity_id" "uuid", "p_description" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_bulk_update_leads"("p_lead_ids" "uuid"[], "p_updates" "jsonb") RETURNS "jsonb"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
+    AS $_$
+DECLARE
+  v_updated int;
+  v_total   int := array_length(p_lead_ids, 1);
+  v_cols    text[];
+  v_key     text;
+  v_set     text;
+BEGIN
+  IF v_total IS NULL OR v_total = 0 THEN
+    RETURN jsonb_build_object('updated', 0, 'total', 0);
+  END IF;
+
+  FOR v_key IN SELECT jsonb_object_keys(p_updates) LOOP
+    IF v_key = ANY(ARRAY[
+      'pipeline_stage',
+      'workflow_subsection',
+      'priority',
+      'assigned_to',
+      'tags',
+      'plan_type',
+      'carrier_id',
+      'source_cta',
+      'utm_source',
+      'current_insurance',
+      'coverage_preference',
+      'primary_concern',
+      'monthly_premium',
+      'contact_preference',
+      'lost_reason',
+      'do_not_contact',
+      'linkedin_workflow_status',
+      'notes',
+      'zip_code',
+      'city',
+      'state',
+      'first_name',
+      'last_name',
+      'email',
+      'phone'
+    ]) THEN
+      v_cols := array_append(v_cols, v_key);
+    END IF;
+  END LOOP;
+
+  IF array_length(v_cols, 1) IS NULL THEN
+    RETURN jsonb_build_object('updated', 0, 'total', v_total,
+      'error', 'no valid columns in update payload');
+  END IF;
+
+  v_set := '';
+  FOR i IN 1 .. array_length(v_cols, 1) LOOP
+    IF v_set <> '' THEN v_set := v_set || ', '; END IF;
+    v_set := v_set || quote_ident(v_cols[i]) || ' = (' || quote_literal(p_updates ->> v_cols[i]) || ')::' ||
+      (SELECT format_type(a.atttypid, a.atttypmod)
+       FROM pg_catalog.pg_attribute a
+       JOIN pg_catalog.pg_class c ON c.oid = a.attrelid
+       JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+       WHERE n.nspname = 'public'
+         AND c.relname = 'lead_submissions'
+         AND a.attname = v_cols[i]
+         AND a.attnum > 0
+         AND NOT a.attisdropped
+       LIMIT 1);
+  END LOOP;
+
+  v_set := v_set || ', updated_at = now()';
+
+  EXECUTE format(
+    'UPDATE public.lead_submissions SET %s WHERE id = ANY($1)',
+    v_set
+  ) USING p_lead_ids;
+
+  GET DIAGNOSTICS v_updated = ROW_COUNT;
+
+  RETURN jsonb_build_object('updated', v_updated, 'total', v_total);
+END;
+$_$;
+
+
+ALTER FUNCTION "public"."crm_bulk_update_leads"("p_lead_ids" "uuid"[], "p_updates" "jsonb") OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."crm_bulk_update_leads"("p_lead_ids" "uuid"[], "p_updates" "jsonb") IS 'Bulk patch for selected leads. Column-whitelisted; RLS-enforced via SECURITY INVOKER.';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_business_days_back"("from_date" "date", "n" integer) RETURNS "date"
+    LANGUAGE "plpgsql" IMMUTABLE
+    AS $$
+DECLARE
+    d date := from_date;
+    counted int := 0;
+BEGIN
+    WHILE counted < n LOOP
+        d := d - 1;
+        IF EXTRACT(ISODOW FROM d) < 6 THEN
+            counted := counted + 1;
+        END IF;
+    END LOOP;
+    RETURN d;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_business_days_back"("from_date" "date", "n" integer) OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_calc_business_hour_deadline"("p_start" timestamp with time zone, "p_hours" numeric, "p_bh_start" time without time zone, "p_bh_end" time without time zone, "p_business_days" integer[], "p_timezone" "text") RETURNS timestamp with time zone
+    LANGUAGE "plpgsql" IMMUTABLE
+    AS $$
+DECLARE
+    v_cursor  timestamp;  -- naive timestamp in org timezone
+    v_bh_len  numeric;
+    v_remaining numeric;
+    v_bh_start_min numeric;
+    v_bh_end_min numeric;
+    v_iter int := 0;
+    v_dow int;
+    v_cur_min numeric;
+    v_left_today numeric;
+BEGIN
+    IF p_hours <= 0 THEN
+        RETURN p_start;
+    END IF;
+
+    -- Convert the start instant into the org's local wall clock
+    v_cursor := (p_start AT TIME ZONE COALESCE(p_timezone, 'UTC'));
+
+    v_bh_start_min := EXTRACT(HOUR FROM p_bh_start) * 60 + EXTRACT(MINUTE FROM p_bh_start);
+    v_bh_end_min   := EXTRACT(HOUR FROM p_bh_end)   * 60 + EXTRACT(MINUTE FROM p_bh_end);
+    v_bh_len       := v_bh_end_min - v_bh_start_min;
+
+    IF v_bh_len <= 0 THEN
+        -- Degenerate config — fall back to wall-clock hours
+        RETURN p_start + (p_hours || ' hours')::interval;
+    END IF;
+
+    v_remaining := p_hours * 60;
+
+    WHILE v_remaining > 0 AND v_iter < 1000 LOOP
+        v_iter := v_iter + 1;
+        v_dow := EXTRACT(DOW FROM v_cursor)::int;
+
+        IF NOT (v_dow = ANY (p_business_days)) THEN
+            v_cursor := date_trunc('day', v_cursor) + interval '1 day'
+                      + make_interval(mins => v_bh_start_min::int);
+            CONTINUE;
+        END IF;
+
+        v_cur_min := EXTRACT(HOUR FROM v_cursor) * 60 + EXTRACT(MINUTE FROM v_cursor);
+
+        IF v_cur_min < v_bh_start_min THEN
+            v_cursor := date_trunc('day', v_cursor)
+                      + make_interval(mins => v_bh_start_min::int);
+            CONTINUE;
+        END IF;
+
+        IF v_cur_min >= v_bh_end_min THEN
+            v_cursor := date_trunc('day', v_cursor) + interval '1 day'
+                      + make_interval(mins => v_bh_start_min::int);
+            CONTINUE;
+        END IF;
+
+        v_left_today := v_bh_end_min - v_cur_min;
+        IF v_remaining <= v_left_today THEN
+            v_cursor := v_cursor + make_interval(mins => v_remaining::int);
+            v_remaining := 0;
+        ELSE
+            v_remaining := v_remaining - v_left_today;
+            v_cursor := date_trunc('day', v_cursor) + interval '1 day'
+                      + make_interval(mins => v_bh_start_min::int);
+        END IF;
+    END LOOP;
+
+    -- Reinterpret as an instant in the org's timezone
+    RETURN v_cursor AT TIME ZONE COALESCE(p_timezone, 'UTC');
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_calc_business_hour_deadline"("p_start" timestamp with time zone, "p_hours" numeric, "p_bh_start" time without time zone, "p_bh_end" time without time zone, "p_business_days" integer[], "p_timezone" "text") OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."crm_calc_business_hour_deadline"("p_start" timestamp with time zone, "p_hours" numeric, "p_bh_start" time without time zone, "p_bh_end" time without time zone, "p_business_days" integer[], "p_timezone" "text") IS 'Returns the absolute deadline for p_hours of business-hours work starting at p_start, respecting the orgs bh window and business_days in the given timezone. Replaces the naive JS implementation in SLAService.';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_calculate_deal_win_probability"("p_deal_id" "uuid") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+  v_deal          record;
+  v_stage         record;
+  v_stage_count   int;
+  v_avg_velocity  numeric;
+  v_deal_velocity numeric;
+  v_act_7d        int;
+  v_act_14d       int;
+  v_act_30d       int;
+  v_last_activity timestamptz;
+  v_avg_amount    numeric;
+  v_probability   numeric := 50;
+  v_factors       jsonb := '[]'::jsonb;
+  v_risks         jsonb := '[]'::jsonb;
+  v_actions       jsonb := '[]'::jsonb;
+  v_health        int := 50;
+  v_confidence    text := 'medium';
+  v_days_past     int;
+  v_predicted_close date;
+  v_result        jsonb;
+BEGIN
+  -- Load deal
+  SELECT d.*, ds.name AS stage_name, ds.probability AS stage_prob,
+         ds.sort_order, ds.is_won_stage, ds.is_lost_stage
+  INTO v_deal
+  FROM crm_deals d
+  JOIN crm_deal_stages ds ON ds.id = d.stage_id
+  WHERE d.id = p_deal_id;
+
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('error', 'Deal not found');
+  END IF;
+
+  v_stage := ROW(v_deal.stage_name, v_deal.stage_prob, v_deal.sort_order,
+                 v_deal.is_won_stage, v_deal.is_lost_stage);
+
+  -- Stage position probability
+  IF v_deal.is_won_stage THEN
+    v_probability := 95;
+  ELSIF v_deal.is_lost_stage THEN
+    v_probability := 5;
+  ELSE
+    v_probability := COALESCE(v_deal.stage_prob, 50);
+  END IF;
+  v_factors := v_factors || jsonb_build_object(
+    'factor', 'Stage: ' || v_deal.stage_name,
+    'impact', v_probability,
+    'direction', 'baseline'
+  );
+
+  -- Stage transition count & velocity
+  SELECT COUNT(*), 
+         EXTRACT(EPOCH FROM (MAX(changed_at) - MIN(changed_at))) / NULLIF(COUNT(*) - 1, 0) / 86400
+  INTO v_stage_count, v_deal_velocity
+  FROM crm_deal_stage_history
+  WHERE deal_id = p_deal_id;
+
+  -- Average velocity across org deals
+  SELECT AVG(deal_vel) INTO v_avg_velocity
+  FROM (
+    SELECT EXTRACT(EPOCH FROM (MAX(h.changed_at) - MIN(h.changed_at))) / NULLIF(COUNT(*) - 1, 0) / 86400 AS deal_vel
+    FROM crm_deal_stage_history h
+    JOIN crm_deals d ON d.id = h.deal_id
+    WHERE d.org_id = v_deal.org_id
+    GROUP BY h.deal_id
+    HAVING COUNT(*) > 1
+  ) sub;
+
+  IF v_deal_velocity IS NOT NULL AND v_avg_velocity IS NOT NULL AND v_avg_velocity > 0 THEN
+    IF v_deal_velocity < v_avg_velocity THEN
+      v_probability := v_probability + 15;
+      v_factors := v_factors || jsonb_build_object(
+        'factor', 'Faster than average stage velocity',
+        'impact', 15,
+        'direction', 'positive'
+      );
+    ELSE
+      v_probability := v_probability - 10;
+      v_factors := v_factors || jsonb_build_object(
+        'factor', 'Slower than average stage velocity',
+        'impact', -10,
+        'direction', 'negative'
+      );
+      v_risks := v_risks || to_jsonb('Deal progressing slower than average'::text);
+      v_actions := v_actions || to_jsonb('Review blockers and schedule next steps'::text);
+    END IF;
+  END IF;
+
+  -- Activity counts (recent)
+  SELECT
+    COUNT(*) FILTER (WHERE created_at > now() - interval '7 days'),
+    COUNT(*) FILTER (WHERE created_at > now() - interval '14 days'),
+    COUNT(*) FILTER (WHERE created_at > now() - interval '30 days'),
+    MAX(created_at)
+  INTO v_act_7d, v_act_14d, v_act_30d, v_last_activity
+  FROM crm_activities
+  WHERE deal_id = p_deal_id;
+
+  -- Activity recency signal
+  IF v_last_activity IS NULL OR v_last_activity < now() - interval '14 days' THEN
+    v_probability := v_probability - 20;
+    v_factors := v_factors || jsonb_build_object(
+      'factor', 'No recent activity (>14 days)',
+      'impact', -20,
+      'direction', 'negative'
+    );
+    v_risks := v_risks || to_jsonb('Deal has gone cold — no activity in 14+ days'::text);
+    v_actions := v_actions || to_jsonb('Reach out to re-engage the prospect immediately'::text);
+  ELSIF v_last_activity > now() - interval '3 days' THEN
+    v_probability := v_probability + 10;
+    v_factors := v_factors || jsonb_build_object(
+      'factor', 'Recent activity (<3 days)',
+      'impact', 10,
+      'direction', 'positive'
+    );
+  END IF;
+
+  -- Engagement volume (30-day)
+  IF v_act_30d < 5 THEN
+    v_probability := v_probability - 10;
+    v_factors := v_factors || jsonb_build_object(
+      'factor', 'Low engagement (<5 activities in 30d)',
+      'impact', -10,
+      'direction', 'negative'
+    );
+    v_risks := v_risks || to_jsonb('Low engagement volume'::text);
+    v_actions := v_actions || to_jsonb('Increase touchpoint frequency'::text);
+  ELSIF v_act_30d >= 10 THEN
+    v_probability := v_probability + 10;
+    v_factors := v_factors || jsonb_build_object(
+      'factor', 'High engagement (10+ activities in 30d)',
+      'impact', 10,
+      'direction', 'positive'
+    );
+  END IF;
+
+  -- Deal amount vs org average
+  SELECT AVG(amount) INTO v_avg_amount
+  FROM crm_deals
+  WHERE org_id = v_deal.org_id
+    AND amount IS NOT NULL
+    AND amount > 0;
+
+  IF v_deal.amount IS NOT NULL AND v_avg_amount IS NOT NULL AND v_avg_amount > 0
+     AND v_deal.amount > 2 * v_avg_amount THEN
+    v_probability := v_probability - 5;
+    v_factors := v_factors || jsonb_build_object(
+      'factor', 'Deal amount >2x org average',
+      'impact', -5,
+      'direction', 'negative'
+    );
+    v_risks := v_risks || to_jsonb('Larger-than-average deal — typically harder to close'::text);
+    v_actions := v_actions || to_jsonb('Ensure executive sponsorship is secured'::text);
+  END IF;
+
+  -- Days past expected close
+  IF v_deal.expected_close_date IS NOT NULL AND v_deal.expected_close_date < CURRENT_DATE THEN
+    v_days_past := CURRENT_DATE - v_deal.expected_close_date;
+    v_probability := v_probability - LEAST(v_days_past * 2, 30);
+    v_factors := v_factors || jsonb_build_object(
+      'factor', format('Past expected close by %s days', v_days_past),
+      'impact', -LEAST(v_days_past * 2, 30),
+      'direction', 'negative'
+    );
+    v_risks := v_risks || to_jsonb(format('Deal is %s days past expected close date', v_days_past)::text);
+    v_actions := v_actions || to_jsonb('Update expected close date and confirm buyer timeline'::text);
+  END IF;
+
+  -- Clamp probability
+  v_probability := GREATEST(1, LEAST(99, v_probability));
+
+  -- Health score (0-100) based on combined signals
+  v_health := GREATEST(0, LEAST(100, v_probability::int));
+
+  -- Confidence
+  IF v_stage_count >= 3 AND v_act_30d >= 5 THEN
+    v_confidence := 'high';
+  ELSIF v_stage_count <= 1 AND v_act_30d < 3 THEN
+    v_confidence := 'low';
+  ELSE
+    v_confidence := 'medium';
+  END IF;
+
+  -- Predicted close date
+  IF v_deal.expected_close_date IS NOT NULL AND v_deal.expected_close_date >= CURRENT_DATE THEN
+    v_predicted_close := v_deal.expected_close_date;
+  ELSIF v_avg_velocity IS NOT NULL AND v_avg_velocity > 0 THEN
+    v_predicted_close := CURRENT_DATE + (v_avg_velocity * 2)::int;
+  ELSE
+    v_predicted_close := CURRENT_DATE + 30;
+  END IF;
+
+  -- Upsert prediction
+  INSERT INTO crm_deal_predictions (
+    deal_id, org_id, win_probability, confidence, factors,
+    risk_signals, recommended_actions, predicted_close_date,
+    deal_health_score, model_version, calculated_at
+  ) VALUES (
+    p_deal_id, v_deal.org_id, ROUND(v_probability, 2), v_confidence, v_factors,
+    v_risks, v_actions, v_predicted_close,
+    v_health, 'v1', now()
+  )
+  ON CONFLICT (deal_id) DO UPDATE SET
+    org_id              = EXCLUDED.org_id,
+    win_probability     = EXCLUDED.win_probability,
+    confidence          = EXCLUDED.confidence,
+    factors             = EXCLUDED.factors,
+    risk_signals        = EXCLUDED.risk_signals,
+    recommended_actions = EXCLUDED.recommended_actions,
+    predicted_close_date= EXCLUDED.predicted_close_date,
+    deal_health_score   = EXCLUDED.deal_health_score,
+    model_version       = EXCLUDED.model_version,
+    calculated_at       = EXCLUDED.calculated_at;
+
+  v_result := jsonb_build_object(
+    'deal_id',            p_deal_id,
+    'win_probability',    ROUND(v_probability, 2),
+    'confidence',         v_confidence,
+    'factors',            v_factors,
+    'risk_signals',       v_risks,
+    'recommended_actions',v_actions,
+    'predicted_close_date', v_predicted_close,
+    'deal_health_score',  v_health,
+    'model_version',      'v1',
+    'calculated_at',      now()
+  );
+
+  RETURN v_result;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_calculate_deal_win_probability"("p_deal_id" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_check_quoted_sla"("p_org_id" "uuid", "p_sla_hours" integer DEFAULT 24) RETURNS TABLE("lead_id" "uuid", "org_id" "uuid", "assigned_to" "uuid", "quoted_at" timestamp with time zone, "hours_in_quoted" numeric)
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+    SELECT
+        ls.id            AS lead_id,
+        ls.org_id        AS org_id,
+        ls.assigned_to   AS assigned_to,
+        ls.quote_cadence_started_at AS quoted_at,
+        EXTRACT(EPOCH FROM (now() - ls.quote_cadence_started_at)) / 3600.0
+            AS hours_in_quoted
+      FROM public.lead_submissions ls
+     WHERE ls.org_id = p_org_id
+       AND ls.pipeline_stage = 'quoted'
+       AND ls.quote_cadence_started_at IS NOT NULL
+       AND ls.quote_cadence_started_at <= now() - (p_sla_hours || ' hours')::interval
+       AND COALESCE(ls.do_not_contact, false) = false
+$$;
+
+
+ALTER FUNCTION "public"."crm_check_quoted_sla"("p_org_id" "uuid", "p_sla_hours" integer) OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."crm_check_quoted_sla"("p_org_id" "uuid", "p_sla_hours" integer) IS 'Round 2 24-hour SLA scan: returns leads stuck in Quoted past the SLA. Edge Function fans out alerts.';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_classify_log_section"("p_activity_type" "text", "p_source" "text") RETURNS "text"
+    LANGUAGE "plpgsql" IMMUTABLE
+    AS $$
+BEGIN
+    IF p_activity_type IN (
+        'linkedin_connection_sent',
+        'linkedin_connection_accepted',
+        'linkedin_message',
+        'linkedin_reply',
+        'linkedin_profile_view',
+        'linkedin_engagement',
+        'linkedin_short'
+    ) THEN
+        RETURN 'linkedin_activity';
+    END IF;
+
+    IF p_activity_type IN ('call', 'email', 'sms', 'text', 'note') THEN
+        RETURN 'lead_communication';
+    END IF;
+
+    IF p_activity_type IN (
+        'stage_change', 'stage_advance', 'mark_lost',
+        'subsection_transfer', 'profile_edit', 'crm_lead_entered'
+    ) THEN
+        RETURN 'pipeline';
+    END IF;
+
+    IF p_activity_type IN ('quote_sent', 'enrollment_won', 'deals_closed', 'won') THEN
+        RETURN 'deals_closed';
+    END IF;
+
+    IF p_activity_type IN (
+        'content_creation', 'content', 'webinar', 'social',
+        'linkedin_post', 'template_created', 'signature_created',
+        'master_template_created'
+    ) THEN
+        RETURN 'content_creation';
+    END IF;
+
+    IF p_activity_type IN (
+        'meeting','task','demo','proposal_sent','presentation','live_chat',
+        'networking_event','community_outreach','referral_requested'
+    ) THEN
+        RETURN 'activities';
+    END IF;
+
+    IF p_source = 'crm_special_projects' THEN
+        RETURN 'special_projects';
+    END IF;
+
+    RETURN 'activities';
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_classify_log_section"("p_activity_type" "text", "p_source" "text") OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."crm_classify_log_section"("p_activity_type" "text", "p_source" "text") IS 'Section 11 / Round 6: strict-spec bucketing of rep activity into seven Daily Log sections.';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_community_event_bump_counter"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+    v_delta integer := 0;
+    v_target uuid := NULL;
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        IF NEW.community_event_id IS NOT NULL THEN
+            v_delta := 1;
+            v_target := NEW.community_event_id;
+        END IF;
+    ELSIF TG_OP = 'DELETE' THEN
+        IF OLD.community_event_id IS NOT NULL THEN
+            v_delta := -1;
+            v_target := OLD.community_event_id;
+        END IF;
+    ELSIF TG_OP = 'UPDATE' THEN
+        IF OLD.community_event_id IS DISTINCT FROM NEW.community_event_id THEN
+            -- Old event: decrement (if any)
+            IF OLD.community_event_id IS NOT NULL THEN
+                UPDATE public.crm_community_events
+                   SET leads_generated = GREATEST(0, COALESCE(leads_generated, 0) - 1)
+                 WHERE id = OLD.community_event_id;
+            END IF;
+            -- New event: increment (if any)
+            IF NEW.community_event_id IS NOT NULL THEN
+                UPDATE public.crm_community_events
+                   SET leads_generated = COALESCE(leads_generated, 0) + 1
+                 WHERE id = NEW.community_event_id;
+            END IF;
+            RETURN NEW;
+        END IF;
+    END IF;
+
+    IF v_target IS NOT NULL AND v_delta <> 0 THEN
+        UPDATE public.crm_community_events
+           SET leads_generated = GREATEST(0, COALESCE(leads_generated, 0) + v_delta)
+         WHERE id = v_target;
+    END IF;
+
+    IF TG_OP = 'DELETE' THEN
+        RETURN OLD;
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_community_event_bump_counter"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_concierge_handoff_emit"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+BEGIN
+    IF NEW.pipeline_stage = 'won'
+       AND COALESCE(OLD.pipeline_stage, '') <> 'won' THEN
+        INSERT INTO public.crm_concierge_handoff_log (
+            org_id, lead_id, handoff_at, payload
+        ) VALUES (
+            NEW.org_id, NEW.id, now(),
+            jsonb_build_object(
+                'prior_stage', OLD.pipeline_stage,
+                'assigned_to', NEW.assigned_to,
+                'enrollment_approved_at', NEW.enrollment_approved_at
+            )
+        )
+        ON CONFLICT DO NOTHING;
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_concierge_handoff_emit"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_conversion_rates"("p_org_id" "uuid", "p_month" integer, "p_year" integer) RETURNS TABLE("rep_id" "uuid", "rep_name" "text", "leads_received" bigint, "inhouse_leads" bigint, "inhouse_closed" bigint, "inhouse_conv_pct" numeric, "selfgen_leads" bigint, "selfgen_closed" bigint, "selfgen_conv_pct" numeric, "overall_conv_pct" numeric)
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+    v_start timestamptz;
+    v_end timestamptz;
+BEGIN
+    v_start := make_timestamptz(p_year, p_month, 1, 0, 0, 0, 'UTC');
+    v_end := (v_start + interval '1 month');
+
+    RETURN QUERY
+    SELECT
+        u.id AS rep_id,
+        COALESCE(u.raw_user_meta_data->>'full_name', u.email)::text AS rep_name,
+        COUNT(ls.id)::bigint AS leads_received,
+        COUNT(ls.id) FILTER (WHERE ls.is_self_generated = false)::bigint AS inhouse_leads,
+        COUNT(ls.id) FILTER (WHERE ls.is_self_generated = false AND ls.pipeline_stage IN ('won','converted','closed_won'))::bigint AS inhouse_closed,
+        CASE WHEN COUNT(ls.id) FILTER (WHERE ls.is_self_generated = false) > 0
+            THEN ROUND(COUNT(ls.id) FILTER (WHERE ls.is_self_generated = false AND ls.pipeline_stage IN ('won','converted','closed_won'))::numeric * 100.0 /
+                 NULLIF(COUNT(ls.id) FILTER (WHERE ls.is_self_generated = false), 0), 1)
+            ELSE 0 END AS inhouse_conv_pct,
+        COUNT(ls.id) FILTER (WHERE ls.is_self_generated = true)::bigint AS selfgen_leads,
+        COUNT(ls.id) FILTER (WHERE ls.is_self_generated = true AND ls.pipeline_stage IN ('won','converted','closed_won'))::bigint AS selfgen_closed,
+        CASE WHEN COUNT(ls.id) FILTER (WHERE ls.is_self_generated = true) > 0
+            THEN ROUND(COUNT(ls.id) FILTER (WHERE ls.is_self_generated = true AND ls.pipeline_stage IN ('won','converted','closed_won'))::numeric * 100.0 /
+                 NULLIF(COUNT(ls.id) FILTER (WHERE ls.is_self_generated = true), 0), 1)
+            ELSE 0 END AS selfgen_conv_pct,
+        CASE WHEN COUNT(ls.id) > 0
+            THEN ROUND(COUNT(ls.id) FILTER (WHERE ls.pipeline_stage IN ('won','converted','closed_won'))::numeric * 100.0 / COUNT(ls.id), 1)
+            ELSE 0 END AS overall_conv_pct
+    FROM auth.users u
+    INNER JOIN public.org_memberships om ON om.user_id = u.id AND om.org_id = p_org_id
+    LEFT JOIN public.lead_submissions ls
+        ON ls.assigned_to = u.id AND ls.org_id = p_org_id
+        AND ls.created_at >= v_start AND ls.created_at < v_end
+    GROUP BY u.id, u.email, u.raw_user_meta_data
+    ORDER BY rep_name;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_conversion_rates"("p_org_id" "uuid", "p_month" integer, "p_year" integer) OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_conversion_rates_filtered"("p_org_id" "uuid", "p_month" integer, "p_year" integer, "p_rep_ids" "uuid"[] DEFAULT NULL::"uuid"[]) RETURNS TABLE("rep_id" "uuid", "rep_name" "text", "leads_received" bigint, "inhouse_leads" bigint, "inhouse_closed" bigint, "inhouse_conv_pct" numeric, "selfgen_leads" bigint, "selfgen_closed" bigint, "selfgen_conv_pct" numeric, "overall_conv_pct" numeric)
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+    RETURN QUERY
+    SELECT r.*
+    FROM public.crm_conversion_rates(p_org_id, p_month, p_year) r
+    WHERE p_rep_ids IS NULL OR r.rep_id = ANY(p_rep_ids);
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_conversion_rates_filtered"("p_org_id" "uuid", "p_month" integer, "p_year" integer, "p_rep_ids" "uuid"[]) OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_count_conversations"("p_org_id" "uuid", "p_user_id" "uuid", "p_date" "date") RETURNS TABLE("conversation_count" integer, "target" integer, "is_special_projects_day" boolean, "is_exempt" boolean)
+    LANGUAGE "plpgsql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+DECLARE
+    v_cfg public.crm_conversation_goal_config%ROWTYPE;
+    v_override public.crm_user_conversation_goal_overrides%ROWTYPE;
+    v_count integer := 0;
+    v_target integer;
+    v_sp_day boolean := false;
+    v_exempt boolean := false;
+BEGIN
+    SELECT * INTO v_cfg FROM public.crm_conversation_goal_config WHERE org_id = p_org_id;
+    IF NOT FOUND THEN
+        v_cfg.full_time_target := 25;
+        v_cfg.part_time_default_target := 10;
+        v_cfg.exempt_special_projects_days := true;
+        v_cfg.counted_sections := ARRAY['lead_communication','activities']::text[];
+        v_cfg.counted_activity_types := ARRAY['call','email','sms','text','meeting','demo','presentation']::text[];
+    END IF;
+
+    SELECT * INTO v_override
+      FROM public.crm_user_conversation_goal_overrides
+     WHERE org_id = p_org_id AND user_id = p_user_id;
+
+    IF FOUND THEN
+        v_target := v_override.daily_target;
+        IF v_override.daily_target = 0 THEN
+            v_exempt := true;
+        END IF;
+    ELSE
+        v_target := v_cfg.full_time_target;
+    END IF;
+
+    IF v_cfg.exempt_special_projects_days THEN
+        SELECT EXISTS (
+            SELECT 1 FROM public.crm_daily_log_events
+             WHERE org_id = p_org_id
+               AND user_id = p_user_id
+               AND log_date = p_date
+               AND section = 'special_projects'
+        ) INTO v_sp_day;
+        IF v_sp_day THEN v_exempt := true; END IF;
+    END IF;
+
+    SELECT COUNT(*)::integer INTO v_count
+      FROM public.crm_daily_log_events e
+     WHERE e.org_id = p_org_id
+       AND e.user_id = p_user_id
+       AND e.log_date = p_date
+       AND e.section = ANY (v_cfg.counted_sections)
+       AND e.activity_type = ANY (v_cfg.counted_activity_types);
+
+    conversation_count := v_count;
+    target := v_target;
+    is_special_projects_day := v_sp_day;
+    is_exempt := v_exempt;
+    RETURN NEXT;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_count_conversations"("p_org_id" "uuid", "p_user_id" "uuid", "p_date" "date") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_count_leads_worked"("p_org_id" "uuid", "p_user_id" "uuid", "p_date" "date") RETURNS integer
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+    SELECT COUNT(DISTINCT (e.metadata ->> 'lead_id'))::integer
+      FROM public.crm_daily_log_events e
+     WHERE e.org_id = p_org_id
+       AND e.user_id = p_user_id
+       AND e.log_date = p_date
+       AND (e.metadata ->> 'lead_id') IS NOT NULL;
+$$;
+
+
+ALTER FUNCTION "public"."crm_count_leads_worked"("p_org_id" "uuid", "p_user_id" "uuid", "p_date" "date") OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."crm_count_leads_worked"("p_org_id" "uuid", "p_user_id" "uuid", "p_date" "date") IS 'CRM rebuild Section 8 - distinct lead ids touched by a rep on a given day.';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_daily_log_add_manual"("p_org_id" "uuid", "p_section" "text", "p_activity_type" "text", "p_description" "text", "p_occurred_at" timestamp with time zone DEFAULT "now"(), "p_metadata" "jsonb" DEFAULT '{}'::"jsonb") RETURNS "uuid"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+DECLARE
+    v_user uuid := auth.uid();
+    v_id uuid;
+    v_section text := lower(p_section);
+    v_subtype text;
+BEGIN
+    IF v_user IS NULL THEN RAISE EXCEPTION 'Authentication required' USING ERRCODE = 'insufficient_privilege'; END IF;
+    IF NOT public.is_org_member(p_org_id) THEN RAISE EXCEPTION 'Not a member of org %', p_org_id USING ERRCODE = 'insufficient_privilege'; END IF;
+    IF v_section NOT IN ('lead_communication','linkedin_activity','pipeline','deals_closed','activities','content_creation','special_projects') THEN
+        RAISE EXCEPTION 'Invalid section: %', p_section USING ERRCODE = 'invalid_parameter_value';
+    END IF;
+    IF p_activity_type IS NULL OR length(trim(both ' ' FROM p_activity_type)) = 0 THEN
+        RAISE EXCEPTION 'activity_type is required' USING ERRCODE = 'invalid_parameter_value';
+    END IF;
+    v_subtype := NULLIF(trim(both ' ' FROM (p_metadata->>'subtype')), '');
+    IF v_subtype IS NULL AND COALESCE((p_metadata->>'is_cancellation')::boolean, false) THEN
+        v_subtype := 'cancellation';
+    END IF;
+    INSERT INTO public.crm_daily_log_events (
+        org_id, user_id, log_date, source, source_id,
+        section, activity_type, activity_subtype,
+        description, metadata, manual, occurred_at
+    ) VALUES (
+        p_org_id, v_user, COALESCE(p_occurred_at, now())::date,
+        'manual', NULL, v_section, lower(p_activity_type), v_subtype,
+        p_description, COALESCE(p_metadata, '{}'::jsonb), true, COALESCE(p_occurred_at, now())
+    ) RETURNING id INTO v_id;
+    RETURN v_id;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_daily_log_add_manual"("p_org_id" "uuid", "p_section" "text", "p_activity_type" "text", "p_description" "text", "p_occurred_at" timestamp with time zone, "p_metadata" "jsonb") OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."crm_daily_log_add_manual"("p_org_id" "uuid", "p_section" "text", "p_activity_type" "text", "p_description" "text", "p_occurred_at" timestamp with time zone, "p_metadata" "jsonb") IS 'Section 11 / Round 6: manual Daily Log entry; honors metadata.subtype / metadata.is_cancellation=true.';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_daily_log_add_manual_v2"("p_org_id" "uuid", "p_section" "text", "p_activity_type" "text", "p_description" "text", "p_occurred_at" timestamp with time zone DEFAULT "now"(), "p_metadata" "jsonb" DEFAULT '{}'::"jsonb", "p_prospect_name" "text" DEFAULT NULL::"text", "p_company_name" "text" DEFAULT NULL::"text", "p_linked_record_type" "text" DEFAULT NULL::"text", "p_linked_record_id" "uuid" DEFAULT NULL::"uuid") RETURNS "uuid"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+DECLARE
+    v_user uuid := auth.uid();
+    v_id uuid;
+    v_section text := lower(p_section);
+    v_requires_person boolean;
+BEGIN
+    IF v_user IS NULL THEN
+        RAISE EXCEPTION 'Authentication required' USING ERRCODE = 'insufficient_privilege';
+    END IF;
+    IF NOT public.is_org_member(p_org_id) THEN
+        RAISE EXCEPTION 'Not a member of org %', p_org_id USING ERRCODE = 'insufficient_privilege';
+    END IF;
+    IF v_section NOT IN ('lead_communication','linkedin_activity','pipeline','deals_closed','activities','content_creation','special_projects') THEN
+        RAISE EXCEPTION 'Invalid section: %', p_section USING ERRCODE = 'invalid_parameter_value';
+    END IF;
+    IF p_activity_type IS NULL OR length(trim(both ' ' FROM p_activity_type)) = 0 THEN
+        RAISE EXCEPTION 'activity_type is required' USING ERRCODE = 'invalid_parameter_value';
+    END IF;
+
+    v_requires_person :=
+        (v_section = 'lead_communication' AND lower(p_activity_type) IN ('call','email','sms','text'))
+     OR (v_section = 'linkedin_activity' AND lower(p_activity_type) IN ('linkedin_message','linkedin_reply'))
+     OR (v_section = 'activities' AND lower(p_activity_type) IN ('meeting','demo','presentation'));
+
+    IF v_requires_person THEN
+        IF (p_prospect_name IS NULL OR length(trim(both ' ' FROM p_prospect_name)) = 0)
+           AND p_linked_record_id IS NULL THEN
+            RAISE EXCEPTION 'Round 12 / Section 15: conversation entries must name the person spoken with (use the typeahead, not free text).'
+                USING ERRCODE = 'invalid_parameter_value';
+        END IF;
+    END IF;
+
+    INSERT INTO public.crm_daily_log_events (
+        org_id, user_id, log_date, source, source_id, section, activity_type, activity_subtype,
+        description, metadata, manual, occurred_at,
+        prospect_name, company_name, linked_record_type, linked_record_id
+    ) VALUES (
+        p_org_id, v_user, COALESCE(p_occurred_at, now())::date, 'manual', NULL,
+        v_section, lower(p_activity_type),
+        NULLIF(lower(COALESCE(p_metadata ->> 'subtype', '')), ''),
+        p_description, COALESCE(p_metadata, '{}'::jsonb), true, COALESCE(p_occurred_at, now()),
+        NULLIF(trim(both ' ' FROM COALESCE(p_prospect_name, '')), ''),
+        NULLIF(trim(both ' ' FROM COALESCE(p_company_name, '')), ''),
+        NULLIF(lower(COALESCE(p_linked_record_type, '')), ''),
+        p_linked_record_id
+    ) RETURNING id INTO v_id;
+
+    RETURN v_id;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_daily_log_add_manual_v2"("p_org_id" "uuid", "p_section" "text", "p_activity_type" "text", "p_description" "text", "p_occurred_at" timestamp with time zone, "p_metadata" "jsonb", "p_prospect_name" "text", "p_company_name" "text", "p_linked_record_type" "text", "p_linked_record_id" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_daily_log_admin_delete"("p_event_id" "uuid", "p_reason" "text") RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+DECLARE
+    v_admin uuid := auth.uid();
+    v_event public.crm_daily_log_events%ROWTYPE;
+BEGIN
+    IF v_admin IS NULL THEN RAISE EXCEPTION 'Authentication required' USING ERRCODE = 'insufficient_privilege'; END IF;
+    IF p_reason IS NULL OR length(trim(both ' ' FROM p_reason)) < 3 THEN
+        RAISE EXCEPTION 'A reason is required for admin corrections' USING ERRCODE = 'invalid_parameter_value';
+    END IF;
+    SELECT * INTO v_event FROM public.crm_daily_log_events WHERE id = p_event_id;
+    IF NOT FOUND THEN RAISE EXCEPTION 'event % not found', p_event_id USING ERRCODE = 'no_data_found'; END IF;
+    IF NOT (public.is_org_admin(v_event.org_id) OR public.has_org_permission(v_event.org_id, 'settings.admin')) THEN
+        RAISE EXCEPTION 'Admin privileges required' USING ERRCODE = 'insufficient_privilege';
+    END IF;
+    INSERT INTO public.crm_daily_log_corrections (
+        org_id, event_id, original_user_id, correction_type, before_image, after_image, reason, corrected_by, corrected_at
+    ) VALUES (
+        v_event.org_id, p_event_id, v_event.user_id, 'delete', to_jsonb(v_event), NULL, p_reason, v_admin, now()
+    );
+    DELETE FROM public.crm_daily_log_events WHERE id = p_event_id;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_daily_log_admin_delete"("p_event_id" "uuid", "p_reason" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_daily_log_admin_edit"("p_event_id" "uuid", "p_patch" "jsonb", "p_reason" "text") RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+DECLARE
+    v_admin uuid := auth.uid();
+    v_event public.crm_daily_log_events%ROWTYPE;
+    v_before jsonb;
+    v_after jsonb;
+BEGIN
+    IF v_admin IS NULL THEN RAISE EXCEPTION 'Authentication required' USING ERRCODE = 'insufficient_privilege'; END IF;
+    IF p_reason IS NULL OR length(trim(both ' ' FROM p_reason)) < 3 THEN
+        RAISE EXCEPTION 'A reason is required for admin corrections' USING ERRCODE = 'invalid_parameter_value';
+    END IF;
+    SELECT * INTO v_event FROM public.crm_daily_log_events WHERE id = p_event_id;
+    IF NOT FOUND THEN RAISE EXCEPTION 'event % not found', p_event_id USING ERRCODE = 'no_data_found'; END IF;
+    IF NOT (public.is_org_admin(v_event.org_id) OR public.has_org_permission(v_event.org_id, 'settings.admin')) THEN
+        RAISE EXCEPTION 'Admin privileges required' USING ERRCODE = 'insufficient_privilege';
+    END IF;
+    v_before := to_jsonb(v_event);
+    UPDATE public.crm_daily_log_events
+       SET description = COALESCE(p_patch ->> 'description', v_event.description),
+           metadata = COALESCE(CASE WHEN p_patch ? 'metadata' THEN p_patch -> 'metadata' ELSE v_event.metadata END, '{}'::jsonb)
+                      || jsonb_build_object('admin_corrected', true, 'admin_correction_reason', p_reason),
+           section = COALESCE(p_patch ->> 'section', v_event.section),
+           activity_type = COALESCE(p_patch ->> 'activity_type', v_event.activity_type),
+           activity_subtype = CASE WHEN p_patch ? 'activity_subtype' THEN p_patch ->> 'activity_subtype' ELSE v_event.activity_subtype END
+     WHERE id = p_event_id;
+    SELECT to_jsonb(e) INTO v_after FROM public.crm_daily_log_events e WHERE e.id = p_event_id;
+    INSERT INTO public.crm_daily_log_corrections (
+        org_id, event_id, original_user_id, correction_type, before_image, after_image, reason, corrected_by, corrected_at
+    ) VALUES (
+        v_event.org_id, p_event_id, v_event.user_id, 'edit', v_before, v_after, p_reason, v_admin, now()
+    );
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_daily_log_admin_edit"("p_event_id" "uuid", "p_patch" "jsonb", "p_reason" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_daily_log_rollup"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+DECLARE
+    v_call_inc      integer := 0;
+    v_email_inc     integer := 0;
+    v_li_inc        integer := 0;
+    v_meet_inc      integer := 0;
+    v_cancel_inc    integer := 0;
+    v_pipe_inc      integer := 0;
+    v_deal_inc      integer := 0;
+    v_other_inc     integer := 0;
+    v_content_inc   integer := 0;
+BEGIN
+    -- Map activity_type → counter increments. We rely on the classifier
+    -- already setting `section` correctly on insert; the activity_type
+    -- here just decides which legacy column ticks.
+    IF NEW.activity_type = 'call' THEN v_call_inc := 1; END IF;
+    IF NEW.activity_type IN ('email', 'sms', 'text') THEN v_email_inc := 1; END IF;
+    IF NEW.activity_type IN (
+        'linkedin_connection_sent', 'linkedin_connection_accepted',
+        'linkedin_message', 'linkedin_post', 'linkedin_engagement',
+        'linkedin_short'
+    ) THEN v_li_inc := 1; END IF;
+    IF NEW.activity_type = 'meeting' THEN v_meet_inc := 1; END IF;
+
+    -- Section 11 sub-section counters
+    IF NEW.activity_subtype = 'cancellation_call' THEN v_cancel_inc := 1; END IF;
+    IF NEW.section = 'pipeline' THEN v_pipe_inc := 1; END IF;
+    IF NEW.section = 'deals_closed' THEN v_deal_inc := 1; END IF;
+    IF NEW.section = 'content_creation' THEN v_content_inc := 1; END IF;
+    IF NEW.section = 'activities' THEN v_other_inc := 1; END IF;
+
+    INSERT INTO public.crm_rep_daily_log_entries AS d (
+        org_id, user_id, log_date,
+        calls_made, emails_sent, linkedin_touches, meetings_held,
+        cancellation_calls, pipeline_actions, deals_closed,
+        activities_other, content_creation,
+        manual_flag, created_at, updated_at
+    ) VALUES (
+        NEW.org_id, NEW.user_id, NEW.log_date,
+        v_call_inc, v_email_inc, v_li_inc, v_meet_inc,
+        v_cancel_inc, v_pipe_inc, v_deal_inc,
+        v_other_inc, v_content_inc,
+        false, now(), now()
+    )
+    ON CONFLICT (org_id, user_id, log_date) DO UPDATE
+       SET calls_made         = COALESCE(d.calls_made, 0)         + v_call_inc,
+           emails_sent        = COALESCE(d.emails_sent, 0)        + v_email_inc,
+           linkedin_touches   = COALESCE(d.linkedin_touches, 0)   + v_li_inc,
+           meetings_held      = COALESCE(d.meetings_held, 0)      + v_meet_inc,
+           cancellation_calls = COALESCE(d.cancellation_calls, 0) + v_cancel_inc,
+           pipeline_actions   = COALESCE(d.pipeline_actions, 0)   + v_pipe_inc,
+           deals_closed       = COALESCE(d.deals_closed, 0)       + v_deal_inc,
+           activities_other   = COALESCE(d.activities_other, 0)   + v_other_inc,
+           content_creation   = COALESCE(d.content_creation, 0)   + v_content_inc,
+           manual_flag        = d.manual_flag OR NEW.manual,
+           updated_at         = now();
+
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_daily_log_rollup"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_daily_log_search"("p_org_id" "uuid", "p_q" "text" DEFAULT NULL::"text", "p_from" "date" DEFAULT NULL::"date", "p_to" "date" DEFAULT NULL::"date", "p_user_id" "uuid" DEFAULT NULL::"uuid", "p_section" "text" DEFAULT NULL::"text", "p_activity_type" "text" DEFAULT NULL::"text", "p_source" "text" DEFAULT NULL::"text", "p_linked_record_type" "text" DEFAULT NULL::"text", "p_linked_record_id" "uuid" DEFAULT NULL::"uuid", "p_limit" integer DEFAULT 100, "p_offset" integer DEFAULT 0) RETURNS TABLE("id" "uuid", "org_id" "uuid", "user_id" "uuid", "log_date" "date", "source" "text", "section" "text", "activity_type" "text", "activity_subtype" "text", "description" "text", "metadata" "jsonb", "manual" boolean, "occurred_at" timestamp with time zone, "created_at" timestamp with time zone, "prospect_name" "text", "company_name" "text", "linked_record_type" "text", "linked_record_id" "uuid", "rank" real)
+    LANGUAGE "plpgsql" STABLE
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+DECLARE
+    v_query tsquery := NULL;
+BEGIN
+    IF NOT public.is_org_member(p_org_id) THEN
+        RAISE EXCEPTION 'Not a member of org %', p_org_id USING ERRCODE = 'insufficient_privilege';
+    END IF;
+
+    IF p_q IS NOT NULL AND length(trim(both ' ' FROM p_q)) > 0 THEN
+        v_query := websearch_to_tsquery('english', p_q);
+    END IF;
+
+    RETURN QUERY
+    SELECT  e.id, e.org_id, e.user_id, e.log_date, e.source,
+            e.section, e.activity_type, e.activity_subtype, e.description,
+            e.metadata, e.manual, e.occurred_at, e.created_at,
+            e.prospect_name, e.company_name,
+            e.linked_record_type, e.linked_record_id,
+            CASE WHEN v_query IS NULL THEN 0::real
+                 ELSE ts_rank_cd(e.search_tsv, v_query) END AS rank
+      FROM  public.crm_daily_log_events e
+     WHERE  e.org_id = p_org_id
+       AND  (v_query IS NULL OR e.search_tsv @@ v_query)
+       AND  (p_from IS NULL OR e.log_date >= p_from)
+       AND  (p_to   IS NULL OR e.log_date <= p_to)
+       AND  (p_user_id IS NULL OR e.user_id = p_user_id)
+       AND  (p_section IS NULL OR e.section = lower(p_section))
+       AND  (p_activity_type IS NULL OR e.activity_type = lower(p_activity_type))
+       AND  (p_source IS NULL
+             OR (lower(p_source) = 'manual' AND e.manual = true)
+             OR (lower(p_source) = 'auto'   AND e.manual = false))
+       AND  (p_linked_record_type IS NULL OR e.linked_record_type = lower(p_linked_record_type))
+       AND  (p_linked_record_id   IS NULL OR e.linked_record_id   = p_linked_record_id)
+     ORDER BY (CASE WHEN v_query IS NULL THEN 0::real ELSE ts_rank_cd(e.search_tsv, v_query) END) DESC,
+              e.occurred_at DESC
+     LIMIT  GREATEST(LEAST(COALESCE(p_limit, 100), 500), 1)
+    OFFSET  GREATEST(COALESCE(p_offset, 0), 0);
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_daily_log_search"("p_org_id" "uuid", "p_q" "text", "p_from" "date", "p_to" "date", "p_user_id" "uuid", "p_section" "text", "p_activity_type" "text", "p_source" "text", "p_linked_record_type" "text", "p_linked_record_id" "uuid", "p_limit" integer, "p_offset" integer) OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_daily_log_ui_config_seed_org"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+BEGIN
+    INSERT INTO public.crm_daily_log_ui_config (org_id) VALUES (NEW.id) ON CONFLICT (org_id) DO NOTHING;
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_daily_log_ui_config_seed_org"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_daily_log_ui_config_touch_updated_at"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    AS $$
+BEGIN NEW.updated_at := now(); RETURN NEW; END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_daily_log_ui_config_touch_updated_at"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_detect_opt_out"("p_body" "text", "p_org_id" "uuid" DEFAULT NULL::"uuid") RETURNS TABLE("is_match" boolean, "match_phrase" "text")
+    LANGUAGE "plpgsql" STABLE
+    AS $$
+DECLARE
+    v_clean text;
+    v_norm  text;
+    v_kw    record;
+BEGIN
+    v_clean := public.crm_strip_reply_quoted_and_signature(p_body);
+    v_norm  := lower(coalesce(v_clean, ''));
+
+    IF length(trim(v_norm)) = 0 THEN
+        RETURN QUERY SELECT false, NULL::text;
+        RETURN;
+    END IF;
+
+    FOR v_kw IN
+        SELECT k.phrase AS kw_phrase
+          FROM public.crm_optout_keywords k
+         WHERE k.is_active = true
+           AND (k.org_id IS NULL OR k.org_id = p_org_id)
+         ORDER BY length(k.phrase) DESC
+    LOOP
+        IF position(lower(v_kw.kw_phrase) IN v_norm) > 0 THEN
+            RETURN QUERY SELECT true, v_kw.kw_phrase;
+            RETURN;
+        END IF;
+    END LOOP;
+
+    RETURN QUERY SELECT false, NULL::text;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_detect_opt_out"("p_body" "text", "p_org_id" "uuid") OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."crm_detect_opt_out"("p_body" "text", "p_org_id" "uuid") IS 'Section 2g detector: returns (matched, matched_phrase) for the cleaned reply body. Phrase list lives in crm_optout_keywords; review at 60-day post-launch checkpoint.';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_detect_opt_out_keywords"("p_body" "text") RETURNS boolean
+    LANGUAGE "plpgsql" IMMUTABLE
+    AS $$
+DECLARE
+    v_norm text;
+BEGIN
+    IF p_body IS NULL OR length(trim(p_body)) = 0 THEN
+        RETURN false;
+    END IF;
+    v_norm := lower(p_body);
+    IF v_norm ~ '(stop|unsubscribe|remove me|do not contact|don''t contact|opt\s*out|cease\s*contact)' THEN
+        RETURN true;
+    END IF;
+    IF v_norm ~ '\b(no\s*thank\s*you|not\s*interested|leave\s*me\s*alone)\b' THEN
+        RETURN true;
+    END IF;
+    RETURN false;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_detect_opt_out_keywords"("p_body" "text") OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."crm_detect_opt_out_keywords"("p_body" "text") IS 'Returns true when inbound text matches spec opt-out / DNC phrases (review at 60 days).';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_dispatch_performance_lag_notification"("p_org_id" "uuid", "p_alert_id" "uuid") RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+DECLARE
+    v_alert public.crm_performance_alert_log%ROWTYPE;
+    v_config public.crm_performance_lag_config%ROWTYPE;
+    v_channels text[];
+    v_admin record;
+    v_title text;
+    v_body_rep text;
+    v_body_admin text;
+    v_action_url text := '/sales-daily-logs';
+    v_metadata jsonb;
+    v_pct integer;
+BEGIN
+    SELECT * INTO v_alert FROM public.crm_performance_alert_log WHERE id = p_alert_id AND org_id = p_org_id;
+    IF NOT FOUND THEN RAISE EXCEPTION 'alert % not found in org %', p_alert_id, p_org_id; END IF;
+    IF v_alert.notification_dispatched_at IS NOT NULL THEN RETURN; END IF;
+
+    SELECT * INTO v_config FROM public.crm_performance_lag_config WHERE org_id = p_org_id;
+    IF NOT FOUND THEN INSERT INTO public.crm_performance_lag_config (org_id) VALUES (p_org_id) RETURNING * INTO v_config; END IF;
+
+    v_channels := ARRAY[]::text[];
+    IF v_config.inapp_channel THEN v_channels := array_append(v_channels, 'in_app'); END IF;
+    IF v_config.email_channel THEN v_channels := array_append(v_channels, 'email'); END IF;
+
+    IF cardinality(v_channels) = 0 THEN
+        UPDATE public.crm_performance_alert_log SET notification_dispatched_at = now() WHERE id = p_alert_id;
+        RETURN;
+    END IF;
+
+    IF v_alert.team_avg > 0 THEN
+        v_pct := GREATEST(0, (100 - ROUND((v_alert.rep_count::numeric / v_alert.team_avg) * 100))::integer);
+    ELSE
+        v_pct := 0;
+    END IF;
+
+    v_title := 'Performance lag alert';
+    v_body_rep := 'Your activity over the last ' || (v_alert.window_end - v_alert.window_start + 1) || ' days is ~' || v_pct || '% below the team average. Open the Daily Log to see the breakdown.';
+    v_body_admin := 'A team member is ~' || v_pct || '% below the team average over the last ' || (v_alert.window_end - v_alert.window_start + 1) || ' days. Open the Daily Log Admin View for the per-rep breakdown.';
+
+    v_metadata := jsonb_build_object(
+        'alert_id', p_alert_id,
+        'window_start', v_alert.window_start,
+        'window_end', v_alert.window_end,
+        'rep_count', v_alert.rep_count,
+        'team_avg', v_alert.team_avg,
+        'top_performer_count', v_alert.top_performer_count,
+        'percent_behind', v_pct,
+        'config', jsonb_build_object('threshold_pct', v_config.threshold_pct, 'window_days', v_config.window_days)
+    );
+
+    IF v_config.notify_rep THEN
+        INSERT INTO public.notifications (org_id, user_id, title, body, icon, action_url, action_label, priority, category, channels, metadata)
+        VALUES (p_org_id, v_alert.user_id, v_title, v_body_rep, 'alert-triangle', v_action_url, 'Open Daily Log', 'high', 'performance_lag', v_channels, v_metadata);
+    END IF;
+
+    IF v_config.notify_admins THEN
+        FOR v_admin IN
+            SELECT m.user_id FROM public.org_memberships m
+             WHERE m.org_id = p_org_id AND m.status = 'active'
+               AND m.role IN ('admin','owner')
+               AND m.user_id IS DISTINCT FROM v_alert.user_id
+        LOOP
+            INSERT INTO public.notifications (org_id, user_id, title, body, icon, action_url, action_label, priority, category, channels, metadata)
+            VALUES (p_org_id, v_admin.user_id, v_title, v_body_admin, 'alert-triangle', v_action_url || '?view=admin', 'Open Daily Log Admin View', 'high', 'performance_lag', v_channels, v_metadata || jsonb_build_object('rep_user_id', v_alert.user_id));
+        END LOOP;
+    END IF;
+
+    UPDATE public.crm_performance_alert_log SET notification_dispatched_at = now() WHERE id = p_alert_id;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_dispatch_performance_lag_notification"("p_org_id" "uuid", "p_alert_id" "uuid") OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."crm_dispatch_performance_lag_notification"("p_org_id" "uuid", "p_alert_id" "uuid") IS 'Round 8: fan out a Performance Lag alert to rep + admins per the org config.';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_dl_emit_from_activity"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+DECLARE
+    v_subtype text;
+    v_section text;
+    v_lead_stage text;
+BEGIN
+    IF NEW.created_by IS NULL OR NEW.created_by = '00000000-0000-0000-0000-000000000000'::uuid THEN
+        RETURN NEW;
+    END IF;
+
+    -- Section 8 — inbound calls are logged but excluded from rep activity
+    -- counts so they don't inflate the Daily Log totals.
+    IF NEW.call_type = 'inbound' THEN
+        RETURN NEW;
+    END IF;
+
+    -- Section 11 — Cancellation Calls
+    -- Auto-classify a call as "cancellation" when:
+    --   • call_outcome = 'cancellation' (rep-marked)
+    --   • metadata.is_cancellation = true (explicit flag)
+    --   • the linked lead is currently 'lost' or moving toward it
+    v_subtype := NULL;
+    IF NEW.activity_type = 'call' THEN
+        IF NEW.call_outcome = 'cancellation'
+           OR COALESCE((NEW.metadata ->> 'is_cancellation')::boolean, false) THEN
+            v_subtype := 'cancellation';
+        END IF;
+        IF v_subtype IS NULL AND NEW.lead_id IS NOT NULL THEN
+            SELECT pipeline_stage INTO v_lead_stage
+              FROM public.lead_submissions WHERE id = NEW.lead_id;
+            IF v_lead_stage = 'lost' THEN
+                v_subtype := 'cancellation';
+            END IF;
+        END IF;
+        IF v_subtype IS NULL AND NEW.call_outcome = 'callback_requested' THEN
+            v_subtype := 'callback_requested';
+        END IF;
+    END IF;
+
+    v_section := public.crm_classify_log_section(NEW.activity_type, 'crm_activities');
+
+    INSERT INTO public.crm_daily_log_events (
+        org_id, user_id, log_date,
+        source, source_id,
+        section, activity_type, activity_subtype,
+        description, metadata, manual, occurred_at
+    ) VALUES (
+        NEW.org_id,
+        NEW.created_by,
+        COALESCE(NEW.completed_at, NEW.created_at)::date,
+        'crm_activities',
+        NEW.id,
+        v_section,
+        NEW.activity_type,
+        v_subtype,
+        NEW.subject,
+        jsonb_build_object(
+            'call_outcome', NEW.call_outcome,
+            'call_duration_seconds', NEW.call_duration_seconds,
+            'lead_id', NEW.lead_id,
+            'related_to_type', NEW.related_to_type,
+            'related_to_id', NEW.related_to_id,
+            'is_cancellation', (v_subtype = 'cancellation')
+        ),
+        false,
+        COALESCE(NEW.completed_at, NEW.created_at)
+    );
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_dl_emit_from_activity"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_dl_emit_from_email_log"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+BEGIN
+    -- Outbound only. Inbound logs are not rep output (engagement signals
+    -- are handled by crm_register_engagement_signal).
+    IF NEW.direction <> 'outbound' THEN RETURN NEW; END IF;
+    IF NEW.sent_by IS NULL THEN RETURN NEW; END IF;
+    IF NEW.status NOT IN ('sent', 'delivered', NULL) THEN RETURN NEW; END IF;
+
+    INSERT INTO public.crm_daily_log_events (
+        org_id, user_id, log_date,
+        source, source_id,
+        section, activity_type, activity_subtype,
+        description, metadata, manual, occurred_at
+    ) VALUES (
+        NEW.org_id,
+        NEW.sent_by,
+        COALESCE(NEW.sent_at, NEW.created_at)::date,
+        'crm_email_log',
+        NEW.id,
+        'lead_communication',
+        'email',
+        NULL,
+        NEW.subject,
+        jsonb_build_object(
+            'lead_id', NEW.lead_id,
+            'thread_id', NEW.thread_id,
+            'template_id', NEW.template_id
+        ),
+        false,
+        COALESCE(NEW.sent_at, NEW.created_at)
+    );
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_dl_emit_from_email_log"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_dl_emit_from_lead_profile_edit"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+DECLARE
+    v_user uuid := auth.uid();
+    v_changes jsonb := '{}'::jsonb;
+    v_lead_label text;
+    v_stage_changed boolean := false;
+    v_subsection_changed boolean := false;
+    v_other_changed boolean := false;
+BEGIN
+    IF pg_trigger_depth() > 1 THEN RETURN NEW; END IF;
+    IF v_user IS NULL THEN RETURN NEW; END IF;
+
+    v_lead_label := COALESCE(
+        NULLIF(trim(both ' ' FROM COALESCE(NEW.first_name, '') || ' ' || COALESCE(NEW.last_name, '')), ''),
+        'Lead'
+    );
+
+    IF NEW.pipeline_stage IS DISTINCT FROM OLD.pipeline_stage THEN v_stage_changed := true; END IF;
+    IF NEW.workflow_subsection IS DISTINCT FROM OLD.workflow_subsection THEN v_subsection_changed := true; END IF;
+
+    IF NEW.first_name IS DISTINCT FROM OLD.first_name THEN
+        v_changes := v_changes || jsonb_build_object('first_name', jsonb_build_object('old', OLD.first_name, 'new', NEW.first_name));
+        v_other_changed := true;
+    END IF;
+    IF NEW.last_name IS DISTINCT FROM OLD.last_name THEN
+        v_changes := v_changes || jsonb_build_object('last_name', jsonb_build_object('old', OLD.last_name, 'new', NEW.last_name));
+        v_other_changed := true;
+    END IF;
+    IF NEW.email IS DISTINCT FROM OLD.email THEN
+        v_changes := v_changes || jsonb_build_object('email', jsonb_build_object('old', OLD.email, 'new', NEW.email));
+        v_other_changed := true;
+    END IF;
+    IF NEW.phone IS DISTINCT FROM OLD.phone THEN
+        v_changes := v_changes || jsonb_build_object('phone', jsonb_build_object('old', OLD.phone, 'new', NEW.phone));
+        v_other_changed := true;
+    END IF;
+    IF NEW.do_not_contact IS DISTINCT FROM OLD.do_not_contact THEN
+        v_changes := v_changes || jsonb_build_object('do_not_contact', jsonb_build_object('old', OLD.do_not_contact, 'new', NEW.do_not_contact));
+        v_other_changed := true;
+    END IF;
+    IF NEW.assigned_to IS DISTINCT FROM OLD.assigned_to THEN
+        v_changes := v_changes || jsonb_build_object('assigned_to', jsonb_build_object('old', OLD.assigned_to, 'new', NEW.assigned_to));
+        v_other_changed := true;
+    END IF;
+    IF NEW.lead_source IS DISTINCT FROM OLD.lead_source THEN
+        v_changes := v_changes || jsonb_build_object('lead_source', jsonb_build_object('old', OLD.lead_source, 'new', NEW.lead_source));
+        v_other_changed := true;
+    END IF;
+    IF NEW.plan_type IS DISTINCT FROM OLD.plan_type THEN
+        v_changes := v_changes || jsonb_build_object('plan_type', jsonb_build_object('old', OLD.plan_type, 'new', NEW.plan_type));
+        v_other_changed := true;
+    END IF;
+
+    IF v_stage_changed THEN
+        IF NEW.pipeline_stage = 'lost' THEN
+            INSERT INTO public.crm_daily_log_events (
+                org_id, user_id, log_date, source, source_id,
+                section, activity_type, activity_subtype,
+                description, metadata, manual, occurred_at
+            ) VALUES (
+                NEW.org_id, v_user, current_date, 'crm_activities', NEW.id,
+                'pipeline', 'mark_lost', OLD.pipeline_stage,
+                v_lead_label || ' marked Lost',
+                jsonb_build_object('lead_id', NEW.id, 'previous_stage', OLD.pipeline_stage),
+                false, now()
+            );
+        ELSE
+            INSERT INTO public.crm_daily_log_events (
+                org_id, user_id, log_date, source, source_id,
+                section, activity_type, activity_subtype,
+                description, metadata, manual, occurred_at
+            ) VALUES (
+                NEW.org_id, v_user, current_date, 'crm_activities', NEW.id,
+                'pipeline', 'stage_change', NEW.pipeline_stage,
+                v_lead_label || ' stage: ' || COALESCE(OLD.pipeline_stage, 'none') || ' → ' || NEW.pipeline_stage,
+                jsonb_build_object('lead_id', NEW.id, 'from', OLD.pipeline_stage, 'to', NEW.pipeline_stage),
+                false, now()
+            );
+        END IF;
+    END IF;
+
+    IF v_subsection_changed THEN
+        INSERT INTO public.crm_daily_log_events (
+            org_id, user_id, log_date, source, source_id,
+            section, activity_type, activity_subtype,
+            description, metadata, manual, occurred_at
+        ) VALUES (
+            NEW.org_id, v_user, current_date, 'crm_activities', NEW.id,
+            'pipeline', 'subsection_transfer', NEW.workflow_subsection,
+            v_lead_label || ' moved: ' || COALESCE(OLD.workflow_subsection, 'none') || ' → ' || NEW.workflow_subsection,
+            jsonb_build_object('lead_id', NEW.id, 'from', OLD.workflow_subsection, 'to', NEW.workflow_subsection),
+            false, now()
+        );
+    END IF;
+
+    IF v_other_changed THEN
+        INSERT INTO public.crm_daily_log_events (
+            org_id, user_id, log_date, source, source_id,
+            section, activity_type, activity_subtype,
+            description, metadata, manual, occurred_at
+        ) VALUES (
+            NEW.org_id, v_user, current_date, 'crm_activities', NEW.id,
+            'pipeline', 'profile_edit', NULL,
+            v_lead_label || ' profile updated',
+            jsonb_build_object('lead_id', NEW.id, 'changes', v_changes),
+            false, now()
+        );
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_dl_emit_from_lead_profile_edit"() OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."crm_dl_emit_from_lead_profile_edit"() IS 'Section 11 / Round 6: emits Pipeline events for stage_change / mark_lost / subsection_transfer / profile_edit.';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_dl_emit_from_signature_create"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+DECLARE
+    v_user uuid;
+    v_org uuid;
+BEGIN
+    BEGIN v_user := NEW.user_id; EXCEPTION WHEN undefined_column THEN BEGIN v_user := NEW.rep_id; EXCEPTION WHEN undefined_column THEN v_user := NULL; END; END;
+    BEGIN v_org := NEW.org_id; EXCEPTION WHEN undefined_column THEN v_org := NULL; END;
+    IF v_user IS NULL OR v_org IS NULL THEN RETURN NEW; END IF;
+    INSERT INTO public.crm_daily_log_events (
+        org_id, user_id, log_date, source, source_id,
+        section, activity_type, activity_subtype,
+        description, metadata, manual, occurred_at
+    ) VALUES (
+        v_org, v_user, current_date, 'crm_email_signatures', NEW.id,
+        'content_creation', 'signature_created', NULL,
+        'Email signature created',
+        jsonb_build_object('signature_id', NEW.id),
+        false, now()
+    );
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_dl_emit_from_signature_create"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_dl_emit_from_special_project"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+BEGIN
+    INSERT INTO public.crm_daily_log_events (
+        org_id, user_id, log_date,
+        source, source_id,
+        section, activity_type, activity_subtype,
+        description, metadata, manual, occurred_at
+    ) VALUES (
+        NEW.org_id, NEW.user_id, NEW.log_date,
+        'crm_special_projects', NEW.id,
+        'special_projects', 'special_project', NULL,
+        NEW.project_name,
+        jsonb_build_object('time_minutes', NEW.time_minutes, 'notes', NEW.notes),
+        true,                            -- special projects are manual entries
+        now()
+    );
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_dl_emit_from_special_project"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_dl_emit_from_task_complete"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+DECLARE
+    v_user_id uuid;
+    v_completed_at timestamptz;
+    v_just_completed boolean;
+BEGIN
+    v_just_completed :=
+        (NEW.status = 'completed' AND COALESCE(OLD.status, '') <> 'completed')
+        OR (NEW.completed_at IS NOT NULL AND OLD.completed_at IS NULL);
+    IF NOT v_just_completed THEN RETURN NEW; END IF;
+    v_user_id := COALESCE(NEW.assigned_to, NEW.created_by);
+    IF v_user_id IS NULL OR v_user_id = '00000000-0000-0000-0000-000000000000'::uuid THEN RETURN NEW; END IF;
+    v_completed_at := COALESCE(NEW.completed_at, now());
+    INSERT INTO public.crm_daily_log_events (
+        org_id, user_id, log_date, source, source_id, section, activity_type, activity_subtype,
+        description, metadata, manual, occurred_at
+    ) VALUES (
+        NEW.org_id, v_user_id, v_completed_at::date, 'crm_activities', NEW.id,
+        'pipeline', 'task', 'completed', COALESCE(NEW.title, 'Task completed'),
+        jsonb_build_object('lead_id', NEW.lead_id, 'priority', NEW.priority, 'due_date', NEW.due_date, 'task_id', NEW.id),
+        false, v_completed_at
+    );
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_dl_emit_from_task_complete"() OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."crm_dl_emit_from_task_complete"() IS 'CRM rebuild Section 8 - auto-captures task completion into crm_daily_log_events. Fires on lead_tasks UPDATE when status transitions to completed.';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_dl_emit_from_template_create"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+BEGIN
+    IF NEW.created_by IS NULL THEN RETURN NEW; END IF;
+    INSERT INTO public.crm_daily_log_events (
+        org_id, user_id, log_date, source, source_id,
+        section, activity_type, activity_subtype,
+        description, metadata, manual, occurred_at
+    ) VALUES (
+        NEW.org_id, NEW.created_by, current_date, TG_TABLE_NAME, NEW.id,
+        'content_creation',
+        CASE WHEN TG_TABLE_NAME = 'crm_master_templates' THEN 'master_template_created' ELSE 'template_created' END,
+        NEW.channel,
+        COALESCE(NEW.name, 'Template') || ' (' || COALESCE(NEW.channel, 'email') || ')',
+        jsonb_build_object('template_id', NEW.id, 'channel', NEW.channel),
+        false, COALESCE(NEW.created_at, now())
+    );
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_dl_emit_from_template_create"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_enroll_lead_in_cadence"("p_lead_id" "uuid", "p_cadence_id" "uuid") RETURNS "uuid"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+DECLARE
+    v_lead       public.lead_submissions%ROWTYPE;
+    v_cad        public.crm_follow_up_cadences%ROWTYPE;
+    v_first_step jsonb;
+    v_day_offset int;
+    v_next       timestamptz;
+    v_state_id   uuid;
+BEGIN
+    SELECT * INTO v_lead FROM public.lead_submissions WHERE id = p_lead_id;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'lead % not found', p_lead_id USING ERRCODE = 'no_data_found';
+    END IF;
+
+    SELECT * INTO v_cad FROM public.crm_follow_up_cadences WHERE id = p_cadence_id;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'cadence % not found', p_cadence_id USING ERRCODE = 'no_data_found';
+    END IF;
+
+    IF v_cad.org_id <> v_lead.org_id THEN
+        RAISE EXCEPTION 'cadence and lead orgs do not match';
+    END IF;
+
+    -- Round 22 role gate (§31 + §32 A4): manual enrollment is blocked if
+    -- the lead's owner is not in the Inside Sales role. Audit log + RAISE
+    -- so the frontend toast can render the friendly message.
+    IF v_lead.assigned_to IS NULL THEN
+        RAISE EXCEPTION 'Lead must be assigned to an Inside Sales rep before enrolling in a cadence.'
+            USING ERRCODE = 'P0001',
+                  HINT = 'Set Lead Owner first, then re-try enrollment.';
+    END IF;
+
+    IF NOT public.is_inside_sales_rep(v_lead.assigned_to, v_lead.org_id) THEN
+        INSERT INTO public.lead_activities (
+            lead_id, org_id, activity_type, title, description,
+            metadata, created_at, created_by
+        ) VALUES (
+            p_lead_id, v_lead.org_id, 'cadence_skipped',
+            'Manual cadence enrollment blocked',
+            'Cadences are not enabled for this rep''s leads (Round 22 role gate).',
+            jsonb_build_object(
+                'round22', true,
+                'reason', 'owner_not_inside_sales',
+                'owner_id', v_lead.assigned_to,
+                'cadence_id', p_cadence_id,
+                'path', 'manual_enroll'
+            ),
+            now(), auth.uid()
+        );
+        RAISE EXCEPTION 'Cadences are not enabled for this rep''s leads.'
+            USING ERRCODE = 'P0001',
+                  HINT = 'Reassign this lead to an Inside Sales rep before enrolling.';
+    END IF;
+
+    -- ------------- original body resumes here -------------
+    v_first_step := v_cad.steps -> 0;
+    v_day_offset := COALESCE(
+        (v_first_step ->> 'day_offset')::int,
+        ((v_first_step ->> 'delay_hours')::int / 24),
+        0
+    );
+    v_next := now() + make_interval(days => v_day_offset);
+
+    INSERT INTO public.crm_lead_cadence_state (
+        lead_id, cadence_id, org_id, current_step,
+        next_action_at, paused, paused_reason, completed_at
+    ) VALUES (
+        p_lead_id, p_cadence_id, v_lead.org_id, 0,
+        v_next, false, NULL, NULL
+    )
+    ON CONFLICT (lead_id, cadence_id) DO UPDATE
+        SET paused = false,
+            paused_reason = NULL,
+            completed_at = NULL,
+            next_action_at = COALESCE(crm_lead_cadence_state.next_action_at, EXCLUDED.next_action_at),
+            updated_at = now()
+    RETURNING id INTO v_state_id;
+
+    RETURN v_state_id;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_enroll_lead_in_cadence"("p_lead_id" "uuid", "p_cadence_id" "uuid") OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."crm_enroll_lead_in_cadence"("p_lead_id" "uuid", "p_cadence_id" "uuid") IS 'Section 13 + Section 9 Round 5: enrolls a consumer lead into a leads-scoped cadence.';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_get_entity_viewers"("p_entity_type" "text", "p_entity_id" "uuid") RETURNS TABLE("user_id" "uuid", "full_name" "text", "avatar_url" "text", "status" "text")
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+  RETURN QUERY
+  SELECT
+    up.user_id,
+    COALESCE(ap.first_name || ' ' || ap.last_name, u.email) AS full_name,
+    COALESCE(ap.metadata->>'avatar_url', NULL)::text AS avatar_url,
+    up.status::text
+  FROM user_presence up
+  LEFT JOIN advisor_profiles ap ON ap.id = up.user_id OR ap.user_id = up.user_id
+  LEFT JOIN auth.users u ON u.id = up.user_id
+  WHERE up.viewing_entity_type = p_entity_type
+    AND up.viewing_entity_id = p_entity_id
+    AND up.last_activity_at > now() - interval '5 minutes';
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_get_entity_viewers"("p_entity_type" "text", "p_entity_id" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_get_leaderboard"("p_org_id" "uuid", "p_period" "text" DEFAULT 'weekly'::"text") RETURNS TABLE("user_id" "uuid", "full_name" "text", "email" "text", "avatar_url" "text", "total_xp" bigint, "period_xp" integer, "level" integer, "level_name" "text", "streak_days" integer, "rank" bigint)
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    AS $$
+  select
+    x.user_id,
+    coalesce(u.raw_user_meta_data->>'full_name', u.email) as full_name,
+    u.email,
+    u.raw_user_meta_data->>'avatar_url' as avatar_url,
+    x.total_xp,
+    case p_period
+      when 'daily' then x.daily_xp
+      when 'weekly' then x.weekly_xp
+      when 'monthly' then x.monthly_xp
+      else x.weekly_xp
+    end as period_xp,
+    x.level,
+    x.level_name,
+    x.streak_days,
+    row_number() over (
+      order by case p_period
+        when 'daily' then x.daily_xp
+        when 'weekly' then x.weekly_xp
+        when 'monthly' then x.monthly_xp
+        else x.weekly_xp
+      end desc
+    ) as rank
+  from crm_user_xp x
+  join auth.users u on u.id = x.user_id
+  where x.org_id = p_org_id
+  order by period_xp desc;
+$$;
+
+
+ALTER FUNCTION "public"."crm_get_leaderboard"("p_org_id" "uuid", "p_period" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_get_stuck_leads"("p_org_id" "uuid", "p_days_threshold" integer DEFAULT 7) RETURNS TABLE("lead_id" "uuid", "first_name" "text", "last_name" "text", "primary_email" "text", "pipeline_stage" "text", "stage_display_name" "text", "days_in_stage" integer, "days_since_contact" integer, "premium_amount" numeric, "lead_score" integer, "assigned_to_name" "text")
+    LANGUAGE "plpgsql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+BEGIN
+  RETURN QUERY
+  SELECT
+    ls.id                                            AS lead_id,
+    ls.first_name::text,
+    ls.last_name::text,
+    ls.email::text                                   AS primary_email,
+    ls.pipeline_stage::text,
+    ps.display_name::text                            AS stage_display_name,
+    EXTRACT(DAY FROM (now() - COALESCE(ls.stage_changed_at, ls.created_at)))::int
+                                                     AS days_in_stage,
+    CASE
+      WHEN ls.last_contacted_at IS NULL THEN -1
+      ELSE EXTRACT(DAY FROM (now() - ls.last_contacted_at))::int
+    END                                              AS days_since_contact,
+    COALESCE(ls.premium_amount, 0)::numeric          AS premium_amount,
+    COALESCE(ls.lead_score, 0)::int                  AS lead_score,
+    COALESCE(
+      (SELECT u.raw_user_meta_data->>'full_name'
+       FROM auth.users u WHERE u.id = ls.assigned_to),
+      'Unassigned'
+    )::text                                          AS assigned_to_name
+  FROM lead_submissions ls
+  LEFT JOIN crm_pipeline_stages ps
+    ON ps.name = ls.pipeline_stage
+   AND (ps.org_id = p_org_id OR ps.org_id IS NULL)
+  WHERE ls.org_id = p_org_id
+    AND COALESCE(ls.stage_changed_at, ls.created_at)
+        < now() - (p_days_threshold || ' days')::interval
+    AND (ls.last_contacted_at IS NULL
+         OR ls.last_contacted_at < now() - interval '3 days')
+    AND ls.pipeline_stage NOT IN ('won', 'lost', 'converted', 'closed', 'closed_won', 'closed_lost')
+  ORDER BY days_in_stage DESC;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_get_stuck_leads"("p_org_id" "uuid", "p_days_threshold" integer) OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."crm_global_search"("p_org_id" "uuid", "p_query" "text", "p_limit" integer DEFAULT 50) RETURNS TABLE("entity_type" "text", "entity_id" "uuid", "title" "text", "subtitle" "text", "extra_info" "text", "rank" real)
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
     AS $_$
 DECLARE
     v_tsquery tsquery;
+    v_query_lower text;
+    v_per_type_limit integer;
 BEGIN
-    -- Create tsquery from search text
+    v_query_lower := lower(trim(p_query));
     v_tsquery := plainto_tsquery('english', p_query);
+    v_per_type_limit := GREATEST(p_limit / 4, 5);
 
     RETURN QUERY
-    -- Accounts
-    SELECT
-        'account'::text as entity_type,
-        a.id as entity_id,
-        a.name as title,
-        COALESCE(a.industry, 'No industry') as subtitle,
-        a.account_type as extra_info,
-        ts_rank(a.search_vector, v_tsquery) +
-        CASE WHEN a.name ILIKE p_query || '%' THEN 0.5 ELSE 0 END as rank
-    FROM public.crm_accounts a
-    WHERE a.org_id = p_org_id
-    AND (
-        a.search_vector @@ v_tsquery
-        OR a.name ILIKE '%' || p_query || '%'
+
+    -- ── Leads ──
+    (
+        SELECT
+            'lead'::text AS entity_type,
+            l.id AS entity_id,
+            (COALESCE(l.first_name, '') || ' ' || COALESCE(l.last_name, ''))::text AS title,
+            COALESCE(l.email, 'No email')::text AS subtitle,
+            COALESCE(l.pipeline_stage, 'new')::text AS extra_info,
+            (CASE
+                WHEN lower(l.first_name || ' ' || l.last_name) = v_query_lower THEN 2.0
+                WHEN lower(l.first_name || ' ' || l.last_name) LIKE v_query_lower || '%' THEN 1.5
+                WHEN lower(l.email) = v_query_lower THEN 1.4
+                WHEN lower(l.email) LIKE v_query_lower || '%' THEN 1.0
+                ELSE 0.5
+            END)::real AS rank
+        FROM public.lead_submissions l
+        WHERE l.org_id = p_org_id
+        AND (
+            (l.first_name || ' ' || l.last_name) ILIKE '%' || p_query || '%'
+            OR l.email ILIKE '%' || p_query || '%'
+            OR l.phone ILIKE '%' || p_query || '%'
+            OR l.first_name ILIKE '%' || p_query || '%'
+            OR l.last_name ILIKE '%' || p_query || '%'
+        )
+        ORDER BY rank DESC
+        LIMIT v_per_type_limit
     )
 
     UNION ALL
 
-    -- Contacts
-    SELECT
-        'contact'::text,
-        c.id,
-        c.first_name || ' ' || c.last_name,
-        COALESCE(c.email, 'No email'),
-        COALESCE(c.title, ''),
-        ts_rank(c.search_vector, v_tsquery) +
-        CASE WHEN (c.first_name || ' ' || c.last_name) ILIKE p_query || '%' THEN 0.5 ELSE 0 END
-    FROM public.crm_contacts c
-    WHERE c.org_id = p_org_id
-    AND (
-        c.search_vector @@ v_tsquery
-        OR (c.first_name || ' ' || c.last_name) ILIKE '%' || p_query || '%'
-        OR c.email ILIKE '%' || p_query || '%'
+    -- ── Contacts ──
+    (
+        SELECT
+            'contact'::text,
+            c.id,
+            (c.first_name || ' ' || c.last_name)::text,
+            COALESCE(c.email, 'No email')::text,
+            COALESCE(c.title, '')::text,
+            (ts_rank(c.search_vector, v_tsquery) +
+            CASE
+                WHEN lower(c.first_name || ' ' || c.last_name) = v_query_lower THEN 2.0
+                WHEN lower(c.first_name || ' ' || c.last_name) LIKE v_query_lower || '%' THEN 1.5
+                WHEN lower(c.email) LIKE v_query_lower || '%' THEN 1.0
+                ELSE 0.0
+            END)::real
+        FROM public.crm_contacts c
+        WHERE c.org_id = p_org_id
+        AND (
+            c.search_vector @@ v_tsquery
+            OR (c.first_name || ' ' || c.last_name) ILIKE '%' || p_query || '%'
+            OR c.email ILIKE '%' || p_query || '%'
+            OR c.phone ILIKE '%' || p_query || '%'
+            OR c.mobile ILIKE '%' || p_query || '%'
+            OR c.first_name ILIKE '%' || p_query || '%'
+            OR c.last_name ILIKE '%' || p_query || '%'
+        )
+        ORDER BY rank DESC
+        LIMIT v_per_type_limit
     )
 
     UNION ALL
 
-    -- Deals
-    SELECT
-        'deal'::text,
-        d.id,
-        d.name,
-        COALESCE('$' || d.amount::text, 'No amount'),
-        COALESCE(ds.display_name, ''),
-        ts_rank(d.search_vector, v_tsquery) +
-        CASE WHEN d.name ILIKE p_query || '%' THEN 0.5 ELSE 0 END
-    FROM public.crm_deals d
-    LEFT JOIN public.crm_deal_stages ds ON ds.id = d.stage_id
-    WHERE d.org_id = p_org_id
-    AND (
-        d.search_vector @@ v_tsquery
-        OR d.name ILIKE '%' || p_query || '%'
+    -- ── Family Members (spouse / dependent search → links to parent lead or contact) ──
+    (
+        SELECT
+            CASE
+                WHEN fm.lead_id IS NOT NULL THEN 'lead'::text
+                ELSE 'contact'::text
+            END,
+            COALESCE(fm.lead_id, fm.contact_id) AS entity_id,
+            (fm.first_name || ' ' || fm.last_name)::text AS title,
+            ('Family of ' ||
+                CASE
+                    WHEN fm.lead_id IS NOT NULL THEN (
+                        SELECT COALESCE(ls.first_name || ' ' || ls.last_name, ls.email)
+                        FROM lead_submissions ls WHERE ls.id = fm.lead_id
+                    )
+                    ELSE (
+                        SELECT cc.first_name || ' ' || cc.last_name
+                        FROM crm_contacts cc WHERE cc.id = fm.contact_id
+                    )
+                END
+            )::text AS subtitle,
+            fm.relationship::text AS extra_info,
+            (CASE
+                WHEN lower(fm.first_name || ' ' || fm.last_name) = v_query_lower THEN 1.8
+                WHEN lower(fm.first_name || ' ' || fm.last_name) LIKE v_query_lower || '%' THEN 1.3
+                ELSE 0.6
+            END)::real AS rank
+        FROM public.crm_family_members fm
+        WHERE fm.org_id = p_org_id
+        AND (
+            (fm.first_name || ' ' || fm.last_name) ILIKE '%' || p_query || '%'
+            OR fm.first_name ILIKE '%' || p_query || '%'
+            OR fm.last_name ILIKE '%' || p_query || '%'
+        )
+        ORDER BY rank DESC
+        LIMIT v_per_type_limit
     )
 
     UNION ALL
 
-    -- Products
-    SELECT
-        'product'::text,
-        p.id,
-        p.name,
-        COALESCE('$' || p.unit_price::text, 'No price'),
-        COALESCE(p.category, ''),
-        ts_rank(p.search_vector, v_tsquery) +
-        CASE WHEN p.name ILIKE p_query || '%' THEN 0.5 ELSE 0 END
-    FROM public.crm_products p
-    WHERE p.org_id = p_org_id
-    AND p.is_active = true
-    AND (
-        p.search_vector @@ v_tsquery
-        OR p.name ILIKE '%' || p_query || '%'
-        OR p.code ILIKE '%' || p_query || '%'
+    -- ── Phone Numbers (search by number → links to owner) ──
+    (
+        SELECT
+            pn.owner_type::text AS entity_type,
+            pn.owner_id AS entity_id,
+            pn.phone_number::text AS title,
+            ('Phone for ' ||
+                CASE pn.owner_type
+                    WHEN 'lead' THEN (
+                        SELECT COALESCE(ls.first_name || ' ' || ls.last_name, ls.email)
+                        FROM lead_submissions ls WHERE ls.id = pn.owner_id
+                    )
+                    WHEN 'contact' THEN (
+                        SELECT cc.first_name || ' ' || cc.last_name
+                        FROM crm_contacts cc WHERE cc.id = pn.owner_id
+                    )
+                    WHEN 'family_member' THEN (
+                        SELECT fmx.first_name || ' ' || fmx.last_name
+                        FROM crm_family_members fmx WHERE fmx.id = pn.owner_id
+                    )
+                    ELSE 'Unknown'
+                END
+            )::text AS subtitle,
+            pn.phone_type::text AS extra_info,
+            0.7::real AS rank
+        FROM public.crm_phone_numbers pn
+        WHERE pn.org_id = p_org_id
+        AND pn.phone_number ILIKE '%' || p_query || '%'
+        ORDER BY rank DESC
+        LIMIT LEAST(v_per_type_limit, 5)
     )
 
     UNION ALL
 
-    -- Leads (from existing zoho_lead_submissions)
-    SELECT
-        'lead'::text,
-        l.id,
-        COALESCE(l.first_name || ' ' || l.last_name, l.email),
-        COALESCE(l.email, 'No email'),
-        COALESCE(l.pipeline_stage, 'new'),
-        CASE
-            WHEN (l.first_name || ' ' || l.last_name) ILIKE p_query || '%' THEN 1.0
-            WHEN l.email ILIKE p_query || '%' THEN 0.8
-            ELSE 0.5
-        END
-    FROM public.zoho_lead_submissions l
-    WHERE l.org_id = p_org_id
-    AND (
-        (l.first_name || ' ' || l.last_name) ILIKE '%' || p_query || '%'
-        OR l.email ILIKE '%' || p_query || '%'
-        OR l.phone ILIKE '%' || p_query || '%'
+    -- ── Accounts ──
+    (
+        SELECT
+            'account'::text,
+            a.id,
+            a.name::text,
+            COALESCE(a.industry, 'No industry')::text,
+            a.account_type::text,
+            (ts_rank(a.search_vector, v_tsquery) +
+            CASE
+                WHEN lower(a.name) = v_query_lower THEN 2.0
+                WHEN lower(a.name) LIKE v_query_lower || '%' THEN 1.5
+                ELSE 0.0
+            END)::real
+        FROM public.crm_accounts a
+        WHERE a.org_id = p_org_id
+        AND (
+            a.search_vector @@ v_tsquery
+            OR a.name ILIKE '%' || p_query || '%'
+        )
+        ORDER BY rank DESC
+        LIMIT v_per_type_limit
+    )
+
+    UNION ALL
+
+    -- ── Deals ──
+    (
+        SELECT
+            'deal'::text,
+            d.id,
+            d.name::text,
+            COALESCE('$' || d.amount::text, 'No amount')::text,
+            COALESCE(ds.display_name, '')::text,
+            (ts_rank(d.search_vector, v_tsquery) +
+            CASE
+                WHEN lower(d.name) LIKE v_query_lower || '%' THEN 1.5
+                ELSE 0.0
+            END)::real
+        FROM public.crm_deals d
+        LEFT JOIN public.crm_deal_stages ds ON ds.id = d.stage_id
+        WHERE d.org_id = p_org_id
+        AND (
+            d.search_vector @@ v_tsquery
+            OR d.name ILIKE '%' || p_query || '%'
+        )
+        ORDER BY rank DESC
+        LIMIT v_per_type_limit
+    )
+
+    UNION ALL
+
+    -- ── Products ──
+    (
+        SELECT
+            'product'::text,
+            p.id,
+            p.name::text,
+            COALESCE('$' || p.unit_price::text, 'No price')::text,
+            COALESCE(p.category, '')::text,
+            (ts_rank(p.search_vector, v_tsquery) +
+            CASE
+                WHEN lower(p.name) LIKE v_query_lower || '%' THEN 1.5
+                ELSE 0.0
+            END)::real
+        FROM public.crm_products p
+        WHERE p.org_id = p_org_id
+        AND p.is_active = true
+        AND (
+            p.search_vector @@ v_tsquery
+            OR p.name ILIKE '%' || p_query || '%'
+            OR p.code ILIKE '%' || p_query || '%'
+        )
+        ORDER BY rank DESC
+        LIMIT v_per_type_limit
     )
 
     ORDER BY rank DESC
@@ -1318,6 +4307,2627 @@ $_$;
 
 
 ALTER FUNCTION "public"."crm_global_search"("p_org_id" "uuid", "p_query" "text", "p_limit" integer) OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_individual_performance"("p_org_id" "uuid", "p_month" integer, "p_year" integer) RETURNS TABLE("rep_id" "uuid", "rep_name" "text", "calls_made" bigint, "emails_sent" bigint, "linkedin_messages" bigint, "presentations_given" bigint, "proposals_sent" bigint, "meetings_held" bigint, "closed_sales" bigint, "revenue" numeric, "close_rate" numeric, "avg_deal_size" numeric, "new_leads_entered" bigint, "referrals_requested" bigint, "community_activities" bigint)
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+    v_start timestamptz;
+    v_end timestamptz;
+BEGIN
+    v_start := make_timestamptz(p_year, p_month, 1, 0, 0, 0, 'UTC');
+    v_end := (v_start + interval '1 month');
+
+    RETURN QUERY
+    SELECT
+        u.id AS rep_id,
+        COALESCE(u.raw_user_meta_data->>'full_name', u.email)::text AS rep_name,
+        COUNT(*) FILTER (WHERE la.activity_type = 'call')::bigint AS calls_made,
+        COUNT(*) FILTER (WHERE la.activity_type = 'email')::bigint AS emails_sent,
+        COUNT(*) FILTER (WHERE la.activity_type = 'linkedin_message')::bigint AS linkedin_messages,
+        COUNT(*) FILTER (WHERE la.activity_type = 'presentation')::bigint AS presentations_given,
+        COUNT(*) FILTER (WHERE la.activity_type = 'proposal_sent')::bigint AS proposals_sent,
+        COUNT(*) FILTER (WHERE la.activity_type = 'meeting')::bigint AS meetings_held,
+        (SELECT COUNT(*)::bigint FROM public.lead_submissions ls
+         WHERE ls.assigned_to = u.id AND ls.org_id = p_org_id
+         AND ls.pipeline_stage IN ('won','converted','closed_won')
+         AND ls.converted_at >= v_start AND ls.converted_at < v_end
+        ) AS closed_sales,
+        (SELECT COALESCE(SUM(dd.amount), 0)::numeric
+         FROM public.crm_deals dd
+         INNER JOIN public.crm_deal_stages dds ON dds.id = dd.stage_id
+         WHERE dd.owner_id = u.id AND dd.org_id = p_org_id
+         AND dds.is_won_stage = true
+         AND dd.won_at >= v_start AND dd.won_at < v_end
+        ) AS revenue,
+        CASE
+            WHEN (SELECT COUNT(*) FROM public.lead_submissions ls2
+                  WHERE ls2.assigned_to = u.id AND ls2.org_id = p_org_id
+                  AND ls2.created_at >= v_start AND ls2.created_at < v_end) > 0
+            THEN ROUND(
+                (SELECT COUNT(*)::numeric FROM public.lead_submissions ls3
+                 WHERE ls3.assigned_to = u.id AND ls3.org_id = p_org_id
+                 AND ls3.pipeline_stage IN ('won','converted','closed_won')
+                 AND ls3.converted_at >= v_start AND ls3.converted_at < v_end) * 100.0 /
+                NULLIF((SELECT COUNT(*) FROM public.lead_submissions ls4
+                        WHERE ls4.assigned_to = u.id AND ls4.org_id = p_org_id
+                        AND ls4.created_at >= v_start AND ls4.created_at < v_end), 0), 1)
+            ELSE 0
+        END AS close_rate,
+        CASE
+            WHEN (SELECT COUNT(*) FROM public.lead_submissions ls5
+                  WHERE ls5.assigned_to = u.id AND ls5.org_id = p_org_id
+                  AND ls5.pipeline_stage IN ('won','converted','closed_won')
+                  AND ls5.converted_at >= v_start AND ls5.converted_at < v_end) > 0
+            THEN ROUND(
+                (SELECT COALESCE(SUM(dd2.amount), 0)
+                 FROM public.crm_deals dd2
+                 INNER JOIN public.crm_deal_stages dds2 ON dds2.id = dd2.stage_id
+                 WHERE dd2.owner_id = u.id AND dd2.org_id = p_org_id
+                 AND dds2.is_won_stage = true
+                 AND dd2.won_at >= v_start AND dd2.won_at < v_end) /
+                NULLIF((SELECT COUNT(*) FROM public.lead_submissions ls6
+                        WHERE ls6.assigned_to = u.id AND ls6.org_id = p_org_id
+                        AND ls6.pipeline_stage IN ('won','converted','closed_won')
+                        AND ls6.converted_at >= v_start AND ls6.converted_at < v_end), 0), 2)
+            ELSE 0
+        END AS avg_deal_size,
+        COUNT(*) FILTER (WHERE la.activity_type = 'crm_lead_entered')::bigint AS new_leads_entered,
+        COUNT(*) FILTER (WHERE la.activity_type = 'referral_requested')::bigint AS referrals_requested,
+        COUNT(*) FILTER (WHERE la.activity_type = 'community_outreach')::bigint AS community_activities
+    FROM auth.users u
+    INNER JOIN public.org_memberships om ON om.user_id = u.id AND om.org_id = p_org_id
+    LEFT JOIN public.lead_activities la
+        ON la.created_by = u.id
+        AND la.created_at >= v_start AND la.created_at < v_end
+    GROUP BY u.id, u.email, u.raw_user_meta_data
+    ORDER BY rep_name;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_individual_performance"("p_org_id" "uuid", "p_month" integer, "p_year" integer) OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_individual_performance_filtered"("p_org_id" "uuid", "p_month" integer, "p_year" integer, "p_rep_ids" "uuid"[] DEFAULT NULL::"uuid"[]) RETURNS TABLE("rep_id" "uuid", "rep_name" "text", "calls_made" bigint, "emails_sent" bigint, "linkedin_messages" bigint, "presentations_given" bigint, "proposals_sent" bigint, "meetings_held" bigint, "closed_sales" bigint, "revenue" numeric, "close_rate" numeric, "avg_deal_size" numeric, "new_leads_entered" bigint, "referrals_requested" bigint, "community_activities" bigint)
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+    RETURN QUERY
+    SELECT r.*
+    FROM public.crm_individual_performance(p_org_id, p_month, p_year) r
+    WHERE p_rep_ids IS NULL OR r.rep_id = ANY(p_rep_ids);
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_individual_performance_filtered"("p_org_id" "uuid", "p_month" integer, "p_year" integer, "p_rep_ids" "uuid"[]) OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_is_lead_manager"("p_org_id" "uuid") RETURNS boolean
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+    SELECT EXISTS (
+        SELECT 1
+        FROM public.org_memberships om
+        JOIN public.role_permissions rp
+          ON rp.org_id = om.org_id
+         AND rp.role = om.role
+        JOIN public.permissions p
+          ON p.id = rp.permission_id
+        WHERE om.user_id = auth.uid()
+          AND om.org_id = p_org_id
+          AND om.status = 'active'
+          AND p.key = 'lead_manager'
+    );
+$$;
+
+
+ALTER FUNCTION "public"."crm_is_lead_manager"("p_org_id" "uuid") OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."crm_is_lead_manager"("p_org_id" "uuid") IS 'Returns true when the caller holds the lead_manager permission bundle in the given org.';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_lead_after_insert_automation"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+    v_rr            RECORD;
+    v_sla           RECORD;
+    v_cad           RECORD;
+    v_pool          jsonb;
+    v_pool_len      int;
+    v_pos           int;
+    v_candidate     jsonb;
+    v_attempts      int := 0;
+    v_was_skip      boolean := false;
+    v_chosen_id     uuid := NULL;
+    v_new_pos       int := -1;
+    v_deadline      timestamptz;
+    v_task_id       uuid;
+    v_step          jsonb;
+    v_delay_hours   numeric;
+BEGIN
+    IF NEW.assigned_to IS NULL AND NEW.org_id IS NOT NULL THEN
+        SELECT * INTO v_rr
+        FROM public.crm_round_robin_config
+        WHERE org_id = NEW.org_id AND is_active = true
+        LIMIT 1;
+
+        IF FOUND THEN
+            v_pool := v_rr.pool_members;
+            v_pool_len := COALESCE(jsonb_array_length(v_pool), 0);
+
+            IF v_pool_len > 0 THEN
+                v_pos := COALESCE(v_rr.current_position, -1);
+                LOOP
+                    EXIT WHEN v_attempts >= v_pool_len;
+                    v_attempts := v_attempts + 1;
+                    v_pos := (v_pos + 1) % v_pool_len;
+                    v_candidate := v_pool -> v_pos;
+
+                    IF (v_candidate ->> 'is_active')::boolean = true
+                       AND COALESCE((v_candidate ->> 'is_paused')::boolean, false) = false THEN
+                        v_chosen_id := (v_candidate ->> 'user_id')::uuid;
+                        v_new_pos := v_pos;
+                        EXIT;
+                    END IF;
+                    v_was_skip := true;
+                END LOOP;
+
+                IF v_chosen_id IS NOT NULL THEN
+                    NEW.assigned_to := v_chosen_id;
+
+                    UPDATE public.crm_round_robin_config
+                       SET current_position = v_new_pos
+                     WHERE id = v_rr.id;
+
+                    INSERT INTO public.crm_round_robin_audit
+                        (org_id, lead_id, assigned_to, position_at_assignment, was_skip)
+                    VALUES
+                        (NEW.org_id, NEW.id, v_chosen_id, v_new_pos, v_was_skip);
+                END IF;
+            END IF;
+        END IF;
+    END IF;
+
+    SELECT * INTO v_sla
+    FROM public.crm_sla_config
+    WHERE org_id = NEW.org_id AND is_active = true
+    LIMIT 1;
+
+    IF FOUND THEN
+        v_deadline := public.crm_calc_business_hour_deadline(
+            NEW.created_at,
+            v_sla.sla_hours,
+            v_sla.business_hours_start,
+            v_sla.business_hours_end,
+            v_sla.business_days,
+            v_sla.timezone
+        );
+
+        INSERT INTO public.lead_tasks (
+            lead_id, title, description, task_type, due_date, priority,
+            assigned_to, completed, created_by
+        ) VALUES (
+            NEW.id,
+            'Initial Contact — ' || TRIM(COALESCE(NEW.first_name,'') || ' ' || COALESCE(NEW.last_name,'')),
+            'SLA: Make initial contact within ' || v_sla.sla_hours || ' business hours.',
+            'call',
+            v_deadline,
+            'high',
+            NEW.assigned_to,
+            false,
+            NEW.assigned_to
+        )
+        RETURNING id INTO v_task_id;
+
+        NEW.next_followup_at := v_deadline;
+    END IF;
+
+    SELECT * INTO v_cad
+    FROM public.crm_follow_up_cadences
+    WHERE org_id = NEW.org_id AND is_default = true AND is_active = true
+    ORDER BY created_at ASC
+    LIMIT 1;
+
+    IF FOUND AND jsonb_array_length(v_cad.steps) > 0 THEN
+        v_step := v_cad.steps -> 0;
+        v_delay_hours := COALESCE((v_step ->> 'delay_hours')::numeric, 24);
+
+        INSERT INTO public.crm_lead_cadence_state (
+            lead_id, cadence_id, org_id, current_step,
+            next_action_at, paused, paused_reason, completed_at
+        ) VALUES (
+            NEW.id, v_cad.id, NEW.org_id, 0,
+            NEW.created_at + (v_delay_hours || ' hours')::interval,
+            false, NULL, NULL
+        )
+        ON CONFLICT (lead_id, cadence_id) DO NOTHING;
+    END IF;
+
+    -- MP 8-stage: assignment (incl. round-robin) ⇒ move out of New bucket
+    IF NEW.assigned_to IS NOT NULL
+       AND COALESCE(NEW.pipeline_stage, 'new') IN ('new', '') THEN
+        NEW.pipeline_stage := 'working';
+        NEW.stage_changed_at := COALESCE(NEW.stage_changed_at, now());
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_lead_after_insert_automation"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_lead_app_started_stamp"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    AS $$
+BEGIN
+    IF NEW.pipeline_stage = 'application_in_progress'
+       AND COALESCE(OLD.pipeline_stage, '') <> 'application_in_progress'
+       AND NEW.application_started_at IS NULL THEN
+        NEW.application_started_at := now();
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_lead_app_started_stamp"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_lead_assignment_stage_promote"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    AS $$
+BEGIN
+    IF NEW.assigned_to IS NOT NULL
+       AND OLD.assigned_to IS DISTINCT FROM NEW.assigned_to
+       AND COALESCE(NEW.pipeline_stage, 'new') IN ('new', '') THEN
+        NEW.pipeline_stage := 'working';
+        NEW.stage_changed_at := now();
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_lead_assignment_stage_promote"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_lead_bump_last_touched"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+    v_lead_id uuid;
+    v_kind    text;
+    v_inbound boolean;
+BEGIN
+    -- Only consider activities tied to a lead
+    v_lead_id := COALESCE(NEW.lead_id, NULL);
+    IF v_lead_id IS NULL THEN
+        RETURN NEW;
+    END IF;
+
+    v_kind := COALESCE(lower(NEW.activity_type), '');
+    v_inbound := COALESCE((NEW.metadata ->> 'direction'), '') = 'inbound'
+                 OR COALESCE((NEW.metadata ->> 'is_inbound')::boolean, false);
+
+    -- Inbound replies / link clicks / calendar bookings → do NOT bump
+    IF v_inbound OR v_kind IN ('reply_received','link_click','calendar_booking','engagement_signal') THEN
+        RETURN NEW;
+    END IF;
+
+    -- Rep-initiated kinds we count
+    IF v_kind IN (
+        'call','call_complete','call_logged','outbound_call',
+        'email','email_sent','email_send','outbound_email',
+        'sms','sms_sent','outbound_sms','text','text_sent',
+        'note','note_added',
+        'task_complete','task_completed','task_done',
+        'profile_edit','profile_update','lead_update',
+        'meeting','meeting_held'
+    ) THEN
+        UPDATE public.lead_submissions
+           SET last_touched_at = COALESCE(NEW.created_at, now()),
+               updated_at      = now()
+         WHERE id = v_lead_id;
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_lead_bump_last_touched"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_lead_contact_cadence_pause"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+    IF (OLD.last_contacted_at IS NULL AND NEW.last_contacted_at IS NOT NULL)
+       OR (NEW.last_contacted_at IS NOT NULL
+           AND NEW.last_contacted_at IS DISTINCT FROM OLD.last_contacted_at) THEN
+        UPDATE public.crm_lead_cadence_state
+           SET paused = true,
+               paused_reason = 'lead_contacted'
+         WHERE lead_id = NEW.id
+           AND paused = false
+           AND completed_at IS NULL;
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_lead_contact_cadence_pause"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_lead_default_org_on_insert"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+    IF NEW.org_id IS NULL THEN
+        SELECT NULLIF(value, '')::uuid
+          INTO NEW.org_id
+          FROM public.system_settings
+         WHERE key = 'crm.intake_default_org_id'
+         LIMIT 1;
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_lead_default_org_on_insert"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_lead_quoted_to_working_advance"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+DECLARE
+    v_kind text;
+    v_inbound boolean;
+    v_lead public.lead_submissions%ROWTYPE;
+BEGIN
+    IF NEW.lead_id IS NULL THEN
+        RETURN NEW;
+    END IF;
+
+    IF NEW.created_by IS NULL OR NEW.created_by = '00000000-0000-0000-0000-000000000000'::uuid THEN
+        RETURN NEW;
+    END IF;
+
+    v_kind := COALESCE(lower(NEW.activity_type), '');
+    v_inbound := COALESCE((NEW.metadata ->> 'direction'), '') = 'inbound'
+                 OR COALESCE((NEW.metadata ->> 'is_inbound')::boolean, false)
+                 OR NEW.call_type = 'inbound';
+
+    IF v_inbound OR v_kind IN (
+        'reply_received', 'link_click', 'calendar_booking',
+        'engagement_signal', 'other'
+    ) THEN
+        RETURN NEW;
+    END IF;
+
+    IF v_kind NOT IN (
+        'call', 'call_complete', 'call_logged', 'outbound_call',
+        'email', 'email_sent', 'email_send', 'outbound_email',
+        'sms', 'sms_sent', 'outbound_sms', 'text', 'text_sent',
+        'note', 'note_added',
+        'task_complete', 'task_completed', 'task_done',
+        'meeting', 'meeting_held'
+    ) THEN
+        RETURN NEW;
+    END IF;
+
+    SELECT * INTO v_lead FROM public.lead_submissions WHERE id = NEW.lead_id;
+    IF NOT FOUND THEN
+        RETURN NEW;
+    END IF;
+
+    -- Only fire if (a) lead is currently in 'quoted', AND (b) the round-
+    -- robin step has assigned the lead to a rep.
+    IF v_lead.pipeline_stage = 'quoted' AND v_lead.assigned_to IS NOT NULL THEN
+        UPDATE public.lead_submissions
+           SET pipeline_stage = 'working',
+               stage_changed_at = now(),
+               updated_at = now()
+         WHERE id = NEW.lead_id
+           AND pipeline_stage = 'quoted';
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_lead_quoted_to_working_advance"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_lead_source_breakdown_monthly"("p_org_id" "uuid", "p_month" integer, "p_year" integer) RETURNS TABLE("source_label" "text", "total_leads" bigint, "converted_leads" bigint, "conversion_pct" numeric)
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+    v_start timestamptz;
+    v_end timestamptz;
+BEGIN
+    v_start := make_timestamptz(p_year, p_month, 1, 0, 0, 0, 'UTC');
+    v_end := (v_start + interval '1 month');
+
+    RETURN QUERY
+    SELECT
+        COALESCE(ls.lead_source, 'unknown')::text AS source_label,
+        COUNT(*)::bigint AS total_leads,
+        COUNT(*) FILTER (WHERE ls.pipeline_stage IN ('won','converted','closed_won'))::bigint AS converted_leads,
+        CASE WHEN COUNT(*) > 0
+            THEN ROUND(COUNT(*) FILTER (WHERE ls.pipeline_stage IN ('won','converted','closed_won'))::numeric * 100.0 / COUNT(*), 1)
+            ELSE 0
+        END AS conversion_pct
+    FROM public.lead_submissions ls
+    WHERE ls.org_id = p_org_id
+      AND ls.created_at >= v_start AND ls.created_at < v_end
+    GROUP BY ls.lead_source
+    ORDER BY total_leads DESC;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_lead_source_breakdown_monthly"("p_org_id" "uuid", "p_month" integer, "p_year" integer) OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_lead_stage_cadence_pause"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+    IF NEW.pipeline_stage IS DISTINCT FROM OLD.pipeline_stage THEN
+        IF NEW.pipeline_stage IN ('won','lost') THEN
+            UPDATE public.crm_lead_cadence_state
+               SET paused = true,
+                   paused_reason = 'stage_' || NEW.pipeline_stage
+             WHERE lead_id = NEW.id
+               AND paused = false
+               AND completed_at IS NULL;
+        END IF;
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_lead_stage_cadence_pause"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_lead_stage_quote_timestamps"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    AS $$
+BEGIN
+    IF NEW.pipeline_stage = 'quoted'
+       AND (OLD.pipeline_stage IS DISTINCT FROM NEW.pipeline_stage) THEN
+        NEW.preliminary_quote_sent_at := COALESCE(NEW.preliminary_quote_sent_at, now());
+        NEW.quote_cadence_started_at := COALESCE(NEW.quote_cadence_started_at, now());
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_lead_stage_quote_timestamps"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_lead_stage_velocity"("p_org_id" "uuid") RETURNS TABLE("stage_name" "text", "stage_display_name" "text", "stage_color" "text", "lead_count" integer, "avg_days_in_stage" numeric, "median_days_in_stage" numeric, "total_value" numeric, "conversion_rate" numeric, "stuck_count" integer)
+    LANGUAGE "plpgsql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+BEGIN
+    RETURN QUERY
+    WITH stage_leads AS (
+        SELECT
+            ps.name            AS s_name,
+            ps.display_name    AS s_display,
+            ps.color           AS s_color,
+            ps.sort_order      AS s_order,
+            ls.id              AS lead_id,
+            ls.premium_amount,
+            ls.stage_changed_at,
+            ls.last_contacted_at,
+            EXTRACT(EPOCH FROM (now() - COALESCE(ls.stage_changed_at, ls.created_at))) / 86400.0
+                AS days_in
+        FROM lead_submissions ls
+        JOIN crm_pipeline_stages ps
+            ON ps.name = ls.pipeline_stage
+            AND (ps.org_id = p_org_id OR ps.org_id IS NULL)
+        WHERE ls.org_id = p_org_id
+          AND ps.is_active = true
+    ),
+    stage_agg AS (
+        SELECT
+            sl.s_name,
+            sl.s_display,
+            sl.s_color,
+            sl.s_order,
+            COUNT(*)::int                                                        AS cnt,
+            ROUND(AVG(sl.days_in)::numeric, 1)                                  AS avg_d,
+            ROUND(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY sl.days_in)::numeric, 1) AS med_d,
+            COALESCE(SUM(sl.premium_amount), 0)::numeric                         AS val,
+            COUNT(*) FILTER (
+                WHERE sl.days_in > 7
+                  AND (sl.last_contacted_at IS NULL OR sl.last_contacted_at < now() - interval '3 days')
+            )::int                                                               AS stuck
+        FROM stage_leads sl
+        GROUP BY sl.s_name, sl.s_display, sl.s_color, sl.s_order
+    )
+    SELECT
+        sa.s_name::text                     AS stage_name,
+        sa.s_display::text                  AS stage_display_name,
+        sa.s_color::text                    AS stage_color,
+        sa.cnt                              AS lead_count,
+        sa.avg_d                            AS avg_days_in_stage,
+        sa.med_d                            AS median_days_in_stage,
+        sa.val                              AS total_value,
+        CASE WHEN sa.cnt > 0
+            THEN ROUND(
+                (sa.cnt - sa.stuck)::numeric / sa.cnt * 100, 1
+            )
+            ELSE 0
+        END                                 AS conversion_rate,
+        sa.stuck                            AS stuck_count
+    FROM stage_agg sa
+    ORDER BY sa.s_order;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_lead_stage_velocity"("p_org_id" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_lead_start_quote_cadence"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+    v_cad         RECORD;
+    v_step        jsonb;
+    v_delay_hours numeric;
+BEGIN
+    IF NEW.org_id IS NULL THEN
+        RETURN NEW;
+    END IF;
+
+    -- Round 22 role gate: skip enrollment if the assigned rep is NOT
+    -- Inside Sales. SILENT skip (no exception) — the parent UPDATE on
+    -- lead_submissions (the stage transition) must not fail.
+    --
+    -- Edge case (§32 A5): if assigned_to IS NULL (lead arrives before
+    -- round-robin completes), allow enrollment. The website intake path
+    -- (§13) needs Email #1 to fire before assignment. Round-robin then
+    -- routes to an Inside Sales rep (Catherine/Reba excluded from pool in
+    -- step 7), so subsequent cadence steps fire from an eligible owner.
+    IF NEW.assigned_to IS NOT NULL
+       AND NOT public.is_inside_sales_rep(NEW.assigned_to, NEW.org_id) THEN
+        INSERT INTO public.lead_activities (
+            lead_id, org_id, activity_type, title, description,
+            metadata, created_at, created_by
+        ) VALUES (
+            NEW.id, NEW.org_id, 'cadence_skipped',
+            'Quote Response cadence skipped',
+            'Cadence skipped — owner not cadence-eligible (Round 22 role gate). The owning rep is not in the Inside Sales role.',
+            jsonb_build_object(
+                'round22', true,
+                'reason', 'owner_not_inside_sales',
+                'owner_id', NEW.assigned_to,
+                'stage_transition', 'quoted'
+            ),
+            now(), NULL
+        );
+        RETURN NEW;
+    END IF;
+
+    -- ------------- original body resumes here -------------
+    SELECT * INTO v_cad
+    FROM public.crm_follow_up_cadences
+    WHERE org_id = NEW.org_id
+      AND name = 'Quote Response — 5-touch (Email)'
+      AND is_active = true
+    ORDER BY created_at ASC
+    LIMIT 1;
+
+    IF NOT FOUND OR jsonb_array_length(v_cad.steps) = 0 THEN
+        RETURN NEW;
+    END IF;
+
+    v_step := v_cad.steps -> 0;
+    v_delay_hours := COALESCE((v_step ->> 'delay_hours')::numeric, 0);
+
+    INSERT INTO public.crm_lead_cadence_state (
+        lead_id, cadence_id, org_id, current_step,
+        next_action_at, paused, paused_reason, completed_at
+    ) VALUES (
+        NEW.id, v_cad.id, NEW.org_id, 0,
+        now() + (v_delay_hours || ' hours')::interval,
+        false, NULL, NULL
+    )
+    ON CONFLICT (lead_id, cadence_id) DO UPDATE SET
+        paused        = false,
+        paused_reason = NULL,
+        completed_at  = NULL,
+        next_action_at = EXCLUDED.next_action_at;
+
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_lead_start_quote_cadence"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_lead_workflow_subsection_sync"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    AS $$
+DECLARE
+    v_route text;
+BEGIN
+    -- Insert default
+    IF TG_OP = 'INSERT' THEN
+        IF NEW.workflow_subsection IS NULL THEN
+            NEW.workflow_subsection := CASE
+                WHEN NEW.lead_source = 'linkedin' THEN 'linkedin'
+                ELSE 'working'
+            END;
+        END IF;
+    END IF;
+
+    -- Look up the stage's destination subsection (data-driven)
+    IF NEW.pipeline_stage IS NOT NULL THEN
+        SELECT routes_to_subsection
+          INTO v_route
+          FROM public.crm_pipeline_stages
+         WHERE name = NEW.pipeline_stage
+           AND is_active = true
+           AND (org_id IS NULL OR org_id = NEW.org_id)
+         ORDER BY (org_id IS NOT NULL) DESC
+         LIMIT 1;
+
+        IF v_route IS NOT NULL AND v_route NOT IN ('concierge_handoff') THEN
+            -- Concierge handoff doesn't change Leads-module subsection;
+            -- leads still display in Working subsection until off-module move.
+            NEW.workflow_subsection := v_route;
+        END IF;
+
+        IF NEW.pipeline_stage = 'lost' THEN
+            NEW.do_not_contact := true;
+        ELSIF NEW.pipeline_stage = 'nurture' THEN
+            NEW.do_not_contact := false;
+        END IF;
+    END IF;
+
+    -- Concierge handoff timestamp on transition to 'won'
+    IF TG_OP = 'UPDATE'
+       AND NEW.pipeline_stage = 'won'
+       AND OLD.pipeline_stage IS DISTINCT FROM NEW.pipeline_stage THEN
+        NEW.concierge_handoff_at := COALESCE(NEW.concierge_handoff_at, now());
+    END IF;
+
+    -- DNC flag overrides — force lost + dnc subsection
+    IF NEW.do_not_contact AND COALESCE(NEW.pipeline_stage, '') <> 'lost' THEN
+        NEW.pipeline_stage      := 'lost';
+        NEW.workflow_subsection := 'do_not_contact';
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_lead_workflow_subsection_sync"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_leads_inhouse_vs_selfgen"("p_org_id" "uuid", "p_month" integer, "p_year" integer) RETURNS TABLE("source_label" "text", "lead_count" bigint, "is_self_generated" boolean)
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+    v_start timestamptz;
+    v_end timestamptz;
+BEGIN
+    v_start := make_timestamptz(p_year, p_month, 1, 0, 0, 0, 'UTC');
+    v_end := (v_start + interval '1 month');
+
+    RETURN QUERY
+    SELECT
+        COALESCE(ls.lead_source, 'unknown')::text AS source_label,
+        COUNT(*)::bigint AS lead_count,
+        COALESCE(ls.is_self_generated, false) AS is_self_generated
+    FROM public.lead_submissions ls
+    WHERE ls.org_id = p_org_id
+      AND ls.created_at >= v_start AND ls.created_at < v_end
+    GROUP BY ls.lead_source, ls.is_self_generated
+    ORDER BY lead_count DESC;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_leads_inhouse_vs_selfgen"("p_org_id" "uuid", "p_month" integer, "p_year" integer) OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_leads_split_2026"("p_org_id" "uuid", "p_month" integer, "p_year" integer, "p_rep_ids" "uuid"[] DEFAULT NULL::"uuid"[], "p_ytd" boolean DEFAULT false) RETURNS TABLE("display_order" integer, "row_kind" "text", "label" "text", "lead_count" bigint, "closed_count" bigint, "conversion_pct" numeric)
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+    v_start timestamptz;
+    v_end   timestamptz;
+BEGIN
+    v_end := make_timestamptz(p_year, p_month, 1, 0, 0, 0, 'UTC') + interval '1 month';
+
+    IF p_ytd THEN
+        v_start := make_timestamptz(p_year, 1, 1, 0, 0, 0, 'UTC');
+    ELSE
+        v_start := make_timestamptz(p_year, p_month, 1, 0, 0, 0, 'UTC');
+    END IF;
+
+    RETURN QUERY
+    WITH base AS (
+        SELECT
+            ls.lead_source,
+            ls.pipeline_stage IN ('won','converted','closed_won') AS is_closed
+        FROM public.lead_submissions ls
+        WHERE ls.org_id = p_org_id
+          AND ls.created_at >= v_start
+          AND ls.created_at <  v_end
+          AND (p_rep_ids IS NULL OR ls.assigned_to = ANY(p_rep_ids))
+    ),
+    -- Map the canonical picklist slugs to the deck row labels
+    mapped AS (
+        SELECT
+            CASE b.lead_source
+                WHEN 'linkedin'            THEN 'LinkedIn'
+                WHEN 'networking'          THEN 'Networking'
+                WHEN 'referrals'           THEN 'Referrals'
+                WHEN 'community'           THEN 'Community'
+                WHEN 'church_partnership'  THEN 'Community'
+                WHEN 'hydration_booth'     THEN 'Community'
+                WHEN 'chamber_bni_sbdc'    THEN 'Community'
+                WHEN 'reactivation'        THEN 'Reactivation'
+                WHEN 'inhouse_round_robin' THEN 'Inhouse (RR)'
+                WHEN 'outside_advisors'    THEN 'Inhouse (RR)'
+                WHEN 'sunbiz_prospect'     THEN 'Inhouse (RR)'
+                ELSE 'Inhouse (RR)'
+            END AS label,
+            b.is_closed
+        FROM base b
+    ),
+    agg AS (
+        SELECT label, COUNT(*)::bigint AS lead_count,
+               COUNT(*) FILTER (WHERE is_closed)::bigint AS closed_count
+        FROM mapped
+        GROUP BY label
+    ),
+    rows AS (
+        SELECT 1  AS display_order, 'source'::text      AS row_kind, 'LinkedIn'::text     AS label UNION ALL
+        SELECT 2  AS display_order, 'source'::text      AS row_kind, 'Networking'::text            UNION ALL
+        SELECT 3  AS display_order, 'source'::text      AS row_kind, 'Referrals'::text             UNION ALL
+        SELECT 4  AS display_order, 'source'::text      AS row_kind, 'Community'::text             UNION ALL
+        SELECT 5  AS display_order, 'source'::text      AS row_kind, 'Reactivation'::text          UNION ALL
+        SELECT 6  AS display_order, 'subtotal'::text    AS row_kind, 'TOTAL Self-Gen'::text        UNION ALL
+        SELECT 7  AS display_order, 'source'::text      AS row_kind, 'Inhouse (RR)'::text          UNION ALL
+        SELECT 8  AS display_order, 'grand_total'::text AS row_kind, 'GRAND TOTAL'::text
+    )
+    SELECT
+        r.display_order,
+        r.row_kind,
+        r.label,
+        CASE r.label
+            WHEN 'TOTAL Self-Gen' THEN COALESCE((SELECT SUM(a.lead_count) FROM agg a WHERE a.label IN ('LinkedIn','Networking','Referrals','Community','Reactivation')), 0)
+            WHEN 'GRAND TOTAL'    THEN COALESCE((SELECT SUM(a.lead_count) FROM agg a), 0)
+            ELSE                      COALESCE((SELECT a.lead_count FROM agg a WHERE a.label = r.label), 0)
+        END AS lead_count,
+        CASE r.label
+            WHEN 'TOTAL Self-Gen' THEN COALESCE((SELECT SUM(a.closed_count) FROM agg a WHERE a.label IN ('LinkedIn','Networking','Referrals','Community','Reactivation')), 0)
+            WHEN 'GRAND TOTAL'    THEN COALESCE((SELECT SUM(a.closed_count) FROM agg a), 0)
+            ELSE                      COALESCE((SELECT a.closed_count FROM agg a WHERE a.label = r.label), 0)
+        END AS closed_count,
+        CASE
+            WHEN (CASE r.label
+                    WHEN 'TOTAL Self-Gen' THEN COALESCE((SELECT SUM(a.lead_count) FROM agg a WHERE a.label IN ('LinkedIn','Networking','Referrals','Community','Reactivation')), 0)
+                    WHEN 'GRAND TOTAL'    THEN COALESCE((SELECT SUM(a.lead_count) FROM agg a), 0)
+                    ELSE                      COALESCE((SELECT a.lead_count FROM agg a WHERE a.label = r.label), 0)
+                  END) > 0 THEN
+                ROUND(
+                    (CASE r.label
+                        WHEN 'TOTAL Self-Gen' THEN COALESCE((SELECT SUM(a.closed_count) FROM agg a WHERE a.label IN ('LinkedIn','Networking','Referrals','Community','Reactivation')), 0)
+                        WHEN 'GRAND TOTAL'    THEN COALESCE((SELECT SUM(a.closed_count) FROM agg a), 0)
+                        ELSE                      COALESCE((SELECT a.closed_count FROM agg a WHERE a.label = r.label), 0)
+                    END)::numeric * 100.0 /
+                    NULLIF((CASE r.label
+                        WHEN 'TOTAL Self-Gen' THEN COALESCE((SELECT SUM(a.lead_count) FROM agg a WHERE a.label IN ('LinkedIn','Networking','Referrals','Community','Reactivation')), 0)
+                        WHEN 'GRAND TOTAL'    THEN COALESCE((SELECT SUM(a.lead_count) FROM agg a), 0)
+                        ELSE                      COALESCE((SELECT a.lead_count FROM agg a WHERE a.label = r.label), 0)
+                    END), 0),
+                    1
+                )
+            ELSE 0
+        END AS conversion_pct
+    FROM rows r
+    ORDER BY r.display_order;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_leads_split_2026"("p_org_id" "uuid", "p_month" integer, "p_year" integer, "p_rep_ids" "uuid"[], "p_ytd" boolean) OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_log_activity"("p_activity_type" "text", "p_title" "text", "p_description" "text" DEFAULT NULL::"text", "p_lead_id" "uuid" DEFAULT NULL::"uuid", "p_contact_id" "uuid" DEFAULT NULL::"uuid", "p_account_id" "uuid" DEFAULT NULL::"uuid", "p_deal_id" "uuid" DEFAULT NULL::"uuid", "p_metadata" "jsonb" DEFAULT '{}'::"jsonb", "p_subject" "text" DEFAULT NULL::"text", "p_org_id" "uuid" DEFAULT NULL::"uuid") RETURNS "uuid"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+    v_org_id uuid := p_org_id;
+    v_id     uuid;
+BEGIN
+    IF v_org_id IS NULL AND p_lead_id IS NOT NULL THEN
+        SELECT org_id INTO v_org_id FROM public.lead_submissions WHERE id = p_lead_id;
+    END IF;
+    IF v_org_id IS NULL AND p_contact_id IS NOT NULL THEN
+        SELECT org_id INTO v_org_id FROM public.crm_contacts WHERE id = p_contact_id;
+    END IF;
+    IF v_org_id IS NULL AND p_deal_id IS NOT NULL THEN
+        SELECT org_id INTO v_org_id FROM public.crm_deals WHERE id = p_deal_id;
+    END IF;
+    IF v_org_id IS NULL AND p_account_id IS NOT NULL THEN
+        SELECT org_id INTO v_org_id FROM public.crm_accounts WHERE id = p_account_id;
+    END IF;
+
+    IF v_org_id IS NULL THEN
+        RAISE EXCEPTION 'crm_log_activity: cannot derive org_id';
+    END IF;
+
+    IF NOT public.is_org_member(v_org_id) THEN
+        RAISE EXCEPTION 'crm_log_activity: not an org member';
+    END IF;
+
+    INSERT INTO public.lead_activities (
+        org_id, lead_id, contact_id, account_id, deal_id,
+        activity_type, title, description, subject, metadata, created_by
+    ) VALUES (
+        v_org_id, p_lead_id, p_contact_id, p_account_id, p_deal_id,
+        p_activity_type, p_title, p_description, p_subject,
+        COALESCE(p_metadata, '{}'::jsonb), auth.uid()
+    )
+    RETURNING id INTO v_id;
+
+    RETURN v_id;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_log_activity"("p_activity_type" "text", "p_title" "text", "p_description" "text", "p_lead_id" "uuid", "p_contact_id" "uuid", "p_account_id" "uuid", "p_deal_id" "uuid", "p_metadata" "jsonb", "p_subject" "text", "p_org_id" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_mark_lead_lost"("p_lead_id" "uuid", "p_reason" "text" DEFAULT 'rep_marked_lost'::"text") RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+    v_org uuid;
+BEGIN
+    SELECT org_id INTO v_org FROM public.lead_submissions WHERE id = p_lead_id;
+    IF v_org IS NULL OR NOT public.is_org_member(v_org) THEN
+        RAISE EXCEPTION 'not_found_or_denied';
+    END IF;
+
+    UPDATE public.lead_submissions
+    SET
+        pipeline_stage         = 'lost',
+        workflow_subsection    = 'do_not_contact',
+        do_not_contact         = true,
+        lost_reason            = COALESCE(p_reason, lost_reason),
+        opt_out_reason         = COALESCE(p_reason, opt_out_reason),
+        opt_out_detected_at    = COALESCE(opt_out_detected_at, now()),
+        last_opt_out_signal_at = now(),
+        stage_changed_at       = now(),
+        last_touched_at        = now(),  -- counts as a rep-initiated change
+        updated_at             = now()
+    WHERE id = p_lead_id;
+
+    INSERT INTO public.crm_activities (
+        org_id, lead_id, activity_type, status, subject, description,
+        metadata, created_by, created_at
+    )
+    VALUES (
+        v_org, p_lead_id, 'lead_marked_lost', 'completed',
+        'Manually marked as Lost',
+        COALESCE(p_reason, 'rep marked lead as lost'),
+        jsonb_build_object('reason', p_reason, 'route', 'manual_override'),
+        auth.uid(), now()
+    );
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_mark_lead_lost"("p_lead_id" "uuid", "p_reason" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_mark_preliminary_quote_sent"("p_lead_id" "uuid") RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+    v_org uuid;
+BEGIN
+    SELECT org_id INTO v_org FROM public.lead_submissions WHERE id = p_lead_id;
+    IF v_org IS NULL OR NOT public.is_org_member(v_org) THEN
+        RAISE EXCEPTION 'not_found_or_denied';
+    END IF;
+
+    UPDATE public.lead_submissions
+    SET
+        preliminary_quote_sent_at = now(),
+        quote_cadence_started_at = COALESCE(quote_cadence_started_at, now()),
+        pipeline_stage = CASE
+            WHEN pipeline_stage IN ('new', 'working') THEN 'quoted'
+            ELSE pipeline_stage
+        END,
+        stage_changed_at = CASE
+            WHEN pipeline_stage IN ('new', 'working') THEN now()
+            ELSE stage_changed_at
+        END,
+        updated_at = now()
+    WHERE id = p_lead_id;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_mark_preliminary_quote_sent"("p_lead_id" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_master_template_bump_usage"("p_template_id" "uuid") RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+    UPDATE public.crm_master_templates
+       SET usage_count = COALESCE(usage_count, 0) + 1,
+           last_used_at = now()
+     WHERE id = p_template_id;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_master_template_bump_usage"("p_template_id" "uuid") OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."crm_master_template_bump_usage"("p_template_id" "uuid") IS 'Bumps usage_count/last_used_at on a master template. Called from send-crm-email edge function after a successful Resend dispatch.';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_master_templates_touch_updated_at"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    AS $$
+BEGIN
+    NEW.updated_at := now();
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_master_templates_touch_updated_at"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_outside_advisor_production"("p_org_id" "uuid", "p_month" integer, "p_year" integer) RETURNS TABLE("advisor_id" "uuid", "advisor_name" "text", "leads_month" bigint, "closed_month" bigint, "leads_ytd" bigint, "closed_ytd" bigint)
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+    v_month_start timestamptz;
+    v_month_end   timestamptz;
+    v_year_start  timestamptz;
+BEGIN
+    v_month_start := make_timestamptz(p_year, p_month, 1, 0, 0, 0, 'UTC');
+    v_month_end   := v_month_start + interval '1 month';
+    v_year_start  := make_timestamptz(p_year, 1, 1, 0, 0, 0, 'UTC');
+
+    RETURN QUERY
+    SELECT
+        oa.id                         AS advisor_id,
+        oa.name::text                 AS advisor_name,
+        COALESCE(m.leads_month, 0)    AS leads_month,
+        COALESCE(m.closed_month, 0)   AS closed_month,
+        COALESCE(y.leads_ytd, 0)      AS leads_ytd,
+        COALESCE(y.closed_ytd, 0)     AS closed_ytd
+    FROM public.crm_outside_advisors oa
+    LEFT JOIN LATERAL (
+        SELECT
+            COUNT(*)::bigint                                                         AS leads_month,
+            COUNT(*) FILTER (
+                WHERE ls.pipeline_stage IN ('won','converted','closed_won')
+                  AND ls.converted_at >= v_month_start
+                  AND ls.converted_at <  v_month_end
+            )::bigint                                                                AS closed_month
+        FROM public.lead_submissions ls
+        WHERE ls.org_id = p_org_id
+          AND ls.outside_advisor_id = oa.id
+          AND ls.created_at >= v_month_start
+          AND ls.created_at <  v_month_end
+    ) m ON TRUE
+    LEFT JOIN LATERAL (
+        SELECT
+            COUNT(*)::bigint                                                         AS leads_ytd,
+            COUNT(*) FILTER (
+                WHERE ls.pipeline_stage IN ('won','converted','closed_won')
+                  AND ls.converted_at >= v_year_start
+                  AND ls.converted_at <  v_month_end
+            )::bigint                                                                AS closed_ytd
+        FROM public.lead_submissions ls
+        WHERE ls.org_id = p_org_id
+          AND ls.outside_advisor_id = oa.id
+          AND ls.created_at >= v_year_start
+          AND ls.created_at <  v_month_end
+    ) y ON TRUE
+    WHERE oa.org_id = p_org_id AND oa.is_active = true
+    ORDER BY oa.name;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_outside_advisor_production"("p_org_id" "uuid", "p_month" integer, "p_year" integer) OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."crm_outside_advisor_production"("p_org_id" "uuid", "p_month" integer, "p_year" integer) IS 'Outside Advisor Production — one row per advisor with month + YTD lead / closed counts keyed on lead_submissions.outside_advisor_id. Replaces the pre-Phase-3 version that fanned out aggregate totals to every advisor row.';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_pause_cadence_on_owner_change"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+    IF NEW.assigned_to IS DISTINCT FROM OLD.assigned_to
+       AND NEW.assigned_to IS NOT NULL
+       AND NEW.org_id IS NOT NULL
+       AND NOT public.is_inside_sales_rep(NEW.assigned_to, NEW.org_id) THEN
+
+        UPDATE public.crm_lead_cadence_state
+           SET paused        = true,
+               paused_reason = 'owner_not_cadence_eligible',
+               updated_at    = now()
+         WHERE lead_id = NEW.id
+           AND paused = false
+           AND completed_at IS NULL;
+
+        IF FOUND THEN
+            INSERT INTO public.lead_activities (
+                lead_id, org_id, activity_type, title, description,
+                metadata, created_at, created_by
+            ) VALUES (
+                NEW.id, NEW.org_id, 'cadence_halted',
+                'Cadence halted — owner not cadence-eligible',
+                'Active cadence paused because lead ownership was transferred to a non-Inside-Sales rep. No auto-resume on reassignment back; rep must manually re-enroll.',
+                jsonb_build_object(
+                    'round22', true,
+                    'reason', 'owner_role_change',
+                    'previous_owner_id', OLD.assigned_to,
+                    'new_owner_id', NEW.assigned_to
+                ),
+                now(), auth.uid()
+            );
+        END IF;
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_pause_cadence_on_owner_change"() OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."crm_pause_cadence_on_owner_change"() IS 'Round 22 — pauses any active cadence enrollment when lead ownership transfers to a non-Inside-Sales rep. Writes a cadence_halted entry to lead_activities. No auto-resume on later reassignment back (per §31 spec).';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_perflag_business_day_window"("p_today" "date", "p_n" integer) RETURNS TABLE("window_start" "date", "window_end" "date")
+    LANGUAGE "sql" STABLE
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+    WITH end_date AS (
+        SELECT CASE
+            WHEN EXTRACT(ISODOW FROM p_today)::int <= 5 THEN p_today
+            ELSE p_today - (EXTRACT(ISODOW FROM p_today)::int - 5)
+        END AS d
+    ),
+    candidate_days AS (
+        SELECT d::date AS day
+          FROM generate_series((SELECT d FROM end_date) - 30, (SELECT d FROM end_date), INTERVAL '1 day') AS d
+         WHERE EXTRACT(ISODOW FROM d)::int <= 5
+         ORDER BY d DESC
+         LIMIT p_n
+    )
+    SELECT MIN(day) AS window_start, MAX(day) AS window_end FROM candidate_days;
+$$;
+
+
+ALTER FUNCTION "public"."crm_perflag_business_day_window"("p_today" "date", "p_n" integer) OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."crm_perflag_business_day_window"("p_today" "date", "p_n" integer) IS 'Section 12 / Round 11: returns last N business days as a (start,end) date pair.';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_perflag_distinct_business_days"("p_org_id" "uuid", "p_user_id" "uuid", "p_section_filter" "text") RETURNS integer
+    LANGUAGE "sql" STABLE
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+    SELECT COUNT(DISTINCT e.log_date)::int
+      FROM public.crm_daily_log_events e
+     WHERE e.org_id = p_org_id
+       AND e.user_id = p_user_id
+       AND (p_section_filter IS NULL OR e.section <> p_section_filter)
+       AND EXTRACT(ISODOW FROM e.log_date)::int <= 5;
+$$;
+
+
+ALTER FUNCTION "public"."crm_perflag_distinct_business_days"("p_org_id" "uuid", "p_user_id" "uuid", "p_section_filter" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_perflag_metric_for_user"("p_org_id" "uuid", "p_user_id" "uuid", "p_window_start" "date", "p_window_end" "date", "p_metric_kind" "text", "p_section_filter" "text") RETURNS integer
+    LANGUAGE "sql" STABLE
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+    SELECT public.crm_perflag_metric_for_user(
+        p_org_id, p_user_id, p_window_start, p_window_end,
+        p_metric_kind, p_section_filter, false
+    );
+$$;
+
+
+ALTER FUNCTION "public"."crm_perflag_metric_for_user"("p_org_id" "uuid", "p_user_id" "uuid", "p_window_start" "date", "p_window_end" "date", "p_metric_kind" "text", "p_section_filter" "text") OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."crm_perflag_metric_for_user"("p_org_id" "uuid", "p_user_id" "uuid", "p_window_start" "date", "p_window_end" "date", "p_metric_kind" "text", "p_section_filter" "text") IS 'Round 9: shared metric extractor for the Performance Lag scan.';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_perflag_metric_for_user"("p_org_id" "uuid", "p_user_id" "uuid", "p_window_start" "date", "p_window_end" "date", "p_metric_kind" "text", "p_section_filter" "text", "p_business_days_only" boolean) RETURNS integer
+    LANGUAGE "sql" STABLE
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+    SELECT CASE p_metric_kind
+        WHEN 'leads_worked' THEN
+            (SELECT COUNT(DISTINCT (e.metadata ->> 'lead_id'))
+               FROM public.crm_daily_log_events e
+              WHERE e.org_id = p_org_id
+                AND e.user_id = p_user_id
+                AND (p_section_filter IS NULL OR e.section <> p_section_filter)
+                AND (e.metadata ? 'lead_id')
+                AND e.log_date BETWEEN p_window_start AND p_window_end
+                AND (NOT p_business_days_only OR EXTRACT(ISODOW FROM e.log_date)::int <= 5))::int
+        WHEN 'time_logged_minutes' THEN
+            COALESCE(
+                (SELECT SUM(time_minutes)::int
+                   FROM public.crm_special_projects sp
+                  WHERE sp.org_id = p_org_id AND sp.user_id = p_user_id
+                    AND sp.log_date BETWEEN p_window_start AND p_window_end
+                    AND (NOT p_business_days_only OR EXTRACT(ISODOW FROM sp.log_date)::int <= 5)),
+                0
+            )
+            +
+            COALESCE(
+                (SELECT SUM(COALESCE((e.metadata ->> 'call_duration_seconds')::int, 0))::int / 60
+                   FROM public.crm_daily_log_events e
+                  WHERE e.org_id = p_org_id AND e.user_id = p_user_id
+                    AND e.activity_type = 'call'
+                    AND e.log_date BETWEEN p_window_start AND p_window_end
+                    AND (NOT p_business_days_only OR EXTRACT(ISODOW FROM e.log_date)::int <= 5)),
+                0
+            )
+        ELSE
+            (SELECT COUNT(*)
+               FROM public.crm_daily_log_events e
+              WHERE e.org_id = p_org_id
+                AND e.user_id = p_user_id
+                AND (p_section_filter IS NULL OR e.section <> p_section_filter)
+                AND e.log_date BETWEEN p_window_start AND p_window_end
+                AND (NOT p_business_days_only OR EXTRACT(ISODOW FROM e.log_date)::int <= 5))::int
+    END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_perflag_metric_for_user"("p_org_id" "uuid", "p_user_id" "uuid", "p_window_start" "date", "p_window_end" "date", "p_metric_kind" "text", "p_section_filter" "text", "p_business_days_only" boolean) OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_performance_lag_config_seed_org"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+BEGIN
+    INSERT INTO public.crm_performance_lag_config (org_id) VALUES (NEW.id) ON CONFLICT (org_id) DO NOTHING;
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_performance_lag_config_seed_org"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_performance_lag_config_touch_updated_at"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    AS $$
+BEGIN NEW.updated_at := now(); RETURN NEW; END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_performance_lag_config_touch_updated_at"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_pipeline_breakdown"("p_org_id" "uuid") RETURNS TABLE("stage_name" "text", "stage_display_name" "text", "stage_color" "text", "total_in_stage" bigint, "healthshare_count" bigint, "traditional_count" bigint, "unspecified_count" bigint)
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        ps.name::text AS stage_name,
+        ps.display_name::text AS stage_display_name,
+        ps.color::text AS stage_color,
+        COUNT(l.id)::bigint AS total_in_stage,
+        COUNT(l.id) FILTER (WHERE l.plan_type = 'healthshare')::bigint AS healthshare_count,
+        COUNT(l.id) FILTER (WHERE l.plan_type IN ('traditional', 'traditional_insurance'))::bigint AS traditional_count,
+        COUNT(l.id) FILTER (WHERE l.plan_type IS NULL OR l.plan_type NOT IN ('healthshare', 'traditional', 'traditional_insurance'))::bigint AS unspecified_count
+    FROM public.crm_pipeline_stages ps
+    LEFT JOIN public.lead_submissions l
+        ON l.pipeline_stage = ps.name
+        AND l.org_id = p_org_id
+    WHERE ps.org_id = p_org_id
+      AND ps.is_active = true
+    GROUP BY ps.name, ps.display_name, ps.color, ps.sort_order
+    ORDER BY ps.sort_order;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_pipeline_breakdown"("p_org_id" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_plan_type_stats"("p_org_id" "uuid") RETURNS TABLE("plan_type" "text", "total_count" bigint, "new_today" bigint, "new_this_week" bigint, "new_this_month" bigint)
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        COALESCE(l.plan_type, 'unspecified')::text AS plan_type,
+        COUNT(*)::bigint AS total_count,
+        COUNT(*) FILTER (WHERE l.created_at >= CURRENT_DATE)::bigint AS new_today,
+        COUNT(*) FILTER (WHERE l.created_at >= date_trunc('week', CURRENT_DATE))::bigint AS new_this_week,
+        COUNT(*) FILTER (WHERE l.created_at >= date_trunc('month', CURRENT_DATE))::bigint AS new_this_month
+    FROM public.lead_submissions l
+    WHERE l.org_id = p_org_id
+    GROUP BY COALESCE(l.plan_type, 'unspecified')
+    ORDER BY total_count DESC;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_plan_type_stats"("p_org_id" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_promote_stale_quotes_to_nurture"("p_org_id" "uuid", "p_stale_after" interval DEFAULT '30 days'::interval) RETURNS integer
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+    v_count int;
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM public.orgs WHERE id = p_org_id) THEN
+        RAISE EXCEPTION 'invalid_org';
+    END IF;
+
+    WITH c AS (
+        UPDATE public.lead_submissions ls
+        SET
+            pipeline_stage = 'nurture',
+            workflow_subsection = 'nurture',
+            stage_changed_at = now(),
+            updated_at = now()
+        WHERE ls.org_id = p_org_id
+          AND ls.pipeline_stage IN ('quoted', 'engaged')
+          AND ls.engagement_detected_at IS NULL
+          AND ls.do_not_contact IS NOT TRUE
+          AND ls.quote_cadence_started_at IS NOT NULL
+          AND ls.quote_cadence_started_at <= now() - p_stale_after
+        RETURNING 1
+    )
+    SELECT COUNT(*)::int INTO v_count FROM c;
+
+    RETURN COALESCE(v_count, 0);
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_promote_stale_quotes_to_nurture"("p_org_id" "uuid", "p_stale_after" interval) OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_record_lead_engagement"("p_lead_id" "uuid") RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+    v_org uuid;
+BEGIN
+    SELECT org_id INTO v_org FROM public.lead_submissions WHERE id = p_lead_id;
+    IF v_org IS NULL OR NOT public.is_org_member(v_org) THEN
+        RAISE EXCEPTION 'not_found_or_denied';
+    END IF;
+
+    UPDATE public.lead_submissions
+    SET
+        engagement_detected_at = now(),
+        last_contacted_at = COALESCE(last_contacted_at, now()),
+        pipeline_stage = CASE
+            WHEN pipeline_stage = 'quoted' THEN 'engaged'
+            ELSE pipeline_stage
+        END,
+        stage_changed_at = CASE
+            WHEN pipeline_stage = 'quoted' THEN now()
+            ELSE stage_changed_at
+        END,
+        updated_at = now()
+    WHERE id = p_lead_id;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_record_lead_engagement"("p_lead_id" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_recruiting_pipeline_lock_guard"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+BEGIN
+    IF TG_OP = 'DELETE' THEN
+        RAISE EXCEPTION USING
+            ERRCODE = 'P0001',
+            MESSAGE = format(
+                'Recruiting pipeline stage "%s" is locked per Section 10 / Round 5 Addendum.',
+                OLD.name
+            );
+    END IF;
+
+    IF TG_OP = 'UPDATE' THEN
+        IF NEW.name <> OLD.name THEN
+            RAISE EXCEPTION USING ERRCODE='P0001',
+              MESSAGE='Recruiting pipeline stage names are locked per Section 10 / Round 5 Addendum.';
+        END IF;
+        IF NEW.sort_order <> OLD.sort_order THEN
+            RAISE EXCEPTION USING ERRCODE='P0001',
+              MESSAGE='Recruiting pipeline ordering is locked at 7 stages per Section 10 / Round 5 Addendum.';
+        END IF;
+        IF NEW.is_terminal <> OLD.is_terminal THEN
+            RAISE EXCEPTION USING ERRCODE='P0001',
+              MESSAGE='Recruiting pipeline terminality is locked per Section 10 / Round 5 Addendum.';
+        END IF;
+        IF NEW.is_active <> OLD.is_active THEN
+            RAISE EXCEPTION USING ERRCODE='P0001',
+              MESSAGE='Recruiting pipeline stages cannot be deactivated per Section 10 / Round 5 Addendum.';
+        END IF;
+        IF NEW.org_id <> OLD.org_id THEN
+            RAISE EXCEPTION USING ERRCODE='P0001',
+              MESSAGE='Recruiting pipeline stages cannot be moved between orgs.';
+        END IF;
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_recruiting_pipeline_lock_guard"() OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."crm_recruiting_pipeline_lock_guard"() IS 'Section 10 / Round 5 Addendum: refuses rename, reorder, terminality flip, or deletion of recruiting pipeline stages.';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_recruiting_records_touch"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    AS $$
+BEGIN
+    NEW.updated_at := now();
+    IF TG_OP = 'UPDATE' AND NEW.pipeline_stage IS DISTINCT FROM OLD.pipeline_stage THEN
+        NEW.stage_changed_at := now();
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_recruiting_records_touch"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_register_engagement_signal"("p_lead_id" "uuid", "p_signal_type" "text" DEFAULT 'reply'::"text") RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+DECLARE
+    v_lead public.lead_submissions%ROWTYPE;
+BEGIN
+    SELECT * INTO v_lead FROM public.lead_submissions WHERE id = p_lead_id;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'lead % not found', p_lead_id USING ERRCODE = 'no_data_found';
+    END IF;
+
+    UPDATE public.crm_lead_cadence_state s
+       SET paused = true,
+           paused_reason = COALESCE(s.paused_reason, 'engagement_detected:' || p_signal_type),
+           updated_at = now()
+      FROM public.crm_follow_up_cadences c
+     WHERE s.cadence_id = c.id
+       AND s.lead_id = p_lead_id
+       AND s.paused = false
+       AND s.completed_at IS NULL
+       AND c.halt_on_engagement = true;
+
+    -- Per Section 7 + Round 3 Addendum: inbound events do NOT bump
+    -- last_touched_at. The activity timeline records the inbound; the
+    -- "rep moved on this lead" clock only ticks on rep-initiated work.
+    UPDATE public.lead_submissions
+       SET engagement_detected_at = COALESCE(engagement_detected_at, now()),
+           pipeline_stage = CASE
+               WHEN pipeline_stage IN ('quoted', 'working') THEN 'engaged'
+               ELSE pipeline_stage
+           END,
+           stage_changed_at = CASE
+               WHEN pipeline_stage IN ('quoted', 'working') THEN now()
+               ELSE stage_changed_at
+           END,
+           updated_at = now()
+     WHERE id = p_lead_id;
+
+    IF EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = 'crm_activities'
+    ) THEN
+        INSERT INTO public.crm_activities (
+            org_id, lead_id, activity_type, subject, description,
+            created_by, created_at, updated_at
+        ) VALUES (
+            v_lead.org_id, p_lead_id, 'other',
+            'Engagement signal: ' || p_signal_type,
+            'Cadence halted by halt_on_engagement; lead routed to engaged.',
+            COALESCE(v_lead.assigned_to, '00000000-0000-0000-0000-000000000000'::uuid),
+            now(), now()
+        );
+    END IF;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_register_engagement_signal"("p_lead_id" "uuid", "p_signal_type" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_report_application_dropoff"("p_org_id" "uuid") RETURNS TABLE("withdrawn_or_lost" bigint, "still_in_progress" bigint)
+    LANGUAGE "plpgsql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+    IF NOT public.is_org_member(p_org_id) THEN
+        RAISE EXCEPTION 'not_found_or_denied';
+    END IF;
+
+    RETURN QUERY
+    SELECT
+        COUNT(*) FILTER (
+            WHERE pipeline_stage IN ('lost', 'nurture')
+              AND (lost_reason ILIKE '%withdraw%' OR lost_reason ILIKE ANY (ARRAY['%drop%', '%application%']))
+        )::bigint,
+        COUNT(*) FILTER (WHERE pipeline_stage = 'application_in_progress')::bigint
+    FROM public.lead_submissions
+    WHERE org_id = p_org_id;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_report_application_dropoff"("p_org_id" "uuid") OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."crm_report_application_dropoff"("p_org_id" "uuid") IS 'Heuristic application funnel drop-off snapshot (tune lost_reason filters over time).';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_report_lead_stage_counts"("p_org_id" "uuid") RETURNS TABLE("pipeline_stage" "text", "lead_count" bigint)
+    LANGUAGE "plpgsql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+    IF NOT public.is_org_member(p_org_id) THEN
+        RAISE EXCEPTION 'not_found_or_denied';
+    END IF;
+
+    RETURN QUERY
+    SELECT COALESCE(ls.pipeline_stage, 'unknown') AS pipeline_stage,
+           COUNT(*)::bigint AS lead_count
+    FROM public.lead_submissions ls
+    WHERE ls.org_id = p_org_id
+    GROUP BY 1
+    ORDER BY 1;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_report_lead_stage_counts"("p_org_id" "uuid") OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."crm_report_lead_stage_counts"("p_org_id" "uuid") IS 'Per-stage lead counts for funnel / stalled-stage reports.';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_report_stalled_leads"("p_org_id" "uuid", "p_threshold_days" integer DEFAULT 14) RETURNS TABLE("lead_id" "uuid", "pipeline_stage" "text", "workflow_subsection" "text", "days_in_stage" integer, "assigned_to" "uuid", "last_contacted_at" timestamp with time zone, "stage_changed_at" timestamp with time zone)
+    LANGUAGE "plpgsql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+    IF NOT public.is_org_member(p_org_id) THEN
+        RAISE EXCEPTION 'not_found_or_denied';
+    END IF;
+
+    RETURN QUERY
+    SELECT
+        ls.id,
+        ls.pipeline_stage,
+        ls.workflow_subsection,
+        EXTRACT(DAY FROM now() - COALESCE(ls.stage_changed_at, ls.created_at))::int,
+        ls.assigned_to,
+        ls.last_contacted_at,
+        ls.stage_changed_at
+    FROM public.lead_submissions ls
+    WHERE ls.org_id = p_org_id
+      AND ls.pipeline_stage NOT IN ('won', 'lost', 'nurture')
+      AND COALESCE(ls.do_not_contact, false) = false
+      AND COALESCE(ls.stage_changed_at, ls.created_at)
+          <= now() - (p_threshold_days || ' days')::interval
+    ORDER BY COALESCE(ls.stage_changed_at, ls.created_at) ASC;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_report_stalled_leads"("p_org_id" "uuid", "p_threshold_days" integer) OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."crm_report_stalled_leads"("p_org_id" "uuid", "p_threshold_days" integer) IS 'Returns active leads whose stage has not progressed within p_threshold_days. Drives stalled-stage alerts panel.';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_revenue_closed_sales"("p_org_id" "uuid", "p_month" integer, "p_year" integer) RETURNS TABLE("rep_id" "uuid", "rep_name" "text", "closed_sales_month" bigint, "revenue_month" numeric, "closed_sales_ytd" bigint, "revenue_ytd" numeric, "avg_deal_size" numeric)
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+    v_month_start timestamptz;
+    v_month_end timestamptz;
+    v_year_start timestamptz;
+BEGIN
+    v_month_start := make_timestamptz(p_year, p_month, 1, 0, 0, 0, 'UTC');
+    v_month_end := (v_month_start + interval '1 month');
+    v_year_start := make_timestamptz(p_year, 1, 1, 0, 0, 0, 'UTC');
+
+    RETURN QUERY
+    SELECT
+        u.id AS rep_id,
+        COALESCE(u.raw_user_meta_data->>'full_name', u.email)::text AS rep_name,
+        (SELECT COUNT(*)::bigint FROM public.lead_submissions ls
+         WHERE ls.assigned_to = u.id AND ls.org_id = p_org_id
+         AND ls.pipeline_stage IN ('won','converted','closed_won')
+         AND ls.converted_at >= v_month_start AND ls.converted_at < v_month_end
+        ) AS closed_sales_month,
+        (SELECT COALESCE(SUM(dd.amount), 0)::numeric
+         FROM public.crm_deals dd
+         INNER JOIN public.crm_deal_stages dds ON dds.id = dd.stage_id
+         WHERE dd.owner_id = u.id AND dd.org_id = p_org_id
+         AND dds.is_won_stage = true
+         AND dd.won_at >= v_month_start AND dd.won_at < v_month_end
+        ) AS revenue_month,
+        (SELECT COUNT(*)::bigint FROM public.lead_submissions ls2
+         WHERE ls2.assigned_to = u.id AND ls2.org_id = p_org_id
+         AND ls2.pipeline_stage IN ('won','converted','closed_won')
+         AND ls2.converted_at >= v_year_start AND ls2.converted_at < v_month_end
+        ) AS closed_sales_ytd,
+        (SELECT COALESCE(SUM(dd2.amount), 0)::numeric
+         FROM public.crm_deals dd2
+         INNER JOIN public.crm_deal_stages dds2 ON dds2.id = dd2.stage_id
+         WHERE dd2.owner_id = u.id AND dd2.org_id = p_org_id
+         AND dds2.is_won_stage = true
+         AND dd2.won_at >= v_year_start AND dd2.won_at < v_month_end
+        ) AS revenue_ytd,
+        CASE WHEN (SELECT COUNT(*) FROM public.lead_submissions ls3
+                   WHERE ls3.assigned_to = u.id AND ls3.org_id = p_org_id
+                   AND ls3.pipeline_stage IN ('won','converted','closed_won')
+                   AND ls3.converted_at >= v_year_start AND ls3.converted_at < v_month_end) > 0
+            THEN ROUND(
+                (SELECT COALESCE(SUM(dd3.amount), 0)
+                 FROM public.crm_deals dd3
+                 INNER JOIN public.crm_deal_stages dds3 ON dds3.id = dd3.stage_id
+                 WHERE dd3.owner_id = u.id AND dd3.org_id = p_org_id
+                 AND dds3.is_won_stage = true
+                 AND dd3.won_at >= v_year_start AND dd3.won_at < v_month_end) /
+                NULLIF((SELECT COUNT(*) FROM public.lead_submissions ls4
+                        WHERE ls4.assigned_to = u.id AND ls4.org_id = p_org_id
+                        AND ls4.pipeline_stage IN ('won','converted','closed_won')
+                        AND ls4.converted_at >= v_year_start AND ls4.converted_at < v_month_end), 0), 2)
+            ELSE 0
+        END AS avg_deal_size
+    FROM auth.users u
+    INNER JOIN public.org_memberships om ON om.user_id = u.id AND om.org_id = p_org_id
+    GROUP BY u.id, u.email, u.raw_user_meta_data
+    ORDER BY rep_name;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_revenue_closed_sales"("p_org_id" "uuid", "p_month" integer, "p_year" integer) OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_revenue_closed_sales_filtered"("p_org_id" "uuid", "p_month" integer, "p_year" integer, "p_rep_ids" "uuid"[] DEFAULT NULL::"uuid"[]) RETURNS TABLE("rep_id" "uuid", "rep_name" "text", "closed_sales_month" bigint, "revenue_month" numeric, "closed_sales_ytd" bigint, "revenue_ytd" numeric, "avg_deal_size" numeric)
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+    RETURN QUERY
+    SELECT r.*
+    FROM public.crm_revenue_closed_sales(p_org_id, p_month, p_year) r
+    WHERE p_rep_ids IS NULL OR r.rep_id = ANY(p_rep_ids);
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_revenue_closed_sales_filtered"("p_org_id" "uuid", "p_month" integer, "p_year" integer, "p_rep_ids" "uuid"[]) OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_sales_cancellations_leads_snapshot"("p_org_id" "uuid", "p_period_start" timestamp with time zone, "p_period_end" timestamp with time zone, "p_user_id" "uuid" DEFAULT NULL::"uuid") RETURNS TABLE("row_kind" "text", "source" "text", "new_leads" integer, "sales" integer, "cancellations" integer, "net" integer)
+    LANGUAGE "plpgsql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+DECLARE
+    v_total_new integer := 0;
+    v_total_sales integer := 0;
+    v_total_cancel integer := 0;
+BEGIN
+    IF NOT public.is_org_member(p_org_id) THEN
+        RAISE EXCEPTION 'Not a member of org %', p_org_id USING ERRCODE = 'insufficient_privilege';
+    END IF;
+
+    SELECT COUNT(*)::integer INTO v_total_new
+      FROM public.lead_submissions l
+     WHERE l.org_id = p_org_id
+       AND l.created_at >= p_period_start
+       AND l.created_at <  p_period_end
+       AND (p_user_id IS NULL OR l.assigned_to = p_user_id);
+
+    SELECT COUNT(*)::integer INTO v_total_sales
+      FROM public.lead_submissions l
+     WHERE l.org_id = p_org_id
+       AND l.enrollment_approved_at IS NOT NULL
+       AND l.enrollment_approved_at >= p_period_start
+       AND l.enrollment_approved_at <  p_period_end
+       AND (p_user_id IS NULL OR l.assigned_to = p_user_id);
+
+    SELECT COUNT(*)::integer INTO v_total_cancel
+      FROM public.crm_daily_log_events e
+     WHERE e.org_id = p_org_id
+       AND e.section = 'lead_communication'
+       AND e.activity_type = 'call'
+       AND e.activity_subtype = 'cancellation'
+       AND e.occurred_at >= p_period_start
+       AND e.occurred_at <  p_period_end
+       AND (p_user_id IS NULL OR e.user_id = p_user_id);
+
+    row_kind := 'total';
+    source := NULL;
+    new_leads := v_total_new;
+    sales := v_total_sales;
+    cancellations := v_total_cancel;
+    net := v_total_sales - v_total_cancel;
+    RETURN NEXT;
+
+    FOR row_kind, source, new_leads, sales, cancellations, net IN
+        WITH new_by_source AS (
+            SELECT COALESCE(t.label, 'Unattributed') AS source_label,
+                   COUNT(*)::integer AS new_count
+              FROM public.lead_submissions l
+              LEFT JOIN public.crm_lead_source_types t
+                ON t.slug = l.lead_source
+              WHERE l.org_id = p_org_id
+                AND l.created_at >= p_period_start
+                AND l.created_at <  p_period_end
+                AND (p_user_id IS NULL OR l.assigned_to = p_user_id)
+              GROUP BY 1
+        ),
+        sales_by_source AS (
+            SELECT COALESCE(t.label, 'Unattributed') AS source_label,
+                   COUNT(*)::integer AS sale_count
+              FROM public.lead_submissions l
+              LEFT JOIN public.crm_lead_source_types t
+                ON t.slug = l.lead_source
+              WHERE l.org_id = p_org_id
+                AND l.enrollment_approved_at IS NOT NULL
+                AND l.enrollment_approved_at >= p_period_start
+                AND l.enrollment_approved_at <  p_period_end
+                AND (p_user_id IS NULL OR l.assigned_to = p_user_id)
+              GROUP BY 1
+        ),
+        merged AS (
+            SELECT n.source_label, n.new_count, COALESCE(s.sale_count, 0) AS sale_count
+              FROM new_by_source n
+              LEFT JOIN sales_by_source s USING (source_label)
+            UNION
+            SELECT s.source_label, COALESCE(n.new_count, 0), s.sale_count
+              FROM sales_by_source s
+              LEFT JOIN new_by_source n USING (source_label)
+        )
+        SELECT 'source'::text,
+               m.source_label,
+               m.new_count,
+               m.sale_count,
+               0::integer,
+               m.sale_count
+          FROM merged m
+         WHERE m.new_count > 0 OR m.sale_count > 0
+         ORDER BY m.sale_count DESC, m.new_count DESC, m.source_label
+    LOOP
+        RETURN NEXT;
+    END LOOP;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_sales_cancellations_leads_snapshot"("p_org_id" "uuid", "p_period_start" timestamp with time zone, "p_period_end" timestamp with time zone, "p_user_id" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_sales_cancellations_leads_snapshot_v2"("p_org_id" "uuid", "p_period_start" timestamp with time zone, "p_period_end" timestamp with time zone, "p_user_id" "uuid" DEFAULT NULL::"uuid") RETURNS TABLE("row_kind" "text", "role_type" "text", "rep_user_id" "uuid", "rep_name" "text", "source" "text", "new_leads" integer, "sales" integer, "cancellations" integer, "net" integer)
+    LANGUAGE "plpgsql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+    v_total_new        integer;
+    v_total_sales      integer;
+    v_total_cancel     integer;
+    v_is_new           integer;
+    v_is_sales         integer;
+    v_is_cancel        integer;
+    v_le_new           integer;
+    v_le_sales         integer;
+    v_le_cancel        integer;
+BEGIN
+    -- ---- TOTALS_ALL (every rep / no rep filter beyond p_user_id) ----
+    SELECT COUNT(*)::int INTO v_total_new
+      FROM public.lead_submissions l
+     WHERE l.org_id = p_org_id
+       AND l.created_at >= p_period_start
+       AND l.created_at <  p_period_end
+       AND (p_user_id IS NULL OR l.assigned_to = p_user_id);
+
+    SELECT COUNT(*)::int INTO v_total_sales
+      FROM public.lead_submissions l
+     WHERE l.org_id = p_org_id
+       AND l.enrollment_approved_at IS NOT NULL
+       AND l.enrollment_approved_at >= p_period_start
+       AND l.enrollment_approved_at <  p_period_end
+       AND (p_user_id IS NULL OR l.assigned_to = p_user_id);
+
+    SELECT COUNT(*)::int INTO v_total_cancel
+      FROM public.crm_daily_log_events e
+     WHERE e.org_id = p_org_id
+       AND e.section = 'member_communication'
+       AND e.activity_subtype = 'cancellation'
+       AND e.occurred_at >= p_period_start
+       AND e.occurred_at <  p_period_end
+       AND (p_user_id IS NULL OR e.user_id = p_user_id);
+
+    row_kind      := 'totals_all';
+    role_type     := NULL;
+    rep_user_id   := NULL;
+    rep_name      := NULL;
+    source        := NULL;
+    new_leads     := v_total_new;
+    sales         := v_total_sales;
+    cancellations := v_total_cancel;
+    net           := v_total_sales - v_total_cancel;
+    RETURN NEXT;
+
+    -- ---- TOTALS_INSIDE_SALES (Adam + Tupac aggregate) ----
+    SELECT COUNT(*)::int INTO v_is_new
+      FROM public.lead_submissions l
+     WHERE l.org_id = p_org_id
+       AND l.created_at >= p_period_start
+       AND l.created_at <  p_period_end
+       AND l.assigned_to IS NOT NULL
+       AND public.is_inside_sales_rep(l.assigned_to, p_org_id)
+       AND (p_user_id IS NULL OR l.assigned_to = p_user_id);
+
+    SELECT COUNT(*)::int INTO v_is_sales
+      FROM public.lead_submissions l
+     WHERE l.org_id = p_org_id
+       AND l.enrollment_approved_at IS NOT NULL
+       AND l.enrollment_approved_at >= p_period_start
+       AND l.enrollment_approved_at <  p_period_end
+       AND l.assigned_to IS NOT NULL
+       AND public.is_inside_sales_rep(l.assigned_to, p_org_id)
+       AND (p_user_id IS NULL OR l.assigned_to = p_user_id);
+
+    SELECT COUNT(*)::int INTO v_is_cancel
+      FROM public.crm_daily_log_events e
+     WHERE e.org_id = p_org_id
+       AND e.section = 'member_communication'
+       AND e.activity_subtype = 'cancellation'
+       AND e.occurred_at >= p_period_start
+       AND e.occurred_at <  p_period_end
+       AND e.user_id IS NOT NULL
+       AND public.is_inside_sales_rep(e.user_id, p_org_id)
+       AND (p_user_id IS NULL OR e.user_id = p_user_id);
+
+    row_kind      := 'totals_inside_sales';
+    role_type     := 'inside_sales';
+    rep_user_id   := NULL;
+    rep_name      := NULL;
+    source        := NULL;
+    new_leads     := v_is_new;
+    sales         := v_is_sales;
+    cancellations := v_is_cancel;
+    net           := v_is_sales - v_is_cancel;
+    RETURN NEXT;
+
+    -- ---- TOTALS_LEAD_ELIGIBLE (Catherine + Reba aggregate) ----
+    SELECT COUNT(*)::int INTO v_le_new
+      FROM public.lead_submissions l
+      JOIN public.crm_rep_roster r
+        ON r.user_id = l.assigned_to AND r.org_id = l.org_id
+     WHERE l.org_id = p_org_id
+       AND l.created_at >= p_period_start
+       AND l.created_at <  p_period_end
+       AND r.role_type = 'lead_eligible_non_inside_sales'
+       AND r.is_active = true
+       AND (p_user_id IS NULL OR l.assigned_to = p_user_id);
+
+    SELECT COUNT(*)::int INTO v_le_sales
+      FROM public.lead_submissions l
+      JOIN public.crm_rep_roster r
+        ON r.user_id = l.assigned_to AND r.org_id = l.org_id
+     WHERE l.org_id = p_org_id
+       AND l.enrollment_approved_at IS NOT NULL
+       AND l.enrollment_approved_at >= p_period_start
+       AND l.enrollment_approved_at <  p_period_end
+       AND r.role_type = 'lead_eligible_non_inside_sales'
+       AND r.is_active = true
+       AND (p_user_id IS NULL OR l.assigned_to = p_user_id);
+
+    SELECT COUNT(*)::int INTO v_le_cancel
+      FROM public.crm_daily_log_events e
+      JOIN public.crm_rep_roster r
+        ON r.user_id = e.user_id AND r.org_id = e.org_id
+     WHERE e.org_id = p_org_id
+       AND e.section = 'member_communication'
+       AND e.activity_subtype = 'cancellation'
+       AND e.occurred_at >= p_period_start
+       AND e.occurred_at <  p_period_end
+       AND r.role_type = 'lead_eligible_non_inside_sales'
+       AND r.is_active = true
+       AND (p_user_id IS NULL OR e.user_id = p_user_id);
+
+    -- Per §31: emit TOTALS_LEAD_ELIGIBLE only when activity > 0 in period.
+    IF v_le_new + v_le_sales + v_le_cancel > 0 THEN
+        row_kind      := 'totals_lead_eligible';
+        role_type     := 'lead_eligible_non_inside_sales';
+        rep_user_id   := NULL;
+        rep_name      := NULL;
+        source        := NULL;
+        new_leads     := v_le_new;
+        sales         := v_le_sales;
+        cancellations := v_le_cancel;
+        net           := v_le_sales - v_le_cancel;
+        RETURN NEXT;
+    END IF;
+
+    -- ---- BY_REP — per-rep cut, lead-eligible reps only ----
+    FOR row_kind, role_type, rep_user_id, rep_name, source,
+        new_leads, sales, cancellations, net IN
+        WITH rep_new AS (
+            SELECT l.assigned_to AS uid, COUNT(*)::int AS cnt
+              FROM public.lead_submissions l
+              JOIN public.crm_rep_roster r
+                ON r.user_id = l.assigned_to AND r.org_id = l.org_id
+             WHERE l.org_id = p_org_id
+               AND l.created_at >= p_period_start
+               AND l.created_at <  p_period_end
+               AND r.is_active = true
+               AND (p_user_id IS NULL OR l.assigned_to = p_user_id)
+             GROUP BY 1
+        ),
+        rep_sales AS (
+            SELECT l.assigned_to AS uid, COUNT(*)::int AS cnt
+              FROM public.lead_submissions l
+              JOIN public.crm_rep_roster r
+                ON r.user_id = l.assigned_to AND r.org_id = l.org_id
+             WHERE l.org_id = p_org_id
+               AND l.enrollment_approved_at IS NOT NULL
+               AND l.enrollment_approved_at >= p_period_start
+               AND l.enrollment_approved_at <  p_period_end
+               AND r.is_active = true
+               AND (p_user_id IS NULL OR l.assigned_to = p_user_id)
+             GROUP BY 1
+        ),
+        rep_cancel AS (
+            SELECT e.user_id AS uid, COUNT(*)::int AS cnt
+              FROM public.crm_daily_log_events e
+              JOIN public.crm_rep_roster r
+                ON r.user_id = e.user_id AND r.org_id = e.org_id
+             WHERE e.org_id = p_org_id
+               AND e.section = 'member_communication'
+               AND e.activity_subtype = 'cancellation'
+               AND e.occurred_at >= p_period_start
+               AND e.occurred_at <  p_period_end
+               AND r.is_active = true
+               AND (p_user_id IS NULL OR e.user_id = p_user_id)
+             GROUP BY 1
+        ),
+        all_reps AS (
+            SELECT uid FROM rep_new
+            UNION
+            SELECT uid FROM rep_sales
+            UNION
+            SELECT uid FROM rep_cancel
+        )
+        SELECT 'by_rep'::text,
+               r.role_type::text,
+               ar.uid,
+               COALESCE(p.full_name, p.display_name, u.email, ar.uid::text),
+               NULL::text,
+               COALESCE(n.cnt, 0),
+               COALESCE(s.cnt, 0),
+               COALESCE(c.cnt, 0),
+               COALESCE(s.cnt, 0) - COALESCE(c.cnt, 0)
+          FROM all_reps ar
+          JOIN public.crm_rep_roster r
+            ON r.user_id = ar.uid AND r.org_id = p_org_id
+          LEFT JOIN public.profiles p ON p.id = ar.uid
+          LEFT JOIN auth.users u      ON u.id = ar.uid
+          LEFT JOIN rep_new    n ON n.uid = ar.uid
+          LEFT JOIN rep_sales  s ON s.uid = ar.uid
+          LEFT JOIN rep_cancel c ON c.uid = ar.uid
+         ORDER BY r.role_type, COALESCE(p.full_name, u.email, ar.uid::text)
+    LOOP
+        RETURN NEXT;
+    END LOOP;
+
+    -- ---- BY_SOURCE — unchanged from v1, no role segmentation ----
+    FOR row_kind, role_type, rep_user_id, rep_name, source,
+        new_leads, sales, cancellations, net IN
+        WITH new_by_source AS (
+            SELECT COALESCE(t.label, 'Unattributed') AS source_label,
+                   COUNT(*)::int AS new_count
+              FROM public.lead_submissions l
+              LEFT JOIN public.crm_lead_source_types t ON t.slug = l.lead_source
+              WHERE l.org_id = p_org_id
+                AND l.created_at >= p_period_start
+                AND l.created_at <  p_period_end
+                AND (p_user_id IS NULL OR l.assigned_to = p_user_id)
+              GROUP BY 1
+        ),
+        sales_by_source AS (
+            SELECT COALESCE(t.label, 'Unattributed') AS source_label,
+                   COUNT(*)::int AS sales_count
+              FROM public.lead_submissions l
+              LEFT JOIN public.crm_lead_source_types t ON t.slug = l.lead_source
+              WHERE l.org_id = p_org_id
+                AND l.enrollment_approved_at IS NOT NULL
+                AND l.enrollment_approved_at >= p_period_start
+                AND l.enrollment_approved_at <  p_period_end
+                AND (p_user_id IS NULL OR l.assigned_to = p_user_id)
+              GROUP BY 1
+        ),
+        combined AS (
+            SELECT COALESCE(n.source_label, s.source_label) AS source_label,
+                   COALESCE(n.new_count, 0)   AS new_count,
+                   COALESCE(s.sales_count, 0) AS sales_count
+              FROM new_by_source n
+              FULL JOIN sales_by_source s ON s.source_label = n.source_label
+             WHERE COALESCE(n.new_count, 0) + COALESCE(s.sales_count, 0) > 0
+        )
+        SELECT 'by_source'::text,
+               NULL::text,
+               NULL::uuid,
+               NULL::text,
+               c.source_label,
+               c.new_count,
+               c.sales_count,
+               0,
+               c.sales_count
+          FROM combined c
+          ORDER BY c.source_label
+    LOOP
+        RETURN NEXT;
+    END LOOP;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_sales_cancellations_leads_snapshot_v2"("p_org_id" "uuid", "p_period_start" timestamp with time zone, "p_period_end" timestamp with time zone, "p_user_id" "uuid") OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."crm_sales_cancellations_leads_snapshot_v2"("p_org_id" "uuid", "p_period_start" timestamp with time zone, "p_period_end" timestamp with time zone, "p_user_id" "uuid") IS 'Round 22 — role-segmented version of crm_sales_cancellations_leads_snapshot. Returns 5 row_kinds: totals_all, totals_inside_sales, totals_lead_eligible (only when activity > 0), by_rep (with role_type column), by_source. The v1 function is left unchanged for backward compatibility — frontend opts into v2 in the follow-up PR per the Implementation Plan §6.6.';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_scan_performance_lag"("p_org_id" "uuid") RETURNS TABLE("user_id" "uuid", "window_start" "date", "window_end" "date", "rep_count" integer, "team_avg" numeric, "top_performer_count" integer, "alert_fired" boolean)
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+DECLARE
+    v_today date := current_date;
+    v_window_start date;
+    v_window_end date;
+    v_threshold numeric;
+    v_quiet_period interval;
+    v_config public.crm_performance_lag_config%ROWTYPE;
+    v_metric_kind text;
+    v_baseline_kind text;
+    v_window_kind text;
+    v_exclude_special_projects boolean;
+    rec record;
+    v_rep_count int;
+    v_team_avg numeric;
+    v_team_median numeric;
+    v_top_count int;
+    v_baseline numeric;
+    v_baseline_label text;
+    v_quiet_until timestamptz;
+    v_should_fire boolean;
+    v_alert_id uuid;
+    v_section_filter text;
+BEGIN
+    SELECT * INTO v_config FROM public.crm_performance_lag_config WHERE org_id = p_org_id;
+    IF NOT FOUND THEN
+        INSERT INTO public.crm_performance_lag_config (org_id) VALUES (p_org_id) RETURNING * INTO v_config;
+    END IF;
+    IF NOT v_config.is_enabled THEN RETURN; END IF;
+
+    IF v_config.spec_locked THEN
+        v_metric_kind := 'activity_count';
+        v_baseline_kind := 'team_avg_excl_self';
+        v_window_kind := 'rolling';
+        v_exclude_special_projects := true;
+    ELSE
+        v_metric_kind := v_config.metric_kind;
+        v_baseline_kind := v_config.baseline_kind;
+        v_window_kind := v_config.window_kind;
+        v_exclude_special_projects := v_config.exclude_special_projects;
+    END IF;
+
+    v_threshold := 1 - (v_config.threshold_pct::numeric / 100);
+    v_quiet_period := make_interval(days => v_config.quiet_period_days);
+    v_section_filter := CASE WHEN v_exclude_special_projects THEN 'special_projects' ELSE NULL END;
+
+    IF v_window_kind = 'snapshot_weekly' THEN
+        v_window_end := v_today - EXTRACT(ISODOW FROM v_today)::int;
+        v_window_start := v_window_end - 6;
+    ELSE
+        v_window_end := v_today;
+        v_window_start := v_window_end - (v_config.window_days - 1);
+    END IF;
+
+    FOR rec IN
+        SELECT m.user_id FROM public.org_memberships m
+         WHERE m.org_id = p_org_id AND m.status = 'active'
+           AND m.role IN ('rep','admin','manager','owner','agent')
+    LOOP
+        IF (
+            SELECT COUNT(DISTINCT log_date) FROM public.crm_daily_log_events
+             WHERE org_id = p_org_id AND user_id = rec.user_id
+               AND (v_section_filter IS NULL OR section <> v_section_filter)
+        ) < v_config.min_business_days_in_system THEN
+            CONTINUE;
+        END IF;
+
+        v_rep_count := public.crm_perflag_metric_for_user(
+            p_org_id, rec.user_id, v_window_start, v_window_end,
+            v_metric_kind, v_section_filter
+        );
+
+        WITH peer AS (
+            SELECT public.crm_perflag_metric_for_user(
+                p_org_id, m2.user_id, v_window_start, v_window_end,
+                v_metric_kind, v_section_filter
+            ) AS cnt
+              FROM public.org_memberships m2
+             WHERE m2.org_id = p_org_id AND m2.status = 'active'
+               AND m2.role IN ('rep','admin','manager','owner','agent')
+               AND m2.user_id <> rec.user_id
+        )
+        SELECT
+            COALESCE(AVG(cnt), 0),
+            COALESCE(percentile_cont(0.5) WITHIN GROUP (ORDER BY cnt), 0),
+            COALESCE(MAX(cnt), 0)
+          INTO v_team_avg, v_team_median, v_top_count
+          FROM peer;
+
+        IF v_baseline_kind = 'team_median_excl_self' THEN
+            v_baseline := v_team_median;
+            v_baseline_label := 'team_median_excl_self';
+        ELSIF v_baseline_kind = 'top_performer_pct' THEN
+            v_baseline := v_top_count::numeric * (v_config.top_performer_pct_target::numeric / 100);
+            v_baseline_label := 'top_performer_pct';
+        ELSE
+            v_baseline := v_team_avg;
+            v_baseline_label := 'team_avg_excl_self';
+        END IF;
+
+        v_should_fire := (v_baseline > 0) AND (v_rep_count::numeric < v_baseline * v_threshold);
+
+        IF v_should_fire THEN
+            IF EXISTS (
+                SELECT 1 FROM public.crm_performance_alert_log a
+                 WHERE a.org_id = p_org_id AND a.user_id = rec.user_id AND a.quiet_until > now()
+            ) THEN
+                v_should_fire := false;
+            ELSE
+                v_quiet_until := now() + v_quiet_period;
+                INSERT INTO public.crm_performance_alert_log (
+                    org_id, user_id, window_start, window_end,
+                    rep_count, team_avg, top_performer_count,
+                    fired_at, quiet_until, payload
+                ) VALUES (
+                    p_org_id, rec.user_id, v_window_start, v_window_end,
+                    v_rep_count, v_team_avg, v_top_count, now(), v_quiet_until,
+                    jsonb_build_object(
+                        'spec_locked', v_config.spec_locked,
+                        'threshold_pct', v_config.threshold_pct,
+                        'window_days', v_config.window_days,
+                        'window_kind', v_window_kind,
+                        'cadence', v_config.cadence,
+                        'quiet_days', v_config.quiet_period_days,
+                        'baseline_kind', v_baseline_label,
+                        'baseline_value', v_baseline,
+                        'team_median', v_team_median,
+                        'top_performer_pct_target', v_config.top_performer_pct_target,
+                        'metric_kind', v_metric_kind,
+                        'exclude_special_projects', v_exclude_special_projects,
+                        'metric', CASE
+                            WHEN v_metric_kind = 'leads_worked' THEN 'leads_worked_excl_special_projects'
+                            WHEN v_metric_kind = 'time_logged_minutes' THEN 'time_logged_minutes_total'
+                            WHEN v_exclude_special_projects THEN 'activity_count_excl_special_projects'
+                            ELSE 'activity_count_total'
+                        END
+                    )
+                ) RETURNING id INTO v_alert_id;
+
+                PERFORM public.crm_dispatch_performance_lag_notification(p_org_id, v_alert_id);
+            END IF;
+        END IF;
+
+        user_id := rec.user_id;
+        window_start := v_window_start;
+        window_end := v_window_end;
+        rep_count := v_rep_count;
+        team_avg := v_team_avg;
+        top_performer_count := v_top_count;
+        alert_fired := v_should_fire;
+        RETURN NEXT;
+    END LOOP;
+    RETURN;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_scan_performance_lag"("p_org_id" "uuid") OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."crm_scan_performance_lag"("p_org_id" "uuid") IS 'Round 10 / Section 12: honors spec_locked by overriding metric/baseline/window with Round 6 Addendum spec values.';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_scan_stalled_in_stage"("p_org_id" "uuid") RETURNS TABLE("lead_id" "uuid", "pipeline_stage" "text", "stage_changed_at" timestamp with time zone, "hours_in_stage" numeric, "sla_hours" integer)
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+    WITH stage_sla AS (
+        SELECT * FROM (VALUES
+            ('new', 1),                 -- round-robin should fire fast
+            ('quoted', 24),             -- 24h SLA per Round 2
+            ('working', 168),           -- 7 days
+            ('engaged', 168),           -- 7 days
+            ('application_in_progress', 240) -- 10 days
+        ) AS s(stage, hours)
+    )
+    SELECT
+        ls.id AS lead_id,
+        ls.pipeline_stage,
+        ls.stage_changed_at,
+        EXTRACT(EPOCH FROM (now() - COALESCE(ls.stage_changed_at, ls.created_at))) / 3600.0 AS hours_in_stage,
+        ss.hours::int AS sla_hours
+      FROM public.lead_submissions ls
+      JOIN stage_sla ss ON ss.stage = ls.pipeline_stage
+     WHERE ls.org_id = p_org_id
+       AND COALESCE(ls.do_not_contact, false) = false
+       AND COALESCE(ls.stage_changed_at, ls.created_at) < (now() - (ss.hours || ' hours')::interval)
+$$;
+
+
+ALTER FUNCTION "public"."crm_scan_stalled_in_stage"("p_org_id" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_seed_recruiting_pipeline_stages"("p_org_id" "uuid") RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+BEGIN
+    INSERT INTO public.crm_recruiting_pipeline_stages
+        (org_id, name, display_name, color, sort_order, is_terminal)
+    VALUES
+        (p_org_id, 'prospect',     'Prospect',     '#3B82F6', 1, false),
+        (p_org_id, 'contacted',    'Contacted',    '#6366F1', 2, false),
+        (p_org_id, 'interviewing', 'Interviewing', '#8B5CF6', 3, false),
+        (p_org_id, 'contracted',   'Contracted',   '#F59E0B', 4, false),
+        (p_org_id, 'onboarding',   'Onboarding',   '#10B981', 5, false),
+        (p_org_id, 'active',       'Active',       '#22C55E', 6, true),
+        (p_org_id, 'inactive',     'Inactive',     '#EF4444', 7, true)
+    ON CONFLICT (org_id, name) DO NOTHING;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_seed_recruiting_pipeline_stages"("p_org_id" "uuid") OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."crm_seed_recruiting_pipeline_stages"("p_org_id" "uuid") IS 'Section 10 / Round 5 Addendum: idempotent seed of the 7 canonical recruiting pipeline stages for an org. Safe to re-run.';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_seed_sales_plan_2026_demo"("p_org_id" "uuid", "p_leonardo_email" "text" DEFAULT 'leonardo@mympb.com'::"text", "p_tupac_email" "text" DEFAULT 'tupac@mympb.com'::"text", "p_adam_email" "text" DEFAULT 'adam@mympb.com'::"text") RETURNS TABLE("email" "text", "user_id" "uuid", "status" "text")
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'auth'
+    AS $$
+DECLARE
+    v_leo uuid;
+    v_tup uuid;
+    v_adm uuid;
+    v_pool jsonb;
+BEGIN
+    SELECT id INTO v_leo FROM auth.users WHERE lower(email) = lower(p_leonardo_email);
+    SELECT id INTO v_tup FROM auth.users WHERE lower(email) = lower(p_tupac_email);
+    SELECT id INTO v_adm FROM auth.users WHERE lower(email) = lower(p_adam_email);
+
+    -- Org membership: Leonardo is manager (Lead Manager), the others are agents.
+    IF v_leo IS NOT NULL THEN
+        INSERT INTO public.org_memberships (org_id, user_id, role, status)
+        VALUES (p_org_id, v_leo, 'manager', 'active')
+        ON CONFLICT (user_id, org_id) DO UPDATE SET role = EXCLUDED.role, status = 'active';
+    END IF;
+    IF v_tup IS NOT NULL THEN
+        INSERT INTO public.org_memberships (org_id, user_id, role, status)
+        VALUES (p_org_id, v_tup, 'agent', 'active')
+        ON CONFLICT (user_id, org_id) DO NOTHING;
+    END IF;
+    IF v_adm IS NOT NULL THEN
+        INSERT INTO public.org_memberships (org_id, user_id, role, status)
+        VALUES (p_org_id, v_adm, 'agent', 'active')
+        ON CONFLICT (user_id, org_id) DO NOTHING;
+    END IF;
+
+    -- Round-robin pool (skip members we couldn't find)
+    v_pool := '[]'::jsonb;
+    IF v_leo IS NOT NULL THEN
+        v_pool := v_pool || jsonb_build_array(jsonb_build_object(
+            'user_id', v_leo, 'is_active', true, 'is_paused', false, 'weight', 1
+        ));
+    END IF;
+    IF v_tup IS NOT NULL THEN
+        v_pool := v_pool || jsonb_build_array(jsonb_build_object(
+            'user_id', v_tup, 'is_active', true, 'is_paused', false, 'weight', 1
+        ));
+    END IF;
+    IF v_adm IS NOT NULL THEN
+        v_pool := v_pool || jsonb_build_array(jsonb_build_object(
+            'user_id', v_adm, 'is_active', true, 'is_paused', false, 'weight', 1
+        ));
+    END IF;
+
+    IF jsonb_array_length(v_pool) > 0 THEN
+        INSERT INTO public.crm_round_robin_config (
+            org_id, is_active, pool_members, current_position,
+            tie_breaking_rule, skip_unavailable, updated_by
+        )
+        VALUES (p_org_id, true, v_pool, -1, 'sequential', true, v_leo)
+        ON CONFLICT (org_id) DO UPDATE SET
+            is_active = true,
+            pool_members = EXCLUDED.pool_members,
+            updated_by = EXCLUDED.updated_by;
+    END IF;
+
+    -- Return one row per target user with their status
+    RETURN QUERY VALUES
+        (p_leonardo_email, v_leo, CASE WHEN v_leo IS NULL THEN 'not_found_in_auth_users' ELSE 'seeded_as_manager' END),
+        (p_tupac_email,    v_tup, CASE WHEN v_tup IS NULL THEN 'not_found_in_auth_users' ELSE 'seeded_as_agent' END),
+        (p_adam_email,     v_adm, CASE WHEN v_adm IS NULL THEN 'not_found_in_auth_users' ELSE 'seeded_as_agent' END);
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_seed_sales_plan_2026_demo"("p_org_id" "uuid", "p_leonardo_email" "text", "p_tupac_email" "text", "p_adam_email" "text") OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."crm_seed_sales_plan_2026_demo"("p_org_id" "uuid", "p_leonardo_email" "text", "p_tupac_email" "text", "p_adam_email" "text") IS 'Operator helper: seeds Leonardo/Tupac/Adam into org_memberships + round-robin pool for p_org_id. Must be run AFTER creating the auth.users entries (Supabase Dashboard → Authentication → Users). Returns one row per target user with status (seeded_as_* or not_found_in_auth_users).';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_sla_config_validate_escalation_emails"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $_$
+DECLARE
+    v_bad text;
+BEGIN
+    IF NEW.escalation_emails IS NOT NULL AND array_length(NEW.escalation_emails, 1) IS NOT NULL THEN
+        SELECT e INTO v_bad
+        FROM unnest(NEW.escalation_emails) AS e
+        WHERE e !~* '^[^@\s]+@[^@\s]+\.[^@\s]+$'
+        LIMIT 1;
+
+        IF v_bad IS NOT NULL THEN
+            RAISE EXCEPTION 'crm_sla_config.escalation_emails contains invalid address: %', v_bad
+                USING HINT = 'Each entry must be a plain email address (no display name).';
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$_$;
+
+
+ALTER FUNCTION "public"."crm_sla_config_validate_escalation_emails"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_special_project_types_touch_updated_at"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    AS $$
+BEGIN
+    NEW.updated_at := now();
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_special_project_types_touch_updated_at"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_strip_reply_quoted_and_signature"("p_body" "text") RETURNS "text"
+    LANGUAGE "plpgsql" IMMUTABLE
+    AS $_$
+DECLARE
+    v_lines text[];
+    v_acc   text := '';
+    v_line  text;
+    v_seen_sig boolean := false;
+BEGIN
+    IF p_body IS NULL OR length(trim(p_body)) = 0 THEN
+        RETURN '';
+    END IF;
+
+    v_lines := string_to_array(p_body, E'\n');
+
+    FOREACH v_line IN ARRAY v_lines
+    LOOP
+        -- "On <date>, X wrote:" header — everything after is quoted history
+        IF v_line ~* '^\s*on\s.+\swrote:\s*$' THEN
+            EXIT;
+        END IF;
+
+        -- Standard signature delimiter "-- "
+        IF trim(v_line) = '--' OR v_line ~ '^\s*--\s*$' THEN
+            v_seen_sig := true;
+            EXIT;
+        END IF;
+
+        -- Skip quoted lines starting with ">" (after possible leading spaces)
+        IF v_line ~ '^\s*>' THEN
+            CONTINUE;
+        END IF;
+
+        v_acc := v_acc || v_line || E'\n';
+    END LOOP;
+
+    RETURN v_acc;
+END;
+$_$;
+
+
+ALTER FUNCTION "public"."crm_strip_reply_quoted_and_signature"("p_body" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_today_summary"("p_org_id" "uuid") RETURNS json
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+DECLARE
+  v_user_id uuid := auth.uid();
+  v_result json;
+BEGIN
+  SELECT json_build_object(
+    'tasks_due_today', (
+      SELECT count(*) FROM public.lead_tasks
+      WHERE org_id = p_org_id
+        AND assigned_to = v_user_id
+        AND completed = false
+        AND due_date::date = CURRENT_DATE
+    ),
+    'tasks_overdue', (
+      SELECT count(*) FROM public.lead_tasks
+      WHERE org_id = p_org_id
+        AND assigned_to = v_user_id
+        AND completed = false
+        AND due_date < CURRENT_DATE
+    ),
+    'new_leads_today', (
+      SELECT count(*) FROM public.lead_submissions
+      WHERE org_id = p_org_id
+        AND created_at::date = CURRENT_DATE
+    ),
+    'new_leads_this_week', (
+      SELECT count(*) FROM public.lead_submissions
+      WHERE org_id = p_org_id
+        AND created_at >= date_trunc('week', CURRENT_DATE)
+    ),
+    'upcoming_events', (
+      SELECT count(*) FROM public.calendar_events
+      WHERE org_id = p_org_id
+        AND (assigned_to = v_user_id OR created_by = v_user_id)
+        AND start_time >= now()
+        AND start_time < now() + interval '24 hours'
+        AND status != 'cancelled'
+    ),
+    'unread_emails', (
+      SELECT count(*) FROM public.crm_email_log
+      WHERE org_id = p_org_id
+        AND direction = 'inbound'
+        AND is_read = false
+    ),
+    'focus_items', (
+      SELECT count(*) FROM public.crm_focus_items
+      WHERE org_id = p_org_id
+        AND user_id = v_user_id
+        AND completed_at IS NULL
+    ),
+    'open_deals_value', (
+      SELECT coalesce(sum(amount), 0) FROM public.crm_deals
+      WHERE org_id = p_org_id
+        AND owner_id = v_user_id
+        AND stage_id IS NOT NULL
+    )
+  ) INTO v_result;
+
+  RETURN v_result;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_today_summary"("p_org_id" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_tracking_to_engagement_signal"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+DECLARE
+    v_lead_id uuid;
+BEGIN
+    IF NEW.tracking_type IS DISTINCT FROM 'click' THEN
+        RETURN NEW;
+    END IF;
+
+    SELECT lead_id INTO v_lead_id
+      FROM public.crm_email_log
+     WHERE id = NEW.email_log_id;
+
+    IF v_lead_id IS NULL THEN
+        RETURN NEW;
+    END IF;
+
+    BEGIN
+        PERFORM public.crm_register_engagement_signal(v_lead_id, 'link_click');
+    EXCEPTION WHEN OTHERS THEN
+        RAISE NOTICE 'crm_tracking_to_engagement_signal: register_engagement_signal failed for lead % (% / %), continuing',
+            v_lead_id, SQLSTATE, SQLERRM;
+    END;
+
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_tracking_to_engagement_signal"() OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."crm_tracking_to_engagement_signal"() IS 'Round 7 — fires crm_register_engagement_signal(lead_id, ''link_click'') for every CLICK row landed in crm_email_tracking. Covers both custom click-rewriter and Resend-native click paths in one place.';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_validate_deal_product_line"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    AS $$
+BEGIN
+    IF NEW.product_line IS NULL THEN
+        RETURN NEW;
+    END IF;
+
+    PERFORM 1
+      FROM public.crm_product_lines
+     WHERE slug = NEW.product_line
+       AND is_active = true
+       AND (org_id = NEW.org_id OR org_id IS NULL)
+     LIMIT 1;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION
+            'Invalid product_line %: must exist and be active in crm_product_lines',
+            NEW.product_line
+            USING ERRCODE = 'check_violation';
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_validate_deal_product_line"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."crm_validate_lead_source"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+DECLARE
+    v_is_self_gen boolean;
+BEGIN
+    IF NEW.lead_source IS NULL OR NEW.lead_source = '' THEN
+        NEW.lead_source := 'inhouse_round_robin';
+    END IF;
+
+    SELECT is_self_generated
+      INTO v_is_self_gen
+    FROM public.crm_lead_source_types
+    WHERE slug = NEW.lead_source
+      AND is_active = true;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION
+          'Invalid lead_source: %. Valid slugs live in crm_lead_source_types (is_active=true).',
+          NEW.lead_source
+          USING ERRCODE = '23514';
+    END IF;
+
+    NEW.is_self_generated := COALESCE(v_is_self_gen, false);
+
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."crm_validate_lead_source"() OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."current_user_has_admin_access"() RETURNS boolean
@@ -1366,6 +6976,26 @@ $$;
 
 
 ALTER FUNCTION "public"."current_user_has_advisor_or_admin_access"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."current_user_has_concierge_portal_access"() RETURNS boolean
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.user_roles ur
+    WHERE ur.user_id = auth.uid()
+      AND ur.role::text IN ('concierge', 'super_admin', 'admin')
+  );
+$$;
+
+
+ALTER FUNCTION "public"."current_user_has_concierge_portal_access"() OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."current_user_has_concierge_portal_access"() IS 'True when the current user may read/write Concierge Portal shared tables.';
+
 
 
 CREATE OR REPLACE FUNCTION "public"."current_user_has_extended_admin_access"() RETURNS boolean
@@ -1455,6 +7085,22 @@ $$;
 
 
 ALTER FUNCTION "public"."current_user_org_ids"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."current_user_org_role"("p_org_id" "uuid") RETURNS "text"
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+  SELECT role
+  FROM public.org_memberships
+  WHERE user_id = auth.uid()
+    AND org_id = p_org_id
+    AND status = 'active'
+  LIMIT 1;
+$$;
+
+
+ALTER FUNCTION "public"."current_user_org_role"("p_org_id" "uuid") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."decrypt_token"("encrypted" "bytea", "key" "text") RETURNS "text"
@@ -1632,6 +7278,62 @@ $$;
 ALTER FUNCTION "public"."ensure_advisor_profile_on_role_grant"() OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."ensure_user_in_advisor_announcements_channel"("p_user_id" "uuid") RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    SET "row_security" TO 'off'
+    AS $$
+DECLARE
+  v_org constant uuid := '00000000-0000-4000-a000-000000000001'::uuid;
+  v_conv uuid;
+  v_role text;
+BEGIN
+  IF p_user_id IS NULL THEN RETURN; END IF;
+
+  SELECT id INTO v_conv
+  FROM public.chat_conversations c
+  WHERE c.org_id = v_org AND c.slug = 'advisor-announcements'
+  LIMIT 1;
+
+  IF v_conv IS NULL THEN RETURN; END IF;
+
+  SELECT CASE
+      WHEN om.role IN ('owner', 'admin') THEN 'admin'
+      ELSE 'member'
+    END
+  INTO v_role
+  FROM public.org_memberships om
+  WHERE om.user_id = p_user_id AND om.org_id = v_org AND om.status = 'active'
+  LIMIT 1;
+
+  IF v_role IS NULL THEN v_role := 'member'; END IF;
+
+  IF EXISTS (
+      SELECT 1 FROM public.user_roles ur
+      WHERE ur.user_id = p_user_id AND ur.role IN ('super_admin', 'admin')
+    ) THEN
+    v_role := 'admin';
+  END IF;
+
+  INSERT INTO public.chat_members (conversation_id, user_id, role)
+  VALUES (v_conv, p_user_id, v_role)
+  ON CONFLICT (conversation_id, user_id)
+  DO UPDATE SET
+    role = CASE
+      WHEN public.chat_members.role = 'admin' OR EXCLUDED.role = 'admin' THEN 'admin'
+      ELSE COALESCE(public.chat_members.role, EXCLUDED.role)
+    END;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."ensure_user_in_advisor_announcements_channel"("p_user_id" "uuid") OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."ensure_user_in_advisor_announcements_channel"("p_user_id" "uuid") IS 'Ensures the user can see the Advisor Announcements chat channel — chat_members + chat_conversations.slug=advisor-announcements.';
+
+
+
 CREATE OR REPLACE FUNCTION "public"."fan_out_chat_notification"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public', 'pg_temp'
@@ -1680,6 +7382,55 @@ $$;
 
 
 ALTER FUNCTION "public"."fan_out_chat_notification"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."fn_lead_stage_change_notify"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+  IF NEW.pipeline_stage IS DISTINCT FROM OLD.pipeline_stage THEN
+    -- Log stage change activity
+    INSERT INTO lead_activities (
+      lead_id,
+      activity_type,
+      title,
+      description,
+      metadata,
+      created_by,
+      org_id
+    ) VALUES (
+      NEW.id,
+      'status_change',
+      format('Stage changed from %s to %s', COALESCE(OLD.pipeline_stage, 'none'), NEW.pipeline_stage),
+      format('Pipeline stage updated from "%s" to "%s"', COALESCE(OLD.pipeline_stage, 'none'), NEW.pipeline_stage),
+      jsonb_build_object(
+        'from_stage', OLD.pipeline_stage,
+        'to_stage', NEW.pipeline_stage,
+        'changed_at', now()
+      ),
+      auth.uid(),
+      NEW.org_id
+    );
+
+    -- Real-time notification for listeners
+    PERFORM pg_notify(
+      'lead_stage_changed',
+      json_build_object(
+        'lead_id',    NEW.id,
+        'org_id',     NEW.org_id,
+        'from_stage', OLD.pipeline_stage,
+        'to_stage',   NEW.pipeline_stage
+      )::text
+    );
+  END IF;
+
+  RETURN NULL; -- AFTER trigger return value is ignored
+END;
+$$;
+
+
+ALTER FUNCTION "public"."fn_lead_stage_change_notify"() OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."generate_case_number"() RETURNS "trigger"
@@ -1763,6 +7514,73 @@ $$;
 
 
 ALTER FUNCTION "public"."generate_meeting_room_name"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."generate_member_notification_from_event"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+  v_rule record;
+  v_title text;
+  v_message text;
+  v_dept_label text;
+  v_notification_id uuid;
+BEGIN
+  IF NEW.should_notify_member = false THEN
+    RETURN NEW;
+  END IF;
+
+  SELECT * INTO v_rule
+  FROM public.member_notification_rules
+  WHERE event_type = NEW.event_type
+    AND is_enabled = true
+    AND (department = NEW.actor_department OR department = '*')
+  ORDER BY
+    CASE WHEN department = NEW.actor_department THEN 0 ELSE 1 END
+  LIMIT 1;
+
+  IF NOT FOUND THEN
+    RETURN NEW;
+  END IF;
+
+  v_dept_label := CASE NEW.actor_department
+    WHEN 'billing' THEN 'Billing'
+    WHEN 'operations' THEN 'Operations'
+    WHEN 'member_services' THEN 'Member Services'
+    WHEN 'enrollment' THEN 'Enrollment'
+    WHEN 'customer_support' THEN 'Customer Support'
+    WHEN 'eligibility' THEN 'Eligibility'
+    WHEN 'concierge' THEN 'Concierge'
+    WHEN 'administration' THEN 'Administration'
+    ELSE initcap(replace(NEW.actor_department, '_', ' '))
+  END;
+
+  v_title := replace(v_rule.title_template, '{{department}}', v_dept_label);
+  v_message := replace(v_rule.message_template, '{{department}}', v_dept_label);
+
+  INSERT INTO public.member_notifications (
+    member_id, notification_type, title, message, priority,
+    actor_department, category, related_entity_type, related_entity_id,
+    source_event_id, is_read
+  ) VALUES (
+    NEW.member_id, v_rule.notification_type, v_title, v_message, v_rule.priority,
+    NEW.actor_department, v_rule.category, NEW.entity_type, NEW.entity_id,
+    NEW.id, false
+  )
+  RETURNING id INTO v_notification_id;
+
+  UPDATE public.member_account_events
+  SET notification_generated = true,
+      member_notification_id = v_notification_id
+  WHERE id = NEW.id;
+
+  RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."generate_member_notification_from_event"() OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."generate_module_permissions"("p_module_api_name" "text") RETURNS "text"[]
@@ -1881,22 +7699,9 @@ $$;
 ALTER FUNCTION "public"."generate_ticket_number"() OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."generate_tracking_token"() RETURNS "text"
-    LANGUAGE "plpgsql"
-    SET "search_path" TO 'public', 'pg_temp'
-    AS $$
-BEGIN
-RETURN encode(gen_random_bytes(32), 'base64');
-END;
-$$;
-
-
-ALTER FUNCTION "public"."generate_tracking_token"() OWNER TO "postgres";
-
-
 CREATE OR REPLACE FUNCTION "public"."get_active_advisor_emails"() RETURNS TABLE("advisor_id" "uuid", "email" "text", "first_name" "text", "last_name" "text")
     LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public'
+    SET "search_path" TO 'public', 'pg_temp'
     AS $$
 BEGIN
   RETURN QUERY
@@ -1907,7 +7712,7 @@ BEGIN
     ap.last_name
   FROM advisor_profiles ap
   LEFT JOIN auth.users u ON ap.user_id = u.id
-  WHERE ap.is_active = true
+  WHERE ap.status = 'active'
     AND (ap.email IS NOT NULL OR u.email IS NOT NULL);
 END;
 $$;
@@ -1916,40 +7721,22 @@ $$;
 ALTER FUNCTION "public"."get_active_advisor_emails"() OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."get_active_advisor_meeting"() RETURNS "public"."advisor_meetings"
-    LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public', 'pg_temp'
-    AS $$
-BEGIN
-  RETURN (
-    SELECT * FROM advisor_meetings
-    WHERE status = 'live'
-    ORDER BY started_at DESC
-    LIMIT 1
-  );
-END;
-$$;
-
-
-ALTER FUNCTION "public"."get_active_advisor_meeting"() OWNER TO "postgres";
-
-
 CREATE OR REPLACE FUNCTION "public"."get_activity_feed"("p_user_id" "uuid", "p_org_id" "uuid" DEFAULT NULL::"uuid", "p_limit" integer DEFAULT 20, "p_offset" integer DEFAULT 0) RETURNS TABLE("id" "uuid", "activity_type" "text", "description" "text", "entity_type" "text", "entity_id" "uuid", "metadata" "jsonb", "created_at" timestamp with time zone)
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public', 'pg_temp'
     AS $$
 BEGIN
   RETURN QUERY
-  SELECT 
+  SELECT
     a.id,
-    a.activity_type,
+    a.activity_type::text,
     a.description,
-    a.entity_type,
-    a.entity_id,
+    a.actor_type AS entity_type,
+    COALESCE(a.lead_id, a.contact_id, a.task_id) AS entity_id,
     a.metadata,
     a.created_at
   FROM public.activities a
-  WHERE a.user_id = p_user_id
+  WHERE a.actor_id = p_user_id
     AND (p_org_id IS NULL OR a.org_id = p_org_id)
   ORDER BY a.created_at DESC
   LIMIT p_limit
@@ -1959,56 +7746,6 @@ $$;
 
 
 ALTER FUNCTION "public"."get_activity_feed"("p_user_id" "uuid", "p_org_id" "uuid", "p_limit" integer, "p_offset" integer) OWNER TO "postgres";
-
-
-CREATE OR REPLACE FUNCTION "public"."get_advisor_hierarchy_tree"("root_advisor_id" "text") RETURNS TABLE("id" "uuid", "agent_id" "text", "parent_id" "text", "agent_label" "text", "full_name" "text", "email" "text", "phone" "text", "is_active" boolean, "hire_date" timestamp with time zone, "territory" "text", "level" integer)
-    LANGUAGE "plpgsql" STABLE
-    SET "search_path" TO 'public', 'pg_temp'
-    AS $$
-BEGIN
-    RETURN QUERY
-    WITH RECURSIVE advisor_tree AS (
-        -- Base case: the root advisor at level 0
-        SELECT
-            a.id,
-            a.agent_id,
-            a.parent_id,
-            a.agent_label,
-            a.full_name,
-            a.email,
-            a.phone,
-            a.is_active,
-            a.hire_date,
-            a.territory,
-            0 as level
-        FROM advisors a
-        WHERE a.agent_id = root_advisor_id
-
-        UNION ALL
-
-        -- Recursive case: children with incremented level
-        SELECT
-            a.id,
-            a.agent_id,
-            a.parent_id,
-            a.agent_label,
-            a.full_name,
-            a.email,
-            a.phone,
-            a.is_active,
-            a.hire_date,
-            a.territory,
-            t.level + 1
-        FROM advisors a
-        JOIN advisor_tree t ON a.parent_id = t.agent_id
-        WHERE a.is_active = true
-    )
-    SELECT * FROM advisor_tree ORDER BY level, full_name;
-END;
-$$;
-
-
-ALTER FUNCTION "public"."get_advisor_hierarchy_tree"("root_advisor_id" "text") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."get_all_users_with_roles"() RETURNS TABLE("id" "uuid", "email" "text", "full_name" "text", "user_created_at" timestamp with time zone, "last_sign_in_at" timestamp with time zone, "roles" "text"[])
@@ -2057,13 +7794,12 @@ CREATE OR REPLACE FUNCTION "public"."get_automation_stats"("p_org_id" "uuid") RE
     AS $$
 BEGIN
   RETURN QUERY
-  SELECT 
+  SELECT
     COUNT(*)::INTEGER as total_rules,
     COUNT(*) FILTER (WHERE is_active = true)::INTEGER as active_rules,
-    COALESCE(SUM(run_count), 0)::INTEGER as total_runs,
+    COALESCE(SUM(execution_count), 0)::INTEGER as total_runs,
     100::NUMERIC as success_rate
-  FROM public.ai_automation_rules
-  WHERE org_id = p_org_id OR org_id IS NULL;
+  FROM public.ai_automation_rules;
 END;
 $$;
 
@@ -2081,15 +7817,15 @@ BEGIN
     p.id,
     p.name,
     p.slug,
-    p.tier,
+    p.plan_type::text AS tier,
     pp.monthly_contribution,
-    p.features
+    '{}'::jsonb AS features
   FROM plans p
   LEFT JOIN plan_pricing pp ON pp.plan_id = p.id
     AND pp.effective_date <= CURRENT_DATE
     AND pp.member_type = 'individual'
   WHERE p.is_active = true
-  ORDER BY p.display_order;
+  ORDER BY p.sort_order;
 END;
 $$;
 
@@ -2129,7 +7865,7 @@ BEGIN
       SELECT jsonb_object_agg(pipeline_stage, count)
       FROM (
         SELECT pipeline_stage, COUNT(*)::integer as count
-        FROM zoho_lead_submissions
+        FROM lead_submissions
         GROUP BY pipeline_stage
       ) stage_counts
     ) AS leads_by_stage,
@@ -2137,7 +7873,7 @@ BEGIN
       SELECT jsonb_object_agg(priority, count)
       FROM (
         SELECT COALESCE(priority, 'medium') as priority, COUNT(*)::integer as count
-        FROM zoho_lead_submissions
+        FROM lead_submissions
         GROUP BY priority
       ) priority_counts
     ) AS leads_by_priority,
@@ -2166,7 +7902,7 @@ BEGIN
       ) FILTER (WHERE converted_at IS NOT NULL),
       0
     )::numeric AS avg_days_to_close
-  FROM zoho_lead_submissions;
+  FROM lead_submissions;
 END;
 $$;
 
@@ -2260,16 +7996,15 @@ $$;
 ALTER FUNCTION "public"."get_email_tracking_stats"("p_email_id" "uuid") OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."get_filtered_leads"("p_stage" "text" DEFAULT NULL::"text", "p_priority" "text" DEFAULT NULL::"text", "p_assigned_to" "uuid" DEFAULT NULL::"uuid", "p_search" "text" DEFAULT NULL::"text", "p_date_from" timestamp with time zone DEFAULT NULL::timestamp with time zone, "p_date_to" timestamp with time zone DEFAULT NULL::timestamp with time zone, "p_limit" integer DEFAULT 50, "p_offset" integer DEFAULT 0) RETURNS TABLE("id" "uuid", "first_name" "text", "last_name" "text", "email" "text", "phone" "text", "zip_code" "text", "pipeline_stage" "text", "priority" "text", "assigned_to" "uuid", "lead_score" integer, "source_cta" "text", "source_page" "text", "created_at" timestamp with time zone, "stage_changed_at" timestamp with time zone, "next_followup_at" timestamp with time zone, "tags" "text"[], "zoho_lead_id" "text", "zoho_sync_status" "text", "total_count" bigint)
+CREATE OR REPLACE FUNCTION "public"."get_filtered_leads"("p_stage" "text" DEFAULT NULL::"text", "p_priority" "text" DEFAULT NULL::"text", "p_assigned_to" "uuid" DEFAULT NULL::"uuid", "p_search" "text" DEFAULT NULL::"text", "p_date_from" timestamp with time zone DEFAULT NULL::timestamp with time zone, "p_date_to" timestamp with time zone DEFAULT NULL::timestamp with time zone, "p_limit" integer DEFAULT 50, "p_offset" integer DEFAULT 0) RETURNS TABLE("id" "uuid", "first_name" "text", "last_name" "text", "email" "text", "phone" "text", "zip_code" "text", "pipeline_stage" "text", "priority" "text", "assigned_to" "uuid", "lead_score" integer, "source_cta" "text", "source_page" "text", "created_at" timestamp with time zone, "stage_changed_at" timestamp with time zone, "next_followup_at" timestamp with time zone, "tags" "text"[], "total_count" bigint)
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public', 'pg_temp'
     AS $$
 DECLARE
   v_total_count bigint;
 BEGIN
-  -- Get total count first
   SELECT COUNT(*) INTO v_total_count
-  FROM zoho_lead_submissions zls
+  FROM lead_submissions zls
   WHERE (p_stage IS NULL OR zls.pipeline_stage = p_stage)
     AND (p_priority IS NULL OR zls.priority = p_priority)
     AND (p_assigned_to IS NULL OR zls.assigned_to = p_assigned_to)
@@ -2300,10 +8035,8 @@ BEGIN
     zls.stage_changed_at,
     zls.next_followup_at,
     zls.tags,
-    zls.zoho_lead_id,
-    zls.zoho_sync_status,
     v_total_count
-  FROM zoho_lead_submissions zls
+  FROM lead_submissions zls
   WHERE (p_stage IS NULL OR zls.pipeline_stage = p_stage)
     AND (p_priority IS NULL OR zls.priority = p_priority)
     AND (p_assigned_to IS NULL OR zls.assigned_to = p_assigned_to)
@@ -2323,69 +8056,6 @@ $$;
 
 
 ALTER FUNCTION "public"."get_filtered_leads"("p_stage" "text", "p_priority" "text", "p_assigned_to" "uuid", "p_search" "text", "p_date_from" timestamp with time zone, "p_date_to" timestamp with time zone, "p_limit" integer, "p_offset" integer) OWNER TO "postgres";
-
-
-CREATE OR REPLACE FUNCTION "public"."get_hierarchy_stats"("root_advisor_id" "text") RETURNS "jsonb"
-    LANGUAGE "plpgsql" STABLE
-    SET "search_path" TO 'public', 'pg_temp'
-    AS $$
-DECLARE
-    result JSONB;
-    advisor_ids TEXT[];
-    total_advisors INTEGER;
-    active_advisors INTEGER;
-    total_members INTEGER;
-    max_depth INTEGER;
-    members_per_level JSONB;
-BEGIN
-    -- Get all advisor IDs in hierarchy
-    SELECT ARRAY_AGG(agent_id) INTO advisor_ids
-    FROM get_downline_advisor_ids(root_advisor_id);
-
-    -- Count advisors
-    SELECT COUNT(*), COUNT(*) FILTER (WHERE is_active = true)
-    INTO total_advisors, active_advisors
-    FROM advisors
-    WHERE agent_id = ANY(advisor_ids);
-
-    -- Count members
-    SELECT COUNT(*)
-    INTO total_members
-    FROM member_profiles
-    WHERE assigned_advisor_id = ANY(advisor_ids);
-
-    -- Get max depth
-    SELECT COALESCE(MAX(level), 0)
-    INTO max_depth
-    FROM get_advisor_hierarchy_tree(root_advisor_id);
-
-    -- Get members per level
-    WITH level_counts AS (
-        SELECT
-            t.level,
-            COUNT(m.id) as member_count
-        FROM get_advisor_hierarchy_tree(root_advisor_id) t
-        LEFT JOIN member_profiles m ON m.assigned_advisor_id = t.agent_id
-        GROUP BY t.level
-    )
-    SELECT jsonb_object_agg(level::text, member_count)
-    INTO members_per_level
-    FROM level_counts;
-
-    result := jsonb_build_object(
-        'total_advisors', total_advisors,
-        'active_advisors', active_advisors,
-        'total_members', total_members,
-        'members_per_level', COALESCE(members_per_level, '{}'::jsonb),
-        'depth', max_depth + 1
-    );
-
-    RETURN result;
-END;
-$$;
-
-
-ALTER FUNCTION "public"."get_hierarchy_stats"("root_advisor_id" "text") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."get_highest_role"("check_user_id" "uuid") RETURNS "text"
@@ -2540,7 +8210,7 @@ BEGIN
       FROM lead_tasks t
       WHERE t.lead_id = p_lead_id AND t.completed = false
     ), '[]'::jsonb) as tasks
-  FROM zoho_lead_submissions l
+  FROM lead_submissions l
   LEFT JOIN ai_lead_insights i ON i.lead_id = l.id
   WHERE l.id = p_lead_id;
 END;
@@ -2556,17 +8226,20 @@ CREATE OR REPLACE FUNCTION "public"."get_leaderboard"("p_org_id" "uuid" DEFAULT 
     AS $$
 BEGIN
   RETURN QUERY
-  SELECT 
-    ROW_NUMBER() OVER (ORDER BY COALESCE(SUM(ua.points), 0) DESC)::INTEGER as rank,
+  SELECT
+    ROW_NUMBER() OVER (ORDER BY COUNT(ua.id) FILTER (WHERE ua.is_earned = true) DESC)::INTEGER as rank,
     p.id as user_id,
-    COALESCE(p.full_name, 'Unknown') as user_name,
-    p.avatar_url,
-    COALESCE(SUM(ua.points), 0)::INTEGER as total_points,
+    COALESCE(
+      (SELECT u.raw_user_meta_data->>'full_name' FROM auth.users u WHERE u.id = p.id),
+      'Unknown'
+    ) as user_name,
+    NULL::text as avatar_url,
+    (COUNT(ua.id) FILTER (WHERE ua.is_earned = true))::INTEGER as total_points,
     0::INTEGER as deals_closed,
     0::NUMERIC as revenue
   FROM public.profiles p
   LEFT JOIN public.user_achievements ua ON p.id = ua.user_id
-  GROUP BY p.id, p.full_name, p.avatar_url
+  GROUP BY p.id
   ORDER BY total_points DESC
   LIMIT p_limit;
 END;
@@ -2583,16 +8256,18 @@ CREATE OR REPLACE FUNCTION "public"."get_leaderboard"("p_org_id" "uuid", "p_metr
 BEGIN
   RETURN QUERY
   SELECT
-    ROW_NUMBER() OVER (ORDER BY COALESCE(ap.points, 0) DESC)::INTEGER AS rank,
+    ROW_NUMBER() OVER (ORDER BY COUNT(ua.id) FILTER (WHERE ua.is_earned = true) DESC)::INTEGER AS rank,
     ap.user_id,
     COALESCE(ap.first_name || ' ' || ap.last_name, 'Unknown') AS user_name,
     ap.avatar_url,
-    COALESCE(ap.points, 0)::INTEGER AS score,
-    (SELECT COUNT(*)::INTEGER FROM user_achievements ua WHERE ua.user_id = ap.user_id AND ua.is_earned = TRUE) AS achievements_count
+    (COUNT(ua.id) FILTER (WHERE ua.is_earned = true))::INTEGER AS score,
+    COUNT(DISTINCT CASE WHEN ua.is_earned = TRUE THEN ua.id END)::INTEGER AS achievements_count
   FROM advisor_profiles ap
   JOIN org_memberships om ON om.user_id = ap.user_id
+  LEFT JOIN user_achievements ua ON ua.user_id = ap.user_id
   WHERE om.org_id = p_org_id
-  AND om.status = 'active'
+    AND om.status = 'active'
+  GROUP BY ap.user_id, ap.first_name, ap.last_name, ap.avatar_url
   ORDER BY score DESC
   LIMIT p_limit;
 END;
@@ -2600,30 +8275,6 @@ $$;
 
 
 ALTER FUNCTION "public"."get_leaderboard"("p_org_id" "uuid", "p_metric" "text", "p_period" "text", "p_limit" integer) OWNER TO "postgres";
-
-
-CREATE OR REPLACE FUNCTION "public"."get_meeting_with_stats"("p_meeting_id" "uuid") RETURNS TABLE("meeting" "public"."advisor_meetings", "total_invited" bigint, "accepted" bigint, "declined" bigint, "pending" bigint, "tentative" bigint)
-    LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public', 'pg_temp'
-    AS $$
-BEGIN
-  RETURN QUERY
-  SELECT
-    m.*,
-    COUNT(mi.id) as total_invited,
-    COUNT(mi.id) FILTER (WHERE mi.status = 'accepted') as accepted,
-    COUNT(mi.id) FILTER (WHERE mi.status = 'declined') as declined,
-    COUNT(mi.id) FILTER (WHERE mi.status = 'pending') as pending,
-    COUNT(mi.id) FILTER (WHERE mi.status = 'tentative') as tentative
-  FROM advisor_meetings m
-  LEFT JOIN meeting_invitations mi ON mi.meeting_id = m.id
-  WHERE m.id = p_meeting_id
-  GROUP BY m.id;
-END;
-$$;
-
-
-ALTER FUNCTION "public"."get_meeting_with_stats"("p_meeting_id" "uuid") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."get_metric_timeseries"("p_metric_name" "text", "p_start_date" timestamp with time zone DEFAULT ("now"() - '30 days'::interval), "p_end_date" timestamp with time zone DEFAULT "now"(), "p_granularity" "text" DEFAULT 'day'::"text") RETURNS TABLE("date" timestamp with time zone, "value" numeric)
@@ -2641,6 +8292,61 @@ $$;
 
 
 ALTER FUNCTION "public"."get_metric_timeseries"("p_metric_name" "text", "p_start_date" timestamp with time zone, "p_end_date" timestamp with time zone, "p_granularity" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."get_my_org_permissions_snapshot"("p_org_id" "uuid") RETURNS "jsonb"
+    LANGUAGE "plpgsql" STABLE
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_role text;
+  v_perms text[];
+BEGIN
+  IF v_uid IS NULL THEN
+    RETURN jsonb_build_object(
+      'error', 'not_authenticated',
+      'membership', 'null'::jsonb,
+      'permissions', '[]'::jsonb
+    );
+  END IF;
+
+  SELECT om.role INTO v_role
+  FROM public.org_memberships om
+  WHERE om.user_id = v_uid
+    AND om.org_id = p_org_id
+    AND om.status = 'active'
+  LIMIT 1;
+
+  IF v_role IS NULL THEN
+    RETURN jsonb_build_object(
+      'error', 'no_membership',
+      'membership', 'null'::jsonb,
+      'permissions', '[]'::jsonb
+    );
+  END IF;
+
+  SELECT COALESCE(array_agg(DISTINCT p.key ORDER BY p.key), ARRAY[]::text[])
+  INTO v_perms
+  FROM public.role_permissions rp
+  INNER JOIN public.permissions p ON p.id = rp.permission_id
+  WHERE rp.org_id = p_org_id
+    AND rp.role = v_role;
+
+  RETURN jsonb_build_object(
+    'error', NULL,
+    'membership', jsonb_build_object('role', v_role),
+    'permissions', to_jsonb(COALESCE(v_perms, ARRAY[]::text[]))
+  );
+END;
+$$;
+
+
+ALTER FUNCTION "public"."get_my_org_permissions_snapshot"("p_org_id" "uuid") OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."get_my_org_permissions_snapshot"("p_org_id" "uuid") IS 'Returns membership role + effective permission keys for auth.uid() in one call (CRM OrgContext).';
+
 
 
 CREATE OR REPLACE FUNCTION "public"."get_notification_events_unread_count"("p_user_id" "uuid") RETURNS bigint
@@ -2839,6 +8545,57 @@ $$;
 ALTER FUNCTION "public"."get_or_create_user_preferences"("p_user_id" "uuid", "p_org_id" "uuid") OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."get_org_features"("p_org_id" "uuid") RETURNS TABLE("feature_slug" "text", "feature_name" "text", "category" "text", "source" "text")
+    LANGUAGE "plpgsql" STABLE SECURITY DEFINER
+    AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        ff.slug,
+        ff.name,
+        ff.category,
+        CASE
+            WHEN ofo.id IS NOT NULL THEN 'override'
+            WHEN ff.enabled_by_default THEN 'default'
+            ELSE 'plan_tier'
+        END AS source
+    FROM feature_flags ff
+    LEFT JOIN org_feature_overrides ofo ON ofo.feature_id = ff.id AND ofo.org_id = p_org_id
+    WHERE org_has_feature(p_org_id, ff.slug) = true
+    ORDER BY ff.slug;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."get_org_features"("p_org_id" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."get_org_modules"("p_org_id" "uuid") RETURNS TABLE("module_slug" "text", "module_name" "text", "category" "text", "license_source" "text", "status" "text", "activated_at" timestamp with time zone, "expires_at" timestamp with time zone)
+    LANGUAGE "plpgsql" STABLE SECURITY DEFINER
+    AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        pm.slug,
+        pm.name,
+        pm.category,
+        oml.license_source,
+        oml.status,
+        oml.activated_at,
+        oml.expires_at
+    FROM org_module_licenses oml
+    JOIN product_modules pm ON pm.id = oml.module_id
+    WHERE oml.org_id = p_org_id
+      AND oml.status IN ('active', 'trialing')
+      AND (oml.expires_at IS NULL OR oml.expires_at > now())
+    ORDER BY pm.sort_order;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."get_org_modules"("p_org_id" "uuid") OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."get_plan_rate"("p_plan_slug" "text", "p_age" integer, "p_member_type" "text", "p_iua_amount" numeric DEFAULT NULL::numeric, "p_effective_date" "date" DEFAULT CURRENT_DATE) RETURNS TABLE("plan_id" "uuid", "plan_name" "text", "monthly_contribution" numeric, "enrollment_fee" numeric, "annual_membership_fee" numeric, "tobacco_surcharge_pct" numeric)
     LANGUAGE "plpgsql" STABLE
     SET "search_path" TO 'public', 'pg_temp'
@@ -2927,7 +8684,7 @@ CREATE OR REPLACE FUNCTION "public"."get_power_list"("p_org_id" "uuid", "p_user_
     pi.snoozed_until
   FROM priority_items pi
   JOIN priority_lanes pl ON pl.id = pi.lane_id
-  LEFT JOIN zoho_lead_submissions l ON l.id = pi.lead_id
+  LEFT JOIN lead_submissions l ON l.id = pi.lead_id
   WHERE pi.org_id = p_org_id
     AND pi.completed_at IS NULL
     AND (pi.snoozed_until IS NULL OR pi.snoozed_until < now())
@@ -2947,6 +8704,112 @@ COMMENT ON FUNCTION "public"."get_power_list"("p_org_id" "uuid", "p_user_id" "uu
 
 
 
+CREATE OR REPLACE FUNCTION "public"."get_quote_results_analytics"("p_days" integer DEFAULT 30) RETURNS "jsonb"
+    LANGUAGE "plpgsql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+DECLARE
+  v_since timestamptz;
+  v_days integer;
+  v_sessions_with_results bigint;
+  v_sessions_converted bigint;
+  v_sessions_abandoned bigint;
+  v_events_results bigint;
+  v_events_contact bigint;
+  v_events_lead bigint;
+  v_rate numeric;
+  v_by_day jsonb;
+BEGIN
+  IF NOT (
+    public.current_user_has_admin_access()
+    OR public.current_user_has_super_admin_access()
+    OR public.current_user_has_extended_admin_access()
+  ) THEN
+    RAISE EXCEPTION 'not authorized' USING ERRCODE = '42501';
+  END IF;
+
+  v_days := GREATEST(1, LEAST(COALESCE(p_days, 30), 366));
+  v_since := now() - (v_days || ' days')::interval;
+
+  WITH ev AS (
+    SELECT *
+    FROM public.quote_calculator_funnel_events
+    WHERE created_at >= v_since
+  ),
+  sessions_results AS (
+    SELECT DISTINCT session_id FROM ev WHERE event_type = 'results_viewed'
+  ),
+  sessions_lead AS (
+    SELECT DISTINCT session_id FROM ev WHERE event_type = 'lead_submitted'
+  ),
+  sessions_converted AS (
+    SELECT session_id FROM sessions_results
+    INTERSECT
+    SELECT session_id FROM sessions_lead
+  )
+  SELECT
+    (SELECT COUNT(*) FROM sessions_results),
+    (SELECT COUNT(*) FROM sessions_converted),
+    (SELECT COUNT(*) FROM sessions_results sr
+      WHERE NOT EXISTS (SELECT 1 FROM sessions_converted c WHERE c.session_id = sr.session_id)),
+    (SELECT COUNT(*) FROM ev WHERE event_type = 'results_viewed'),
+    (SELECT COUNT(*) FROM ev WHERE event_type = 'contact_opened'),
+    (SELECT COUNT(*) FROM ev WHERE event_type = 'lead_submitted')
+  INTO
+    v_sessions_with_results,
+    v_sessions_converted,
+    v_sessions_abandoned,
+    v_events_results,
+    v_events_contact,
+    v_events_lead;
+
+  v_rate := CASE WHEN v_sessions_with_results > 0 THEN
+    ROUND((v_sessions_converted::numeric / v_sessions_with_results::numeric)::numeric, 4)
+  ELSE 0 END;
+
+  SELECT COALESCE(jsonb_agg(
+    jsonb_build_object(
+      'date', d,
+      'results_events', results_events,
+      'contact_events', contact_events,
+      'lead_events', lead_events
+    ) ORDER BY d
+  ), '[]'::jsonb)
+  INTO v_by_day
+  FROM (
+    SELECT
+      (created_at AT TIME ZONE 'UTC')::date AS d,
+      COUNT(*) FILTER (WHERE event_type = 'results_viewed') AS results_events,
+      COUNT(*) FILTER (WHERE event_type = 'contact_opened') AS contact_events,
+      COUNT(*) FILTER (WHERE event_type = 'lead_submitted') AS lead_events
+    FROM public.quote_calculator_funnel_events
+    WHERE created_at >= v_since
+    GROUP BY 1
+  ) daily;
+
+  RETURN jsonb_build_object(
+    'period_days', v_days,
+    'since', v_since,
+    'sessions_with_results', v_sessions_with_results,
+    'sessions_converted', v_sessions_converted,
+    'sessions_abandoned', v_sessions_abandoned,
+    'conversion_rate', v_rate,
+    'events_results_viewed', v_events_results,
+    'events_contact_opened', v_events_contact,
+    'events_lead_submitted', v_events_lead,
+    'by_day', v_by_day
+  );
+END;
+$$;
+
+
+ALTER FUNCTION "public"."get_quote_results_analytics"("p_days" integer) OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."get_quote_results_analytics"("p_days" integer) IS 'Rollup for Quote Results Returned dashboards (admin portal, CRM, website admin).';
+
+
+
 CREATE OR REPLACE FUNCTION "public"."get_recent_searches"("p_user_id" "uuid", "p_limit" integer DEFAULT 10) RETURNS TABLE("id" "uuid", "query" "text", "result_count" integer, "searched_at" timestamp with time zone)
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public', 'pg_temp'
@@ -2959,6 +8822,34 @@ $$;
 
 
 ALTER FUNCTION "public"."get_recent_searches"("p_user_id" "uuid", "p_limit" integer) OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."get_staff_time_calendar"("p_org_id" "uuid", "p_from" timestamp with time zone, "p_to" timestamp with time zone) RETURNS TABLE("id" "uuid", "org_id" "uuid", "user_id" "uuid", "employee_name" "text", "type" "public"."staff_time_request_type", "status" "public"."staff_time_request_status", "starts_at" timestamp with time zone, "ends_at" timestamp with time zone, "all_day" boolean, "title" "text")
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+  SELECT
+    r.id,
+    r.org_id,
+    r.user_id,
+    r.employee_name,
+    r.type,
+    r.status,
+    r.starts_at,
+    r.ends_at,
+    r.all_day,
+    r.title
+  FROM public.staff_time_requests r
+  WHERE auth.uid() IS NOT NULL
+    AND r.org_id = p_org_id
+    AND r.status IN ('pending', 'approved')
+    AND r.starts_at < p_to
+    AND r.ends_at > p_from
+  ORDER BY r.starts_at ASC;
+$$;
+
+
+ALTER FUNCTION "public"."get_staff_time_calendar"("p_org_id" "uuid", "p_from" timestamp with time zone, "p_to" timestamp with time zone) OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."get_trending_keywords"("p_site_url" "text", "p_days" integer DEFAULT 7, "p_limit" integer DEFAULT 10, "p_direction" "text" DEFAULT 'up'::"text") RETURNS TABLE("keyword" "text", "current_position" numeric, "previous_position" numeric, "position_change" numeric, "clicks" integer, "impressions" integer)
@@ -2987,73 +8878,6 @@ $$;
 
 
 ALTER FUNCTION "public"."get_trending_keywords"("p_site_url" "text", "p_days" integer, "p_limit" integer, "p_direction" "text") OWNER TO "postgres";
-
-
-CREATE OR REPLACE FUNCTION "public"."get_unified_user_roles"() RETURNS TABLE("user_id" "uuid", "email" "text", "full_name" "text", "profile_role" "text", "roles" "text"[], "highest_role" "text", "admin_role" "text", "admin_status" "text", "admin_permissions" "jsonb")
-    LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public'
-    AS $$
-BEGIN
-    -- Only allow super_admins and admins to call this function
-    IF NOT EXISTS (
-        SELECT 1 FROM public.user_roles
-        WHERE user_id = auth.uid()
-        AND role IN ('super_admin', 'admin')
-    ) THEN
-        RAISE EXCEPTION 'Access denied: admin role required';
-    END IF;
-
-    RETURN QUERY
-    SELECT
-        u.id AS user_id,
-        u.email::TEXT,
-        (u.raw_user_meta_data->>'full_name')::TEXT AS full_name,
-        p.role::TEXT AS profile_role,
-        COALESCE(
-            (SELECT array_agg(ur.role::text ORDER BY
-                CASE ur.role
-                    WHEN 'super_admin' THEN 1
-                    WHEN 'admin' THEN 2
-                    WHEN 'manager' THEN 3
-                    WHEN 'staff' THEN 4
-                    WHEN 'advisor' THEN 5
-                    WHEN 'member' THEN 6
-                    WHEN 'guest' THEN 7
-                END
-            ) FROM user_roles ur WHERE ur.user_id = u.id),
-            ARRAY[]::text[]
-        ) AS roles,
-        COALESCE(
-            (SELECT ur.role::text FROM user_roles ur WHERE ur.user_id = u.id
-             ORDER BY
-                CASE ur.role
-                    WHEN 'super_admin' THEN 1
-                    WHEN 'admin' THEN 2
-                    WHEN 'manager' THEN 3
-                    WHEN 'staff' THEN 4
-                    WHEN 'advisor' THEN 5
-                    WHEN 'member' THEN 6
-                    WHEN 'guest' THEN 7
-                END
-             LIMIT 1),
-            'member'
-        )::TEXT AS highest_role,
-        au.role::TEXT AS admin_role,
-        au.status::TEXT AS admin_status,
-        au.permissions AS admin_permissions
-    FROM auth.users u
-    LEFT JOIN profiles p ON p.id = u.id
-    LEFT JOIN admin_users au ON au.id = u.id
-    ORDER BY u.email;
-END;
-$$;
-
-
-ALTER FUNCTION "public"."get_unified_user_roles"() OWNER TO "postgres";
-
-
-COMMENT ON FUNCTION "public"."get_unified_user_roles"() IS 'Returns unified user roles (replaces unified_user_roles view). Only accessible by admins. Does not expose auth.users to API.';
-
 
 
 CREATE OR REPLACE FUNCTION "public"."get_unread_notification_count"("p_user_id" "uuid") RETURNS integer
@@ -3110,7 +8934,7 @@ BEGIN
     CONCAT(l.first_name, ' ', l.last_name) as lead_name,
     e.status
   FROM calendar_events e
-  LEFT JOIN zoho_lead_submissions l ON l.id = e.lead_id
+  LEFT JOIN lead_submissions l ON l.id = e.lead_id
   WHERE e.assigned_to = p_user_id
     AND e.start_time >= NOW()
     AND e.start_time <= NOW() + (p_days || ' days')::INTERVAL
@@ -3378,6 +9202,19 @@ $$;
 ALTER FUNCTION "public"."handle_crm_deal_products_updated_at"() OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."handle_crm_deal_rooms_updated_at"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."handle_crm_deal_rooms_updated_at"() OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."handle_crm_deal_stages_updated_at"() RETURNS "trigger"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public', 'pg_temp'
@@ -3559,6 +9396,29 @@ $$;
 ALTER FUNCTION "public"."handle_crm_saved_views_updated_at"() OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."handle_crm_sp2026_updated_at"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    AS $$
+BEGIN NEW.updated_at = now(); RETURN NEW; END;
+$$;
+
+
+ALTER FUNCTION "public"."handle_crm_sp2026_updated_at"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."handle_crm_workspaces_updated_at"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."handle_crm_workspaces_updated_at"() OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."handle_deal_stage_change"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -3651,19 +9511,25 @@ ALTER FUNCTION "public"."handle_invoice_payment"() OWNER TO "postgres";
 
 CREATE OR REPLACE FUNCTION "public"."handle_new_user"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public', 'pg_temp'
     AS $$
 BEGIN
-    -- Create profile with default member role
     BEGIN
-        INSERT INTO public.profiles (id, role)
-        VALUES (NEW.id, 'member')
-        ON CONFLICT (id) DO NOTHING;
+        INSERT INTO public.profiles (id, role, email, full_name, avatar_url)
+        VALUES (
+            NEW.id,
+            'member',
+            NEW.email,
+            COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.raw_user_meta_data->>'name'),
+            NEW.raw_user_meta_data->>'avatar_url'
+        )
+        ON CONFLICT (id) DO UPDATE SET
+            email = EXCLUDED.email,
+            full_name = COALESCE(EXCLUDED.full_name, profiles.full_name),
+            avatar_url = COALESCE(EXCLUDED.avatar_url, profiles.avatar_url);
     EXCEPTION WHEN OTHERS THEN
         RAISE WARNING 'handle_new_user: profiles insert failed for %: %', NEW.id, SQLERRM;
     END;
 
-    -- Create user_roles entry
     BEGIN
         INSERT INTO public.user_roles (user_id, role)
         VALUES (NEW.id, 'member'::user_role_type)
@@ -3832,6 +9698,24 @@ $$;
 ALTER FUNCTION "public"."increment_email_tracking"() OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."increment_form_submission_count"("form_id" "uuid") RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+  -- No submission_count column on cognito_forms today; keep RPC for API compatibility.
+  NULL;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."increment_form_submission_count"("form_id" "uuid") OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."increment_form_submission_count"("form_id" "uuid") IS 'No-op placeholder; cognito_forms has no submission_count column. Called after form_submissions insert.';
+
+
+
 CREATE OR REPLACE FUNCTION "public"."increment_message_template_times_used"("template_id" "uuid") RETURNS "void"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -3988,6 +9872,72 @@ $$;
 ALTER FUNCTION "public"."is_admin"() OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."is_concierge_org_admin"("p_org_id" "uuid") RETURNS boolean
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+  SELECT
+    public.current_user_has_concierge_portal_access()
+    AND (
+      EXISTS (
+        SELECT 1 FROM public.user_roles ur
+        WHERE ur.user_id = auth.uid() AND ur.role::text = 'super_admin'
+      )
+      OR EXISTS (
+        SELECT 1 FROM public.org_memberships om
+        WHERE om.user_id = auth.uid()
+          AND om.org_id = p_org_id
+          AND om.status = 'active'
+          AND om.role IN ('owner', 'admin')
+      )
+    );
+$$;
+
+
+ALTER FUNCTION "public"."is_concierge_org_admin"("p_org_id" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."is_inside_sales_rep"("p_user_id" "uuid", "p_org_id" "uuid") RETURNS boolean
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+    SELECT EXISTS (
+        SELECT 1 FROM public.crm_rep_roster
+        WHERE user_id = p_user_id
+          AND org_id  = p_org_id
+          AND role_type = 'inside_sales'
+          AND is_active = true
+    );
+$$;
+
+
+ALTER FUNCTION "public"."is_inside_sales_rep"("p_user_id" "uuid", "p_org_id" "uuid") OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."is_inside_sales_rep"("p_user_id" "uuid", "p_org_id" "uuid") IS 'Round 22 — returns true if (user_id, org_id) is an active Inside Sales rep. Used by cadence enrollment gates and inside-sales reporting scope.';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."is_lead_eligible_rep"("p_user_id" "uuid", "p_org_id" "uuid") RETURNS boolean
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+    SELECT EXISTS (
+        SELECT 1 FROM public.crm_rep_roster
+        WHERE user_id = p_user_id
+          AND org_id  = p_org_id
+          AND is_active = true
+    );
+$$;
+
+
+ALTER FUNCTION "public"."is_lead_eligible_rep"("p_user_id" "uuid", "p_org_id" "uuid") OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."is_lead_eligible_rep"("p_user_id" "uuid", "p_org_id" "uuid") IS 'Round 22 — returns true if (user_id, org_id) is an active lead-eligible rep (either Inside Sales OR Lead-Eligible Non-Inside-Sales). Used by owner-dropdown population.';
+
+
+
 CREATE OR REPLACE FUNCTION "public"."is_org_admin"("p_org_id" "uuid") RETURNS boolean
     LANGUAGE "sql" STABLE SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -4039,6 +9989,22 @@ $$;
 
 
 ALTER FUNCTION "public"."is_org_role"("p_org_id" "uuid", "p_role" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."is_staff_hr"() RETURNS boolean
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.user_roles ur
+    WHERE ur.user_id = auth.uid()
+      AND ur.role = 'staff_hr'
+  );
+$$;
+
+
+ALTER FUNCTION "public"."is_staff_hr"() OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."is_staff_or_admin"() RETURNS boolean
@@ -4119,6 +10085,96 @@ $$;
 
 
 ALTER FUNCTION "public"."move_priority_item"("p_item_id" "uuid", "p_new_lane_id" "uuid", "p_new_rank" integer) OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."org_has_feature"("p_org_id" "uuid", "p_feature_slug" "text") RETURNS boolean
+    LANGUAGE "plpgsql" STABLE SECURITY DEFINER
+    AS $$
+DECLARE
+    v_feature feature_flags%ROWTYPE;
+    v_override BOOLEAN;
+    v_org_tier TEXT;
+    v_tier_rank INT;
+    v_min_rank INT;
+BEGIN
+    SELECT * INTO v_feature FROM feature_flags WHERE slug = p_feature_slug;
+    IF NOT FOUND THEN RETURN false; END IF;
+
+    -- Check for per-org override first
+    SELECT enabled INTO v_override
+    FROM org_feature_overrides
+    WHERE org_id = p_org_id AND feature_id = v_feature.id;
+
+    IF FOUND THEN RETURN v_override; END IF;
+
+    -- If feature belongs to a module, check module access
+    IF v_feature.module_id IS NOT NULL THEN
+        IF NOT EXISTS (
+            SELECT 1 FROM org_module_licenses oml
+            WHERE oml.org_id = p_org_id
+              AND oml.module_id = v_feature.module_id
+              AND oml.status IN ('active', 'trialing')
+              AND (oml.expires_at IS NULL OR oml.expires_at > now())
+        ) THEN
+            RETURN false;
+        END IF;
+    END IF;
+
+    -- Check plan tier requirement
+    IF v_feature.min_plan_tier IS NOT NULL THEN
+        SELECT sp.tier INTO v_org_tier
+        FROM organization_subscriptions os
+        JOIN subscription_plans sp ON sp.id = os.plan_id
+        WHERE os.org_id = p_org_id AND os.status IN ('active', 'trialing')
+        LIMIT 1;
+
+        IF v_org_tier IS NULL THEN RETURN v_feature.enabled_by_default; END IF;
+
+        v_tier_rank := CASE v_org_tier
+            WHEN 'starter' THEN 1
+            WHEN 'professional' THEN 2
+            WHEN 'business' THEN 3
+            WHEN 'enterprise' THEN 4
+            ELSE 0
+        END;
+
+        v_min_rank := CASE v_feature.min_plan_tier
+            WHEN 'starter' THEN 1
+            WHEN 'professional' THEN 2
+            WHEN 'business' THEN 3
+            WHEN 'enterprise' THEN 4
+            ELSE 0
+        END;
+
+        RETURN v_tier_rank >= v_min_rank;
+    END IF;
+
+    RETURN v_feature.enabled_by_default;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."org_has_feature"("p_org_id" "uuid", "p_feature_slug" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."org_has_module"("p_org_id" "uuid", "p_module_slug" "text") RETURNS boolean
+    LANGUAGE "plpgsql" STABLE SECURITY DEFINER
+    AS $$
+BEGIN
+    RETURN EXISTS (
+        SELECT 1
+        FROM org_module_licenses oml
+        JOIN product_modules pm ON pm.id = oml.module_id
+        WHERE oml.org_id = p_org_id
+          AND pm.slug = p_module_slug
+          AND oml.status IN ('active', 'trialing')
+          AND (oml.expires_at IS NULL OR oml.expires_at > now())
+    );
+END;
+$$;
+
+
+ALTER FUNCTION "public"."org_has_module"("p_org_id" "uuid", "p_module_slug" "text") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."recalculate_deal_amount"() RETURNS "trigger"
@@ -4246,6 +10302,65 @@ $$;
 ALTER FUNCTION "public"."recalculate_quote_totals"() OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."quote_calculator_funnel_events" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "session_id" "text" NOT NULL,
+    "event_type" "text" NOT NULL,
+    "metadata" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
+    CONSTRAINT "quote_calculator_funnel_events_event_type_check" CHECK (("event_type" = ANY (ARRAY['results_viewed'::"text", 'contact_opened'::"text", 'lead_submitted'::"text"])))
+);
+
+
+ALTER TABLE "public"."quote_calculator_funnel_events" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."quote_calculator_funnel_events" IS 'Anonymous hero calculator funnel: results shown vs contact opened vs lead submitted.';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."record_quote_calculator_event"("payload" "jsonb") RETURNS "public"."quote_calculator_funnel_events"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $_$
+DECLARE
+  v_session text;
+  v_type text;
+  v_meta jsonb;
+  v_row public.quote_calculator_funnel_events;
+BEGIN
+  v_session := btrim(payload->>'session_id');
+  v_type := btrim(payload->>'event_type');
+  v_meta := COALESCE(payload->'metadata', '{}'::jsonb);
+
+  IF v_session IS NULL OR v_session !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$' THEN
+    RAISE EXCEPTION 'session_id must be a UUID' USING ERRCODE = '22023';
+  END IF;
+
+  IF v_type IS NULL OR v_type NOT IN ('results_viewed', 'contact_opened', 'lead_submitted') THEN
+    RAISE EXCEPTION 'invalid event_type' USING ERRCODE = '22023';
+  END IF;
+
+  IF octet_length(v_meta::text) > 16384 THEN
+    RAISE EXCEPTION 'metadata too large' USING ERRCODE = '22023';
+  END IF;
+
+  INSERT INTO public.quote_calculator_funnel_events (session_id, event_type, metadata)
+  VALUES (v_session, v_type, v_meta)
+  RETURNING * INTO v_row;
+
+  RETURN v_row;
+END;
+$_$;
+
+
+ALTER FUNCTION "public"."record_quote_calculator_event"("payload" "jsonb") OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."record_quote_calculator_event"("payload" "jsonb") IS 'Anonymous hero calculator funnel tracking; callable from public website.';
+
+
+
 CREATE OR REPLACE FUNCTION "public"."remove_user_role"("target_user_id" "uuid", "target_role" "text") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -4338,6 +10453,25 @@ $$;
 
 
 ALTER FUNCTION "public"."render_email_signature"("p_signature_id" "uuid", "p_override_vars" "jsonb") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."resolve_org_id"("p_slug" "text", "p_purpose" "text" DEFAULT 'membership'::"text") RETURNS "uuid"
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+  SELECT m.org_id
+  FROM public.organization_id_map m
+  WHERE m.slug = lower(trim(p_slug))
+    AND m.purpose = lower(trim(p_purpose))
+  LIMIT 1;
+$$;
+
+
+ALTER FUNCTION "public"."resolve_org_id"("p_slug" "text", "p_purpose" "text") OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."resolve_org_id"("p_slug" "text", "p_purpose" "text") IS 'Returns org UUID for slug + purpose (portal | membership). Additive helper for Phase 1.';
+
 
 
 CREATE TABLE IF NOT EXISTS "public"."meeting_invitations" (
@@ -4525,7 +10659,18 @@ CREATE TABLE IF NOT EXISTS "public"."crm_contacts" (
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
     "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
     "search_vector" "tsvector",
-    CONSTRAINT "crm_contacts_salutation_check" CHECK (("salutation" = ANY (ARRAY['Mr.'::"text", 'Ms.'::"text", 'Mrs.'::"text", 'Dr.'::"text", 'Prof.'::"text"])))
+    "plan_type" "text",
+    "carrier_id" "uuid",
+    "original_effective_date" "date",
+    "premium_amount" numeric(10,2),
+    "subsidy_amount" numeric(10,2),
+    "member_responsibility" numeric(10,2),
+    "tobacco_status" "text",
+    "state" "text",
+    "city" "text",
+    CONSTRAINT "crm_contacts_plan_type_check" CHECK ((("plan_type" IS NULL) OR ("plan_type" = ANY (ARRAY['healthshare'::"text", 'traditional_insurance'::"text"])))),
+    CONSTRAINT "crm_contacts_salutation_check" CHECK (("salutation" = ANY (ARRAY['Mr.'::"text", 'Ms.'::"text", 'Mrs.'::"text", 'Dr.'::"text", 'Prof.'::"text"]))),
+    CONSTRAINT "crm_contacts_tobacco_status_check" CHECK ((("tobacco_status" IS NULL) OR ("tobacco_status" = ANY (ARRAY['none'::"text", 'tobacco_user'::"text", 'vape_user'::"text", 'former_user'::"text"]))))
 );
 
 
@@ -4585,6 +10730,7 @@ CREATE TABLE IF NOT EXISTS "public"."crm_deals" (
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
     "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
     "search_vector" "tsvector",
+    "product_line" "text",
     CONSTRAINT "crm_deals_deal_type_check" CHECK (("deal_type" = ANY (ARRAY['new_business'::"text", 'existing_business'::"text", 'renewal'::"text"]))),
     CONSTRAINT "crm_deals_probability_check" CHECK ((("probability" >= 0) AND ("probability" <= 100)))
 );
@@ -4658,6 +10804,19 @@ ALTER FUNCTION "public"."search_users_with_roles"("search_email" "text") OWNER T
 
 COMMENT ON FUNCTION "public"."search_users_with_roles"("search_email" "text") IS 'Search users by email and return with their roles. Only accessible by admins.';
 
+
+
+CREATE OR REPLACE FUNCTION "public"."set_updated_at"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    AS $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
+
+ALTER FUNCTION "public"."set_updated_at"() OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."setup_catherine_superadmin_profile"("user_email" "text", "user_id" "uuid") RETURNS "void"
@@ -4888,64 +11047,6 @@ COMMENT ON FUNCTION "public"."setup_test_advisor_profile"("user_email" "text", "
 
 
 
-CREATE OR REPLACE FUNCTION "public"."share_note_with_role"("p_note_id" "uuid", "p_target_role" "text", "p_permission_level" "text" DEFAULT 'view'::"text", "p_share_message" "text" DEFAULT NULL::"text") RETURNS "jsonb"
-    LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'public', 'pg_temp'
-    AS $$
-DECLARE
-  v_note_owner uuid;
-  v_target_users uuid[];
-  v_user_id uuid;
-  v_share_id uuid;
-BEGIN
-  -- Get the note owner
-  SELECT created_by INTO v_note_owner FROM notes WHERE id = p_note_id;
-  
-  IF v_note_owner IS NULL THEN
-    SELECT user_id INTO v_note_owner FROM notes WHERE id = p_note_id;
-  END IF;
-  
-  IF v_note_owner IS NULL OR v_note_owner != auth.uid() THEN
-    RETURN jsonb_build_object('success', false, 'error', 'Not authorized to share this note');
-  END IF;
-
-  -- Get users with the target role
-  SELECT ARRAY_AGG(id) INTO v_target_users
-  FROM auth.users u
-  WHERE EXISTS (
-    SELECT 1 FROM user_profiles up 
-    WHERE up.user_id = u.id 
-    AND up.role = p_target_role
-  );
-
-  -- If no users found with that role, still create a role-based share
-  INSERT INTO note_shares (note_id, shared_by_user_id, shared_with_role, permission_level, share_message)
-  VALUES (p_note_id, auth.uid(), p_target_role, p_permission_level, p_share_message)
-  ON CONFLICT DO NOTHING;
-
-  -- Update the note to mark as shared
-  UPDATE notes SET is_shared = true, is_collaborative = (p_permission_level = 'edit')
-  WHERE id = p_note_id;
-
-  -- Create notifications for target users
-  IF v_target_users IS NOT NULL THEN
-    FOREACH v_user_id IN ARRAY v_target_users
-    LOOP
-      IF v_user_id != auth.uid() THEN
-        INSERT INTO note_notifications (note_id, recipient_user_id, notification_type, metadata)
-        VALUES (p_note_id, v_user_id, 'shared', jsonb_build_object('shared_by', auth.uid(), 'message', p_share_message));
-      END IF;
-    END LOOP;
-  END IF;
-
-  RETURN jsonb_build_object('success', true);
-END;
-$$;
-
-
-ALTER FUNCTION "public"."share_note_with_role"("p_note_id" "uuid", "p_target_role" "text", "p_permission_level" "text", "p_share_message" "text") OWNER TO "postgres";
-
-
 CREATE OR REPLACE FUNCTION "public"."snooze_priority_item"("p_item_id" "uuid", "p_until" timestamp with time zone, "p_reason" "text" DEFAULT NULL::"text") RETURNS boolean
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
@@ -4964,6 +11065,653 @@ $$;
 
 
 ALTER FUNCTION "public"."snooze_priority_item"("p_item_id" "uuid", "p_until" timestamp with time zone, "p_reason" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."staff_attendance_correct"("p_session_id" "uuid", "p_clock_in_at" timestamp with time zone DEFAULT NULL::timestamp with time zone, "p_clock_out_at" timestamp with time zone DEFAULT NULL::timestamp with time zone, "p_notes" "text" DEFAULT NULL::"text", "p_force_close" boolean DEFAULT false) RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_session public.staff_attendance_sessions;
+BEGIN
+  IF v_uid IS NULL OR NOT public.is_staff_hr() THEN
+    RAISE EXCEPTION 'Access denied: staff_hr required';
+  END IF;
+
+  SELECT * INTO v_session
+  FROM public.staff_attendance_sessions
+  WHERE id = p_session_id;
+
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'not_found');
+  END IF;
+
+  UPDATE public.staff_attendance_sessions
+  SET
+    clock_in_at = coalesce(p_clock_in_at, clock_in_at),
+    clock_out_at = CASE
+      WHEN p_force_close AND clock_out_at IS NULL THEN coalesce(p_clock_out_at, now())
+      ELSE coalesce(p_clock_out_at, clock_out_at)
+    END,
+    status = CASE
+      WHEN p_force_close OR coalesce(p_clock_out_at, clock_out_at) IS NOT NULL THEN
+        CASE WHEN p_force_close THEN 'forced_closed'::public.staff_attendance_session_status
+             ELSE 'closed'::public.staff_attendance_session_status
+        END
+      ELSE status
+    END,
+    notes = coalesce(p_notes, notes),
+    method = CASE
+      WHEN method = 'hr_manual' THEN method
+      WHEN p_clock_in_at IS NOT NULL OR p_clock_out_at IS NOT NULL OR p_force_close THEN
+        CASE WHEN method = 'remote' THEN method ELSE 'hr_manual'::public.staff_punch_method END
+      ELSE method
+    END,
+    metadata = metadata || jsonb_build_object(
+      'human_edited', true,
+      'corrected_by', v_uid,
+      'corrected_at', now()
+    )
+  WHERE id = p_session_id
+  RETURNING * INTO v_session;
+
+  INSERT INTO public.staff_attendance_events (
+    session_id, org_id, user_id, actor_id, action, detail
+  )
+  VALUES (
+    v_session.id, v_session.org_id, v_session.user_id, v_uid, 'corrected',
+    jsonb_build_object(
+      'clock_in_at', p_clock_in_at,
+      'clock_out_at', p_clock_out_at,
+      'force_close', p_force_close,
+      'notes', p_notes
+    )
+  );
+
+  RETURN jsonb_build_object('ok', true, 'session', to_jsonb(v_session));
+END;
+$$;
+
+
+ALTER FUNCTION "public"."staff_attendance_correct"("p_session_id" "uuid", "p_clock_in_at" timestamp with time zone, "p_clock_out_at" timestamp with time zone, "p_notes" "text", "p_force_close" boolean) OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."staff_attendance_punch"("p_action" "public"."staff_attendance_punch_action", "p_lat" double precision DEFAULT NULL::double precision, "p_lng" double precision DEFAULT NULL::double precision, "p_accuracy_m" double precision DEFAULT NULL::double precision, "p_client_ts" timestamp with time zone DEFAULT NULL::timestamp with time zone, "p_idempotency_key" "text" DEFAULT NULL::"text") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_org uuid := public.staff_default_org_id();
+  v_now timestamptz := now();
+  v_profile public.staff_profiles;
+  v_remote boolean;
+  v_office public.staff_office_locations;
+  v_distance double precision;
+  v_allowed_radius double precision;
+  v_method public.staff_punch_method;
+  v_session public.staff_attendance_sessions;
+  v_existing public.staff_attendance_sessions;
+  v_remote_req uuid;
+  v_meta jsonb;
+  v_geo_result text;
+BEGIN
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'Sign in required';
+  END IF;
+  IF v_org IS NULL THEN
+    RAISE EXCEPTION 'Organization not configured';
+  END IF;
+
+  v_profile := public.staff_ensure_profile(v_org, v_uid);
+  IF NOT v_profile.is_active THEN
+    RETURN jsonb_build_object(
+      'ok', false,
+      'error', 'inactive_profile',
+      'message', 'Your staff profile is inactive. Contact HR.'
+    );
+  END IF;
+
+  IF p_idempotency_key IS NOT NULL AND length(trim(p_idempotency_key)) > 0 THEN
+    SELECT * INTO v_existing
+    FROM public.staff_attendance_sessions s
+    WHERE s.org_id = v_org
+      AND s.metadata->>'idempotency_key' = p_idempotency_key
+    LIMIT 1;
+    IF FOUND THEN
+      RETURN jsonb_build_object(
+        'ok', true,
+        'deduped', true,
+        'session', to_jsonb(v_existing)
+      );
+    END IF;
+  END IF;
+
+  v_remote := public.staff_is_remote_eligible(v_uid, v_now);
+
+  IF p_action = 'clock_in' THEN
+    SELECT * INTO v_session
+    FROM public.staff_attendance_sessions s
+    WHERE s.org_id = v_org
+      AND s.user_id = v_uid
+      AND s.status = 'open'
+    ORDER BY s.clock_in_at DESC
+    LIMIT 1;
+
+    IF FOUND THEN
+      RETURN jsonb_build_object(
+        'ok', false,
+        'error', 'already_clocked_in',
+        'message', 'You already have an open attendance session.',
+        'session', to_jsonb(v_session)
+      );
+    END IF;
+
+    IF v_remote THEN
+      v_method := 'remote';
+      v_geo_result := 'skipped_remote';
+      v_remote_req := public.staff_remote_window_id(v_org, v_uid, v_now);
+      v_meta := jsonb_build_object(
+        'geo_result', v_geo_result,
+        'remote_standing', (
+          SELECT sp.remote_status = 'approved'
+          FROM public.staff_profiles sp
+          WHERE sp.id = v_profile.id
+        )
+      );
+      IF v_remote_req IS NOT NULL THEN
+        v_meta := v_meta || jsonb_build_object('remote_request_id', v_remote_req);
+      END IF;
+      IF p_idempotency_key IS NOT NULL THEN
+        v_meta := v_meta || jsonb_build_object('idempotency_key', p_idempotency_key);
+      END IF;
+
+      INSERT INTO public.staff_attendance_sessions (
+        org_id, user_id, status, method, clock_in_at, client_ts_in, metadata
+      )
+      VALUES (
+        v_org, v_uid, 'open', v_method, v_now, p_client_ts, v_meta
+      )
+      RETURNING * INTO v_session;
+
+      INSERT INTO public.staff_attendance_events (
+        session_id, org_id, user_id, actor_id, action, detail
+      )
+      VALUES (
+        v_session.id, v_org, v_uid, v_uid, 'clock_in',
+        jsonb_build_object('method', v_method, 'geo_result', v_geo_result)
+      );
+
+      RETURN jsonb_build_object('ok', true, 'session', to_jsonb(v_session));
+    END IF;
+
+    -- Office geo required
+    IF p_lat IS NULL OR p_lng IS NULL THEN
+      RETURN jsonb_build_object(
+        'ok', false,
+        'error', 'location_required',
+        'message', 'Location is required to clock in at the office.'
+      );
+    END IF;
+
+    SELECT * INTO v_office
+    FROM public.staff_office_locations o
+    WHERE o.org_id = v_org AND o.is_active
+    ORDER BY o.created_at ASC
+    LIMIT 1;
+
+    IF NOT FOUND THEN
+      RETURN jsonb_build_object(
+        'ok', false,
+        'error', 'office_not_configured',
+        'message', 'Office location is not configured. Contact HR.'
+      );
+    END IF;
+
+    IF p_accuracy_m IS NOT NULL AND p_accuracy_m > v_office.max_accuracy_m THEN
+      INSERT INTO public.staff_attendance_events (
+        session_id, org_id, user_id, actor_id, action, detail
+      )
+      VALUES (
+        NULL, v_org, v_uid, v_uid, 'punch_rejected',
+        jsonb_build_object(
+          'action', 'clock_in',
+          'geo_result', 'accuracy_poor',
+          'accuracy_m', p_accuracy_m,
+          'max_accuracy_m', v_office.max_accuracy_m
+        )
+      );
+      RETURN jsonb_build_object(
+        'ok', false,
+        'error', 'accuracy_poor',
+        'message', format(
+          'GPS accuracy is too low (%s m). Move outdoors or closer to a window and try again.',
+          round(p_accuracy_m)::text
+        ),
+        'accuracy_m', p_accuracy_m,
+        'max_accuracy_m', v_office.max_accuracy_m
+      );
+    END IF;
+
+    v_distance := public.staff_haversine_m(
+      p_lat, p_lng, v_office.latitude, v_office.longitude
+    );
+    v_allowed_radius := v_office.radius_m
+      + LEAST(coalesce(p_accuracy_m, 0), v_office.accuracy_credit_cap_m);
+
+    IF v_distance > v_allowed_radius THEN
+      INSERT INTO public.staff_attendance_events (
+        session_id, org_id, user_id, actor_id, action, detail
+      )
+      VALUES (
+        NULL, v_org, v_uid, v_uid, 'punch_rejected',
+        jsonb_build_object(
+          'action', 'clock_in',
+          'geo_result', 'too_far',
+          'distance_m', round(v_distance::numeric, 1),
+          'allowed_m', round(v_allowed_radius::numeric, 1),
+          'office_location_id', v_office.id
+        )
+      );
+      RETURN jsonb_build_object(
+        'ok', false,
+        'error', 'too_far',
+        'message', format(
+          'You are about %s m from the office (need to be within %s m).',
+          round(v_distance)::text,
+          round(v_allowed_radius)::text
+        ),
+        'distance_m', round(v_distance::numeric, 1),
+        'allowed_m', round(v_allowed_radius::numeric, 1),
+        'office_label', v_office.label
+      );
+    END IF;
+
+    v_method := 'office_geo';
+    v_geo_result := 'ok';
+    v_meta := jsonb_build_object('geo_result', v_geo_result);
+    IF p_idempotency_key IS NOT NULL THEN
+      v_meta := v_meta || jsonb_build_object('idempotency_key', p_idempotency_key);
+    END IF;
+
+    INSERT INTO public.staff_attendance_sessions (
+      org_id, user_id, status, method, clock_in_at,
+      office_location_id,
+      clock_in_lat, clock_in_lng, clock_in_accuracy_m, clock_in_distance_m,
+      client_ts_in, metadata
+    )
+    VALUES (
+      v_org, v_uid, 'open', v_method, v_now,
+      v_office.id,
+      p_lat, p_lng, p_accuracy_m, v_distance,
+      p_client_ts, v_meta
+    )
+    RETURNING * INTO v_session;
+
+    INSERT INTO public.staff_attendance_events (
+      session_id, org_id, user_id, actor_id, action, detail
+    )
+    VALUES (
+      v_session.id, v_org, v_uid, v_uid, 'clock_in',
+      jsonb_build_object(
+        'method', v_method,
+        'geo_result', v_geo_result,
+        'distance_m', round(v_distance::numeric, 1)
+      )
+    );
+
+    RETURN jsonb_build_object('ok', true, 'session', to_jsonb(v_session));
+  END IF;
+
+  -- clock_out
+  SELECT * INTO v_session
+  FROM public.staff_attendance_sessions s
+  WHERE s.org_id = v_org
+    AND s.user_id = v_uid
+    AND s.status = 'open'
+  ORDER BY s.clock_in_at DESC
+  LIMIT 1;
+
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object(
+      'ok', false,
+      'error', 'not_clocked_in',
+      'message', 'No open attendance session to clock out of.'
+    );
+  END IF;
+
+  IF v_session.method = 'remote' OR v_remote THEN
+    UPDATE public.staff_attendance_sessions
+    SET
+      status = 'closed',
+      clock_out_at = v_now,
+      client_ts_out = p_client_ts,
+      metadata = CASE
+        WHEN p_idempotency_key IS NOT NULL THEN
+          metadata || jsonb_build_object('out_idempotency_key', p_idempotency_key)
+        ELSE metadata
+      END
+    WHERE id = v_session.id
+    RETURNING * INTO v_session;
+
+    INSERT INTO public.staff_attendance_events (
+      session_id, org_id, user_id, actor_id, action, detail
+    )
+    VALUES (
+      v_session.id, v_org, v_uid, v_uid, 'clock_out',
+      jsonb_build_object('method', v_session.method, 'geo_result', 'skipped_remote')
+    );
+
+    RETURN jsonb_build_object('ok', true, 'session', to_jsonb(v_session));
+  END IF;
+
+  IF p_lat IS NULL OR p_lng IS NULL THEN
+    RETURN jsonb_build_object(
+      'ok', false,
+      'error', 'location_required',
+      'message', 'Location is required to clock out at the office.'
+    );
+  END IF;
+
+  SELECT * INTO v_office
+  FROM public.staff_office_locations o
+  WHERE o.id = coalesce(v_session.office_location_id, (
+    SELECT id FROM public.staff_office_locations
+    WHERE org_id = v_org AND is_active
+    ORDER BY created_at ASC LIMIT 1
+  ));
+
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object(
+      'ok', false,
+      'error', 'office_not_configured',
+      'message', 'Office location is not configured. Contact HR.'
+    );
+  END IF;
+
+  IF p_accuracy_m IS NOT NULL AND p_accuracy_m > v_office.max_accuracy_m THEN
+    INSERT INTO public.staff_attendance_events (
+      session_id, org_id, user_id, actor_id, action, detail
+    )
+    VALUES (
+      v_session.id, v_org, v_uid, v_uid, 'punch_rejected',
+      jsonb_build_object(
+        'action', 'clock_out',
+        'geo_result', 'accuracy_poor',
+        'accuracy_m', p_accuracy_m
+      )
+    );
+    RETURN jsonb_build_object(
+      'ok', false,
+      'error', 'accuracy_poor',
+      'message', format(
+        'GPS accuracy is too low (%s m). Move outdoors or closer to a window and try again.',
+        round(p_accuracy_m)::text
+      )
+    );
+  END IF;
+
+  v_distance := public.staff_haversine_m(
+    p_lat, p_lng, v_office.latitude, v_office.longitude
+  );
+  v_allowed_radius := v_office.radius_m
+    + LEAST(coalesce(p_accuracy_m, 0), v_office.accuracy_credit_cap_m);
+
+  IF v_distance > v_allowed_radius THEN
+    INSERT INTO public.staff_attendance_events (
+      session_id, org_id, user_id, actor_id, action, detail
+    )
+    VALUES (
+      v_session.id, v_org, v_uid, v_uid, 'punch_rejected',
+      jsonb_build_object(
+        'action', 'clock_out',
+        'geo_result', 'too_far',
+        'distance_m', round(v_distance::numeric, 1),
+        'allowed_m', round(v_allowed_radius::numeric, 1)
+      )
+    );
+    RETURN jsonb_build_object(
+      'ok', false,
+      'error', 'too_far',
+      'message', format(
+        'You are about %s m from the office (need to be within %s m).',
+        round(v_distance)::text,
+        round(v_allowed_radius)::text
+      ),
+      'distance_m', round(v_distance::numeric, 1),
+      'allowed_m', round(v_allowed_radius::numeric, 1)
+    );
+  END IF;
+
+  UPDATE public.staff_attendance_sessions
+  SET
+    status = 'closed',
+    clock_out_at = v_now,
+    clock_out_lat = p_lat,
+    clock_out_lng = p_lng,
+    clock_out_accuracy_m = p_accuracy_m,
+    clock_out_distance_m = v_distance,
+    client_ts_out = p_client_ts,
+    office_location_id = coalesce(office_location_id, v_office.id),
+    metadata = CASE
+      WHEN p_idempotency_key IS NOT NULL THEN
+        metadata || jsonb_build_object('out_idempotency_key', p_idempotency_key)
+      ELSE metadata
+    END
+  WHERE id = v_session.id
+  RETURNING * INTO v_session;
+
+  INSERT INTO public.staff_attendance_events (
+    session_id, org_id, user_id, actor_id, action, detail
+  )
+  VALUES (
+    v_session.id, v_org, v_uid, v_uid, 'clock_out',
+    jsonb_build_object(
+      'method', 'office_geo',
+      'geo_result', 'ok',
+      'distance_m', round(v_distance::numeric, 1)
+    )
+  );
+
+  RETURN jsonb_build_object('ok', true, 'session', to_jsonb(v_session));
+END;
+$$;
+
+
+ALTER FUNCTION "public"."staff_attendance_punch"("p_action" "public"."staff_attendance_punch_action", "p_lat" double precision, "p_lng" double precision, "p_accuracy_m" double precision, "p_client_ts" timestamp with time zone, "p_idempotency_key" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."staff_default_org_id"() RETURNS "uuid"
+    LANGUAGE "sql" STABLE
+    AS $$
+  SELECT id FROM public.organizations WHERE slug = 'mpb-health' LIMIT 1;
+$$;
+
+
+ALTER FUNCTION "public"."staff_default_org_id"() OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."staff_profiles" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "user_id" "uuid" NOT NULL,
+    "department_id" "uuid",
+    "display_name" "text" DEFAULT ''::"text" NOT NULL,
+    "email" "text" DEFAULT ''::"text" NOT NULL,
+    "title" "text",
+    "remote_status" "public"."staff_remote_status" DEFAULT 'ineligible'::"public"."staff_remote_status" NOT NULL,
+    "remote_requested_at" timestamp with time zone,
+    "remote_request_note" "text",
+    "remote_decided_by" "uuid",
+    "remote_decided_at" timestamp with time zone,
+    "remote_decision_note" "text",
+    "is_active" boolean DEFAULT true NOT NULL,
+    "metadata" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."staff_profiles" OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."staff_ensure_profile"("p_org_id" "uuid", "p_user_id" "uuid") RETURNS "public"."staff_profiles"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+  v_row public.staff_profiles;
+  v_email text;
+  v_name text;
+  v_title text;
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Sign in required';
+  END IF;
+
+  IF p_user_id IS DISTINCT FROM auth.uid() AND NOT public.is_staff_hr() THEN
+    RAISE EXCEPTION 'Access denied';
+  END IF;
+
+  IF p_org_id IS NULL THEN
+    RAISE EXCEPTION 'Organization required';
+  END IF;
+
+  SELECT * INTO v_row
+  FROM public.staff_profiles
+  WHERE org_id = p_org_id AND user_id = p_user_id;
+
+  IF FOUND THEN
+    RETURN v_row;
+  END IF;
+
+  SELECT
+    coalesce(nullif(trim(au.email), ''), u.email, ''),
+    nullif(trim(concat_ws(' ', au.first_name, au.last_name)), ''),
+    au.title
+  INTO v_email, v_name, v_title
+  FROM auth.users u
+  LEFT JOIN public.admin_users au ON au.id = u.id
+  WHERE u.id = p_user_id;
+
+  IF v_email IS NULL THEN
+    RAISE EXCEPTION 'User not found';
+  END IF;
+
+  IF v_name IS NULL OR v_name = '' THEN
+    v_name := split_part(v_email, '@', 1);
+  END IF;
+
+  INSERT INTO public.staff_profiles (
+    org_id, user_id, display_name, email, title, is_active
+  )
+  VALUES (
+    p_org_id, p_user_id, v_name, lower(v_email), v_title, true
+  )
+  ON CONFLICT (org_id, user_id) DO UPDATE
+    SET display_name = EXCLUDED.display_name,
+        email = EXCLUDED.email
+  RETURNING * INTO v_row;
+
+  RETURN v_row;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."staff_ensure_profile"("p_org_id" "uuid", "p_user_id" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."staff_haversine_m"("lat1" double precision, "lng1" double precision, "lat2" double precision, "lng2" double precision) RETURNS double precision
+    LANGUAGE "sql" IMMUTABLE
+    SET "search_path" TO 'public'
+    AS $$
+  SELECT CASE
+    WHEN lat1 IS NULL OR lng1 IS NULL OR lat2 IS NULL OR lng2 IS NULL THEN NULL
+    ELSE (
+      2 * 6371000 * asin(
+        sqrt(
+          power(sin(radians(lat2 - lat1) / 2), 2)
+          + cos(radians(lat1)) * cos(radians(lat2))
+            * power(sin(radians(lng2 - lng1) / 2), 2)
+        )
+      )
+    )
+  END;
+$$;
+
+
+ALTER FUNCTION "public"."staff_haversine_m"("lat1" double precision, "lng1" double precision, "lat2" double precision, "lng2" double precision) OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."staff_is_remote_eligible"("p_user_id" "uuid", "p_at" timestamp with time zone DEFAULT "now"()) RETURNS boolean
+    LANGUAGE "plpgsql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+  v_org uuid := public.staff_default_org_id();
+  v_standing boolean := false;
+  v_window boolean := false;
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RETURN false;
+  END IF;
+
+  -- Callers may only check self unless HR
+  IF p_user_id IS DISTINCT FROM auth.uid() AND NOT public.is_staff_hr() THEN
+    RAISE EXCEPTION 'Access denied';
+  END IF;
+
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.staff_profiles sp
+    WHERE sp.org_id = v_org
+      AND sp.user_id = p_user_id
+      AND sp.is_active
+      AND sp.remote_status = 'approved'
+  ) INTO v_standing;
+
+  IF v_standing THEN
+    RETURN true;
+  END IF;
+
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.staff_time_requests r
+    WHERE r.org_id = v_org
+      AND r.user_id = p_user_id
+      AND r.type = 'remote'
+      AND r.status = 'approved'
+      AND r.starts_at <= p_at
+      AND r.ends_at >= p_at
+  ) INTO v_window;
+
+  RETURN v_window;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."staff_is_remote_eligible"("p_user_id" "uuid", "p_at" timestamp with time zone) OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."staff_remote_window_id"("p_org_id" "uuid", "p_user_id" "uuid", "p_at" timestamp with time zone) RETURNS "uuid"
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+  SELECT r.id
+  FROM public.staff_time_requests r
+  WHERE r.org_id = p_org_id
+    AND r.user_id = p_user_id
+    AND r.type = 'remote'
+    AND r.status = 'approved'
+    AND r.starts_at <= p_at
+    AND r.ends_at >= p_at
+  ORDER BY r.starts_at DESC
+  LIMIT 1;
+$$;
+
+
+ALTER FUNCTION "public"."staff_remote_window_id"("p_org_id" "uuid", "p_user_id" "uuid", "p_at" timestamp with time zone) OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."start_advisor_meeting"("p_meeting_id" "uuid") RETURNS "public"."advisor_meetings"
@@ -5034,6 +11782,284 @@ $$;
 
 
 ALTER FUNCTION "public"."start_bulletin_notification"("p_bulletin_id" "uuid", "p_sent_by" "uuid") OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."lead_submissions" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "user_id" "uuid",
+    "first_name" "text" NOT NULL,
+    "last_name" "text" NOT NULL,
+    "email" "text" NOT NULL,
+    "phone" "text" NOT NULL,
+    "household_size" integer,
+    "current_insurance" "text",
+    "monthly_premium" "text",
+    "coverage_preference" "text",
+    "zip_code" "text",
+    "primary_concern" "text",
+    "contact_preference" "text" DEFAULT 'phone'::"text",
+    "source_page" "text",
+    "source_cta" "text",
+    "utm_source" "text",
+    "utm_medium" "text",
+    "utm_campaign" "text",
+    "utm_term" "text",
+    "utm_content" "text",
+    "referrer" "text",
+    "form_data" "jsonb",
+    "ip_address" "inet",
+    "user_agent" "text",
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "updated_at" timestamp with time zone DEFAULT "now"(),
+    "pipeline_stage" "text" DEFAULT 'new'::"text",
+    "assigned_to" "uuid",
+    "priority" "text" DEFAULT 'medium'::"text",
+    "lead_score" integer DEFAULT 0,
+    "last_contacted_at" timestamp with time zone,
+    "next_followup_at" timestamp with time zone,
+    "tags" "text"[] DEFAULT '{}'::"text"[],
+    "stage_changed_at" timestamp with time zone DEFAULT "now"(),
+    "converted_at" timestamp with time zone,
+    "lost_reason" "text",
+    "org_id" "uuid",
+    "interested_plans" "text"[],
+    "quoted_plans" "text"[],
+    "household_type" "text",
+    "primary_age" integer,
+    "spouse_age" integer,
+    "dependent_count" integer DEFAULT 0,
+    "pipeline_stage_id" "uuid",
+    "plan_type" "text",
+    "carrier_id" "uuid",
+    "tobacco_status" "text",
+    "group_type" "text",
+    "original_effective_date" "date",
+    "premium_amount" numeric(10,2),
+    "subsidy_amount" numeric(10,2),
+    "member_responsibility" numeric(10,2),
+    "state" "text",
+    "city" "text",
+    "lead_source" "text",
+    "is_self_generated" boolean DEFAULT false,
+    "reactivation_source_lead_id" "uuid",
+    "outside_advisor_id" "uuid",
+    "referral_partner_id" "uuid",
+    "community_event_id" "uuid",
+    "workflow_subsection" "text",
+    "linkedin_workflow_status" "text",
+    "do_not_contact" boolean DEFAULT false,
+    "preliminary_quote_sent_at" timestamp with time zone,
+    "quote_cadence_started_at" timestamp with time zone,
+    "engagement_detected_at" timestamp with time zone,
+    "concierge_handoff_at" timestamp with time zone,
+    "last_opt_out_signal_at" timestamp with time zone,
+    "enrollment_approved_at" timestamp with time zone,
+    "opt_out_reason" "text",
+    "opt_out_detected_at" timestamp with time zone,
+    "opt_out_phrase" "text",
+    "last_touched_at" timestamp with time zone,
+    "application_started_at" timestamp with time zone,
+    "last_activity_at" timestamp with time zone GENERATED ALWAYS AS (COALESCE("last_touched_at", "created_at")) STORED,
+    CONSTRAINT "lead_submissions_group_type_check" CHECK ((("group_type" IS NULL) OR ("group_type" = ANY (ARRAY['individual'::"text", 'small_group'::"text", 'large_group'::"text", 'association'::"text"])))),
+    CONSTRAINT "lead_submissions_plan_type_check" CHECK ((("plan_type" IS NULL) OR ("plan_type" = ANY (ARRAY['healthshare'::"text", 'traditional_insurance'::"text"])))),
+    CONSTRAINT "lead_submissions_priority_check" CHECK (("priority" = ANY (ARRAY['low'::"text", 'medium'::"text", 'high'::"text", 'urgent'::"text"]))),
+    CONSTRAINT "lead_submissions_tobacco_status_check" CHECK ((("tobacco_status" IS NULL) OR ("tobacco_status" = ANY (ARRAY['none'::"text", 'tobacco_user'::"text", 'vape_user'::"text", 'former_user'::"text"])))),
+    CONSTRAINT "lead_submissions_workflow_subsection_check" CHECK ((("workflow_subsection" IS NULL) OR ("workflow_subsection" = ANY (ARRAY['working'::"text", 'nurture'::"text", 'linkedin'::"text", 'do_not_contact'::"text"]))))
+);
+
+
+ALTER TABLE "public"."lead_submissions" OWNER TO "postgres";
+
+
+COMMENT ON COLUMN "public"."lead_submissions"."workflow_subsection" IS 'Leads module subsection: working | nurture | linkedin | do_not_contact';
+
+
+
+COMMENT ON COLUMN "public"."lead_submissions"."linkedin_workflow_status" IS 'Manual LinkedIn funnel status (Connection Sent, Connected, etc.)';
+
+
+
+COMMENT ON COLUMN "public"."lead_submissions"."opt_out_reason" IS 'Free-form rep entry or auto-detector reason for opt-out (Section 2g + manual Mark as Lost).';
+
+
+
+COMMENT ON COLUMN "public"."lead_submissions"."opt_out_phrase" IS 'Specific phrase from crm_optout_keywords that fired the auto-detection (audit trail).';
+
+
+
+COMMENT ON COLUMN "public"."lead_submissions"."last_touched_at" IS 'Bumped on rep-initiated activity only (Section 6 + Round 3 Addendum). Inbound events (replies, link clicks) do NOT bump this.';
+
+
+
+COMMENT ON COLUMN "public"."lead_submissions"."last_activity_at" IS 'Generated: COALESCE(last_touched_at, created_at). Used as the Leads list default sort so new leads with no rep-initiated touch yet still surface at the top by their created_at. Strict "Last Touched" semantics live on last_touched_at.';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."submit_public_lead"("payload" "jsonb") RETURNS "public"."lead_submissions"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $_$
+DECLARE
+    v_first_name text;
+    v_last_name  text;
+    v_email      text;
+    v_phone      text;
+    v_form_data  jsonb;
+    v_default_org uuid;
+    v_row        public.lead_submissions;
+BEGIN
+    v_first_name := btrim(payload->>'first_name');
+    v_last_name  := btrim(payload->>'last_name');
+    v_email      := lower(btrim(payload->>'email'));
+    v_phone      := btrim(payload->>'phone');
+    v_form_data  := payload->'form_data';
+
+    IF v_first_name IS NULL OR length(v_first_name) = 0 THEN
+        RAISE EXCEPTION 'first_name is required' USING ERRCODE = '22023';
+    END IF;
+    IF v_last_name IS NULL OR length(v_last_name) = 0 THEN
+        RAISE EXCEPTION 'last_name is required' USING ERRCODE = '22023';
+    END IF;
+    IF v_email IS NULL OR v_email !~ '^[^@\s]+@[^@\s]+\.[^@\s]+$' THEN
+        RAISE EXCEPTION 'a valid email is required' USING ERRCODE = '22023';
+    END IF;
+    IF v_phone IS NULL OR length(v_phone) = 0 THEN
+        RAISE EXCEPTION 'phone is required' USING ERRCODE = '22023';
+    END IF;
+
+    IF length(v_first_name) > 100
+       OR length(v_last_name)  > 100
+       OR length(v_email)      > 320
+       OR length(v_phone)      > 40 THEN
+        RAISE EXCEPTION 'one or more fields exceed maximum length' USING ERRCODE = '22023';
+    END IF;
+
+    IF v_form_data IS NOT NULL AND octet_length(v_form_data::text) > 32768 THEN
+        RAISE EXCEPTION 'form_data exceeds 32 KB' USING ERRCODE = '22023';
+    END IF;
+
+    SELECT NULLIF(value, '')::uuid
+      INTO v_default_org
+      FROM public.system_settings
+     WHERE key = 'crm.intake_default_org_id'
+     LIMIT 1;
+
+    INSERT INTO public.lead_submissions (
+        user_id,
+        org_id,
+        first_name, last_name, email, phone,
+        household_size, current_insurance, monthly_premium,
+        coverage_preference, zip_code, primary_concern,
+        contact_preference,
+        source_page, source_cta,
+        utm_source, utm_medium, utm_campaign, utm_term, utm_content,
+        referrer, form_data
+    )
+    VALUES (
+        auth.uid(),
+        v_default_org,
+        v_first_name, v_last_name, v_email, v_phone,
+        NULLIF(payload->>'household_size','')::int,
+        NULLIF(payload->>'current_insurance',''),
+        NULLIF(payload->>'monthly_premium',''),
+        NULLIF(payload->>'coverage_preference',''),
+        NULLIF(payload->>'zip_code',''),
+        NULLIF(payload->>'primary_concern',''),
+        COALESCE(NULLIF(payload->>'contact_preference',''), 'phone'),
+        NULLIF(payload->>'source_page',''),
+        NULLIF(payload->>'source_cta',''),
+        NULLIF(payload->>'utm_source',''),
+        NULLIF(payload->>'utm_medium',''),
+        NULLIF(payload->>'utm_campaign',''),
+        NULLIF(payload->>'utm_term',''),
+        NULLIF(payload->>'utm_content',''),
+        NULLIF(payload->>'referrer',''),
+        v_form_data
+    )
+    RETURNING * INTO v_row;
+
+    RETURN v_row;
+END;
+$_$;
+
+
+ALTER FUNCTION "public"."submit_public_lead"("payload" "jsonb") OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."submit_public_lead"("payload" "jsonb") IS 'Public anonymous lead intake. Accepts only user-input fields; CRM-internal attribution columns (org_id, lead_source, assignment, tags, pipeline_stage) cannot be set through this entry point. org_id is sourced from system_settings.crm.intake_default_org_id so single-tenant deployments always stamp the canonical org. Used by every form on apps/website.';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."submit_trusted_lead"("payload" "jsonb") RETURNS "public"."lead_submissions"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+DECLARE
+    v_row public.lead_submissions;
+BEGIN
+    INSERT INTO public.lead_submissions (
+        user_id,
+        org_id,
+        first_name, last_name, email, phone,
+        household_size, current_insurance, monthly_premium,
+        coverage_preference, zip_code, primary_concern,
+        contact_preference,
+        source_page, source_cta,
+        utm_source, utm_medium, utm_campaign, utm_term, utm_content,
+        referrer, form_data,
+        lead_source,
+        outside_advisor_id, referral_partner_id, community_event_id,
+        pipeline_stage, assigned_to, priority,
+        tags
+    )
+    VALUES (
+        NULLIF(payload->>'user_id','')::uuid,
+        NULLIF(payload->>'org_id','')::uuid,
+        NULLIF(btrim(payload->>'first_name'), ''),
+        NULLIF(btrim(payload->>'last_name'),  ''),
+        NULLIF(lower(btrim(payload->>'email')), ''),
+        NULLIF(btrim(payload->>'phone'), ''),
+        NULLIF(payload->>'household_size','')::int,
+        NULLIF(payload->>'current_insurance',''),
+        NULLIF(payload->>'monthly_premium',''),
+        NULLIF(payload->>'coverage_preference',''),
+        NULLIF(payload->>'zip_code',''),
+        NULLIF(payload->>'primary_concern',''),
+        COALESCE(NULLIF(payload->>'contact_preference',''), 'phone'),
+        NULLIF(payload->>'source_page',''),
+        NULLIF(payload->>'source_cta',''),
+        NULLIF(payload->>'utm_source',''),
+        NULLIF(payload->>'utm_medium',''),
+        NULLIF(payload->>'utm_campaign',''),
+        NULLIF(payload->>'utm_term',''),
+        NULLIF(payload->>'utm_content',''),
+        NULLIF(payload->>'referrer',''),
+        payload->'form_data',
+        NULLIF(payload->>'lead_source',''),
+        NULLIF(payload->>'outside_advisor_id','')::uuid,
+        NULLIF(payload->>'referral_partner_id','')::uuid,
+        NULLIF(payload->>'community_event_id','')::uuid,
+        NULLIF(payload->>'pipeline_stage',''),
+        NULLIF(payload->>'assigned_to','')::uuid,
+        NULLIF(payload->>'priority',''),
+        CASE
+            WHEN jsonb_typeof(payload->'tags') = 'array'
+                THEN ARRAY(SELECT jsonb_array_elements_text(payload->'tags'))
+            ELSE NULL
+        END
+    )
+    RETURNING * INTO v_row;
+
+    RETURN v_row;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."submit_trusted_lead"("payload" "jsonb") OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."submit_trusted_lead"("payload" "jsonb") IS 'Trusted server-side lead intake. Accepts the full lead_submissions column set, including CRM attribution. Callable only by service_role — used by web-form-submit and community-lead-submit edge functions.';
+
 
 
 CREATE OR REPLACE FUNCTION "public"."sync_admin_users_role_to_user_roles"() RETURNS "trigger"
@@ -5135,43 +12161,49 @@ CREATE OR REPLACE FUNCTION "public"."sync_roles_to_legacy"() RETURNS "trigger"
     SET "search_path" TO 'public', 'pg_temp'
     AS $$
 DECLARE
+    target_uid  uuid;
     highest_role text;
     profile_role text;
 BEGIN
-    -- Calculate the highest privilege role for this user
+    target_uid := COALESCE(NEW.user_id, OLD.user_id);
+
     SELECT
         CASE
-            WHEN EXISTS (SELECT 1 FROM user_roles WHERE user_id = COALESCE(NEW.user_id, OLD.user_id) AND role = 'super_admin') THEN 'super_admin'
-            WHEN EXISTS (SELECT 1 FROM user_roles WHERE user_id = COALESCE(NEW.user_id, OLD.user_id) AND role = 'admin') THEN 'admin'
-            WHEN EXISTS (SELECT 1 FROM user_roles WHERE user_id = COALESCE(NEW.user_id, OLD.user_id) AND role = 'manager') THEN 'manager'
-            WHEN EXISTS (SELECT 1 FROM user_roles WHERE user_id = COALESCE(NEW.user_id, OLD.user_id) AND role = 'staff') THEN 'staff'
-            WHEN EXISTS (SELECT 1 FROM user_roles WHERE user_id = COALESCE(NEW.user_id, OLD.user_id) AND role = 'advisor') THEN 'advisor'
-            WHEN EXISTS (SELECT 1 FROM user_roles WHERE user_id = COALESCE(NEW.user_id, OLD.user_id) AND role = 'member') THEN 'member'
-            WHEN EXISTS (SELECT 1 FROM user_roles WHERE user_id = COALESCE(NEW.user_id, OLD.user_id) AND role = 'guest') THEN 'guest'
+            WHEN EXISTS (SELECT 1 FROM user_roles WHERE user_id = target_uid AND role = 'super_admin') THEN 'super_admin'
+            WHEN EXISTS (SELECT 1 FROM user_roles WHERE user_id = target_uid AND role = 'admin')       THEN 'admin'
+            WHEN EXISTS (SELECT 1 FROM user_roles WHERE user_id = target_uid AND role = 'manager')     THEN 'manager'
+            WHEN EXISTS (SELECT 1 FROM user_roles WHERE user_id = target_uid AND role = 'staff')       THEN 'staff'
+            WHEN EXISTS (SELECT 1 FROM user_roles WHERE user_id = target_uid AND role = 'advisor')     THEN 'advisor'
+            WHEN EXISTS (SELECT 1 FROM user_roles WHERE user_id = target_uid AND role = 'member')      THEN 'member'
+            WHEN EXISTS (SELECT 1 FROM user_roles WHERE user_id = target_uid AND role = 'guest')       THEN 'guest'
             ELSE 'member'
         END
     INTO highest_role;
 
-    -- Map to profiles.role (profiles uses: guest, member, advisor, admin, staff)
     profile_role := CASE highest_role
         WHEN 'super_admin' THEN 'admin'
-        WHEN 'admin' THEN 'admin'
-        WHEN 'manager' THEN 'staff'
-        WHEN 'staff' THEN 'staff'
-        WHEN 'advisor' THEN 'advisor'
-        WHEN 'guest' THEN 'guest'
+        WHEN 'admin'       THEN 'admin'
+        WHEN 'manager'     THEN 'staff'
+        WHEN 'staff'       THEN 'staff'
+        WHEN 'advisor'     THEN 'advisor'
+        WHEN 'guest'       THEN 'guest'
         ELSE 'member'
     END;
 
-    -- Update profiles table
     UPDATE profiles
     SET role = profile_role, updated_at = NOW()
-    WHERE id = COALESCE(NEW.user_id, OLD.user_id);
+    WHERE id = target_uid;
 
-    -- Update admin_users table (only if row exists)
-    UPDATE admin_users
-    SET role = highest_role, updated_at = NOW()
-    WHERE id = COALESCE(NEW.user_id, OLD.user_id);
+    -- Only update admin_users.role when it satisfies admin_users_role_check
+    IF highest_role IN ('super_admin', 'admin', 'manager', 'staff') THEN
+        UPDATE admin_users
+        SET role = highest_role, updated_at = NOW()
+        WHERE id = target_uid;
+    ELSE
+        UPDATE admin_users
+        SET status = 'inactive', updated_at = NOW()
+        WHERE id = target_uid;
+    END IF;
 
     RETURN COALESCE(NEW, OLD);
 END;
@@ -5258,6 +12290,182 @@ ALTER FUNCTION "public"."sync_user_to_itsts"() OWNER TO "postgres";
 
 COMMENT ON FUNCTION "public"."sync_user_to_itsts"() IS 'Async trigger that syncs users to the ITSTS support ticketing system whenever roles change.';
 
+
+
+CREATE OR REPLACE FUNCTION "public"."translate_org_id"("p_org_id" "uuid", "p_target_purpose" "text" DEFAULT 'membership'::"text") RETURNS "uuid"
+    LANGUAGE "plpgsql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+  v_slug text;
+  v_translated uuid;
+BEGIN
+  IF p_org_id IS NULL THEN
+    RETURN NULL;
+  END IF;
+
+  SELECT slug INTO v_slug
+  FROM (
+    SELECT slug FROM public.organizations WHERE id = p_org_id
+    UNION ALL
+    SELECT slug FROM public.orgs WHERE id = p_org_id
+  ) s
+  LIMIT 1;
+
+  IF v_slug IS NULL THEN
+    RETURN p_org_id;
+  END IF;
+
+  SELECT public.resolve_org_id(v_slug, p_target_purpose) INTO v_translated;
+  RETURN COALESCE(v_translated, p_org_id);
+END;
+$$;
+
+
+ALTER FUNCTION "public"."translate_org_id"("p_org_id" "uuid", "p_target_purpose" "text") OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."translate_org_id"("p_org_id" "uuid", "p_target_purpose" "text") IS 'Maps any known org UUID to the UUID used for the target purpose (same slug).';
+
+
+
+CREATE OR REPLACE FUNCTION "public"."trg_advisor_profiles_sync_announcements_channel"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    SET "row_security" TO 'off'
+    AS $$
+BEGIN
+  IF NEW.status = 'active' THEN
+    PERFORM public.ensure_user_in_advisor_announcements_channel(NEW.id);
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."trg_advisor_profiles_sync_announcements_channel"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."trg_crm_attachments_updated_at"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    AS $$
+BEGIN
+    NEW.updated_at = now();
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."trg_crm_attachments_updated_at"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."trg_org_memberships_sync_announcements_channel"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    SET "row_security" TO 'off'
+    AS $$
+DECLARE
+  v_org constant uuid := '00000000-0000-4000-a000-000000000001'::uuid;
+BEGIN
+  IF NEW.org_id = v_org AND NEW.status = 'active' THEN
+    PERFORM public.ensure_user_in_advisor_announcements_channel(NEW.user_id);
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."trg_org_memberships_sync_announcements_channel"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."trg_staff_attendance_link_remote_request"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+  v_req uuid;
+BEGIN
+  IF NEW.metadata ? 'remote_request_id' THEN
+    BEGIN
+      v_req := (NEW.metadata->>'remote_request_id')::uuid;
+      UPDATE public.staff_time_requests
+      SET metadata = jsonb_set(
+        coalesce(metadata, '{}'::jsonb),
+        '{attendance_punch_ids}',
+        coalesce(metadata->'attendance_punch_ids', '[]'::jsonb) || jsonb_build_array(NEW.id::text),
+        true
+      )
+      WHERE id = v_req;
+    EXCEPTION
+      WHEN OTHERS THEN
+        NULL;
+    END;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."trg_staff_attendance_link_remote_request"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."trg_staff_hr_set_updated_at"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."trg_staff_hr_set_updated_at"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."trg_staff_profiles_remote_guard"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+  IF public.is_staff_hr() THEN
+    RETURN NEW;
+  END IF;
+
+  IF TG_OP = 'UPDATE' AND NEW.user_id = auth.uid() THEN
+    IF NEW.remote_status IS DISTINCT FROM OLD.remote_status THEN
+      IF NEW.remote_status = 'pending'
+         AND OLD.remote_status IN ('ineligible', 'revoked', 'pending') THEN
+        NEW.remote_requested_at := coalesce(NEW.remote_requested_at, now());
+        NEW.remote_decided_by := NULL;
+        NEW.remote_decided_at := NULL;
+        NEW.remote_decision_note := NULL;
+      ELSE
+        RAISE EXCEPTION 'Only HR can change remote status to %', NEW.remote_status;
+      END IF;
+    END IF;
+    NEW.department_id := OLD.department_id;
+    NEW.is_active := OLD.is_active;
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."trg_staff_profiles_remote_guard"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."trg_staff_time_requests_updated_at"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."trg_staff_time_requests_updated_at"() OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."trigger_calculate_lead_score"() RETURNS "trigger"
@@ -5578,6 +12786,25 @@ $$;
 ALTER FUNCTION "public"."update_crm_deals_search"() OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."update_crm_family_members_search"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    AS $$
+BEGIN
+    NEW.search_vector := to_tsvector('english',
+        COALESCE(NEW.first_name, '') || ' ' ||
+        COALESCE(NEW.last_name, '') || ' ' ||
+        COALESCE(NEW.email, '') || ' ' ||
+        COALESCE(NEW.relationship, '')
+    );
+    NEW.updated_at := now();
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."update_crm_family_members_search"() OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."update_crm_plan_interest_updated_at"() RETURNS "trigger"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public', 'pg_temp'
@@ -5609,6 +12836,32 @@ $$;
 
 
 ALTER FUNCTION "public"."update_crm_products_search"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."update_crm_social_platform_connections_updated_at"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."update_crm_social_platform_connections_updated_at"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."update_crm_social_posts_updated_at"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."update_crm_social_posts_updated_at"() OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."update_crm_web_forms_updated_at"() RETURNS "trigger"
@@ -5658,8 +12911,7 @@ CREATE OR REPLACE FUNCTION "public"."update_goal_progress"() RETURNS "trigger"
     SET "search_path" TO 'public'
     AS $$
 BEGIN
-  -- Update leads_created goals
-  IF TG_TABLE_NAME = 'zoho_lead_submissions' AND TG_OP = 'INSERT' THEN
+  IF TG_TABLE_NAME = 'lead_submissions' AND TG_OP = 'INSERT' THEN
     UPDATE crm_user_goals
     SET current_value = current_value + 1,
         updated_at = NOW(),
@@ -5675,10 +12927,9 @@ BEGIN
       AND status = 'active'
       AND start_date <= CURRENT_DATE
       AND end_date >= CURRENT_DATE
-      AND org_id = NEW.org_id;  -- FIXED: was NEW.organization_id
+      AND org_id = NEW.org_id;
   END IF;
 
-  -- Update tasks_completed goals
   IF TG_TABLE_NAME = 'lead_tasks' AND TG_OP = 'UPDATE' THEN
     IF NEW.completed = true AND (OLD.completed IS NULL OR OLD.completed = false) THEN
       UPDATE crm_user_goals
@@ -5722,6 +12973,19 @@ $$;
 ALTER FUNCTION "public"."update_handbooks_updated_at"() OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."update_integrations_updated_at"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    AS $$
+BEGIN
+    NEW.updated_at = now();
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."update_integrations_updated_at"() OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."update_lead_stage_changed_at"() RETURNS "trigger"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public', 'pg_temp'
@@ -5741,6 +13005,19 @@ $$;
 
 
 ALTER FUNCTION "public"."update_lead_stage_changed_at"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."update_lead_submission_updated_at"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."update_lead_submission_updated_at"() OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."update_lead_task_updated_at"() RETURNS "trigger"
@@ -5907,15 +13184,15 @@ CREATE OR REPLACE FUNCTION "public"."update_session_on_page_view"() RETURNS "tri
     AS $$
 BEGIN
   UPDATE analytics_sessions
-  SET 
-    page_count = page_count + 1,
-    is_bounce = false,
-    exit_page = NEW.path,
-    ended_at = NEW.created_at,
+  SET
+    page_count  = page_count + 1,
+    is_bounce   = (page_count + 1 <= 1),
+    exit_page   = NEW.path,
+    ended_at    = NEW.created_at,
     duration_seconds = EXTRACT(EPOCH FROM (NEW.created_at - started_at))::integer,
-    updated_at = now()
+    updated_at  = now()
   WHERE session_id = NEW.session_id;
-  
+
   RETURN NEW;
 END;
 $$;
@@ -5963,11 +13240,10 @@ ALTER FUNCTION "public"."update_thread_on_email"() OWNER TO "postgres";
 
 CREATE OR REPLACE FUNCTION "public"."update_updated_at_column"() RETURNS "trigger"
     LANGUAGE "plpgsql"
-    SET "search_path" TO 'public', 'pg_temp'
     AS $$
 BEGIN
-  NEW.updated_at = NOW();
-  RETURN NEW;
+    NEW.updated_at = now();
+    RETURN NEW;
 END;
 $$;
 
@@ -6003,18 +13279,33 @@ $$;
 ALTER FUNCTION "public"."update_user_roles_updated_at"() OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."update_zoho_lead_submission_updated_at"() RETURNS "trigger"
-    LANGUAGE "plpgsql"
-    SET "search_path" TO 'pg_catalog', 'public'
+CREATE OR REPLACE FUNCTION "public"."user_has_concierge_access_for_org"("p_org_id" "uuid") RETURNS boolean
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO 'public'
     AS $$
-BEGIN
-NEW.updated_at = now();
-RETURN NEW;
-END;
+  SELECT public.current_user_has_concierge_portal_access()
+    AND (
+      EXISTS (
+        SELECT 1 FROM public.org_memberships om
+        WHERE om.user_id = auth.uid() AND om.org_id = p_org_id AND om.status = 'active'
+      )
+      OR EXISTS (
+        SELECT 1
+        FROM public.organizations og
+        JOIN public.orgs o ON o.slug = og.slug
+        JOIN public.org_memberships om
+          ON om.org_id = o.id AND om.user_id = auth.uid() AND om.status = 'active'
+        WHERE og.id = p_org_id
+      )
+      OR EXISTS (
+        SELECT 1 FROM public.user_roles ur
+        WHERE ur.user_id = auth.uid() AND ur.role::text = 'super_admin'
+      )
+    );
 $$;
 
 
-ALTER FUNCTION "public"."update_zoho_lead_submission_updated_at"() OWNER TO "postgres";
+ALTER FUNCTION "public"."user_has_concierge_access_for_org"("p_org_id" "uuid") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."user_has_org_access"("check_org_id" "uuid") RETURNS boolean
@@ -6157,6 +13448,69 @@ $$;
 ALTER FUNCTION "public"."user_organization_roles_update_trigger"() OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."_backup_org_reconcile_20260701_advisor_profiles" (
+    "id" "uuid" NOT NULL,
+    "org_id" "uuid",
+    "backed_up_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."_backup_org_reconcile_20260701_advisor_profiles" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."_backup_org_reconcile_20260701_advisor_profiles" IS 'Phase 3 org-reconcile backup (2026-07-01). Not an application table. RLS deny-all; API roles revoked. service_role only.';
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."_backup_org_reconcile_20260701_lead_submissions" (
+    "id" "uuid" NOT NULL,
+    "org_id" "uuid",
+    "backed_up_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."_backup_org_reconcile_20260701_lead_submissions" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."_backup_org_reconcile_20260701_lead_submissions" IS 'Phase 3 org-reconcile backup (2026-07-01). Not an application table. RLS deny-all; API roles revoked. service_role only.';
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."_deprecated_leads" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "first_name" "text",
+    "last_name" "text",
+    "email" "text",
+    "phone" "text",
+    "source" "text",
+    "source_campaign" "text",
+    "source_medium" "text",
+    "status" "text" DEFAULT 'new'::"text" NOT NULL,
+    "assigned_to" "uuid",
+    "score" integer DEFAULT 0,
+    "company" "text",
+    "job_title" "text",
+    "address" "jsonb",
+    "custom_fields" "jsonb" DEFAULT '{}'::"jsonb",
+    "tags" "text"[] DEFAULT '{}'::"text"[],
+    "last_contacted_at" timestamp with time zone,
+    "next_follow_up_at" timestamp with time zone,
+    "metadata" "jsonb" DEFAULT '{}'::"jsonb",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "assigned_advisor_id" "uuid",
+    CONSTRAINT "leads_status_check" CHECK (("status" = ANY (ARRAY['new'::"text", 'contacted'::"text", 'qualified'::"text", 'proposal'::"text", 'negotiation'::"text", 'won'::"text", 'lost'::"text", 'archived'::"text"])))
+);
+
+
+ALTER TABLE "public"."_deprecated_leads" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."_deprecated_leads" IS 'Legacy table superseded by public.lead_submissions on 2026-06-20. RLS was misconfigured (all policies stored as SELECT, no INSERT policy). Drop scheduled in a follow-up migration. Do not write here.';
+
+
+
 CREATE TABLE IF NOT EXISTS "public"."page_views" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "path" "text" NOT NULL,
@@ -6253,6 +13607,10 @@ CREATE TABLE IF NOT EXISTS "public"."admin_users" (
     "last_login_at" timestamp with time zone,
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
     "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "phone" "text",
+    "department" "text",
+    "title" "text",
+    "timezone" "text" DEFAULT 'America/New_York'::"text",
     CONSTRAINT "admin_users_role_check" CHECK (("role" = ANY (ARRAY['super_admin'::"text", 'admin'::"text", 'manager'::"text", 'staff'::"text"]))),
     CONSTRAINT "admin_users_status_check" CHECK (("status" = ANY (ARRAY['active'::"text", 'inactive'::"text", 'suspended'::"text"])))
 );
@@ -6289,7 +13647,8 @@ CREATE TABLE IF NOT EXISTS "public"."advisor_announcements" (
     "link_text" "text",
     "created_by" "uuid",
     "created_at" timestamp with time zone DEFAULT "now"(),
-    "updated_at" timestamp with time zone DEFAULT "now"()
+    "updated_at" timestamp with time zone DEFAULT "now"(),
+    "org_id" "uuid"
 );
 
 
@@ -6327,7 +13686,8 @@ CREATE TABLE IF NOT EXISTS "public"."advisor_contact_directory" (
     "is_active" boolean DEFAULT true NOT NULL,
     "display_order" integer DEFAULT 0 NOT NULL,
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "org_id" "uuid"
 );
 
 
@@ -6352,7 +13712,8 @@ CREATE TABLE IF NOT EXISTS "public"."advisor_content" (
     "updated_at" timestamp with time zone DEFAULT "now"(),
     "notification_sent_at" timestamp with time zone,
     "notification_count" integer DEFAULT 0,
-    "is_featured" boolean DEFAULT false
+    "is_featured" boolean DEFAULT false,
+    "org_id" "uuid"
 );
 
 
@@ -6377,7 +13738,8 @@ CREATE TABLE IF NOT EXISTS "public"."advisor_content_categories" (
     "description" "text",
     "display_order" integer DEFAULT 0,
     "created_at" timestamp with time zone DEFAULT "now"(),
-    "updated_at" timestamp with time zone DEFAULT "now"()
+    "updated_at" timestamp with time zone DEFAULT "now"(),
+    "org_id" "uuid"
 );
 
 
@@ -6405,7 +13767,8 @@ CREATE TABLE IF NOT EXISTS "public"."advisor_dashboard_widgets" (
     "grid_column" "text" DEFAULT 'full'::"text",
     "config" "jsonb",
     "created_at" timestamp with time zone DEFAULT "now"(),
-    "updated_at" timestamp with time zone DEFAULT "now"()
+    "updated_at" timestamp with time zone DEFAULT "now"(),
+    "org_id" "uuid"
 );
 
 
@@ -6420,7 +13783,8 @@ CREATE TABLE IF NOT EXISTS "public"."advisor_enrollment_links" (
     "order_index" integer DEFAULT 0 NOT NULL,
     "is_active" boolean DEFAULT true NOT NULL,
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "org_id" "uuid"
 );
 
 
@@ -6562,7 +13926,8 @@ CREATE TABLE IF NOT EXISTS "public"."advisor_nav_menu" (
     "badge_color" "text" DEFAULT 'blue'::"text",
     "created_by" "uuid",
     "created_at" timestamp with time zone DEFAULT "now"(),
-    "updated_at" timestamp with time zone DEFAULT "now"()
+    "updated_at" timestamp with time zone DEFAULT "now"(),
+    "org_id" "uuid"
 );
 
 
@@ -6605,7 +13970,8 @@ CREATE TABLE IF NOT EXISTS "public"."advisor_portal_settings" (
     "description" "text",
     "category" "text" DEFAULT 'general'::"text" NOT NULL,
     "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    "updated_by" "uuid"
+    "updated_by" "uuid",
+    "org_id" "uuid"
 );
 
 
@@ -6631,6 +13997,8 @@ CREATE TABLE IF NOT EXISTS "public"."advisor_profiles" (
     "must_change_password" boolean DEFAULT false NOT NULL,
     "avatar_url" "text",
     "user_id" "uuid",
+    "training_completed" boolean DEFAULT false NOT NULL,
+    "training_completed_at" timestamp with time zone,
     CONSTRAINT "advisor_profiles_status_check" CHECK (("status" = ANY (ARRAY['pending'::"text", 'active'::"text", 'suspended'::"text", 'inactive'::"text"])))
 );
 
@@ -6653,7 +14021,8 @@ CREATE TABLE IF NOT EXISTS "public"."advisor_quick_links" (
     "updated_at" timestamp with time zone DEFAULT "now"(),
     "category" "text" DEFAULT 'resources'::"text",
     "image_url" "text",
-    "is_popup" boolean DEFAULT false
+    "is_popup" boolean DEFAULT false,
+    "org_id" "uuid"
 );
 
 
@@ -6792,7 +14161,8 @@ CREATE TABLE IF NOT EXISTS "public"."advisor_videos" (
     "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
     "category" "text" DEFAULT 'training'::"text" NOT NULL,
     "tags" "text"[] DEFAULT '{}'::"text"[],
-    "duration" "text"
+    "duration" "text",
+    "org_id" "uuid"
 );
 
 
@@ -6859,8 +14229,8 @@ CREATE TABLE IF NOT EXISTS "public"."ai_automation_rules" (
     "created_by" "uuid",
     "created_at" timestamp with time zone DEFAULT "now"(),
     "updated_at" timestamp with time zone DEFAULT "now"(),
-    CONSTRAINT "ai_automation_rules_action_type_check" CHECK (("action_type" = ANY (ARRAY['create_task'::"text", 'send_notification'::"text", 'assign_lead'::"text", 'update_priority'::"text", 'send_email'::"text", 'send_slack'::"text"]))),
-    CONSTRAINT "ai_automation_rules_trigger_type_check" CHECK (("trigger_type" = ANY (ARRAY['new_lead'::"text", 'stage_change'::"text", 'no_activity'::"text", 'high_score'::"text", 'task_overdue'::"text", 'scheduled_time'::"text", 'lead_activity'::"text"])))
+    CONSTRAINT "ai_automation_rules_action_type_check" CHECK (("action_type" = ANY (ARRAY['send_email'::"text", 'create_task'::"text", 'update_field'::"text", 'send_notification'::"text", 'assign_owner'::"text", 'add_tag'::"text", 'remove_tag'::"text", 'move_stage'::"text", 'create_activity'::"text", 'send_sms'::"text", 'webhook'::"text", 'ai_generate'::"text", 'enroll_cadence'::"text", 'pause_cadence'::"text", 'escalate_sla'::"text", 'round_robin_assign'::"text", 'update_score'::"text", 'create_deal'::"text"]))),
+    CONSTRAINT "ai_automation_rules_trigger_type_check" CHECK (("trigger_type" = ANY (ARRAY['lead_created'::"text", 'lead_updated'::"text", 'stage_changed'::"text", 'score_changed'::"text", 'task_overdue'::"text", 'task_completed'::"text", 'email_opened'::"text", 'email_clicked'::"text", 'email_replied'::"text", 'form_submitted'::"text", 'deal_created'::"text", 'deal_stage_changed'::"text", 'deal_won'::"text", 'deal_lost'::"text", 'contact_created'::"text", 'activity_logged'::"text", 'sla_breach'::"text", 'cadence_step_due'::"text", 'referral_received'::"text", 'time_based'::"text", 'field_updated'::"text", 'no_activity'::"text", 'new_lead'::"text", 'stage_change'::"text", 'high_score'::"text"])))
 );
 
 
@@ -6959,7 +14329,7 @@ CREATE TABLE IF NOT EXISTS "public"."analytics_sessions" (
     "started_at" timestamp with time zone DEFAULT "now"(),
     "ended_at" timestamp with time zone,
     "duration_seconds" integer DEFAULT 0,
-    "page_count" integer DEFAULT 1,
+    "page_count" integer DEFAULT 0,
     "is_bounce" boolean DEFAULT true,
     "entry_page" "text" NOT NULL,
     "exit_page" "text",
@@ -6979,6 +14349,7 @@ CREATE TABLE IF NOT EXISTS "public"."analytics_sessions" (
     "is_new_visitor" boolean DEFAULT true,
     "created_at" timestamp with time zone DEFAULT "now"(),
     "updated_at" timestamp with time zone DEFAULT "now"(),
+    "visitor_id" "text",
     CONSTRAINT "analytics_sessions_device_type_check" CHECK (("device_type" = ANY (ARRAY['desktop'::"text", 'mobile'::"text", 'tablet'::"text", 'unknown'::"text"]))),
     CONSTRAINT "analytics_sessions_referrer_source_check" CHECK (("referrer_source" = ANY (ARRAY['direct'::"text", 'organic'::"text", 'referral'::"text", 'social'::"text", 'email'::"text", 'paid'::"text", 'other'::"text"])))
 );
@@ -7067,6 +14438,54 @@ CREATE TABLE IF NOT EXISTS "public"."audit_logs" (
 ALTER TABLE "public"."audit_logs" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."auth_login_attempts" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "email" "text" NOT NULL,
+    "ip_address" "text",
+    "user_agent" "text",
+    "success" boolean DEFAULT false NOT NULL,
+    "failure_reason" "text",
+    "timestamp" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."auth_login_attempts" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."auth_rate_limits" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "identifier" "text" NOT NULL,
+    "identifier_type" "text" NOT NULL,
+    "attempt_count" integer DEFAULT 0 NOT NULL,
+    "block_type" "text",
+    "blocked_until" timestamp with time zone,
+    "reason" "text",
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "auth_rate_limits_block_type_check" CHECK (("block_type" = ANY (ARRAY['temporary'::"text", 'permanent'::"text", 'lockout'::"text"]))),
+    CONSTRAINT "auth_rate_limits_identifier_type_check" CHECK (("identifier_type" = ANY (ARRAY['email'::"text", 'ip'::"text", 'device'::"text"])))
+);
+
+
+ALTER TABLE "public"."auth_rate_limits" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."auth_security_events" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "user_id" "uuid",
+    "event_type" "text" NOT NULL,
+    "event_severity" "text" NOT NULL,
+    "ip_address" "text",
+    "user_agent" "text",
+    "event_data" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
+    "hash_chain" "text",
+    "timestamp" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "auth_security_events_event_severity_check" CHECK (("event_severity" = ANY (ARRAY['low'::"text", 'medium'::"text", 'high'::"text", 'critical'::"text"])))
+);
+
+
+ALTER TABLE "public"."auth_security_events" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."automation_execution_log" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "rule_id" "uuid",
@@ -7146,11 +14565,35 @@ CREATE TABLE IF NOT EXISTS "public"."blog_articles" (
     "published_date" timestamp with time zone DEFAULT "now"(),
     "is_published" boolean DEFAULT false,
     "created_at" timestamp with time zone DEFAULT "now"(),
-    "updated_at" timestamp with time zone DEFAULT "now"()
+    "updated_at" timestamp with time zone DEFAULT "now"(),
+    "author_id" "uuid",
+    "tags" "text"[] DEFAULT '{}'::"text"[],
+    "read_time" integer,
+    "view_count" integer DEFAULT 0,
+    "scheduled_publish_at" timestamp with time zone
 );
 
 
 ALTER TABLE "public"."blog_articles" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."blog_authors" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "name" "text" NOT NULL,
+    "slug" "text",
+    "avatar_url" "text",
+    "bio" "text",
+    "role" "text",
+    "social_linkedin" "text",
+    "social_twitter" "text",
+    "social_website" "text",
+    "is_active" boolean DEFAULT true,
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "updated_at" timestamp with time zone DEFAULT "now"()
+);
+
+
+ALTER TABLE "public"."blog_authors" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."blog_categories" (
@@ -7400,6 +14843,267 @@ CREATE TABLE IF NOT EXISTS "public"."claims" (
 ALTER TABLE "public"."claims" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."cms_events" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "title" "text" NOT NULL,
+    "slug" "text",
+    "excerpt" "text",
+    "content" "text",
+    "featured_image_url" "text",
+    "event_date" timestamp with time zone,
+    "event_end_date" timestamp with time zone,
+    "location" "text",
+    "location_type" "text",
+    "registration_url" "text",
+    "event_type" "text",
+    "organizer" "text",
+    "max_attendees" integer,
+    "is_featured" boolean DEFAULT false,
+    "is_published" boolean DEFAULT false,
+    "tags" "text"[] DEFAULT '{}'::"text"[],
+    "video_url" "text",
+    "gallery_images" "text"[] DEFAULT '{}'::"text"[],
+    "created_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "updated_at" timestamp with time zone DEFAULT "now"()
+);
+
+
+ALTER TABLE "public"."cms_events" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."cms_form_submissions" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "form_id" "uuid" NOT NULL,
+    "data" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
+    "ip_address" "text",
+    "user_agent" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."cms_form_submissions" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."cms_form_submissions" IS 'Submissions collected from public-facing CMS forms.';
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."cms_forms" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "name" "text" NOT NULL,
+    "slug" "text",
+    "fields" "jsonb" DEFAULT '[]'::"jsonb" NOT NULL,
+    "settings" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
+    "notification_emails" "text"[] DEFAULT '{}'::"text"[],
+    "created_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."cms_forms" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."cms_forms" IS 'Dynamic forms created via the CMS form builder. Fields and settings stored as JSONB.';
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."cms_global_blocks" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "name" "text" NOT NULL,
+    "description" "text" DEFAULT ''::"text",
+    "sections" "jsonb" DEFAULT '[]'::"jsonb" NOT NULL,
+    "created_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."cms_global_blocks" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."cms_global_blocks" IS 'Reusable global block groups for the CMS. Shared section collections usable across multiple pages.';
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."cms_media" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "filename" "text" NOT NULL,
+    "original_filename" "text" NOT NULL,
+    "url" "text" NOT NULL,
+    "alt_text" "text" DEFAULT ''::"text",
+    "caption" "text" DEFAULT ''::"text",
+    "tags" "text"[] DEFAULT '{}'::"text"[],
+    "folder" "text" DEFAULT '/'::"text",
+    "mime_type" "text" NOT NULL,
+    "file_size" integer DEFAULT 0 NOT NULL,
+    "width" integer,
+    "height" integer,
+    "uploaded_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."cms_media" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."cms_media" IS 'Centralized media library for CMS assets. Tracks metadata for uploaded files stored in Supabase Storage.';
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."cms_pages" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "path" "text" NOT NULL,
+    "slug" "text" NOT NULL,
+    "title" "text" NOT NULL,
+    "description" "text",
+    "sections" "jsonb" DEFAULT '[]'::"jsonb" NOT NULL,
+    "is_published" boolean DEFAULT false NOT NULL,
+    "meta" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
+    "created_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "cms_pages_path_format" CHECK (("path" ~ '^/[a-zA-Z0-9/_-]*$'::"text"))
+);
+
+ALTER TABLE ONLY "public"."cms_pages" REPLICA IDENTITY FULL;
+
+
+ALTER TABLE "public"."cms_pages" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."cms_pages" IS 'Admin-driven CMS pages for the public website. Each row is a single page identified by its URL path. The sections JSONB array defines the block layout rendered by apps/website/src/components/CmsPage.tsx.';
+
+
+
+COMMENT ON COLUMN "public"."cms_pages"."sections" IS 'Ordered list of blocks: [{id, kind, props}]. See apps/website/src/components/cms-blocks/index.ts for the supported `kind` values and the props each accepts.';
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."cms_popups" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "name" "text" NOT NULL,
+    "blocks" "jsonb" DEFAULT '[]'::"jsonb" NOT NULL,
+    "trigger_config" "jsonb" DEFAULT '{"type": "time_delay", "delay_ms": 5000}'::"jsonb" NOT NULL,
+    "targeting" "jsonb" DEFAULT '{"pages": "all"}'::"jsonb" NOT NULL,
+    "frequency" "text" DEFAULT 'once_per_session'::"text",
+    "is_active" boolean DEFAULT false,
+    "impressions" integer DEFAULT 0,
+    "closes" integer DEFAULT 0,
+    "conversions" integer DEFAULT 0,
+    "created_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "cms_popups_frequency_check" CHECK (("frequency" = ANY (ARRAY['once'::"text", 'once_per_session'::"text", 'always'::"text"])))
+);
+
+
+ALTER TABLE "public"."cms_popups" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."cms_popups" IS 'CMS popup/modal definitions for the public website with trigger rules, targeting, and analytics counters.';
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."cms_redirects" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "from_path" "text" NOT NULL,
+    "to_path" "text" NOT NULL,
+    "status_code" integer DEFAULT 301 NOT NULL,
+    "is_regex" boolean DEFAULT false NOT NULL,
+    "hit_count" integer DEFAULT 0 NOT NULL,
+    "is_active" boolean DEFAULT true NOT NULL,
+    "created_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "cms_redirects_status_code_check" CHECK (("status_code" = ANY (ARRAY[301, 302, 307, 308])))
+);
+
+
+ALTER TABLE "public"."cms_redirects" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."cms_resources" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "title" "text" NOT NULL,
+    "slug" "text",
+    "description" "text",
+    "content" "text",
+    "resource_type" "text",
+    "target_audience" "text",
+    "topics" "text"[] DEFAULT '{}'::"text"[],
+    "featured_image_url" "text",
+    "file_url" "text",
+    "is_featured" boolean DEFAULT false,
+    "is_published" boolean DEFAULT false,
+    "view_count" integer DEFAULT 0,
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "updated_at" timestamp with time zone DEFAULT "now"()
+);
+
+
+ALTER TABLE "public"."cms_resources" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."cms_revisions" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "entity_type" "text" NOT NULL,
+    "entity_id" "uuid" NOT NULL,
+    "version" integer DEFAULT 1 NOT NULL,
+    "data_snapshot" "jsonb" NOT NULL,
+    "change_summary" "text" DEFAULT ''::"text",
+    "changed_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "cms_revisions_entity_type_check" CHECK (("entity_type" = ANY (ARRAY['page'::"text", 'blog_post'::"text"])))
+);
+
+
+ALTER TABLE "public"."cms_revisions" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."cms_revisions" IS 'Stores version snapshots of CMS pages and blog posts for revision history, diffs, and restore.';
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."cms_templates" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "name" "text" NOT NULL,
+    "description" "text" DEFAULT ''::"text",
+    "thumbnail_url" "text",
+    "sections" "jsonb" DEFAULT '[]'::"jsonb" NOT NULL,
+    "category" "text" DEFAULT 'custom'::"text",
+    "is_system" boolean DEFAULT false,
+    "created_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."cms_templates" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."cms_templates" IS 'Reusable page templates for the CMS page builder. Stores pre-built section layouts.';
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."cms_theme" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "settings" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"(),
+    "updated_by" "uuid",
+    CONSTRAINT "cms_theme_single_row" CHECK (("id" IS NOT NULL))
+);
+
+
+ALTER TABLE "public"."cms_theme" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."cms_theme" IS 'Single-row global theme/styles configuration for the public website. Managed via the admin Theme Editor.';
+
+
+
 CREATE TABLE IF NOT EXISTS "public"."code_batches" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "org_id" "uuid",
@@ -7457,6 +15161,7 @@ CREATE TABLE IF NOT EXISTS "public"."cognito_forms" (
     "show_in_menu" boolean DEFAULT false,
     "menu_section" "text" DEFAULT 'member-forms'::"text",
     "menu_order" integer DEFAULT 99,
+    "org_id" "uuid",
     CONSTRAINT "cognito_forms_category_check" CHECK (("category" = ANY (ARRAY['employer'::"text", 'member'::"text", 'advisor'::"text"])))
 );
 
@@ -7476,6 +15181,87 @@ COMMENT ON COLUMN "public"."cognito_forms"."menu_order" IS 'Order within the men
 
 
 
+CREATE TABLE IF NOT EXISTS "public"."commission_payouts" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "advisor_id" "uuid" NOT NULL,
+    "total_amount" numeric(10,2) NOT NULL,
+    "record_count" integer DEFAULT 0 NOT NULL,
+    "payout_date" "date" NOT NULL,
+    "payment_method" "text",
+    "reference_number" "text",
+    "notes" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."commission_payouts" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."commission_payouts" IS 'Aggregated commission disbursements to advisors';
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."commission_records" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "advisor_id" "uuid" NOT NULL,
+    "schedule_id" "uuid",
+    "lead_id" "uuid",
+    "contact_id" "uuid",
+    "carrier_id" "uuid",
+    "plan_type" "text",
+    "premium_amount" numeric(10,2),
+    "subsidy_amount" numeric(10,2) DEFAULT 0,
+    "member_responsibility" numeric(10,2),
+    "commission_rate" numeric(10,4),
+    "commission_amount" numeric(10,2) NOT NULL,
+    "status" "text" DEFAULT 'pending'::"text" NOT NULL,
+    "period_start" "date",
+    "period_end" "date",
+    "paid_at" timestamp with time zone,
+    "notes" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "commission_records_plan_type_check" CHECK ((("plan_type" IS NULL) OR ("plan_type" = ANY (ARRAY['healthshare'::"text", 'traditional_insurance'::"text"])))),
+    CONSTRAINT "commission_records_status_check" CHECK (("status" = ANY (ARRAY['pending'::"text", 'earned'::"text", 'approved'::"text", 'paid'::"text", 'clawed_back'::"text", 'disputed'::"text"])))
+);
+
+
+ALTER TABLE "public"."commission_records" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."commission_records" IS 'Individual commission records per enrollment/sale';
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."commission_schedules" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "name" "text" NOT NULL,
+    "plan_id" "uuid",
+    "carrier_id" "uuid",
+    "advisor_tier" "text",
+    "rate_type" "text" DEFAULT 'percentage'::"text" NOT NULL,
+    "rate_value" numeric(10,4) NOT NULL,
+    "effective_from" "date" NOT NULL,
+    "effective_to" "date",
+    "is_active" boolean DEFAULT true NOT NULL,
+    "notes" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "commission_schedules_rate_type_check" CHECK (("rate_type" = ANY (ARRAY['percentage'::"text", 'flat'::"text", 'per_member'::"text"]))),
+    CONSTRAINT "commission_schedules_tier_check" CHECK ((("advisor_tier" IS NULL) OR ("advisor_tier" = ANY (ARRAY['producer'::"text", 'team_leader'::"text", 'director'::"text", 'regional_director'::"text", 'national_director'::"text"]))))
+);
+
+
+ALTER TABLE "public"."commission_schedules" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."commission_schedules" IS 'Commission rate configurations per plan, carrier, and advisor tier';
+
+
+
 CREATE TABLE IF NOT EXISTS "public"."compliance_acknowledgments" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "user_id" "uuid" NOT NULL,
@@ -7487,6 +15273,14 @@ CREATE TABLE IF NOT EXISTS "public"."compliance_acknowledgments" (
     "user_agent" "text",
     "created_at" timestamp with time zone DEFAULT "now"(),
     "updated_at" timestamp with time zone DEFAULT "now"(),
+    "org_id" "uuid",
+    "completed_at" timestamp with time zone,
+    "signature_data" "text",
+    "signed_name" "text",
+    "quiz_score" numeric,
+    "quiz_answers" "jsonb",
+    "quiz_attempts" integer DEFAULT 0,
+    "expires_at" timestamp with time zone,
     CONSTRAINT "compliance_acknowledgments_status_check" CHECK (("status" = ANY (ARRAY['pending'::"text", 'acknowledged'::"text", 'expired'::"text"])))
 );
 
@@ -7507,11 +15301,159 @@ CREATE TABLE IF NOT EXISTS "public"."compliance_documents" (
     "due_date" "date",
     "org_id" "uuid",
     "created_at" timestamp with time zone DEFAULT "now"(),
-    "updated_at" timestamp with time zone DEFAULT "now"()
+    "updated_at" timestamp with time zone DEFAULT "now"(),
+    "category" "text",
+    "content_url" "text",
+    "content_html" "text",
+    "required_for_roles" "text"[] DEFAULT '{advisor}'::"text"[],
+    "due_within_days" integer,
+    "renewal_period_days" integer,
+    "quiz_questions" "jsonb" DEFAULT '[]'::"jsonb",
+    "passing_score" integer DEFAULT 80,
+    "effective_date" timestamp with time zone,
+    "expiration_date" timestamp with time zone,
+    "total_required" integer DEFAULT 0,
+    "total_completed" integer DEFAULT 0,
+    "created_by" "uuid"
 );
 
 
 ALTER TABLE "public"."compliance_documents" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."concierge_daily_log_entries" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "log_date" "date" NOT NULL,
+    "team_member_name" "text" NOT NULL,
+    "channel" "text" NOT NULL,
+    "member_name" "text" NOT NULL,
+    "reason" "text" NOT NULL,
+    "other_notes" "text" DEFAULT ''::"text" NOT NULL,
+    "crm_notes" boolean DEFAULT false NOT NULL,
+    "follow_up" boolean DEFAULT false NOT NULL,
+    "review_link" boolean DEFAULT false NOT NULL,
+    "additional_notes" "text" DEFAULT ''::"text" NOT NULL,
+    "times_spoke_with_member" integer DEFAULT 1 NOT NULL,
+    "escalated_issue" boolean DEFAULT false NOT NULL,
+    "special_project_description" "text" DEFAULT ''::"text" NOT NULL,
+    "special_project_duration_minutes" integer DEFAULT 0 NOT NULL,
+    "touch_override" boolean,
+    "created_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "team_member_id" "uuid",
+    "org_id" "uuid" NOT NULL
+);
+
+
+ALTER TABLE "public"."concierge_daily_log_entries" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."concierge_escalations" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "member_name" "text" NOT NULL,
+    "summary" "text" NOT NULL,
+    "opened_at" "date" NOT NULL,
+    "log_entry_id" "uuid",
+    "status" "text" NOT NULL,
+    "completed_at" "date",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    CONSTRAINT "concierge_escalations_status_check" CHECK (("status" = ANY (ARRAY['open'::"text", 'complete'::"text"])))
+);
+
+
+ALTER TABLE "public"."concierge_escalations" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."concierge_member_off_days" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "team_member_id" "uuid" NOT NULL,
+    "off_date" "date" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "org_id" "uuid" NOT NULL
+);
+
+
+ALTER TABLE "public"."concierge_member_off_days" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."concierge_portal_config" (
+    "org_id" "uuid" NOT NULL,
+    "nav_items" "jsonb" DEFAULT '[]'::"jsonb" NOT NULL,
+    "quick_links" "jsonb" DEFAULT '[]'::"jsonb" NOT NULL,
+    "training_resources" "jsonb" DEFAULT '[]'::"jsonb" NOT NULL,
+    "branding" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
+    "log_config" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."concierge_portal_config" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."concierge_portal_config" IS 'Per-org concierge portal content for ARYX path tenants (concierge.aryxcloud.com/{slug}). MPB uses hardcoded defaults.';
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."concierge_team_members" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "name" "text" NOT NULL,
+    "status" "text" DEFAULT 'Active'::"text" NOT NULL,
+    "role" "text" DEFAULT 'Concierge'::"text" NOT NULL,
+    "part_time" boolean DEFAULT false NOT NULL,
+    "display_order" integer DEFAULT 0 NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "user_id" "uuid",
+    "org_id" "uuid" NOT NULL,
+    CONSTRAINT "concierge_team_members_status_check" CHECK (("status" = ANY (ARRAY['Active'::"text", 'Inactive'::"text"])))
+);
+
+
+ALTER TABLE "public"."concierge_team_members" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."concierge_weekly_report_extras" (
+    "report_key" "text" NOT NULL,
+    "call_times_by_member_id" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
+    "team_members_helped" "text" DEFAULT ''::"text" NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "sales_hours_by_member_id" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
+    "org_id" "uuid" NOT NULL
+);
+
+
+ALTER TABLE "public"."concierge_weekly_report_extras" OWNER TO "postgres";
+
+
+COMMENT ON COLUMN "public"."concierge_weekly_report_extras"."sales_hours_by_member_id" IS 'Member ID → weekly sales hours (number). Used to pro-rate concierge performance goals.';
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."contacts" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "first_name" "text",
+    "last_name" "text",
+    "email" "text",
+    "phone" "text",
+    "company" "text",
+    "job_title" "text",
+    "address" "jsonb",
+    "tags" "text"[] DEFAULT '{}'::"text"[],
+    "custom_fields" "jsonb" DEFAULT '{}'::"jsonb",
+    "source" "text",
+    "owner_id" "uuid",
+    "metadata" "jsonb" DEFAULT '{}'::"jsonb",
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "updated_at" timestamp with time zone DEFAULT "now"()
+);
+
+
+ALTER TABLE "public"."contacts" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."content_analytics" (
@@ -7658,6 +15600,26 @@ CREATE TABLE IF NOT EXISTS "public"."coverage_documents" (
 ALTER TABLE "public"."coverage_documents" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."crm_achievements" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid",
+    "name" "text" NOT NULL,
+    "description" "text" NOT NULL,
+    "icon" "text" DEFAULT 'trophy'::"text" NOT NULL,
+    "category" "text" DEFAULT 'general'::"text" NOT NULL,
+    "xp_reward" integer DEFAULT 50 NOT NULL,
+    "criteria_type" "text" NOT NULL,
+    "criteria_threshold" integer DEFAULT 1 NOT NULL,
+    "rarity" "text" DEFAULT 'common'::"text" NOT NULL,
+    "sort_order" integer DEFAULT 0 NOT NULL,
+    "is_active" boolean DEFAULT true NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."crm_achievements" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."crm_activities" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "org_id" "uuid" NOT NULL,
@@ -7689,7 +15651,8 @@ CREATE TABLE IF NOT EXISTS "public"."crm_activities" (
     "created_by" "uuid" NOT NULL,
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
     "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    CONSTRAINT "crm_activities_activity_type_check" CHECK (("activity_type" = ANY (ARRAY['call'::"text", 'email'::"text", 'meeting'::"text", 'task'::"text", 'note'::"text", 'sms'::"text", 'social'::"text", 'webinar'::"text", 'demo'::"text", 'other'::"text"]))),
+    "metadata" "jsonb" DEFAULT '{}'::"jsonb",
+    CONSTRAINT "crm_activities_activity_type_check" CHECK (("activity_type" = ANY (ARRAY['call'::"text", 'email'::"text", 'meeting'::"text", 'task'::"text", 'note'::"text", 'sms'::"text", 'text'::"text", 'social'::"text", 'webinar'::"text", 'demo'::"text", 'other'::"text", 'linkedin_connection_sent'::"text", 'linkedin_connection_accepted'::"text", 'linkedin_message'::"text", 'linkedin_post'::"text", 'linkedin_engagement'::"text", 'linkedin_short'::"text", 'presentation'::"text", 'networking_event'::"text", 'community_outreach'::"text", 'referral_requested'::"text", 'live_chat'::"text", 'crm_lead_entered'::"text", 'proposal_sent'::"text"]))),
     CONSTRAINT "crm_activities_call_outcome_check" CHECK (("call_outcome" = ANY (ARRAY['answered'::"text", 'no_answer'::"text", 'busy'::"text", 'voicemail'::"text", 'wrong_number'::"text", 'callback_requested'::"text"]))),
     CONSTRAINT "crm_activities_call_type_check" CHECK (("call_type" = ANY (ARRAY['outbound'::"text", 'inbound'::"text", 'missed'::"text"]))),
     CONSTRAINT "crm_activities_email_status_check" CHECK (("email_status" = ANY (ARRAY['draft'::"text", 'sent'::"text", 'delivered'::"text", 'opened'::"text", 'clicked'::"text", 'bounced'::"text", 'unsubscribed'::"text"]))),
@@ -7699,6 +15662,24 @@ CREATE TABLE IF NOT EXISTS "public"."crm_activities" (
 
 
 ALTER TABLE "public"."crm_activities" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."crm_activity_targets" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "target_type" "text" NOT NULL,
+    "rep_id" "uuid",
+    "period_start" "date" NOT NULL,
+    "period_end" "date" NOT NULL,
+    "targets" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
+    "created_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "crm_activity_targets_target_type_check" CHECK (("target_type" = ANY (ARRAY['monthly_rep'::"text", 'quarterly_team'::"text"])))
+);
+
+
+ALTER TABLE "public"."crm_activity_targets" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."crm_approval_actions" (
@@ -7770,6 +15751,72 @@ CREATE TABLE IF NOT EXISTS "public"."crm_approval_steps" (
 
 
 ALTER TABLE "public"."crm_approval_steps" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."crm_attachments" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "entity_type" "text" NOT NULL,
+    "entity_id" "uuid" NOT NULL,
+    "file_name" "text" NOT NULL,
+    "file_path" "text" NOT NULL,
+    "file_size" bigint DEFAULT 0 NOT NULL,
+    "mime_type" "text" DEFAULT 'application/octet-stream'::"text" NOT NULL,
+    "category" "text" DEFAULT 'general'::"text" NOT NULL,
+    "description" "text",
+    "uploaded_by" "uuid" NOT NULL,
+    "metadata" "jsonb" DEFAULT '{}'::"jsonb",
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "updated_at" timestamp with time zone DEFAULT "now"()
+);
+
+
+ALTER TABLE "public"."crm_attachments" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."crm_audit_log" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "user_id" "uuid",
+    "action" "text" NOT NULL,
+    "entity_type" "text" NOT NULL,
+    "entity_id" "uuid",
+    "changes" "jsonb" DEFAULT '{}'::"jsonb",
+    "metadata" "jsonb" DEFAULT '{}'::"jsonb",
+    "ip_address" "text",
+    "user_agent" "text",
+    "created_at" timestamp with time zone DEFAULT "now"()
+);
+
+
+ALTER TABLE "public"."crm_audit_log" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."crm_calendar_booking_log" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid",
+    "lead_id" "uuid",
+    "recruit_id" "uuid",
+    "provider" "text" NOT NULL,
+    "external_uri" "text" NOT NULL,
+    "invitee_email" "text",
+    "invitee_name" "text",
+    "scheduled_start" timestamp with time zone,
+    "scheduled_end" timestamp with time zone,
+    "event_type_name" "text",
+    "raw_payload" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
+    "engagement_signal_fired" boolean DEFAULT false NOT NULL,
+    "activity_id" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "crm_calendar_booking_log_provider_check" CHECK (("provider" = ANY (ARRAY['calendly'::"text", 'outlook'::"text", 'google'::"text", 'other'::"text"])))
+);
+
+
+ALTER TABLE "public"."crm_calendar_booking_log" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."crm_calendar_booking_log" IS 'Round 7 — every inbound calendar booking received by crm-calendar-booking-webhook. Dedupe key is (provider, external_uri). Source of truth for ''calendar_booking'' engagement signals.';
+
 
 
 CREATE TABLE IF NOT EXISTS "public"."crm_calendar_integrations" (
@@ -7891,6 +15938,164 @@ CREATE TABLE IF NOT EXISTS "public"."crm_cases" (
 ALTER TABLE "public"."crm_cases" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."crm_challenge_entries" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "challenge_id" "uuid" NOT NULL,
+    "user_id" "uuid" NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "progress" integer DEFAULT 0 NOT NULL,
+    "completed" boolean DEFAULT false NOT NULL,
+    "completed_at" timestamp with time zone
+);
+
+
+ALTER TABLE "public"."crm_challenge_entries" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."crm_challenges" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "title" "text" NOT NULL,
+    "description" "text",
+    "challenge_type" "text" DEFAULT 'individual'::"text" NOT NULL,
+    "metric" "text" NOT NULL,
+    "target" integer NOT NULL,
+    "xp_reward" integer DEFAULT 100 NOT NULL,
+    "period" "text" DEFAULT 'weekly'::"text" NOT NULL,
+    "starts_at" timestamp with time zone NOT NULL,
+    "ends_at" timestamp with time zone NOT NULL,
+    "is_active" boolean DEFAULT true NOT NULL,
+    "created_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."crm_challenges" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."crm_community_events" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "name" "text" NOT NULL,
+    "event_type" "text" DEFAULT 'other'::"text" NOT NULL,
+    "event_date" "date" NOT NULL,
+    "location" "text",
+    "contacts_captured" integer DEFAULT 0 NOT NULL,
+    "leads_generated" integer DEFAULT 0 NOT NULL,
+    "rep_id" "uuid",
+    "notes" "text",
+    "created_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "crm_community_events_event_type_check" CHECK (("event_type" = ANY (ARRAY['church_partnership'::"text", 'hydration_booth'::"text", 'chamber_bni_sbdc'::"text", 'health_fair'::"text", 'co_sponsored'::"text", 'other'::"text"])))
+);
+
+
+ALTER TABLE "public"."crm_community_events" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."crm_concierge_handoff_log" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "lead_id" "uuid" NOT NULL,
+    "handoff_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "received_at" timestamp with time zone,
+    "received_by" "uuid",
+    "notes" "text",
+    "payload" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL
+);
+
+
+ALTER TABLE "public"."crm_concierge_handoff_log" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."crm_conversation_goal_config" (
+    "org_id" "uuid" NOT NULL,
+    "full_time_target" integer DEFAULT 25 NOT NULL,
+    "part_time_default_target" integer DEFAULT 10 NOT NULL,
+    "exempt_special_projects_days" boolean DEFAULT true NOT NULL,
+    "counted_sections" "text"[] DEFAULT ARRAY['lead_communication'::"text", 'activities'::"text"] NOT NULL,
+    "counted_activity_types" "text"[] DEFAULT ARRAY['call'::"text", 'email'::"text", 'sms'::"text", 'text'::"text", 'meeting'::"text", 'demo'::"text", 'presentation'::"text"] NOT NULL,
+    "spec_locked" boolean DEFAULT true NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "crm_conversation_goal_config_full_time_target_check" CHECK ((("full_time_target" >= 1) AND ("full_time_target" <= 200))),
+    CONSTRAINT "crm_conversation_goal_config_part_time_default_target_check" CHECK ((("part_time_default_target" >= 1) AND ("part_time_default_target" <= 200)))
+);
+
+
+ALTER TABLE "public"."crm_conversation_goal_config" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."crm_daily_log_corrections" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "event_id" "uuid" NOT NULL,
+    "original_user_id" "uuid",
+    "correction_type" "text" NOT NULL,
+    "before_image" "jsonb" NOT NULL,
+    "after_image" "jsonb",
+    "reason" "text" NOT NULL,
+    "corrected_by" "uuid" NOT NULL,
+    "corrected_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "crm_daily_log_corrections_correction_type_check" CHECK (("correction_type" = ANY (ARRAY['edit'::"text", 'delete'::"text"])))
+);
+
+
+ALTER TABLE "public"."crm_daily_log_corrections" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."crm_daily_log_events" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "user_id" "uuid" NOT NULL,
+    "log_date" "date" NOT NULL,
+    "source" "text" NOT NULL,
+    "source_id" "uuid",
+    "section" "text" NOT NULL,
+    "activity_type" "text" NOT NULL,
+    "activity_subtype" "text",
+    "description" "text",
+    "metadata" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
+    "manual" boolean DEFAULT false NOT NULL,
+    "occurred_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "prospect_name" "text",
+    "company_name" "text",
+    "linked_record_type" "text",
+    "linked_record_id" "uuid",
+    "search_tsv" "tsvector" GENERATED ALWAYS AS ((((("setweight"("to_tsvector"('"english"'::"regconfig", COALESCE("prospect_name", ''::"text")), 'A'::"char") || "setweight"("to_tsvector"('"english"'::"regconfig", COALESCE("company_name", ''::"text")), 'A'::"char")) || "setweight"("to_tsvector"('"english"'::"regconfig", COALESCE("activity_type", ''::"text")), 'B'::"char")) || "setweight"("to_tsvector"('"english"'::"regconfig", COALESCE("activity_subtype", ''::"text")), 'B'::"char")) || "setweight"("to_tsvector"('"english"'::"regconfig", COALESCE("description", ''::"text")), 'C'::"char"))) STORED,
+    CONSTRAINT "crm_daily_log_events_linked_record_type_check" CHECK (("linked_record_type" = ANY (ARRAY['lead'::"text", 'contact'::"text", 'recruit'::"text", 'account'::"text"]))),
+    CONSTRAINT "crm_daily_log_events_section_check" CHECK (("section" = ANY (ARRAY['lead_communication'::"text", 'linkedin_activity'::"text", 'pipeline'::"text", 'deals_closed'::"text", 'activities'::"text", 'content_creation'::"text", 'special_projects'::"text"]))),
+    CONSTRAINT "crm_daily_log_events_source_check" CHECK (("source" = ANY (ARRAY['crm_activities'::"text", 'crm_email_log'::"text", 'crm_lead_quote_history'::"text", 'crm_special_projects'::"text", 'manual'::"text", 'outlook'::"text", 'goto_connect'::"text", 'linkedin'::"text", 'system'::"text"])))
+);
+
+
+ALTER TABLE "public"."crm_daily_log_events" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."crm_daily_log_ui_config" (
+    "org_id" "uuid" NOT NULL,
+    "accordion_mode" "text" DEFAULT 'multi'::"text" NOT NULL,
+    "default_collapsed" boolean DEFAULT true NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "spec_locked" boolean DEFAULT true NOT NULL,
+    CONSTRAINT "crm_daily_log_ui_config_accordion_chk" CHECK (("accordion_mode" = ANY (ARRAY['single'::"text", 'multi'::"text"])))
+);
+
+
+ALTER TABLE "public"."crm_daily_log_ui_config" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."crm_daily_log_ui_config" IS 'Round 9: per-org Daily Log UI knobs.';
+
+
+
+COMMENT ON COLUMN "public"."crm_daily_log_ui_config"."spec_locked" IS 'Section 12 / Round 6 Addendum: when true, the Daily Log accordion is multi-expand and starts fully collapsed regardless of column values.';
+
+
+
 CREATE TABLE IF NOT EXISTS "public"."crm_dashboard_layouts" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "user_id" "uuid" NOT NULL,
@@ -7944,6 +16149,25 @@ CREATE TABLE IF NOT EXISTS "public"."crm_deal_contacts" (
 ALTER TABLE "public"."crm_deal_contacts" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."crm_deal_predictions" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "deal_id" "uuid" NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "win_probability" numeric DEFAULT 0.5 NOT NULL,
+    "confidence" "text" DEFAULT 'medium'::"text" NOT NULL,
+    "factors" "jsonb" DEFAULT '[]'::"jsonb" NOT NULL,
+    "risk_signals" "jsonb" DEFAULT '[]'::"jsonb" NOT NULL,
+    "recommended_actions" "jsonb" DEFAULT '[]'::"jsonb" NOT NULL,
+    "predicted_close_date" "date",
+    "deal_health_score" integer DEFAULT 50 NOT NULL,
+    "model_version" "text" DEFAULT 'v1'::"text" NOT NULL,
+    "calculated_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."crm_deal_predictions" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."crm_deal_products" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "deal_id" "uuid" NOT NULL,
@@ -7958,6 +16182,79 @@ CREATE TABLE IF NOT EXISTS "public"."crm_deal_products" (
 
 
 ALTER TABLE "public"."crm_deal_products" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."crm_deal_room_messages" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "room_id" "uuid" NOT NULL,
+    "user_id" "uuid" NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "message_type" "text" DEFAULT 'text'::"text" NOT NULL,
+    "content" "text" NOT NULL,
+    "metadata" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
+    "mentions" "jsonb" DEFAULT '[]'::"jsonb" NOT NULL,
+    "reactions" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
+    "edited_at" timestamp with time zone,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "crm_deal_room_messages_type_check" CHECK (("message_type" = ANY (ARRAY['text'::"text", 'file'::"text", 'system'::"text", 'action'::"text"])))
+);
+
+
+ALTER TABLE "public"."crm_deal_room_messages" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."crm_deal_room_participants" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "room_id" "uuid" NOT NULL,
+    "user_id" "uuid" NOT NULL,
+    "user_name" "text" NOT NULL,
+    "user_email" "text" NOT NULL,
+    "user_avatar_url" "text",
+    "role" "text" DEFAULT 'collaborator'::"text" NOT NULL,
+    "is_online" boolean DEFAULT false NOT NULL,
+    "last_seen_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "crm_deal_room_participants_role_check" CHECK (("role" = ANY (ARRAY['owner'::"text", 'collaborator'::"text", 'viewer'::"text"])))
+);
+
+
+ALTER TABLE "public"."crm_deal_room_participants" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."crm_deal_room_pinned_items" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "room_id" "uuid" NOT NULL,
+    "item_type" "text" NOT NULL,
+    "title" "text" NOT NULL,
+    "entity_id" "uuid",
+    "url" "text",
+    "pinned_by" "uuid" NOT NULL,
+    "pinned_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "crm_deal_room_pinned_items_type_check" CHECK (("item_type" = ANY (ARRAY['document'::"text", 'quote'::"text", 'email'::"text", 'note'::"text"])))
+);
+
+
+ALTER TABLE "public"."crm_deal_room_pinned_items" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."crm_deal_rooms" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "deal_id" "uuid" NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "name" "text" NOT NULL,
+    "description" "text",
+    "status" "text" DEFAULT 'active'::"text" NOT NULL,
+    "participants" "jsonb" DEFAULT '[]'::"jsonb" NOT NULL,
+    "pinned_items" "jsonb" DEFAULT '[]'::"jsonb" NOT NULL,
+    "settings" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
+    "created_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "crm_deal_rooms_status_check" CHECK (("status" = ANY (ARRAY['active'::"text", 'archived'::"text"])))
+);
+
+
+ALTER TABLE "public"."crm_deal_rooms" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."crm_deal_stage_history" (
@@ -8073,6 +16370,35 @@ CREATE TABLE IF NOT EXISTS "public"."crm_documents" (
 ALTER TABLE "public"."crm_documents" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."crm_email_ab_tests" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "name" "text" NOT NULL,
+    "template_id" "uuid",
+    "variant_a" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
+    "variant_b" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
+    "metric" "text" DEFAULT 'open'::"text" NOT NULL,
+    "status" "text" DEFAULT 'draft'::"text" NOT NULL,
+    "winner" "text",
+    "sample_size" integer DEFAULT 100 NOT NULL,
+    "variant_a_sent" integer DEFAULT 0 NOT NULL,
+    "variant_b_sent" integer DEFAULT 0 NOT NULL,
+    "variant_a_success" integer DEFAULT 0 NOT NULL,
+    "variant_b_success" integer DEFAULT 0 NOT NULL,
+    "started_at" timestamp with time zone,
+    "completed_at" timestamp with time zone,
+    "created_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "crm_email_ab_tests_metric_check" CHECK (("metric" = ANY (ARRAY['open'::"text", 'click'::"text", 'reply'::"text"]))),
+    CONSTRAINT "crm_email_ab_tests_status_check" CHECK (("status" = ANY (ARRAY['draft'::"text", 'running'::"text", 'completed'::"text", 'cancelled'::"text"]))),
+    CONSTRAINT "crm_email_ab_tests_winner_check" CHECK (("winner" = ANY (ARRAY['a'::"text", 'b'::"text", 'tie'::"text", NULL::"text"])))
+);
+
+
+ALTER TABLE "public"."crm_email_ab_tests" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."crm_email_attachments" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "email_id" "uuid",
@@ -8161,6 +16487,11 @@ CREATE TABLE IF NOT EXISTS "public"."crm_email_log" (
     "in_reply_to" "text",
     "references_header" "text",
     "inbound_address" "text",
+    "ab_test_id" "uuid",
+    "ab_variant" "text",
+    "master_template_id" "uuid",
+    "recruit_id" "uuid",
+    CONSTRAINT "crm_email_log_ab_variant_check" CHECK ((("ab_variant" IS NULL) OR ("ab_variant" = ANY (ARRAY['a'::"text", 'b'::"text"])))),
     CONSTRAINT "crm_email_log_direction_check" CHECK (("direction" = ANY (ARRAY['inbound'::"text", 'outbound'::"text"]))),
     CONSTRAINT "crm_email_log_status_check" CHECK (("status" = ANY (ARRAY['sent'::"text", 'failed'::"text", 'bounced'::"text"])))
 );
@@ -8182,6 +16513,16 @@ COMMENT ON COLUMN "public"."crm_email_log"."references_header" IS 'RFC 2822 Refe
 
 
 COMMENT ON COLUMN "public"."crm_email_log"."inbound_address" IS 'The address that received the inbound email';
+
+
+
+COMMENT ON COLUMN "public"."crm_email_log"."master_template_id" IS 'CRM rebuild Section 7 (Round 3 Addendum) - when populated, this email was sent from the Master Template Library (admin-driven mass send). Mutually informative with template_id (per-rep templates).';
+
+
+
+COMMENT ON COLUMN "public"."crm_email_log"."recruit_id" IS 'Section 9 Round 5: when an email is sent from the Recruit Profile
+     in-profile composer or from a recruiting bulk-send, this points at
+     the recruit so the timeline + Templates usage metrics work end-to-end.';
 
 
 
@@ -8339,6 +16680,101 @@ CREATE TABLE IF NOT EXISTS "public"."crm_email_tracking" (
 ALTER TABLE "public"."crm_email_tracking" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."crm_family_members" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "lead_id" "uuid",
+    "contact_id" "uuid",
+    "first_name" "text" NOT NULL,
+    "last_name" "text" NOT NULL,
+    "relationship" "text" NOT NULL,
+    "date_of_birth" "date",
+    "gender" "text",
+    "email" "text",
+    "is_covered" boolean DEFAULT false,
+    "coverage_start_date" "date",
+    "coverage_end_date" "date",
+    "ssn_last_four" "text",
+    "tobacco_user" boolean DEFAULT false,
+    "notes" "text",
+    "sort_order" integer DEFAULT 0,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "search_vector" "tsvector",
+    CONSTRAINT "crm_family_members_gender_check" CHECK ((("gender" IS NULL) OR ("gender" = ANY (ARRAY['male'::"text", 'female'::"text", 'other'::"text"])))),
+    CONSTRAINT "crm_family_members_parent_check" CHECK ((("lead_id" IS NOT NULL) OR ("contact_id" IS NOT NULL))),
+    CONSTRAINT "crm_family_members_relationship_check" CHECK (("relationship" = ANY (ARRAY['spouse'::"text", 'child'::"text", 'stepchild'::"text", 'domestic_partner'::"text", 'foster_child'::"text", 'ward'::"text", 'parent'::"text", 'other'::"text"])))
+);
+
+
+ALTER TABLE "public"."crm_family_members" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."crm_family_members" IS 'Family members linked to CRM leads and contacts for family-aware workflows';
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."crm_focus_items" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "user_id" "uuid" DEFAULT "auth"."uid"() NOT NULL,
+    "entity_type" "text" NOT NULL,
+    "entity_id" "uuid" NOT NULL,
+    "priority" integer DEFAULT 0,
+    "notes" "text",
+    "pinned_at" timestamp with time zone DEFAULT "now"(),
+    "completed_at" timestamp with time zone,
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    CONSTRAINT "crm_focus_items_entity_type_check" CHECK (("entity_type" = ANY (ARRAY['lead'::"text", 'contact'::"text", 'deal'::"text", 'task'::"text", 'case'::"text", 'recruiting'::"text"])))
+);
+
+
+ALTER TABLE "public"."crm_focus_items" OWNER TO "postgres";
+
+
+COMMENT ON COLUMN "public"."crm_focus_items"."entity_type" IS 'Section 6 / Round 5: which CRM record is pinned to Today.';
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."crm_follow_up_cadences" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "pipeline_stage_id" "uuid",
+    "name" "text" NOT NULL,
+    "steps" "jsonb" DEFAULT '[]'::"jsonb" NOT NULL,
+    "is_default" boolean DEFAULT false NOT NULL,
+    "is_active" boolean DEFAULT true NOT NULL,
+    "created_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "halt_on_engagement" boolean DEFAULT true NOT NULL,
+    "halt_on_optout" boolean DEFAULT true NOT NULL,
+    "description" "text",
+    "schema_version" integer DEFAULT 1 NOT NULL,
+    "module_scope" "text" DEFAULT 'leads'::"text" NOT NULL,
+    CONSTRAINT "crm_follow_up_cadences_module_scope_check" CHECK (("module_scope" = ANY (ARRAY['leads'::"text", 'recruiting'::"text"])))
+);
+
+
+ALTER TABLE "public"."crm_follow_up_cadences" OWNER TO "postgres";
+
+
+COMMENT ON COLUMN "public"."crm_follow_up_cadences"."halt_on_engagement" IS 'CRM rebuild P3 — when true, any engagement signal pauses the cadence and routes Working/Quoted → Engaged.';
+
+
+
+COMMENT ON COLUMN "public"."crm_follow_up_cadences"."halt_on_optout" IS 'CRM rebuild P3 — when true, any opt-out keyword in a reply pauses the cadence and routes the lead to Lost / DNC.';
+
+
+
+COMMENT ON COLUMN "public"."crm_follow_up_cadences"."schema_version" IS 'Cadence steps schema version. v1 = legacy {step,delay_hours,channel,label}. v2 = adds template_id, send_window, halt_on_engagement.';
+
+
+
+COMMENT ON COLUMN "public"."crm_follow_up_cadences"."module_scope" IS 'Section 9 / Round 5: which CRM module the cadence belongs to.';
+
+
+
 CREATE TABLE IF NOT EXISTS "public"."crm_forecast_entries" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "forecast_id" "uuid" NOT NULL,
@@ -8387,6 +16823,24 @@ CREATE SEQUENCE IF NOT EXISTS "public"."crm_health_quote_number_seq"
 
 
 ALTER SEQUENCE "public"."crm_health_quote_number_seq" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."crm_integration_accounts" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "user_id" "uuid",
+    "provider" "text" NOT NULL,
+    "status" "text" DEFAULT 'disconnected'::"text" NOT NULL,
+    "external_user_id" "text",
+    "metadata" "jsonb" DEFAULT '{}'::"jsonb",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "crm_integration_accounts_provider_check" CHECK (("provider" = ANY (ARRAY['microsoft_outlook'::"text", 'goto_connect'::"text", 'linkedin'::"text"]))),
+    CONSTRAINT "crm_integration_accounts_status_check" CHECK (("status" = ANY (ARRAY['disconnected'::"text", 'connected'::"text", 'error'::"text"])))
+);
+
+
+ALTER TABLE "public"."crm_integration_accounts" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."crm_invoice_line_items" (
@@ -8477,6 +16931,24 @@ CREATE TABLE IF NOT EXISTS "public"."crm_invoices" (
 ALTER TABLE "public"."crm_invoices" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."crm_lead_cadence_state" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "lead_id" "uuid" NOT NULL,
+    "cadence_id" "uuid" NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "current_step" integer DEFAULT 0 NOT NULL,
+    "next_action_at" timestamp with time zone,
+    "paused" boolean DEFAULT false NOT NULL,
+    "paused_reason" "text",
+    "completed_at" timestamp with time zone,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."crm_lead_cadence_state" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."crm_lead_health_quotes" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "lead_id" "uuid" NOT NULL,
@@ -8544,6 +17016,100 @@ CREATE TABLE IF NOT EXISTS "public"."crm_lead_plan_interests" (
 ALTER TABLE "public"."crm_lead_plan_interests" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."crm_lead_quote_history" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "lead_id" "uuid" NOT NULL,
+    "plan_name" "text" NOT NULL,
+    "plan_structure" "text",
+    "monthly_price" numeric(12,2),
+    "quote_date" "date" DEFAULT CURRENT_DATE NOT NULL,
+    "notes" "text",
+    "created_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."crm_lead_quote_history" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."crm_lead_source_types" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "slug" "text" NOT NULL,
+    "label" "text" NOT NULL,
+    "is_self_generated" boolean DEFAULT false NOT NULL,
+    "is_active" boolean DEFAULT true NOT NULL,
+    "sort_order" integer DEFAULT 0 NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."crm_lead_source_types" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."crm_lead_time_entries" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "lead_id" "uuid" NOT NULL,
+    "user_id" "uuid",
+    "source" "text" NOT NULL,
+    "duration_seconds" integer NOT NULL,
+    "description" "text",
+    "occurred_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "crm_lead_time_entries_duration_seconds_check" CHECK (("duration_seconds" >= 0)),
+    CONSTRAINT "crm_lead_time_entries_source_check" CHECK (("source" = ANY (ARRAY['manual'::"text", 'call'::"text", 'email'::"text", 'profile'::"text", 'activity'::"text", 'integration'::"text"])))
+);
+
+
+ALTER TABLE "public"."crm_lead_time_entries" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."crm_linkedin_config" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "is_active" boolean DEFAULT false NOT NULL,
+    "weekly_content_target" "jsonb" DEFAULT '{"shorts": 2, "shared_posts": 2, "original_posts": 2}'::"jsonb" NOT NULL,
+    "notes" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."crm_linkedin_config" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."crm_master_templates" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "channel" "text" NOT NULL,
+    "name" "text" NOT NULL,
+    "subject" "text",
+    "body" "text" NOT NULL,
+    "version" integer DEFAULT 1 NOT NULL,
+    "parent_template_id" "uuid",
+    "archived_at" timestamp with time zone,
+    "created_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "tags" "text"[] DEFAULT '{}'::"text"[] NOT NULL,
+    "usage_count" integer DEFAULT 0 NOT NULL,
+    "last_used_at" timestamp with time zone,
+    CONSTRAINT "crm_master_templates_channel_check" CHECK (("channel" = ANY (ARRAY['email'::"text", 'sms'::"text", 'phone_script'::"text"])))
+);
+
+
+ALTER TABLE "public"."crm_master_templates" OWNER TO "postgres";
+
+
+COMMENT ON COLUMN "public"."crm_master_templates"."usage_count" IS 'Total outbound sends that referenced this master template. Bumped by the send-crm-email edge function via crm_master_template_bump_usage().';
+
+
+
+COMMENT ON COLUMN "public"."crm_master_templates"."last_used_at" IS 'Most recent send timestamp for this master template.';
+
+
+
 CREATE TABLE IF NOT EXISTS "public"."crm_meeting_bookings" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "schedule_id" "uuid" NOT NULL,
@@ -8591,6 +17157,164 @@ CREATE TABLE IF NOT EXISTS "public"."crm_meeting_schedules" (
 ALTER TABLE "public"."crm_meeting_schedules" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."crm_mentions" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "mentioned_user_id" "uuid" NOT NULL,
+    "mentioned_by" "uuid" NOT NULL,
+    "entity_type" "text" NOT NULL,
+    "entity_id" "uuid" NOT NULL,
+    "lead_id" "uuid",
+    "deal_id" "uuid",
+    "read" boolean DEFAULT false NOT NULL,
+    "read_at" timestamp with time zone,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "crm_mentions_entity_type_check" CHECK (("entity_type" = ANY (ARRAY['activity'::"text", 'note'::"text", 'deal_activity'::"text"])))
+);
+
+
+ALTER TABLE "public"."crm_mentions" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."crm_oe_reactivation_runs" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "run_year" integer NOT NULL,
+    "scheduled_for" "date" NOT NULL,
+    "started_at" timestamp with time zone,
+    "completed_at" timestamp with time zone,
+    "leads_targeted" integer DEFAULT 0,
+    "cadence_id" "uuid",
+    "created_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."crm_oe_reactivation_runs" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."crm_optout_keywords" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid",
+    "phrase" "text" NOT NULL,
+    "is_active" boolean DEFAULT true NOT NULL,
+    "created_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."crm_optout_keywords" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."crm_outside_advisors" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "name" "text" NOT NULL,
+    "email" "text",
+    "phone" "text",
+    "company" "text",
+    "is_active" boolean DEFAULT true NOT NULL,
+    "notes" "text",
+    "created_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."crm_outside_advisors" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."crm_performance_alert_log" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "user_id" "uuid" NOT NULL,
+    "window_start" "date" NOT NULL,
+    "window_end" "date" NOT NULL,
+    "rep_count" integer NOT NULL,
+    "team_avg" numeric(10,2) NOT NULL,
+    "top_performer_count" integer NOT NULL,
+    "fired_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "quiet_until" timestamp with time zone NOT NULL,
+    "payload" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
+    "notification_dispatched_at" timestamp with time zone
+);
+
+
+ALTER TABLE "public"."crm_performance_alert_log" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."crm_performance_lag_config" (
+    "org_id" "uuid" NOT NULL,
+    "is_enabled" boolean DEFAULT true NOT NULL,
+    "threshold_pct" integer DEFAULT 20 NOT NULL,
+    "window_days" integer DEFAULT 7 NOT NULL,
+    "cadence" "text" DEFAULT 'daily'::"text" NOT NULL,
+    "notify_rep" boolean DEFAULT true NOT NULL,
+    "notify_admins" boolean DEFAULT true NOT NULL,
+    "email_channel" boolean DEFAULT true NOT NULL,
+    "inapp_channel" boolean DEFAULT true NOT NULL,
+    "quiet_period_days" integer DEFAULT 7 NOT NULL,
+    "min_business_days_in_system" integer DEFAULT 5 NOT NULL,
+    "exclude_special_projects" boolean DEFAULT true NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "metric_kind" "text" DEFAULT 'activity_count'::"text" NOT NULL,
+    "baseline_kind" "text" DEFAULT 'team_avg_excl_self'::"text" NOT NULL,
+    "top_performer_pct_target" integer DEFAULT 80 NOT NULL,
+    "window_kind" "text" DEFAULT 'rolling'::"text" NOT NULL,
+    "spec_locked" boolean DEFAULT true NOT NULL,
+    "business_days_only" boolean DEFAULT true NOT NULL,
+    CONSTRAINT "crm_performance_lag_config_baseline_chk" CHECK (("baseline_kind" = ANY (ARRAY['team_avg_excl_self'::"text", 'team_median_excl_self'::"text", 'top_performer_pct'::"text"]))),
+    CONSTRAINT "crm_performance_lag_config_cadence_chk" CHECK (("cadence" = ANY (ARRAY['daily'::"text", 'weekday'::"text", 'weekly'::"text"]))),
+    CONSTRAINT "crm_performance_lag_config_metric_chk" CHECK (("metric_kind" = ANY (ARRAY['activity_count'::"text", 'leads_worked'::"text", 'time_logged_minutes'::"text"]))),
+    CONSTRAINT "crm_performance_lag_config_min_business_days_chk" CHECK ((("min_business_days_in_system" >= 0) AND ("min_business_days_in_system" <= 30))),
+    CONSTRAINT "crm_performance_lag_config_quiet_chk" CHECK ((("quiet_period_days" >= 0) AND ("quiet_period_days" <= 30))),
+    CONSTRAINT "crm_performance_lag_config_threshold_chk" CHECK ((("threshold_pct" >= 5) AND ("threshold_pct" <= 90))),
+    CONSTRAINT "crm_performance_lag_config_top_target_chk" CHECK ((("top_performer_pct_target" >= 5) AND ("top_performer_pct_target" <= 100))),
+    CONSTRAINT "crm_performance_lag_config_window_chk" CHECK ((("window_days" >= 1) AND ("window_days" <= 90))),
+    CONSTRAINT "crm_performance_lag_config_window_kind_chk" CHECK (("window_kind" = ANY (ARRAY['rolling'::"text", 'snapshot_weekly'::"text"])))
+);
+
+
+ALTER TABLE "public"."crm_performance_lag_config" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."crm_performance_lag_config" IS 'Round 8: per-org Performance Lag Alert config.';
+
+
+
+COMMENT ON COLUMN "public"."crm_performance_lag_config"."spec_locked" IS 'Section 12 / Round 6 Addendum: when true, the scan ignores metric_kind/baseline_kind/window_kind and uses spec-locked values.';
+
+
+
+COMMENT ON COLUMN "public"."crm_performance_lag_config"."business_days_only" IS 'Section 12 / Round 11: when true, rolling window counts back N business days (Mon-Fri); scan no-ops on weekends.';
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."crm_phone_numbers" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "owner_type" "text" NOT NULL,
+    "owner_id" "uuid" NOT NULL,
+    "phone_number" "text" NOT NULL,
+    "phone_type" "text" DEFAULT 'mobile'::"text" NOT NULL,
+    "is_primary" boolean DEFAULT false NOT NULL,
+    "label" "text",
+    "do_not_call" boolean DEFAULT false NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "crm_phone_numbers_owner_type_check" CHECK (("owner_type" = ANY (ARRAY['lead'::"text", 'contact'::"text", 'family_member'::"text"]))),
+    CONSTRAINT "crm_phone_numbers_type_check" CHECK (("phone_type" = ANY (ARRAY['mobile'::"text", 'home'::"text", 'work'::"text", 'fax'::"text", 'other'::"text"])))
+);
+
+
+ALTER TABLE "public"."crm_phone_numbers" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."crm_phone_numbers" IS 'Normalized phone numbers with family-member attribution for CRM records';
+
+
+
 CREATE TABLE IF NOT EXISTS "public"."crm_pipeline_stages" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "name" "text" NOT NULL,
@@ -8605,11 +17329,22 @@ CREATE TABLE IF NOT EXISTS "public"."crm_pipeline_stages" (
     "updated_at" timestamp with time zone DEFAULT "now"(),
     "org_id" "uuid",
     "slug" "text",
-    "order_index" integer DEFAULT 0
+    "order_index" integer DEFAULT 0,
+    "is_terminal" boolean DEFAULT false NOT NULL,
+    "routes_to_subsection" "text",
+    CONSTRAINT "crm_pipeline_stages_routes_to_subsection_check" CHECK ((("routes_to_subsection" IS NULL) OR ("routes_to_subsection" = ANY (ARRAY['working'::"text", 'nurture'::"text", 'linkedin'::"text", 'do_not_contact'::"text", 'concierge_handoff'::"text"]))))
 );
 
 
 ALTER TABLE "public"."crm_pipeline_stages" OWNER TO "postgres";
+
+
+COMMENT ON COLUMN "public"."crm_pipeline_stages"."is_terminal" IS 'true when the stage ends the active sales motion (won/nurture/lost). Drives reporting + cadence halts.';
+
+
+
+COMMENT ON COLUMN "public"."crm_pipeline_stages"."routes_to_subsection" IS 'Lead workflow subsection a lead is auto-routed to when entering this stage. Read by crm_lead_workflow_subsection_sync().';
+
 
 
 CREATE TABLE IF NOT EXISTS "public"."crm_price_book_items" (
@@ -8642,6 +17377,43 @@ CREATE TABLE IF NOT EXISTS "public"."crm_price_books" (
 
 
 ALTER TABLE "public"."crm_price_books" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."crm_product_form_fields" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "product_id" "uuid" NOT NULL,
+    "field_type" "text" NOT NULL,
+    "label" "text" NOT NULL,
+    "placeholder" "text",
+    "required" boolean DEFAULT false NOT NULL,
+    "options" "jsonb" DEFAULT '[]'::"jsonb",
+    "validation" "jsonb" DEFAULT '{}'::"jsonb",
+    "sort_order" integer DEFAULT 0 NOT NULL,
+    "is_active" boolean DEFAULT true NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "crm_product_form_fields_field_type_check" CHECK (("field_type" = ANY (ARRAY['text'::"text", 'email'::"text", 'phone'::"text", 'number'::"text", 'textarea'::"text", 'select'::"text", 'radio'::"text", 'checkbox'::"text", 'date'::"text", 'hidden'::"text", 'heading'::"text", 'paragraph'::"text"])))
+);
+
+
+ALTER TABLE "public"."crm_product_form_fields" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."crm_product_lines" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid",
+    "slug" "text" NOT NULL,
+    "label" "text" NOT NULL,
+    "description" "text",
+    "is_active" boolean DEFAULT true NOT NULL,
+    "sort_order" integer DEFAULT 0 NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."crm_product_lines" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."crm_products" (
@@ -8736,6 +17508,41 @@ CREATE TABLE IF NOT EXISTS "public"."crm_purchase_orders" (
 ALTER TABLE "public"."crm_purchase_orders" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."crm_quarterly_milestones" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "year" integer NOT NULL,
+    "quarter" integer NOT NULL,
+    "phase_name" "text" NOT NULL,
+    "lead_target" integer DEFAULT 0 NOT NULL,
+    "sales_target" integer DEFAULT 0 NOT NULL,
+    "revenue_target" numeric(15,2) DEFAULT 0 NOT NULL,
+    "linkedin_follower_target" integer DEFAULT 0 NOT NULL,
+    "referral_partner_target" integer DEFAULT 0 NOT NULL,
+    "community_event_target" integer DEFAULT 0 NOT NULL,
+    "actuals" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
+    "created_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "crm_quarterly_milestones_quarter_check" CHECK ((("quarter" >= 1) AND ("quarter" <= 4)))
+);
+
+
+ALTER TABLE "public"."crm_quarterly_milestones" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."crm_quote_line_item_answers" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "line_item_id" "uuid" NOT NULL,
+    "field_id" "uuid" NOT NULL,
+    "value" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."crm_quote_line_item_answers" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."crm_quote_line_items" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "quote_id" "uuid" NOT NULL,
@@ -8756,6 +17563,25 @@ CREATE TABLE IF NOT EXISTS "public"."crm_quote_line_items" (
 
 
 ALTER TABLE "public"."crm_quote_line_items" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."crm_quote_templates" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "name" "text" NOT NULL,
+    "description" "text",
+    "is_default" boolean DEFAULT false NOT NULL,
+    "layout" "jsonb" DEFAULT '{"sections": [{"id": "header", "type": "header", "order": 0, "visible": true}, {"id": "line_items", "type": "line_items", "order": 1, "visible": true}, {"id": "totals", "type": "totals", "order": 2, "visible": true}, {"id": "terms", "type": "terms", "order": 3, "visible": true}, {"id": "signature", "type": "signature", "order": 4, "visible": false}, {"id": "footer", "type": "footer", "order": 5, "visible": true}]}'::"jsonb" NOT NULL,
+    "branding" "jsonb" DEFAULT '{"logoUrl": null, "fontFamily": "Inter, sans-serif", "footerText": null, "accentColor": "#14B8A6", "primaryColor": "#0D9488", "headerBgColor": "#F8FAFC"}'::"jsonb" NOT NULL,
+    "content_blocks" "jsonb" DEFAULT '[]'::"jsonb" NOT NULL,
+    "is_active" boolean DEFAULT true NOT NULL,
+    "created_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."crm_quote_templates" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."crm_quotes" (
@@ -8793,6 +17619,7 @@ CREATE TABLE IF NOT EXISTS "public"."crm_quotes" (
     "approved_by" "uuid",
     "approved_at" timestamp with time zone,
     "rejection_reason" "text",
+    "template_id" "uuid",
     CONSTRAINT "crm_quotes_approval_status_check" CHECK (("approval_status" = ANY (ARRAY['not_required'::"text", 'pending'::"text", 'approved'::"text", 'rejected'::"text"]))),
     CONSTRAINT "crm_quotes_discount_type_check" CHECK (("discount_type" = ANY (ARRAY['percent'::"text", 'amount'::"text"]))),
     CONSTRAINT "crm_quotes_status_check" CHECK (("status" = ANY (ARRAY['draft'::"text", 'pending_approval'::"text", 'sent'::"text", 'accepted'::"text", 'rejected'::"text", 'expired'::"text", 'cancelled'::"text"])))
@@ -8800,6 +17627,263 @@ CREATE TABLE IF NOT EXISTS "public"."crm_quotes" (
 
 
 ALTER TABLE "public"."crm_quotes" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."crm_recruit_cadence_state" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "recruit_id" "uuid" NOT NULL,
+    "cadence_id" "uuid" NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "current_step" integer DEFAULT 0 NOT NULL,
+    "next_action_at" timestamp with time zone,
+    "paused" boolean DEFAULT false NOT NULL,
+    "paused_reason" "text",
+    "completed_at" timestamp with time zone,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."crm_recruit_cadence_state" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."crm_recruit_cadence_state" IS 'Section 9 Round 5: per-recruit cadence enrollment audit. Mirrors crm_lead_cadence_state.';
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."crm_recruiting_pipeline_stages" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "name" "text" NOT NULL,
+    "display_name" "text" NOT NULL,
+    "color" "text" DEFAULT '#64748B'::"text" NOT NULL,
+    "icon" "text",
+    "sort_order" integer NOT NULL,
+    "is_active" boolean DEFAULT true NOT NULL,
+    "is_terminal" boolean DEFAULT false NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "crm_recruiting_stage_name_check" CHECK (("name" = ANY (ARRAY['prospect'::"text", 'contacted'::"text", 'interviewing'::"text", 'contracted'::"text", 'onboarding'::"text", 'active'::"text", 'inactive'::"text"]))),
+    CONSTRAINT "crm_recruiting_stage_sort_order_check" CHECK ((("sort_order" >= 1) AND ("sort_order" <= 7))),
+    CONSTRAINT "crm_recruiting_stage_terminal_shape_check" CHECK (("is_terminal" = ("name" = ANY (ARRAY['active'::"text", 'inactive'::"text"]))))
+);
+
+
+ALTER TABLE "public"."crm_recruiting_pipeline_stages" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."crm_recruiting_records" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "first_name" "text" NOT NULL,
+    "last_name" "text" NOT NULL,
+    "email" "text",
+    "phone" "text",
+    "license_number" "text",
+    "npn" "text",
+    "appointed_carriers" "text"[] DEFAULT '{}'::"text"[] NOT NULL,
+    "agency_affiliation" "text",
+    "state" "text",
+    "city" "text",
+    "pipeline_stage" "text" DEFAULT 'prospect'::"text" NOT NULL,
+    "workflow_subsection" "text" DEFAULT 'working'::"text" NOT NULL,
+    "linkedin_workflow_status" "text",
+    "do_not_contact" boolean DEFAULT false NOT NULL,
+    "priority" "text" DEFAULT 'medium'::"text" NOT NULL,
+    "assigned_to" "uuid",
+    "tags" "text"[] DEFAULT '{}'::"text"[] NOT NULL,
+    "notes" "text",
+    "last_contacted_at" timestamp with time zone,
+    "last_touched_at" timestamp with time zone,
+    "stage_changed_at" timestamp with time zone,
+    "created_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "crm_recruiting_records_pipeline_stage_check" CHECK (("pipeline_stage" = ANY (ARRAY['prospect'::"text", 'contacted'::"text", 'interviewing'::"text", 'contracted'::"text", 'onboarding'::"text", 'active'::"text", 'inactive'::"text"]))),
+    CONSTRAINT "crm_recruiting_records_priority_check" CHECK (("priority" = ANY (ARRAY['low'::"text", 'medium'::"text", 'high'::"text", 'urgent'::"text"]))),
+    CONSTRAINT "crm_recruiting_records_workflow_subsection_check" CHECK (("workflow_subsection" = ANY (ARRAY['working'::"text", 'nurture'::"text", 'linkedin'::"text", 'do_not_contact'::"text"])))
+);
+
+
+ALTER TABLE "public"."crm_recruiting_records" OWNER TO "postgres";
+
+
+COMMENT ON COLUMN "public"."crm_recruiting_records"."pipeline_stage" IS 'Section 10 / Round 5 Addendum: locked to the canonical 7 recruiting stages.';
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."crm_referral_partners" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "name" "text" NOT NULL,
+    "partner_type" "text" DEFAULT 'other'::"text" NOT NULL,
+    "company" "text",
+    "email" "text",
+    "phone" "text",
+    "notes" "text",
+    "is_active" boolean DEFAULT true NOT NULL,
+    "created_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "crm_referral_partners_partner_type_check" CHECK (("partner_type" = ANY (ARRAY['financial_advisor'::"text", 'cpa'::"text", 'hr_consultant'::"text", 'attorney'::"text", 'payroll_company'::"text", 'other'::"text"])))
+);
+
+
+ALTER TABLE "public"."crm_referral_partners" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."crm_referrals" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "partner_id" "uuid" NOT NULL,
+    "lead_id" "uuid",
+    "contact_id" "uuid",
+    "referred_by" "uuid" NOT NULL,
+    "direction" "text" NOT NULL,
+    "status" "text" DEFAULT 'pending'::"text" NOT NULL,
+    "notes" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "crm_referrals_direction_check" CHECK (("direction" = ANY (ARRAY['requested'::"text", 'received'::"text"]))),
+    CONSTRAINT "crm_referrals_status_check" CHECK (("status" = ANY (ARRAY['pending'::"text", 'contacted'::"text", 'converted'::"text", 'lost'::"text", 'declined'::"text"])))
+);
+
+
+ALTER TABLE "public"."crm_referrals" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."crm_rep_daily_log_entries" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "user_id" "uuid" NOT NULL,
+    "log_date" "date" NOT NULL,
+    "calls_made" integer DEFAULT 0,
+    "emails_sent" integer DEFAULT 0,
+    "linkedin_touches" integer DEFAULT 0,
+    "meetings_held" integer DEFAULT 0,
+    "leads_worked" integer DEFAULT 0,
+    "notes" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "cancellation_calls" integer DEFAULT 0 NOT NULL,
+    "pipeline_actions" integer DEFAULT 0 NOT NULL,
+    "deals_closed" integer DEFAULT 0 NOT NULL,
+    "activities_other" integer DEFAULT 0 NOT NULL,
+    "content_creation" integer DEFAULT 0 NOT NULL,
+    "manual_flag" boolean DEFAULT false NOT NULL,
+    "section_open_state" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL
+);
+
+
+ALTER TABLE "public"."crm_rep_daily_log_entries" OWNER TO "postgres";
+
+
+COMMENT ON COLUMN "public"."crm_rep_daily_log_entries"."manual_flag" IS 'CRM rebuild Phase 4 — true when the daily-log row was edited by hand. Auto-capture rows leave this false.';
+
+
+
+COMMENT ON COLUMN "public"."crm_rep_daily_log_entries"."section_open_state" IS 'Per-rep accordion state for the daily-log page. Shape: { lead_communication: bool, linkedin_activity: bool, ... }';
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."crm_rep_message_templates" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "user_id" "uuid" NOT NULL,
+    "channel" "text" NOT NULL,
+    "name" "text" NOT NULL,
+    "body" "text" NOT NULL,
+    "is_active" boolean DEFAULT true NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "crm_rep_message_templates_channel_check" CHECK (("channel" = ANY (ARRAY['email'::"text", 'phone_script'::"text", 'sms'::"text"])))
+);
+
+
+ALTER TABLE "public"."crm_rep_message_templates" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."crm_rep_roster" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "user_id" "uuid" NOT NULL,
+    "role_type" "public"."crm_rep_role_type" NOT NULL,
+    "is_active" boolean DEFAULT true NOT NULL,
+    "color_hex" "text",
+    "display_short" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "created_by" "uuid",
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "show_in_today_filter" boolean DEFAULT true NOT NULL,
+    "show_in_reports" boolean DEFAULT false NOT NULL,
+    "include_in_round_robin" boolean DEFAULT false NOT NULL,
+    "sort_order" smallint DEFAULT 0 NOT NULL
+);
+
+
+ALTER TABLE "public"."crm_rep_roster" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."crm_rep_roster" IS 'Round 22 — single source of truth for "who is a lead-eligible rep AND what role do they have." Replaces the email-allowlist in packages/crm-core/src/leads/crmSalespersonRoster.ts and the implicit inside-sales signal in crm_user_conversation_goal_overrides.';
+
+
+
+COMMENT ON COLUMN "public"."crm_rep_roster"."role_type" IS 'inside_sales: subject to Daily Log goals, Performance Lag Alert, §22 Inside Sales aggregate, round-robin pool, cadence eligibility. lead_eligible_non_inside_sales: owns leads via manual assignment only, NOT in any of the above.';
+
+
+
+COMMENT ON COLUMN "public"."crm_rep_roster"."color_hex" IS 'Hex color (e.g. "#DDEBF7") for the rep''s per-rep color/avatar treatment in the UI. NULL = frontend falls back to a deterministic hash-of-user_id palette color.';
+
+
+
+COMMENT ON COLUMN "public"."crm_rep_roster"."display_short" IS 'Short display form (typically first name) for tight UI contexts. NULL = frontend uses profiles.full_name first token.';
+
+
+
+COMMENT ON COLUMN "public"."crm_rep_roster"."show_in_today_filter" IS 'Round 22 — include in Today / Pipeline salesperson typeahead filter.';
+
+
+
+COMMENT ON COLUMN "public"."crm_rep_roster"."show_in_reports" IS 'Round 22 — include in Reports rep filter (tracked inside-sales roster).';
+
+
+
+COMMENT ON COLUMN "public"."crm_rep_roster"."include_in_round_robin" IS 'Round 22 — eligible for auto-assignment round-robin pool.';
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."crm_round_robin_audit" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "lead_id" "uuid" NOT NULL,
+    "assigned_to" "uuid" NOT NULL,
+    "position_at_assignment" integer DEFAULT 0 NOT NULL,
+    "was_skip" boolean DEFAULT false NOT NULL,
+    "skip_reason" "text",
+    "override_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."crm_round_robin_audit" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."crm_round_robin_config" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "is_active" boolean DEFAULT false NOT NULL,
+    "pool_members" "jsonb" DEFAULT '[]'::"jsonb" NOT NULL,
+    "current_position" integer DEFAULT 0 NOT NULL,
+    "tie_breaking_rule" "text" DEFAULT 'sequential'::"text" NOT NULL,
+    "skip_unavailable" boolean DEFAULT true NOT NULL,
+    "updated_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "crm_round_robin_config_tie_breaking_rule_check" CHECK (("tie_breaking_rule" = ANY (ARRAY['sequential'::"text", 'least_leads'::"text", 'random'::"text"])))
+);
+
+
+ALTER TABLE "public"."crm_round_robin_config" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."crm_sales_order_line_items" (
@@ -8875,6 +17959,28 @@ CREATE TABLE IF NOT EXISTS "public"."crm_sales_orders" (
 ALTER TABLE "public"."crm_sales_orders" OWNER TO "postgres";
 
 
+CREATE OR REPLACE VIEW "public"."crm_salesperson_roster" WITH ("security_invoker"='true') AS
+ SELECT "org_id",
+    "user_id",
+    "show_in_today_filter",
+    "show_in_reports",
+    "include_in_round_robin",
+    "sort_order",
+    "is_active",
+    "role_type",
+    "display_short",
+    "created_at",
+    "updated_at"
+   FROM "public"."crm_rep_roster";
+
+
+ALTER VIEW "public"."crm_salesperson_roster" OWNER TO "postgres";
+
+
+COMMENT ON VIEW "public"."crm_salesperson_roster" IS 'Round 22 — read-only view over crm_rep_roster for UI roster queries.';
+
+
+
 CREATE TABLE IF NOT EXISTS "public"."crm_saved_views" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "org_id" "uuid" NOT NULL,
@@ -8889,11 +17995,152 @@ CREATE TABLE IF NOT EXISTS "public"."crm_saved_views" (
     "owner_id" "uuid" NOT NULL,
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
     "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    CONSTRAINT "crm_saved_views_sort_direction_check" CHECK (("sort_direction" = ANY (ARRAY['asc'::"text", 'desc'::"text"])))
+    "color" "text",
+    "icon" "text",
+    "pinned" boolean DEFAULT false,
+    "workspace_id" "uuid",
+    "view_type" "text" DEFAULT 'custom'::"text",
+    CONSTRAINT "crm_saved_views_sort_direction_check" CHECK (("sort_direction" = ANY (ARRAY['asc'::"text", 'desc'::"text"]))),
+    CONSTRAINT "crm_saved_views_view_type_check" CHECK (("view_type" = ANY (ARRAY['custom'::"text", 'smart'::"text", 'system'::"text"])))
 );
 
 
 ALTER TABLE "public"."crm_saved_views" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."crm_sequence_triggers" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "sequence_id" "uuid" NOT NULL,
+    "trigger_type" "text" NOT NULL,
+    "trigger_conditions" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
+    "is_active" boolean DEFAULT true NOT NULL,
+    "enrollment_count" integer DEFAULT 0 NOT NULL,
+    "last_triggered_at" timestamp with time zone,
+    "created_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "crm_sequence_triggers_type_check" CHECK (("trigger_type" = ANY (ARRAY['stage_change'::"text", 'lead_created'::"text", 'score_threshold'::"text", 'tag_added'::"text"])))
+);
+
+
+ALTER TABLE "public"."crm_sequence_triggers" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."crm_sla_config" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "sla_hours" integer DEFAULT 24 NOT NULL,
+    "business_hours_start" time without time zone DEFAULT '09:00:00'::time without time zone NOT NULL,
+    "business_hours_end" time without time zone DEFAULT '17:00:00'::time without time zone NOT NULL,
+    "business_days" integer[] DEFAULT '{1,2,3,4,5}'::integer[] NOT NULL,
+    "timezone" "text" DEFAULT 'America/New_York'::"text" NOT NULL,
+    "escalation_to" "uuid"[] DEFAULT '{}'::"uuid"[],
+    "escalation_email" boolean DEFAULT true NOT NULL,
+    "is_active" boolean DEFAULT true NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "escalation_emails" "text"[] DEFAULT '{}'::"text"[] NOT NULL
+);
+
+
+ALTER TABLE "public"."crm_sla_config" OWNER TO "postgres";
+
+
+COMMENT ON COLUMN "public"."crm_sla_config"."escalation_emails" IS 'External (non-auth-user) email addresses to also notify on SLA breach. Sent in addition to escalation_to user UUIDs and the lead''s assigned rep.';
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."crm_social_platform_connections" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "provider" "text" NOT NULL,
+    "connection_status" "text" DEFAULT 'not_configured'::"text" NOT NULL,
+    "display_name" "text",
+    "metadata" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
+    "sync_error" "text",
+    "last_synced_at" timestamp with time zone,
+    "connected_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "access_token_encrypted" "bytea",
+    "refresh_token_encrypted" "bytea",
+    "token_expires_at" timestamp with time zone,
+    "oauth_scope" "text",
+    CONSTRAINT "crm_social_platform_connections_connection_status_check" CHECK (("connection_status" = ANY (ARRAY['not_configured'::"text", 'pending_oauth'::"text", 'connected'::"text", 'error'::"text", 'disconnected'::"text"]))),
+    CONSTRAINT "crm_social_platform_connections_provider_check" CHECK (("provider" = ANY (ARRAY['facebook'::"text", 'instagram'::"text", 'linkedin'::"text", 'twitter'::"text", 'tiktok'::"text"])))
+);
+
+
+ALTER TABLE "public"."crm_social_platform_connections" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."crm_social_posts" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "title" "text" NOT NULL,
+    "platform" "text" NOT NULL,
+    "post_date" "date" DEFAULT CURRENT_DATE NOT NULL,
+    "status" "text" DEFAULT 'scheduled'::"text" NOT NULL,
+    "utm_campaign" "text",
+    "notes" "text",
+    "linked_campaign_id" "uuid",
+    "created_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "crm_social_posts_platform_check" CHECK (("platform" = ANY (ARRAY['facebook'::"text", 'instagram'::"text", 'linkedin'::"text", 'twitter'::"text", 'tiktok'::"text"]))),
+    CONSTRAINT "crm_social_posts_status_check" CHECK (("status" = ANY (ARRAY['draft'::"text", 'scheduled'::"text", 'published'::"text", 'archived'::"text"])))
+);
+
+
+ALTER TABLE "public"."crm_social_posts" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."crm_special_project_types" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "name" "text" NOT NULL,
+    "description" "text",
+    "is_active" boolean DEFAULT true NOT NULL,
+    "sort_order" integer DEFAULT 100 NOT NULL,
+    "created_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "crm_special_project_types_name_chk" CHECK (("length"(TRIM(BOTH ' '::"text" FROM "name")) > 0))
+);
+
+
+ALTER TABLE "public"."crm_special_project_types" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."crm_special_project_types" IS 'Round 7: org-scoped pick-list of Special Project types reps can pick from. Free-text project_name on crm_special_projects remains the fallback.';
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."crm_special_projects" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "user_id" "uuid" NOT NULL,
+    "log_date" "date" NOT NULL,
+    "project_name" "text" NOT NULL,
+    "time_minutes" integer DEFAULT 0 NOT NULL,
+    "notes" "text" DEFAULT ''::"text" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "project_type_id" "uuid",
+    CONSTRAINT "crm_special_projects_notes_min_chk" CHECK (("length"("btrim"("notes")) >= 1)),
+    CONSTRAINT "crm_special_projects_time_minutes_check" CHECK (("time_minutes" >= 0))
+);
+
+
+ALTER TABLE "public"."crm_special_projects" OWNER TO "postgres";
+
+
+COMMENT ON COLUMN "public"."crm_special_projects"."notes" IS 'Section 12 / Round 10: required non-empty free-text.';
+
+
+
+COMMENT ON COLUMN "public"."crm_special_projects"."project_type_id" IS 'Round 7: optional FK to crm_special_project_types. Free-text project_name remains for ad-hoc entries.';
+
 
 
 CREATE TABLE IF NOT EXISTS "public"."crm_studio_fields" (
@@ -9087,6 +18334,35 @@ CREATE TABLE IF NOT EXISTS "public"."crm_templates" (
 ALTER TABLE "public"."crm_templates" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."crm_user_achievements" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "user_id" "uuid" NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "achievement_id" "uuid" NOT NULL,
+    "earned_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "progress" integer DEFAULT 0 NOT NULL,
+    "notified" boolean DEFAULT false NOT NULL
+);
+
+
+ALTER TABLE "public"."crm_user_achievements" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."crm_user_conversation_goal_overrides" (
+    "org_id" "uuid" NOT NULL,
+    "user_id" "uuid" NOT NULL,
+    "daily_target" integer NOT NULL,
+    "is_part_time" boolean DEFAULT false NOT NULL,
+    "notes" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "crm_user_conversation_goal_overrides_daily_target_check" CHECK ((("daily_target" >= 0) AND ("daily_target" <= 200)))
+);
+
+
+ALTER TABLE "public"."crm_user_conversation_goal_overrides" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."crm_user_goals" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "user_id" "uuid" NOT NULL,
@@ -9114,6 +18390,119 @@ CREATE TABLE IF NOT EXISTS "public"."crm_user_goals" (
 
 
 ALTER TABLE "public"."crm_user_goals" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."crm_user_xp" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "user_id" "uuid" NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "total_xp" bigint DEFAULT 0 NOT NULL,
+    "level" integer DEFAULT 1 NOT NULL,
+    "level_name" "text" DEFAULT 'Rookie'::"text" NOT NULL,
+    "streak_days" integer DEFAULT 0 NOT NULL,
+    "streak_start" "date",
+    "last_active_date" "date",
+    "daily_xp" integer DEFAULT 0 NOT NULL,
+    "weekly_xp" integer DEFAULT 0 NOT NULL,
+    "monthly_xp" integer DEFAULT 0 NOT NULL,
+    "calls_today" integer DEFAULT 0 NOT NULL,
+    "emails_today" integer DEFAULT 0 NOT NULL,
+    "tasks_completed_today" integer DEFAULT 0 NOT NULL,
+    "deals_closed_today" integer DEFAULT 0 NOT NULL,
+    "daily_target_calls" integer DEFAULT 15 NOT NULL,
+    "daily_target_emails" integer DEFAULT 20 NOT NULL,
+    "daily_target_tasks" integer DEFAULT 10 NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."crm_user_xp" OWNER TO "postgres";
+
+
+CREATE OR REPLACE VIEW "public"."crm_v_application_dropoff" WITH ("security_invoker"='true') AS
+ SELECT "org_id",
+    "date_trunc"('week'::"text", "application_started_at") AS "week_starting",
+    "count"(*) FILTER (WHERE ("pipeline_stage" = 'application_in_progress'::"text")) AS "app_in_progress",
+    "count"(*) FILTER (WHERE ("pipeline_stage" = 'lost'::"text")) AS "app_to_lost",
+    "count"(*) FILTER (WHERE ("pipeline_stage" = 'won'::"text")) AS "app_to_won",
+    "count"(*) FILTER (WHERE ("pipeline_stage" = 'nurture'::"text")) AS "app_to_nurture"
+   FROM "public"."lead_submissions" "ls"
+  WHERE ("application_started_at" IS NOT NULL)
+  GROUP BY "org_id", ("date_trunc"('week'::"text", "application_started_at"));
+
+
+ALTER VIEW "public"."crm_v_application_dropoff" OWNER TO "postgres";
+
+
+CREATE OR REPLACE VIEW "public"."crm_v_call_breakdown" WITH ("security_invoker"='true') AS
+ SELECT "org_id",
+    "user_id",
+    "log_date",
+    ("count"(*) FILTER (WHERE ("activity_subtype" IS DISTINCT FROM 'cancellation'::"text")))::integer AS "regular_calls",
+    ("count"(*) FILTER (WHERE ("activity_subtype" = 'cancellation'::"text")))::integer AS "cancellation_calls",
+    ("count"(*))::integer AS "total_calls"
+   FROM "public"."crm_daily_log_events" "e"
+  WHERE ("activity_type" = 'call'::"text")
+  GROUP BY "org_id", "user_id", "log_date";
+
+
+ALTER VIEW "public"."crm_v_call_breakdown" OWNER TO "postgres";
+
+
+COMMENT ON VIEW "public"."crm_v_call_breakdown" IS 'Round 7: per-rep × per-day call-count breakdown — regular vs cancellation.';
+
+
+
+CREATE OR REPLACE VIEW "public"."crm_v_conversion_by_source" WITH ("security_invoker"='true') AS
+ SELECT "org_id",
+    COALESCE("lead_source", 'unknown'::"text") AS "lead_source",
+    "count"(*) AS "total",
+    "count"(*) FILTER (WHERE ("pipeline_stage" = 'won'::"text")) AS "won",
+    "count"(*) FILTER (WHERE ("pipeline_stage" = 'lost'::"text")) AS "lost",
+    "count"(*) FILTER (WHERE ("pipeline_stage" = 'nurture'::"text")) AS "nurtured",
+    "round"(((100.0 * ("count"(*) FILTER (WHERE ("pipeline_stage" = 'won'::"text")))::numeric) / (NULLIF("count"(*), 0))::numeric), 1) AS "win_rate_pct"
+   FROM "public"."lead_submissions" "ls"
+  GROUP BY "org_id", "lead_source";
+
+
+ALTER VIEW "public"."crm_v_conversion_by_source" OWNER TO "postgres";
+
+
+CREATE OR REPLACE VIEW "public"."crm_v_pipeline_movement" WITH ("security_invoker"='true') AS
+ SELECT "org_id",
+    "pipeline_stage",
+    "count"(*) AS "total",
+    "count"(*) FILTER (WHERE ("created_at" >= ("now"() - '7 days'::interval))) AS "new_last_7d",
+    "count"(*) FILTER (WHERE ("stage_changed_at" >= ("now"() - '7 days'::interval))) AS "advanced_last_7d",
+    "count"(*) FILTER (WHERE (("pipeline_stage" = 'won'::"text") AND ("stage_changed_at" >= ("now"() - '7 days'::interval)))) AS "won_last_7d",
+    "count"(*) FILTER (WHERE (("pipeline_stage" = 'lost'::"text") AND ("stage_changed_at" >= ("now"() - '7 days'::interval)))) AS "lost_last_7d",
+    "count"(*) FILTER (WHERE (("pipeline_stage" = 'nurture'::"text") AND ("stage_changed_at" >= ("now"() - '7 days'::interval)))) AS "nurtured_last_7d"
+   FROM "public"."lead_submissions" "ls"
+  GROUP BY "org_id", "pipeline_stage";
+
+
+ALTER VIEW "public"."crm_v_pipeline_movement" OWNER TO "postgres";
+
+
+CREATE OR REPLACE VIEW "public"."crm_v_special_project_rollup" WITH ("security_invoker"='true') AS
+ SELECT "sp"."org_id",
+    "sp"."user_id",
+    COALESCE("t"."name", "sp"."project_name") AS "project_label",
+    "sp"."project_type_id",
+    "sp"."log_date",
+    ("sum"("sp"."time_minutes"))::integer AS "total_minutes",
+    ("count"(*))::integer AS "entry_count"
+   FROM ("public"."crm_special_projects" "sp"
+     LEFT JOIN "public"."crm_special_project_types" "t" ON (("t"."id" = "sp"."project_type_id")))
+  GROUP BY "sp"."org_id", "sp"."user_id", COALESCE("t"."name", "sp"."project_name"), "sp"."project_type_id", "sp"."log_date";
+
+
+ALTER VIEW "public"."crm_v_special_project_rollup" OWNER TO "postgres";
+
+
+COMMENT ON VIEW "public"."crm_v_special_project_rollup" IS 'Section 12 / Round 10: feeds per-rep AND per-project rollups in Reports.';
+
 
 
 CREATE TABLE IF NOT EXISTS "public"."crm_vendors" (
@@ -9179,7 +18568,7 @@ CREATE TABLE IF NOT EXISTS "public"."crm_web_forms" (
     "created_by" "uuid",
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
     "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    CONSTRAINT "crm_web_forms_entity_type_check" CHECK (("entity_type" = ANY (ARRAY['lead'::"text", 'contact'::"text"]))),
+    CONSTRAINT "crm_web_forms_entity_type_check" CHECK (("entity_type" = ANY (ARRAY['lead'::"text", 'contact'::"text", 'quote_request'::"text"]))),
     CONSTRAINT "crm_web_forms_status_check" CHECK (("status" = ANY (ARRAY['draft'::"text", 'active'::"text", 'archived'::"text"])))
 );
 
@@ -9204,6 +18593,60 @@ CREATE TABLE IF NOT EXISTS "public"."crm_website_quote_sync" (
 
 
 ALTER TABLE "public"."crm_website_quote_sync" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."crm_win_feed" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "user_id" "uuid" NOT NULL,
+    "win_type" "text" NOT NULL,
+    "title" "text" NOT NULL,
+    "description" "text",
+    "value" numeric,
+    "entity_type" "text",
+    "entity_id" "uuid",
+    "reactions" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."crm_win_feed" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."crm_workspaces" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "name" "text" NOT NULL,
+    "description" "text",
+    "icon" "text" DEFAULT 'layout-grid'::"text",
+    "color" "text" DEFAULT '#6366f1'::"text",
+    "module" "text" DEFAULT 'leads'::"text" NOT NULL,
+    "is_system" boolean DEFAULT false,
+    "is_active" boolean DEFAULT true,
+    "sort_order" integer DEFAULT 0,
+    "owner_id" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "updated_at" timestamp with time zone DEFAULT "now"()
+);
+
+
+ALTER TABLE "public"."crm_workspaces" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."crm_xp_events" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "user_id" "uuid" NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "action" "text" NOT NULL,
+    "xp_amount" integer NOT NULL,
+    "entity_type" "text",
+    "entity_id" "uuid",
+    "description" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."crm_xp_events" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."daily_analytics_summary" (
@@ -9278,6 +18721,28 @@ CREATE TABLE IF NOT EXISTS "public"."educational_content" (
 
 
 ALTER TABLE "public"."educational_content" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."email_log" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "lead_id" "uuid",
+    "to_email" "text" NOT NULL,
+    "subject" "text",
+    "body_preview" "text",
+    "status" "text" DEFAULT 'sent'::"text",
+    "template_id" "text",
+    "resend_email_id" "text",
+    "sent_by" "uuid",
+    "open_count" integer DEFAULT 0,
+    "click_count" integer DEFAULT 0,
+    "first_opened_at" timestamp with time zone,
+    "sent_at" timestamp with time zone DEFAULT "now"(),
+    "created_at" timestamp with time zone DEFAULT "now"()
+);
+
+
+ALTER TABLE "public"."email_log" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."email_schedules" (
@@ -9453,6 +18918,7 @@ CREATE TABLE IF NOT EXISTS "public"."events" (
     "updated_at" timestamp with time zone DEFAULT "now"(),
     "gallery_images" "text"[] DEFAULT '{}'::"text"[],
     "video_url" "text",
+    "org_id" "uuid",
     CONSTRAINT "events_event_type_check" CHECK (("event_type" = ANY (ARRAY['conference'::"text", 'webinar'::"text", 'training'::"text", 'networking'::"text", 'celebration'::"text", 'community'::"text", 'other'::"text"]))),
     CONSTRAINT "events_location_type_check" CHECK (("location_type" = ANY (ARRAY['in_person'::"text", 'virtual'::"text", 'hybrid'::"text"])))
 );
@@ -9521,6 +18987,25 @@ CREATE TABLE IF NOT EXISTS "public"."faq_items" (
 ALTER TABLE "public"."faq_items" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."feature_flags" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "slug" "text" NOT NULL,
+    "name" "text" NOT NULL,
+    "description" "text",
+    "module_id" "uuid",
+    "enabled_by_default" boolean DEFAULT false NOT NULL,
+    "min_plan_tier" "text",
+    "category" "text",
+    "is_beta" boolean DEFAULT false NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "feature_flags_min_plan_tier_check" CHECK ((("min_plan_tier" IS NULL) OR ("min_plan_tier" = ANY (ARRAY['starter'::"text", 'professional'::"text", 'business'::"text", 'enterprise'::"text"]))))
+);
+
+
+ALTER TABLE "public"."feature_flags" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."form_submissions" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "form_id" "uuid",
@@ -9531,7 +19016,8 @@ CREATE TABLE IF NOT EXISTS "public"."form_submissions" (
     "status" "text" DEFAULT 'submitted'::"text",
     "submitted_at" timestamp with time zone DEFAULT "now"(),
     "processed_at" timestamp with time zone,
-    "created_at" timestamp with time zone DEFAULT "now"()
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "cognito_entry_id" "text"
 );
 
 
@@ -9656,6 +19142,45 @@ CREATE TABLE IF NOT EXISTS "public"."immunizations" (
 ALTER TABLE "public"."immunizations" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."impersonation_log" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "admin_id" "uuid" NOT NULL,
+    "target_user_id" "uuid" NOT NULL,
+    "mode" "text" NOT NULL,
+    "ip_address" "text",
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    CONSTRAINT "impersonation_log_mode_check" CHECK (("mode" = ANY (ARRAY['magiclink'::"text", 'temp_password'::"text"])))
+);
+
+
+ALTER TABLE "public"."impersonation_log" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."insurance_carriers" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid",
+    "name" "text" NOT NULL,
+    "slug" "text" NOT NULL,
+    "carrier_type" "text" DEFAULT 'traditional'::"text" NOT NULL,
+    "is_active" boolean DEFAULT true NOT NULL,
+    "logo_url" "text",
+    "website_url" "text",
+    "phone" "text",
+    "notes" "text",
+    "sort_order" integer DEFAULT 0,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "insurance_carriers_type_check" CHECK (("carrier_type" = ANY (ARRAY['traditional'::"text", 'healthshare'::"text", 'supplemental'::"text", 'dental'::"text", 'vision'::"text", 'life'::"text", 'other'::"text"])))
+);
+
+
+ALTER TABLE "public"."insurance_carriers" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."insurance_carriers" IS 'Admin-managed reference table of insurance carriers and healthshare organizations';
+
+
+
 CREATE TABLE IF NOT EXISTS "public"."integration_health" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "platform_id" "uuid",
@@ -9675,6 +19200,24 @@ CREATE TABLE IF NOT EXISTS "public"."integration_health" (
 
 
 ALTER TABLE "public"."integration_health" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."integrations" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "name" "text" NOT NULL,
+    "type" "text" NOT NULL,
+    "status" "text" DEFAULT 'inactive'::"text" NOT NULL,
+    "config" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
+    "last_sync_at" timestamp with time zone,
+    "error_message" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "integrations_status_check" CHECK (("status" = ANY (ARRAY['active'::"text", 'inactive'::"text", 'error'::"text"]))),
+    CONSTRAINT "integrations_type_check" CHECK (("type" = ANY (ARRAY['mailchimp'::"text", 'stripe'::"text", 'twilio'::"text", 'cognito'::"text", 'itsts'::"text", 'other'::"text"])))
+);
+
+
+ALTER TABLE "public"."integrations" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."interaction_logs" (
@@ -9742,7 +19285,7 @@ ALTER TABLE "public"."lab_results" OWNER TO "postgres";
 
 CREATE TABLE IF NOT EXISTS "public"."lead_activities" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
-    "lead_id" "uuid" NOT NULL,
+    "lead_id" "uuid",
     "activity_type" "text" NOT NULL,
     "title" "text" NOT NULL,
     "description" "text",
@@ -9750,7 +19293,13 @@ CREATE TABLE IF NOT EXISTS "public"."lead_activities" (
     "created_by" "uuid",
     "created_at" timestamp with time zone DEFAULT "now"(),
     "org_id" "uuid",
-    CONSTRAINT "lead_activities_activity_type_check" CHECK (("activity_type" = ANY (ARRAY['note'::"text", 'call'::"text", 'email'::"text", 'meeting'::"text", 'status_change'::"text", 'assignment'::"text", 'task_created'::"text", 'task_completed'::"text"])))
+    "mentions" "jsonb" DEFAULT '[]'::"jsonb" NOT NULL,
+    "contact_id" "uuid",
+    "account_id" "uuid",
+    "deal_id" "uuid",
+    "subject" "text",
+    CONSTRAINT "lead_activities_activity_type_check" CHECK (("activity_type" = ANY (ARRAY['note'::"text", 'call'::"text", 'email'::"text", 'meeting'::"text", 'status_change'::"text", 'assignment'::"text", 'task_created'::"text", 'task_completed'::"text", 'cadence_skipped'::"text", 'cadence_halted'::"text"]))),
+    CONSTRAINT "lead_activities_target_not_null" CHECK ((("lead_id" IS NOT NULL) OR ("contact_id" IS NOT NULL) OR ("account_id" IS NOT NULL) OR ("deal_id" IS NOT NULL)))
 );
 
 
@@ -9771,6 +19320,9 @@ CREATE TABLE IF NOT EXISTS "public"."lead_notifications" (
     "time_to_acknowledge_seconds" integer,
     "created_at" timestamp with time zone DEFAULT "now"(),
     "org_id" "uuid",
+    "user_id" "uuid",
+    "notification_type" "text",
+    "message" "text",
     CONSTRAINT "lead_notifications_priority_check" CHECK (("priority" = ANY (ARRAY['normal'::"text", 'high'::"text", 'critical'::"text"])))
 );
 
@@ -9816,33 +19368,6 @@ CREATE TABLE IF NOT EXISTS "public"."lead_scoring_config" (
 ALTER TABLE "public"."lead_scoring_config" OWNER TO "postgres";
 
 
-CREATE TABLE IF NOT EXISTS "public"."lead_submissions" (
-    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
-    "first_name" "text" NOT NULL,
-    "last_name" "text" NOT NULL,
-    "email" "text" NOT NULL,
-    "phone" "text" NOT NULL,
-    "household_size" integer DEFAULT 1,
-    "current_insurance" "text",
-    "monthly_premium" "text",
-    "coverage_preference" "text",
-    "zip_code" "text",
-    "primary_concern" "text",
-    "contact_preference" "text" DEFAULT 'phone'::"text",
-    "source" "text" DEFAULT 'website_lead_form'::"text",
-    "submitted_at" timestamp with time zone DEFAULT "now"(),
-    "created_at" timestamp with time zone DEFAULT "now"(),
-    "status" "text" DEFAULT 'new'::"text",
-    "assigned_to" "uuid",
-    "notes" "text",
-    "referral_source" "text",
-    CONSTRAINT "lead_submissions_status_check" CHECK (("status" = ANY (ARRAY['new'::"text", 'contacted'::"text", 'qualified'::"text", 'converted'::"text", 'lost'::"text"])))
-);
-
-
-ALTER TABLE "public"."lead_submissions" OWNER TO "postgres";
-
-
 CREATE TABLE IF NOT EXISTS "public"."lead_tasks" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "lead_id" "uuid" NOT NULL,
@@ -9866,37 +19391,6 @@ CREATE TABLE IF NOT EXISTS "public"."lead_tasks" (
 
 
 ALTER TABLE "public"."lead_tasks" OWNER TO "postgres";
-
-
-CREATE TABLE IF NOT EXISTS "public"."leads" (
-    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
-    "org_id" "uuid" NOT NULL,
-    "first_name" "text",
-    "last_name" "text",
-    "email" "text",
-    "phone" "text",
-    "source" "text",
-    "source_campaign" "text",
-    "source_medium" "text",
-    "status" "text" DEFAULT 'new'::"text" NOT NULL,
-    "assigned_to" "uuid",
-    "score" integer DEFAULT 0,
-    "company" "text",
-    "job_title" "text",
-    "address" "jsonb",
-    "custom_fields" "jsonb" DEFAULT '{}'::"jsonb",
-    "tags" "text"[] DEFAULT '{}'::"text"[],
-    "last_contacted_at" timestamp with time zone,
-    "next_follow_up_at" timestamp with time zone,
-    "metadata" "jsonb" DEFAULT '{}'::"jsonb",
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    "assigned_advisor_id" "uuid",
-    CONSTRAINT "leads_status_check" CHECK (("status" = ANY (ARRAY['new'::"text", 'contacted'::"text", 'qualified'::"text", 'proposal'::"text", 'negotiation'::"text", 'won'::"text", 'lost'::"text", 'archived'::"text"])))
-);
-
-
-ALTER TABLE "public"."leads" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."mail_accounts" (
@@ -9926,7 +19420,8 @@ CREATE TABLE IF NOT EXISTS "public"."mail_accounts" (
     "provider_account_id" "text",
     "avatar_url" "text",
     "created_at" timestamp with time zone DEFAULT "now"(),
-    "updated_at" timestamp with time zone DEFAULT "now"()
+    "updated_at" timestamp with time zone DEFAULT "now"(),
+    "is_primary_shared_inbox" boolean DEFAULT false NOT NULL
 );
 
 
@@ -10232,6 +19727,26 @@ CREATE TABLE IF NOT EXISTS "public"."meeting_templates" (
 ALTER TABLE "public"."meeting_templates" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."member_account_events" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "member_id" "uuid" NOT NULL,
+    "actor_user_id" "uuid" NOT NULL,
+    "actor_department" "text" NOT NULL,
+    "event_type" "text" NOT NULL,
+    "entity_type" "text",
+    "entity_id" "uuid",
+    "payload_summary" "jsonb" DEFAULT '{}'::"jsonb",
+    "changes" "jsonb" DEFAULT '{}'::"jsonb",
+    "member_notification_id" "uuid",
+    "should_notify_member" boolean DEFAULT true,
+    "notification_generated" boolean DEFAULT false,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."member_account_events" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."member_coverage" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "member_id" "uuid" NOT NULL,
@@ -10304,6 +19819,24 @@ CREATE TABLE IF NOT EXISTS "public"."member_documents" (
 ALTER TABLE "public"."member_documents" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."member_notification_rules" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "event_type" "text" NOT NULL,
+    "department" "text" DEFAULT '*'::"text" NOT NULL,
+    "is_enabled" boolean DEFAULT true,
+    "notification_type" "text" NOT NULL,
+    "title_template" "text" NOT NULL,
+    "message_template" "text" NOT NULL,
+    "priority" "text" DEFAULT 'normal'::"text",
+    "category" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."member_notification_rules" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."member_notifications" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "member_id" "uuid" NOT NULL,
@@ -10316,7 +19849,13 @@ CREATE TABLE IF NOT EXISTS "public"."member_notifications" (
     "action_url" "text",
     "metadata" "jsonb" DEFAULT '{}'::"jsonb",
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    CONSTRAINT "member_notifications_notification_type_check" CHECK (("notification_type" = ANY (ARRAY['claim_update'::"text", 'payment_due'::"text", 'payment_received'::"text", 'document_uploaded'::"text", 'coverage_update'::"text", 'system_alert'::"text", 'message'::"text", 'reminder'::"text"]))),
+    "actor_department" "text",
+    "category" "text",
+    "related_entity_type" "text",
+    "related_entity_id" "uuid",
+    "source_event_id" "uuid",
+    "expires_at" timestamp with time zone,
+    CONSTRAINT "member_notifications_notification_type_check" CHECK (("notification_type" = ANY (ARRAY['claim_update'::"text", 'payment_due'::"text", 'payment_received'::"text", 'document_uploaded'::"text", 'coverage_update'::"text", 'system_alert'::"text", 'message'::"text", 'reminder'::"text", 'profile_update'::"text", 'billing_update'::"text", 'membership_update'::"text", 'eligibility_update'::"text", 'dependent_update'::"text", 'account_update'::"text", 'support_update'::"text", 'operational_update'::"text"]))),
     CONSTRAINT "member_notifications_priority_check" CHECK (("priority" = ANY (ARRAY['low'::"text", 'normal'::"text", 'high'::"text", 'urgent'::"text"])))
 );
 
@@ -10373,6 +19912,24 @@ CREATE TABLE IF NOT EXISTS "public"."member_profiles" (
 ALTER TABLE "public"."member_profiles" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."message_templates" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid",
+    "name" "text" NOT NULL,
+    "subject" "text",
+    "body" "text" NOT NULL,
+    "category" "text",
+    "times_used" integer DEFAULT 0,
+    "last_used_at" timestamp with time zone,
+    "created_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "updated_at" timestamp with time zone DEFAULT "now"()
+);
+
+
+ALTER TABLE "public"."message_templates" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."messages" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "conversation_id" "uuid" NOT NULL,
@@ -10425,6 +19982,20 @@ CREATE TABLE IF NOT EXISTS "public"."navigation_items" (
 
 
 ALTER TABLE "public"."navigation_items" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."navigation_search_analytics" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "query" "text" NOT NULL,
+    "results_count" integer DEFAULT 0 NOT NULL,
+    "selected_result" "text",
+    "user_id" "uuid",
+    "session_id" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."navigation_search_analytics" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."newsletter_campaigns" (
@@ -10767,6 +20338,21 @@ CREATE TABLE IF NOT EXISTS "public"."onboarding_steps" (
 ALTER TABLE "public"."onboarding_steps" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."org_feature_overrides" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "feature_id" "uuid" NOT NULL,
+    "enabled" boolean NOT NULL,
+    "reason" "text",
+    "set_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."org_feature_overrides" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."org_invites" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "org_id" "uuid" NOT NULL,
@@ -10802,6 +20388,8 @@ CREATE TABLE IF NOT EXISTS "public"."org_memberships" (
     "joined_at" timestamp with time zone DEFAULT "now"(),
     "created_at" timestamp with time zone DEFAULT "now"(),
     "updated_at" timestamp with time zone DEFAULT "now"(),
+    "suspended_at" timestamp with time zone,
+    "suspended_reason" "text",
     CONSTRAINT "org_memberships_role_check" CHECK (("role" = ANY (ARRAY['owner'::"text", 'admin'::"text", 'manager'::"text", 'agent'::"text", 'member'::"text"]))),
     CONSTRAINT "org_memberships_status_check" CHECK (("status" = ANY (ARRAY['active'::"text", 'invited'::"text", 'suspended'::"text", 'removed'::"text"])))
 );
@@ -10811,6 +20399,67 @@ ALTER TABLE "public"."org_memberships" OWNER TO "postgres";
 
 
 COMMENT ON TABLE "public"."org_memberships" IS 'User membership and roles within organizations';
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."org_module_licenses" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "module_id" "uuid" NOT NULL,
+    "status" "text" DEFAULT 'active'::"text" NOT NULL,
+    "license_source" "text" DEFAULT 'addon'::"text" NOT NULL,
+    "trial_start" timestamp with time zone,
+    "trial_end" timestamp with time zone,
+    "stripe_subscription_item_id" "text",
+    "activated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "expires_at" timestamp with time zone,
+    "canceled_at" timestamp with time zone,
+    "custom_limits" "jsonb" DEFAULT '{}'::"jsonb",
+    "notes" "text",
+    "granted_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "org_module_licenses_license_source_check" CHECK (("license_source" = ANY (ARRAY['core_included'::"text", 'addon'::"text", 'standalone'::"text", 'trial'::"text", 'custom'::"text"]))),
+    CONSTRAINT "org_module_licenses_status_check" CHECK (("status" = ANY (ARRAY['active'::"text", 'trialing'::"text", 'suspended'::"text", 'expired'::"text", 'canceled'::"text"])))
+);
+
+
+ALTER TABLE "public"."org_module_licenses" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."org_portal_access" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "portal_slug" "text" NOT NULL,
+    "enabled" boolean DEFAULT true NOT NULL,
+    "custom_domain" "text",
+    "settings" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "org_portal_access_portal_slug_check" CHECK (("portal_slug" = ANY (ARRAY['admin'::"text", 'advisor'::"text", 'concierge'::"text", 'staff_hub'::"text", 'crm'::"text", 'member'::"text"])))
+);
+
+
+ALTER TABLE "public"."org_portal_access" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."organization_id_map" (
+    "slug" "text" NOT NULL,
+    "purpose" "text" NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "source_table" "text" NOT NULL,
+    "notes" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "organization_id_map_purpose_check" CHECK (("purpose" = ANY (ARRAY['portal'::"text", 'membership'::"text"]))),
+    CONSTRAINT "organization_id_map_source_table_check" CHECK (("source_table" = ANY (ARRAY['organizations'::"text", 'orgs'::"text"])))
+);
+
+
+ALTER TABLE "public"."organization_id_map" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."organization_id_map" IS 'Maps tenant slug to org UUID by purpose. portal = organizations/org_portal_access; membership = org_memberships/CRM leads.';
 
 
 
@@ -10874,6 +20523,26 @@ CREATE TABLE IF NOT EXISTS "public"."orgs" (
 ALTER TABLE "public"."orgs" OWNER TO "postgres";
 
 
+CREATE OR REPLACE VIEW "public"."organizations_unified" WITH ("security_invoker"='true') AS
+ SELECT COALESCE("orgn"."slug", "o"."slug") AS "slug",
+    COALESCE("orgn"."name", "o"."name") AS "name",
+    "orgn"."id" AS "organizations_id",
+    "o"."id" AS "orgs_id",
+    "portal_map"."org_id" AS "portal_org_id",
+    "membership_map"."org_id" AS "membership_org_id"
+   FROM ((("public"."organizations" "orgn"
+     FULL JOIN "public"."orgs" "o" ON (("o"."slug" = "orgn"."slug")))
+     LEFT JOIN "public"."organization_id_map" "portal_map" ON ((("portal_map"."slug" = COALESCE("orgn"."slug", "o"."slug")) AND ("portal_map"."purpose" = 'portal'::"text"))))
+     LEFT JOIN "public"."organization_id_map" "membership_map" ON ((("membership_map"."slug" = COALESCE("orgn"."slug", "o"."slug")) AND ("membership_map"."purpose" = 'membership'::"text"))));
+
+
+ALTER VIEW "public"."organizations_unified" OWNER TO "postgres";
+
+
+COMMENT ON VIEW "public"."organizations_unified" IS 'Read-only join of organizations + orgs with mapped portal/membership UUIDs per slug.';
+
+
+
 CREATE TABLE IF NOT EXISTS "public"."outlook_config" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "tenant_id" "text" NOT NULL,
@@ -10916,6 +20585,17 @@ CREATE TABLE IF NOT EXISTS "public"."page_performance" (
 
 
 ALTER TABLE "public"."page_performance" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."password_history" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "user_id" "uuid" NOT NULL,
+    "password_hash" "text" NOT NULL,
+    "changed_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."password_history" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."payment_methods" (
@@ -10997,6 +20677,23 @@ CREATE TABLE IF NOT EXISTS "public"."permissions" (
 
 
 ALTER TABLE "public"."permissions" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."phi_access_log" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "user_id" "uuid",
+    "table_name" "text" NOT NULL,
+    "record_id" "text",
+    "operation" "text" NOT NULL,
+    "phi_fields" "jsonb" DEFAULT '[]'::"jsonb" NOT NULL,
+    "justification" "text",
+    "ip_address" "text",
+    "accessed_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "phi_access_log_operation_check" CHECK (("operation" = ANY (ARRAY['SELECT'::"text", 'INSERT'::"text", 'UPDATE'::"text", 'DELETE'::"text"])))
+);
+
+
+ALTER TABLE "public"."phi_access_log" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."plan_category_features" (
@@ -11201,16 +20898,75 @@ COMMENT ON TABLE "public"."priority_lanes" IS 'Configurable priority lanes for o
 
 
 
+CREATE TABLE IF NOT EXISTS "public"."product_modules" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "slug" "text" NOT NULL,
+    "name" "text" NOT NULL,
+    "description" "text",
+    "category" "text" NOT NULL,
+    "is_standalone" boolean DEFAULT false NOT NULL,
+    "included_in_core" boolean DEFAULT false NOT NULL,
+    "addon_price_monthly" numeric(10,2),
+    "addon_price_yearly" numeric(10,2),
+    "setup_fee" numeric(10,2) DEFAULT 0,
+    "stripe_product_id" "text",
+    "stripe_price_id_monthly" "text",
+    "stripe_price_id_yearly" "text",
+    "icon" "text",
+    "color" "text",
+    "sort_order" integer DEFAULT 0 NOT NULL,
+    "is_active" boolean DEFAULT true NOT NULL,
+    "is_public" boolean DEFAULT true NOT NULL,
+    "requires_modules" "text"[] DEFAULT '{}'::"text"[],
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "product_modules_category_check" CHECK (("category" = ANY (ARRAY['core'::"text", 'addon'::"text", 'standalone'::"text"])))
+);
+
+
+ALTER TABLE "public"."product_modules" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."profiles" (
     "id" "uuid" NOT NULL,
     "role" "text" DEFAULT 'member'::"text" NOT NULL,
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
     "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "first_name" "text",
+    "last_name" "text",
+    "display_name" "text",
+    "email" "text",
+    "phone" "text",
+    "mobile_phone" "text",
+    "avatar_url" "text",
+    "bio" "text",
+    "job_title" "text",
+    "department" "text",
+    "timezone" "text" DEFAULT 'America/New_York'::"text",
+    "locale" "text" DEFAULT 'en-US'::"text",
+    "social_linkedin" "text",
+    "social_twitter" "text",
+    "social_facebook" "text",
+    "social_instagram" "text",
+    "social_github" "text",
+    "social_website" "text",
+    "address_line1" "text",
+    "address_line2" "text",
+    "city" "text",
+    "state" "text",
+    "postal_code" "text",
+    "country" "text" DEFAULT 'US'::"text",
+    "full_name" "text",
+    "cms_role" "text" DEFAULT 'editor'::"text",
     CONSTRAINT "profiles_role_check" CHECK (("role" = ANY (ARRAY['guest'::"text", 'member'::"text", 'advisor'::"text", 'admin'::"text", 'staff'::"text", 'superadmin'::"text"])))
 );
 
 
 ALTER TABLE "public"."profiles" OWNER TO "postgres";
+
+
+COMMENT ON COLUMN "public"."profiles"."cms_role" IS 'CMS content role: editor (draft only), publisher (can publish), admin (full CMS), reviewer (can approve)';
+
 
 
 CREATE TABLE IF NOT EXISTS "public"."promo_code_usage" (
@@ -11447,6 +21203,23 @@ CREATE TABLE IF NOT EXISTS "public"."saved_reports" (
 
 
 ALTER TABLE "public"."saved_reports" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."saved_searches" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid",
+    "user_id" "uuid",
+    "name" "text" NOT NULL,
+    "search_type" "text",
+    "filters" "jsonb" DEFAULT '{}'::"jsonb",
+    "use_count" integer DEFAULT 0,
+    "last_used_at" timestamp with time zone,
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "updated_at" timestamp with time zone DEFAULT "now"()
+);
+
+
+ALTER TABLE "public"."saved_searches" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."scoring_rules" (
@@ -11707,6 +21480,56 @@ CREATE TABLE IF NOT EXISTS "public"."seo_sync_logs" (
 ALTER TABLE "public"."seo_sync_logs" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."sequence_enrollments" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "sequence_id" "uuid" NOT NULL,
+    "lead_id" "uuid",
+    "contact_id" "uuid",
+    "current_step" integer DEFAULT 1,
+    "status" "text" DEFAULT 'active'::"text",
+    "exit_reason" "text",
+    "next_step_at" timestamp with time zone,
+    "messages_sent" integer DEFAULT 0,
+    "messages_opened" integer DEFAULT 0,
+    "messages_clicked" integer DEFAULT 0,
+    "enrolled_by" "uuid",
+    "enrolled_at" timestamp with time zone DEFAULT "now"(),
+    "completed_at" timestamp with time zone,
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "updated_at" timestamp with time zone DEFAULT "now"()
+);
+
+
+ALTER TABLE "public"."sequence_enrollments" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."sequence_steps" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "sequence_id" "uuid" NOT NULL,
+    "step_number" integer NOT NULL,
+    "delay_days" integer DEFAULT 0,
+    "delay_hours" integer DEFAULT 0,
+    "delay_minutes" integer DEFAULT 0,
+    "action_type" "text" NOT NULL,
+    "channel" "text",
+    "template_id" "text",
+    "subject" "text",
+    "body_text" "text",
+    "body_html" "text",
+    "action_config" "jsonb" DEFAULT '{}'::"jsonb",
+    "condition_type" "text" DEFAULT 'always'::"text",
+    "times_executed" integer DEFAULT 0,
+    "times_skipped" integer DEFAULT 0,
+    "is_active" boolean DEFAULT true,
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "updated_at" timestamp with time zone DEFAULT "now"()
+);
+
+
+ALTER TABLE "public"."sequence_steps" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."sequences" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "org_id" "uuid" NOT NULL,
@@ -11720,6 +21543,17 @@ CREATE TABLE IF NOT EXISTS "public"."sequences" (
     "created_by" "uuid",
     "created_at" timestamp with time zone DEFAULT "now"(),
     "updated_at" timestamp with time zone DEFAULT "now"(),
+    "trigger_conditions" "jsonb" DEFAULT '{}'::"jsonb",
+    "send_window_start" "text" DEFAULT '09:00'::"text",
+    "send_window_end" "text" DEFAULT '17:00'::"text",
+    "send_days" "text"[] DEFAULT '{mon,tue,wed,thu,fri}'::"text"[],
+    "timezone" "text" DEFAULT 'America/New_York'::"text",
+    "exit_on_reply" boolean DEFAULT true,
+    "exit_on_meeting_scheduled" boolean DEFAULT true,
+    "exit_on_unsubscribe" boolean DEFAULT true,
+    "total_enrolled" integer DEFAULT 0,
+    "total_completed" integer DEFAULT 0,
+    "total_replied" integer DEFAULT 0,
     CONSTRAINT "sequences_status_check" CHECK (("status" = ANY (ARRAY['draft'::"text", 'active'::"text", 'paused'::"text", 'archived'::"text"])))
 );
 
@@ -11853,6 +21687,184 @@ CREATE TABLE IF NOT EXISTS "public"."sop_documents" (
 
 
 ALTER TABLE "public"."sop_documents" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."staff_attendance_events" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "session_id" "uuid",
+    "org_id" "uuid" NOT NULL,
+    "user_id" "uuid",
+    "actor_id" "uuid",
+    "action" "text" NOT NULL,
+    "detail" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."staff_attendance_events" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."staff_attendance_sessions" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "user_id" "uuid" NOT NULL,
+    "status" "public"."staff_attendance_session_status" DEFAULT 'open'::"public"."staff_attendance_session_status" NOT NULL,
+    "method" "public"."staff_punch_method" NOT NULL,
+    "clock_in_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "clock_out_at" timestamp with time zone,
+    "office_location_id" "uuid",
+    "clock_in_lat" double precision,
+    "clock_in_lng" double precision,
+    "clock_in_accuracy_m" double precision,
+    "clock_in_distance_m" double precision,
+    "clock_out_lat" double precision,
+    "clock_out_lng" double precision,
+    "clock_out_accuracy_m" double precision,
+    "clock_out_distance_m" double precision,
+    "client_ts_in" timestamp with time zone,
+    "client_ts_out" timestamp with time zone,
+    "notes" "text",
+    "metadata" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "staff_attendance_range_chk" CHECK ((("clock_out_at" IS NULL) OR ("clock_out_at" >= "clock_in_at")))
+);
+
+
+ALTER TABLE "public"."staff_attendance_sessions" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."staff_departments" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "name" "text" NOT NULL,
+    "is_active" boolean DEFAULT true NOT NULL,
+    "sort_order" integer DEFAULT 0 NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "staff_departments_name_nonempty" CHECK (("length"(TRIM(BOTH FROM "name")) > 0))
+);
+
+
+ALTER TABLE "public"."staff_departments" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."staff_notes" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "user_id" "uuid" NOT NULL,
+    "title" "text" DEFAULT ''::"text" NOT NULL,
+    "content" "text" DEFAULT ''::"text" NOT NULL,
+    "color" "text" DEFAULT 'default'::"text" NOT NULL,
+    "pinned" boolean DEFAULT false NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "org_id" "uuid" NOT NULL
+);
+
+
+ALTER TABLE "public"."staff_notes" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."staff_office_locations" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "label" "text" DEFAULT 'MPB Health Office'::"text" NOT NULL,
+    "address_line" "text" NOT NULL,
+    "city" "text",
+    "state" "text",
+    "postal_code" "text",
+    "latitude" double precision NOT NULL,
+    "longitude" double precision NOT NULL,
+    "radius_m" integer DEFAULT 150 NOT NULL,
+    "max_accuracy_m" integer DEFAULT 100 NOT NULL,
+    "accuracy_credit_cap_m" integer DEFAULT 50 NOT NULL,
+    "is_active" boolean DEFAULT true NOT NULL,
+    "metadata" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "staff_office_accuracy_chk" CHECK (("max_accuracy_m" > 0)),
+    CONSTRAINT "staff_office_radius_chk" CHECK ((("radius_m" > 0) AND ("radius_m" <= 5000)))
+);
+
+
+ALTER TABLE "public"."staff_office_locations" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."staff_tasks" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "user_id" "uuid" NOT NULL,
+    "title" "text" NOT NULL,
+    "description" "text",
+    "due_date" timestamp with time zone,
+    "priority" "text" DEFAULT 'medium'::"text" NOT NULL,
+    "status" "text" DEFAULT 'todo'::"text" NOT NULL,
+    "completed_at" timestamp with time zone,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    CONSTRAINT "staff_tasks_priority_check" CHECK (("priority" = ANY (ARRAY['low'::"text", 'medium'::"text", 'high'::"text", 'urgent'::"text"]))),
+    CONSTRAINT "staff_tasks_status_check" CHECK (("status" = ANY (ARRAY['todo'::"text", 'in_progress'::"text", 'done'::"text"])))
+);
+
+
+ALTER TABLE "public"."staff_tasks" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."staff_time_documents" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "request_id" "uuid" NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "uploaded_by" "uuid" NOT NULL,
+    "storage_path" "text" NOT NULL,
+    "file_name" "text" NOT NULL,
+    "mime_type" "text" NOT NULL,
+    "byte_size" bigint DEFAULT 0 NOT NULL,
+    "kind" "public"."staff_time_document_kind" DEFAULT 'supporting'::"public"."staff_time_document_kind" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."staff_time_documents" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."staff_time_request_events" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "request_id" "uuid" NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "actor_id" "uuid",
+    "action" "text" NOT NULL,
+    "detail" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."staff_time_request_events" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."staff_time_requests" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "user_id" "uuid" NOT NULL,
+    "employee_name" "text" NOT NULL,
+    "employee_email" "text" NOT NULL,
+    "type" "public"."staff_time_request_type" NOT NULL,
+    "status" "public"."staff_time_request_status" DEFAULT 'pending'::"public"."staff_time_request_status" NOT NULL,
+    "starts_at" timestamp with time zone NOT NULL,
+    "ends_at" timestamp with time zone NOT NULL,
+    "all_day" boolean DEFAULT false NOT NULL,
+    "title" "text" DEFAULT ''::"text" NOT NULL,
+    "reason" "text",
+    "metadata" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL,
+    "decided_by" "uuid",
+    "decided_at" timestamp with time zone,
+    "decision_note" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "staff_time_requests_range_chk" CHECK (("ends_at" >= "starts_at"))
+);
+
+
+ALTER TABLE "public"."staff_time_requests" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."support_tickets" (
@@ -12109,6 +22121,25 @@ CREATE TABLE IF NOT EXISTS "public"."user_achievements" (
 ALTER TABLE "public"."user_achievements" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."user_mfa_settings" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "user_id" "uuid" NOT NULL,
+    "mfa_enabled" boolean DEFAULT false NOT NULL,
+    "mfa_method" "text" DEFAULT 'none'::"text" NOT NULL,
+    "phone_number" "text",
+    "backup_codes" "jsonb" DEFAULT '[]'::"jsonb" NOT NULL,
+    "trusted_devices" "jsonb" DEFAULT '[]'::"jsonb" NOT NULL,
+    "enrolled_at" timestamp with time zone,
+    "last_verified_at" timestamp with time zone,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "user_mfa_settings_mfa_method_check" CHECK (("mfa_method" = ANY (ARRAY['totp'::"text", 'sms'::"text", 'none'::"text"])))
+);
+
+
+ALTER TABLE "public"."user_mfa_settings" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."user_navigation_preferences" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "user_id" "uuid" NOT NULL,
@@ -12144,7 +22175,9 @@ CREATE TABLE IF NOT EXISTS "public"."user_presence" (
     "last_activity_at" timestamp with time zone DEFAULT "now"(),
     "session_started_at" timestamp with time zone DEFAULT "now"(),
     "ip_address" "inet",
-    "user_agent" "text"
+    "user_agent" "text",
+    "viewing_entity_type" "text",
+    "viewing_entity_id" "uuid"
 );
 
 
@@ -12158,11 +22191,28 @@ CREATE TABLE IF NOT EXISTS "public"."user_roles" (
     "granted_by" "uuid",
     "created_at" timestamp with time zone DEFAULT "now"(),
     "updated_at" timestamp with time zone DEFAULT "now"(),
-    CONSTRAINT "user_roles_role_check" CHECK (("role" = ANY (ARRAY['super_admin'::"text", 'admin'::"text", 'advisor'::"text", 'member'::"text"])))
+    CONSTRAINT "user_roles_role_check" CHECK (("role" = ANY (ARRAY['super_admin'::"text", 'admin'::"text", 'advisor'::"text", 'member'::"text", 'crm_user'::"text", 'concierge'::"text", 'staff_hr'::"text"])))
 );
 
 
 ALTER TABLE "public"."user_roles" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."user_sessions" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "user_id" "uuid" NOT NULL,
+    "session_token" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "device_fingerprint" "text",
+    "ip_address" "text",
+    "user_agent" "text",
+    "last_activity" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "expires_at" timestamp with time zone NOT NULL,
+    "revoked" boolean DEFAULT false NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."user_sessions" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."utm_campaigns" (
@@ -12233,62 +22283,106 @@ CREATE TABLE IF NOT EXISTS "public"."webhook_delivery_logs" (
 ALTER TABLE "public"."webhook_delivery_logs" OWNER TO "postgres";
 
 
-CREATE TABLE IF NOT EXISTS "public"."zoho_lead_submissions" (
+CREATE TABLE IF NOT EXISTS "public"."white_label_configs" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
-    "user_id" "uuid",
-    "first_name" "text" NOT NULL,
-    "last_name" "text" NOT NULL,
-    "email" "text" NOT NULL,
-    "phone" "text" NOT NULL,
-    "household_size" integer,
-    "current_insurance" "text",
-    "monthly_premium" "text",
-    "coverage_preference" "text",
-    "zip_code" "text",
-    "primary_concern" "text",
-    "contact_preference" "text" DEFAULT 'phone'::"text",
-    "source_page" "text",
-    "source_cta" "text",
-    "utm_source" "text",
-    "utm_medium" "text",
-    "utm_campaign" "text",
-    "utm_term" "text",
-    "utm_content" "text",
-    "referrer" "text",
-    "zoho_lead_id" "text",
-    "zoho_sync_status" "text" DEFAULT 'pending'::"text",
-    "zoho_sync_attempts" integer DEFAULT 0,
-    "zoho_last_sync_at" timestamp with time zone,
-    "zoho_error_message" "text",
-    "form_data" "jsonb",
-    "ip_address" "inet",
-    "user_agent" "text",
-    "created_at" timestamp with time zone DEFAULT "now"(),
-    "updated_at" timestamp with time zone DEFAULT "now"(),
-    "pipeline_stage" "text" DEFAULT 'new'::"text",
-    "assigned_to" "uuid",
-    "priority" "text" DEFAULT 'medium'::"text",
-    "lead_score" integer DEFAULT 0,
-    "last_contacted_at" timestamp with time zone,
-    "next_followup_at" timestamp with time zone,
-    "tags" "text"[] DEFAULT '{}'::"text"[],
-    "stage_changed_at" timestamp with time zone DEFAULT "now"(),
-    "converted_at" timestamp with time zone,
-    "lost_reason" "text",
-    "org_id" "uuid",
-    "interested_plans" "text"[],
-    "quoted_plans" "text"[],
-    "household_type" "text",
-    "primary_age" integer,
-    "spouse_age" integer,
-    "dependent_count" integer DEFAULT 0,
-    "pipeline_stage_id" "uuid",
-    CONSTRAINT "zoho_lead_submissions_priority_check" CHECK (("priority" = ANY (ARRAY['low'::"text", 'medium'::"text", 'high'::"text", 'urgent'::"text"]))),
-    CONSTRAINT "zoho_lead_submissions_zoho_sync_status_check" CHECK (("zoho_sync_status" = ANY (ARRAY['pending'::"text", 'success'::"text", 'failed'::"text", 'retrying'::"text"])))
+    "org_id" "uuid" NOT NULL,
+    "company_name" "text" NOT NULL,
+    "logo_url" "text",
+    "logo_dark_url" "text",
+    "favicon_url" "text",
+    "app_icon_url" "text",
+    "splash_screen_url" "text",
+    "primary_color" "text" DEFAULT '#1a5c5c'::"text" NOT NULL,
+    "secondary_color" "text" DEFAULT '#2d8f6b'::"text" NOT NULL,
+    "accent_color" "text" DEFAULT '#34d399'::"text" NOT NULL,
+    "background_color" "text" DEFAULT '#ffffff'::"text",
+    "text_color" "text" DEFAULT '#0f2929'::"text",
+    "header_color" "text",
+    "sidebar_color" "text",
+    "font_family" "text" DEFAULT 'DM Sans'::"text",
+    "heading_font_family" "text" DEFAULT 'Fraunces'::"text",
+    "custom_domain" "text",
+    "domain_verified" boolean DEFAULT false NOT NULL,
+    "domain_verified_at" timestamp with time zone,
+    "ssl_certificate_status" "text" DEFAULT 'pending'::"text",
+    "mobile_app_name" "text",
+    "mobile_bundle_id_ios" "text",
+    "mobile_bundle_id_android" "text",
+    "app_store_url" "text",
+    "play_store_url" "text",
+    "mobile_build_status" "text" DEFAULT 'not_started'::"text",
+    "last_build_at" timestamp with time zone,
+    "show_powered_by" boolean DEFAULT true NOT NULL,
+    "custom_login_page" boolean DEFAULT false NOT NULL,
+    "custom_email_templates" boolean DEFAULT false NOT NULL,
+    "custom_sms_sender_id" "text",
+    "meta_title" "text",
+    "meta_description" "text",
+    "og_image_url" "text",
+    "support_email" "text",
+    "support_phone" "text",
+    "support_url" "text",
+    "terms_url" "text",
+    "privacy_url" "text",
+    "is_active" boolean DEFAULT true NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "white_label_configs_mobile_build_status_check" CHECK (("mobile_build_status" = ANY (ARRAY['not_started'::"text", 'queued'::"text", 'building'::"text", 'ready'::"text", 'published'::"text", 'error'::"text"]))),
+    CONSTRAINT "white_label_configs_ssl_certificate_status_check" CHECK (("ssl_certificate_status" = ANY (ARRAY['pending'::"text", 'active'::"text", 'expired'::"text", 'error'::"text"])))
 );
 
 
-ALTER TABLE "public"."zoho_lead_submissions" OWNER TO "postgres";
+ALTER TABLE "public"."white_label_configs" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."white_label_email_templates" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "template_type" "text" NOT NULL,
+    "subject" "text" NOT NULL,
+    "html_body" "text" NOT NULL,
+    "text_body" "text",
+    "is_active" boolean DEFAULT true NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."white_label_email_templates" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."workflow_steps" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "workflow_id" "uuid" NOT NULL,
+    "step_order" integer NOT NULL,
+    "action_type" "text" NOT NULL,
+    "action_config" "jsonb" DEFAULT '{}'::"jsonb",
+    "condition_type" "text",
+    "condition_config" "jsonb" DEFAULT '{}'::"jsonb",
+    "is_active" boolean DEFAULT true,
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "updated_at" timestamp with time zone DEFAULT "now"()
+);
+
+
+ALTER TABLE "public"."workflow_steps" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."workflows" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "org_id" "uuid" NOT NULL,
+    "name" "text" NOT NULL,
+    "description" "text",
+    "trigger_type" "text",
+    "trigger_conditions" "jsonb" DEFAULT '{}'::"jsonb",
+    "is_active" boolean DEFAULT false,
+    "created_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"(),
+    "updated_at" timestamp with time zone DEFAULT "now"()
+);
+
+
+ALTER TABLE "public"."workflows" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."zoho_salesiq_errors" (
@@ -12317,6 +22411,16 @@ CREATE TABLE IF NOT EXISTS "public"."zoho_salesiq_health_checks" (
 
 
 ALTER TABLE "public"."zoho_salesiq_health_checks" OWNER TO "postgres";
+
+
+ALTER TABLE ONLY "public"."_backup_org_reconcile_20260701_advisor_profiles"
+    ADD CONSTRAINT "_backup_org_reconcile_20260701_advisor_profiles_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."_backup_org_reconcile_20260701_lead_submissions"
+    ADD CONSTRAINT "_backup_org_reconcile_20260701_lead_submissions_pkey" PRIMARY KEY ("id");
+
 
 
 ALTER TABLE ONLY "public"."activities"
@@ -12515,6 +22619,11 @@ ALTER TABLE ONLY "public"."advisor_profiles"
 
 
 ALTER TABLE ONLY "public"."advisor_quick_links"
+    ADD CONSTRAINT "advisor_quick_links_label_category_unique" UNIQUE ("label", "category");
+
+
+
+ALTER TABLE ONLY "public"."advisor_quick_links"
     ADD CONSTRAINT "advisor_quick_links_pkey" PRIMARY KEY ("id");
 
 
@@ -12604,6 +22713,26 @@ ALTER TABLE ONLY "public"."audit_logs"
 
 
 
+ALTER TABLE ONLY "public"."auth_login_attempts"
+    ADD CONSTRAINT "auth_login_attempts_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."auth_rate_limits"
+    ADD CONSTRAINT "auth_rate_limits_identifier_identifier_type_key" UNIQUE ("identifier", "identifier_type");
+
+
+
+ALTER TABLE ONLY "public"."auth_rate_limits"
+    ADD CONSTRAINT "auth_rate_limits_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."auth_security_events"
+    ADD CONSTRAINT "auth_security_events_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."automation_execution_log"
     ADD CONSTRAINT "automation_execution_log_pkey" PRIMARY KEY ("id");
 
@@ -12636,6 +22765,16 @@ ALTER TABLE ONLY "public"."blog_articles"
 
 ALTER TABLE ONLY "public"."blog_articles"
     ADD CONSTRAINT "blog_articles_slug_key" UNIQUE ("slug");
+
+
+
+ALTER TABLE ONLY "public"."blog_authors"
+    ADD CONSTRAINT "blog_authors_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."blog_authors"
+    ADD CONSTRAINT "blog_authors_slug_key" UNIQUE ("slug");
 
 
 
@@ -12704,6 +22843,96 @@ ALTER TABLE ONLY "public"."claims"
 
 
 
+ALTER TABLE ONLY "public"."cms_events"
+    ADD CONSTRAINT "cms_events_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."cms_events"
+    ADD CONSTRAINT "cms_events_slug_key" UNIQUE ("slug");
+
+
+
+ALTER TABLE ONLY "public"."cms_form_submissions"
+    ADD CONSTRAINT "cms_form_submissions_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."cms_forms"
+    ADD CONSTRAINT "cms_forms_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."cms_forms"
+    ADD CONSTRAINT "cms_forms_slug_key" UNIQUE ("slug");
+
+
+
+ALTER TABLE ONLY "public"."cms_global_blocks"
+    ADD CONSTRAINT "cms_global_blocks_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."cms_media"
+    ADD CONSTRAINT "cms_media_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."cms_pages"
+    ADD CONSTRAINT "cms_pages_path_unique" UNIQUE ("path");
+
+
+
+ALTER TABLE ONLY "public"."cms_pages"
+    ADD CONSTRAINT "cms_pages_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."cms_pages"
+    ADD CONSTRAINT "cms_pages_slug_unique" UNIQUE ("slug");
+
+
+
+ALTER TABLE ONLY "public"."cms_popups"
+    ADD CONSTRAINT "cms_popups_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."cms_redirects"
+    ADD CONSTRAINT "cms_redirects_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."cms_resources"
+    ADD CONSTRAINT "cms_resources_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."cms_resources"
+    ADD CONSTRAINT "cms_resources_slug_key" UNIQUE ("slug");
+
+
+
+ALTER TABLE ONLY "public"."cms_revisions"
+    ADD CONSTRAINT "cms_revisions_entity_type_entity_id_version_key" UNIQUE ("entity_type", "entity_id", "version");
+
+
+
+ALTER TABLE ONLY "public"."cms_revisions"
+    ADD CONSTRAINT "cms_revisions_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."cms_templates"
+    ADD CONSTRAINT "cms_templates_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."cms_theme"
+    ADD CONSTRAINT "cms_theme_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."code_batches"
     ADD CONSTRAINT "code_batches_pkey" PRIMARY KEY ("id");
 
@@ -12729,6 +22958,21 @@ ALTER TABLE ONLY "public"."cognito_forms"
 
 
 
+ALTER TABLE ONLY "public"."commission_payouts"
+    ADD CONSTRAINT "commission_payouts_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."commission_records"
+    ADD CONSTRAINT "commission_records_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."commission_schedules"
+    ADD CONSTRAINT "commission_schedules_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."compliance_acknowledgments"
     ADD CONSTRAINT "compliance_acknowledgments_pkey" PRIMARY KEY ("id");
 
@@ -12741,6 +22985,46 @@ ALTER TABLE ONLY "public"."compliance_acknowledgments"
 
 ALTER TABLE ONLY "public"."compliance_documents"
     ADD CONSTRAINT "compliance_documents_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."concierge_daily_log_entries"
+    ADD CONSTRAINT "concierge_daily_log_entries_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."concierge_escalations"
+    ADD CONSTRAINT "concierge_escalations_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."concierge_member_off_days"
+    ADD CONSTRAINT "concierge_member_off_days_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."concierge_member_off_days"
+    ADD CONSTRAINT "concierge_member_off_days_unique_day" UNIQUE ("team_member_id", "off_date");
+
+
+
+ALTER TABLE ONLY "public"."concierge_portal_config"
+    ADD CONSTRAINT "concierge_portal_config_pkey" PRIMARY KEY ("org_id");
+
+
+
+ALTER TABLE ONLY "public"."concierge_team_members"
+    ADD CONSTRAINT "concierge_team_members_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."concierge_weekly_report_extras"
+    ADD CONSTRAINT "concierge_weekly_report_extras_pkey" PRIMARY KEY ("org_id", "report_key");
+
+
+
+ALTER TABLE ONLY "public"."contacts"
+    ADD CONSTRAINT "contacts_pkey" PRIMARY KEY ("id");
 
 
 
@@ -12774,8 +23058,18 @@ ALTER TABLE ONLY "public"."crm_accounts"
 
 
 
+ALTER TABLE ONLY "public"."crm_achievements"
+    ADD CONSTRAINT "crm_achievements_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."crm_activities"
     ADD CONSTRAINT "crm_activities_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_activity_targets"
+    ADD CONSTRAINT "crm_activity_targets_pkey" PRIMARY KEY ("id");
 
 
 
@@ -12796,6 +23090,21 @@ ALTER TABLE ONLY "public"."crm_approval_requests"
 
 ALTER TABLE ONLY "public"."crm_approval_steps"
     ADD CONSTRAINT "crm_approval_steps_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_attachments"
+    ADD CONSTRAINT "crm_attachments_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_audit_log"
+    ADD CONSTRAINT "crm_audit_log_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_calendar_booking_log"
+    ADD CONSTRAINT "crm_calendar_booking_log_pkey" PRIMARY KEY ("id");
 
 
 
@@ -12839,8 +23148,53 @@ ALTER TABLE ONLY "public"."crm_cases"
 
 
 
+ALTER TABLE ONLY "public"."crm_challenge_entries"
+    ADD CONSTRAINT "crm_challenge_entries_challenge_id_user_id_key" UNIQUE ("challenge_id", "user_id");
+
+
+
+ALTER TABLE ONLY "public"."crm_challenge_entries"
+    ADD CONSTRAINT "crm_challenge_entries_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_challenges"
+    ADD CONSTRAINT "crm_challenges_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_community_events"
+    ADD CONSTRAINT "crm_community_events_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_concierge_handoff_log"
+    ADD CONSTRAINT "crm_concierge_handoff_log_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."crm_contacts"
     ADD CONSTRAINT "crm_contacts_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_conversation_goal_config"
+    ADD CONSTRAINT "crm_conversation_goal_config_pkey" PRIMARY KEY ("org_id");
+
+
+
+ALTER TABLE ONLY "public"."crm_daily_log_corrections"
+    ADD CONSTRAINT "crm_daily_log_corrections_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_daily_log_events"
+    ADD CONSTRAINT "crm_daily_log_events_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_daily_log_ui_config"
+    ADD CONSTRAINT "crm_daily_log_ui_config_pkey" PRIMARY KEY ("org_id");
 
 
 
@@ -12869,6 +23223,16 @@ ALTER TABLE ONLY "public"."crm_deal_contacts"
 
 
 
+ALTER TABLE ONLY "public"."crm_deal_predictions"
+    ADD CONSTRAINT "crm_deal_predictions_deal_id_key" UNIQUE ("deal_id");
+
+
+
+ALTER TABLE ONLY "public"."crm_deal_predictions"
+    ADD CONSTRAINT "crm_deal_predictions_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."crm_deal_products"
     ADD CONSTRAINT "crm_deal_products_deal_id_product_id_key" UNIQUE ("deal_id", "product_id");
 
@@ -12876,6 +23240,36 @@ ALTER TABLE ONLY "public"."crm_deal_products"
 
 ALTER TABLE ONLY "public"."crm_deal_products"
     ADD CONSTRAINT "crm_deal_products_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_deal_room_messages"
+    ADD CONSTRAINT "crm_deal_room_messages_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_deal_room_participants"
+    ADD CONSTRAINT "crm_deal_room_participants_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_deal_room_participants"
+    ADD CONSTRAINT "crm_deal_room_participants_room_id_user_id_key" UNIQUE ("room_id", "user_id");
+
+
+
+ALTER TABLE ONLY "public"."crm_deal_room_pinned_items"
+    ADD CONSTRAINT "crm_deal_room_pinned_items_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_deal_rooms"
+    ADD CONSTRAINT "crm_deal_rooms_deal_id_key" UNIQUE ("deal_id");
+
+
+
+ALTER TABLE ONLY "public"."crm_deal_rooms"
+    ADD CONSTRAINT "crm_deal_rooms_pkey" PRIMARY KEY ("id");
 
 
 
@@ -12911,6 +23305,11 @@ ALTER TABLE ONLY "public"."crm_default_layout_templates"
 
 ALTER TABLE ONLY "public"."crm_documents"
     ADD CONSTRAINT "crm_documents_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_email_ab_tests"
+    ADD CONSTRAINT "crm_email_ab_tests_pkey" PRIMARY KEY ("id");
 
 
 
@@ -12969,6 +23368,21 @@ ALTER TABLE ONLY "public"."crm_email_tracking"
 
 
 
+ALTER TABLE ONLY "public"."crm_family_members"
+    ADD CONSTRAINT "crm_family_members_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_focus_items"
+    ADD CONSTRAINT "crm_focus_items_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_follow_up_cadences"
+    ADD CONSTRAINT "crm_follow_up_cadences_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."crm_forecast_entries"
     ADD CONSTRAINT "crm_forecast_entries_pkey" PRIMARY KEY ("id");
 
@@ -12981,6 +23395,16 @@ ALTER TABLE ONLY "public"."crm_forecast_entries"
 
 ALTER TABLE ONLY "public"."crm_forecasts"
     ADD CONSTRAINT "crm_forecasts_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_integration_accounts"
+    ADD CONSTRAINT "crm_integration_accounts_org_id_user_id_provider_key" UNIQUE ("org_id", "user_id", "provider");
+
+
+
+ALTER TABLE ONLY "public"."crm_integration_accounts"
+    ADD CONSTRAINT "crm_integration_accounts_pkey" PRIMARY KEY ("id");
 
 
 
@@ -12999,6 +23423,16 @@ ALTER TABLE ONLY "public"."crm_invoices"
 
 
 
+ALTER TABLE ONLY "public"."crm_lead_cadence_state"
+    ADD CONSTRAINT "crm_lead_cadence_state_lead_id_cadence_id_key" UNIQUE ("lead_id", "cadence_id");
+
+
+
+ALTER TABLE ONLY "public"."crm_lead_cadence_state"
+    ADD CONSTRAINT "crm_lead_cadence_state_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."crm_lead_health_quotes"
     ADD CONSTRAINT "crm_lead_health_quotes_pkey" PRIMARY KEY ("id");
 
@@ -13006,6 +23440,41 @@ ALTER TABLE ONLY "public"."crm_lead_health_quotes"
 
 ALTER TABLE ONLY "public"."crm_lead_plan_interests"
     ADD CONSTRAINT "crm_lead_plan_interests_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_lead_quote_history"
+    ADD CONSTRAINT "crm_lead_quote_history_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_lead_source_types"
+    ADD CONSTRAINT "crm_lead_source_types_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_lead_source_types"
+    ADD CONSTRAINT "crm_lead_source_types_slug_key" UNIQUE ("slug");
+
+
+
+ALTER TABLE ONLY "public"."crm_lead_time_entries"
+    ADD CONSTRAINT "crm_lead_time_entries_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_linkedin_config"
+    ADD CONSTRAINT "crm_linkedin_config_org_id_key" UNIQUE ("org_id");
+
+
+
+ALTER TABLE ONLY "public"."crm_linkedin_config"
+    ADD CONSTRAINT "crm_linkedin_config_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_master_templates"
+    ADD CONSTRAINT "crm_master_templates_pkey" PRIMARY KEY ("id");
 
 
 
@@ -13024,8 +23493,43 @@ ALTER TABLE ONLY "public"."crm_meeting_schedules"
 
 
 
-ALTER TABLE ONLY "public"."crm_pipeline_stages"
-    ADD CONSTRAINT "crm_pipeline_stages_name_key" UNIQUE ("name");
+ALTER TABLE ONLY "public"."crm_mentions"
+    ADD CONSTRAINT "crm_mentions_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_oe_reactivation_runs"
+    ADD CONSTRAINT "crm_oe_reactivation_runs_org_id_run_year_key" UNIQUE ("org_id", "run_year");
+
+
+
+ALTER TABLE ONLY "public"."crm_oe_reactivation_runs"
+    ADD CONSTRAINT "crm_oe_reactivation_runs_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_optout_keywords"
+    ADD CONSTRAINT "crm_optout_keywords_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_outside_advisors"
+    ADD CONSTRAINT "crm_outside_advisors_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_performance_alert_log"
+    ADD CONSTRAINT "crm_performance_alert_log_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_performance_lag_config"
+    ADD CONSTRAINT "crm_performance_lag_config_pkey" PRIMARY KEY ("org_id");
+
+
+
+ALTER TABLE ONLY "public"."crm_phone_numbers"
+    ADD CONSTRAINT "crm_phone_numbers_pkey" PRIMARY KEY ("id");
 
 
 
@@ -13049,6 +23553,21 @@ ALTER TABLE ONLY "public"."crm_price_books"
 
 
 
+ALTER TABLE ONLY "public"."crm_product_form_fields"
+    ADD CONSTRAINT "crm_product_form_fields_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_product_lines"
+    ADD CONSTRAINT "crm_product_lines_org_slug_key" UNIQUE ("org_id", "slug");
+
+
+
+ALTER TABLE ONLY "public"."crm_product_lines"
+    ADD CONSTRAINT "crm_product_lines_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."crm_products"
     ADD CONSTRAINT "crm_products_pkey" PRIMARY KEY ("id");
 
@@ -13064,13 +23583,108 @@ ALTER TABLE ONLY "public"."crm_purchase_orders"
 
 
 
+ALTER TABLE ONLY "public"."crm_quarterly_milestones"
+    ADD CONSTRAINT "crm_quarterly_milestones_org_id_year_quarter_key" UNIQUE ("org_id", "year", "quarter");
+
+
+
+ALTER TABLE ONLY "public"."crm_quarterly_milestones"
+    ADD CONSTRAINT "crm_quarterly_milestones_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_quote_line_item_answers"
+    ADD CONSTRAINT "crm_quote_line_item_answers_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."crm_quote_line_items"
     ADD CONSTRAINT "crm_quote_line_items_pkey" PRIMARY KEY ("id");
 
 
 
+ALTER TABLE ONLY "public"."crm_quote_templates"
+    ADD CONSTRAINT "crm_quote_templates_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."crm_quotes"
     ADD CONSTRAINT "crm_quotes_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_recruit_cadence_state"
+    ADD CONSTRAINT "crm_recruit_cadence_state_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_recruit_cadence_state"
+    ADD CONSTRAINT "crm_recruit_cadence_state_recruit_id_cadence_id_key" UNIQUE ("recruit_id", "cadence_id");
+
+
+
+ALTER TABLE ONLY "public"."crm_recruiting_pipeline_stages"
+    ADD CONSTRAINT "crm_recruiting_pipeline_stages_org_id_name_key" UNIQUE ("org_id", "name");
+
+
+
+ALTER TABLE ONLY "public"."crm_recruiting_pipeline_stages"
+    ADD CONSTRAINT "crm_recruiting_pipeline_stages_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_recruiting_records"
+    ADD CONSTRAINT "crm_recruiting_records_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_referral_partners"
+    ADD CONSTRAINT "crm_referral_partners_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_referrals"
+    ADD CONSTRAINT "crm_referrals_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_rep_daily_log_entries"
+    ADD CONSTRAINT "crm_rep_daily_log_entries_org_id_user_id_log_date_key" UNIQUE ("org_id", "user_id", "log_date");
+
+
+
+ALTER TABLE ONLY "public"."crm_rep_daily_log_entries"
+    ADD CONSTRAINT "crm_rep_daily_log_entries_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_rep_message_templates"
+    ADD CONSTRAINT "crm_rep_message_templates_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_rep_roster"
+    ADD CONSTRAINT "crm_rep_roster_org_id_user_id_key" UNIQUE ("org_id", "user_id");
+
+
+
+ALTER TABLE ONLY "public"."crm_rep_roster"
+    ADD CONSTRAINT "crm_rep_roster_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_round_robin_audit"
+    ADD CONSTRAINT "crm_round_robin_audit_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_round_robin_config"
+    ADD CONSTRAINT "crm_round_robin_config_org_id_key" UNIQUE ("org_id");
+
+
+
+ALTER TABLE ONLY "public"."crm_round_robin_config"
+    ADD CONSTRAINT "crm_round_robin_config_pkey" PRIMARY KEY ("id");
 
 
 
@@ -13091,6 +23705,46 @@ ALTER TABLE ONLY "public"."crm_saved_views"
 
 ALTER TABLE ONLY "public"."crm_saved_views"
     ADD CONSTRAINT "crm_saved_views_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_sequence_triggers"
+    ADD CONSTRAINT "crm_sequence_triggers_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_sla_config"
+    ADD CONSTRAINT "crm_sla_config_org_id_key" UNIQUE ("org_id");
+
+
+
+ALTER TABLE ONLY "public"."crm_sla_config"
+    ADD CONSTRAINT "crm_sla_config_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_social_platform_connections"
+    ADD CONSTRAINT "crm_social_platform_connections_org_provider" UNIQUE ("org_id", "provider");
+
+
+
+ALTER TABLE ONLY "public"."crm_social_platform_connections"
+    ADD CONSTRAINT "crm_social_platform_connections_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_social_posts"
+    ADD CONSTRAINT "crm_social_posts_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_special_project_types"
+    ADD CONSTRAINT "crm_special_project_types_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_special_projects"
+    ADD CONSTRAINT "crm_special_projects_pkey" PRIMARY KEY ("id");
 
 
 
@@ -13144,8 +23798,33 @@ ALTER TABLE ONLY "public"."crm_templates"
 
 
 
+ALTER TABLE ONLY "public"."crm_user_achievements"
+    ADD CONSTRAINT "crm_user_achievements_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_user_achievements"
+    ADD CONSTRAINT "crm_user_achievements_user_id_achievement_id_key" UNIQUE ("user_id", "achievement_id");
+
+
+
+ALTER TABLE ONLY "public"."crm_user_conversation_goal_overrides"
+    ADD CONSTRAINT "crm_user_conversation_goal_overrides_pkey" PRIMARY KEY ("org_id", "user_id");
+
+
+
 ALTER TABLE ONLY "public"."crm_user_goals"
     ADD CONSTRAINT "crm_user_goals_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_user_xp"
+    ADD CONSTRAINT "crm_user_xp_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_user_xp"
+    ADD CONSTRAINT "crm_user_xp_user_id_org_id_key" UNIQUE ("user_id", "org_id");
 
 
 
@@ -13171,6 +23850,21 @@ ALTER TABLE ONLY "public"."crm_web_forms"
 
 ALTER TABLE ONLY "public"."crm_website_quote_sync"
     ADD CONSTRAINT "crm_website_quote_sync_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_win_feed"
+    ADD CONSTRAINT "crm_win_feed_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_workspaces"
+    ADD CONSTRAINT "crm_workspaces_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_xp_events"
+    ADD CONSTRAINT "crm_xp_events_pkey" PRIMARY KEY ("id");
 
 
 
@@ -13201,6 +23895,11 @@ ALTER TABLE ONLY "public"."educational_content"
 
 ALTER TABLE ONLY "public"."educational_content"
     ADD CONSTRAINT "educational_content_slug_key" UNIQUE ("slug");
+
+
+
+ALTER TABLE ONLY "public"."email_log"
+    ADD CONSTRAINT "email_log_pkey" PRIMARY KEY ("id");
 
 
 
@@ -13269,6 +23968,16 @@ ALTER TABLE ONLY "public"."faq_items"
 
 
 
+ALTER TABLE ONLY "public"."feature_flags"
+    ADD CONSTRAINT "feature_flags_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."feature_flags"
+    ADD CONSTRAINT "feature_flags_slug_key" UNIQUE ("slug");
+
+
+
 ALTER TABLE ONLY "public"."form_submissions"
     ADD CONSTRAINT "form_submissions_pkey" PRIMARY KEY ("id");
 
@@ -13314,8 +24023,28 @@ ALTER TABLE ONLY "public"."immunizations"
 
 
 
+ALTER TABLE ONLY "public"."impersonation_log"
+    ADD CONSTRAINT "impersonation_log_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."insurance_carriers"
+    ADD CONSTRAINT "insurance_carriers_org_name_unique" UNIQUE ("org_id", "name");
+
+
+
+ALTER TABLE ONLY "public"."insurance_carriers"
+    ADD CONSTRAINT "insurance_carriers_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."integration_health"
     ADD CONSTRAINT "integration_health_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."integrations"
+    ADD CONSTRAINT "integrations_pkey" PRIMARY KEY ("id");
 
 
 
@@ -13374,7 +24103,7 @@ ALTER TABLE ONLY "public"."lead_tasks"
 
 
 
-ALTER TABLE ONLY "public"."leads"
+ALTER TABLE ONLY "public"."_deprecated_leads"
     ADD CONSTRAINT "leads_pkey" PRIMARY KEY ("id");
 
 
@@ -13489,6 +24218,11 @@ ALTER TABLE ONLY "public"."meeting_templates"
 
 
 
+ALTER TABLE ONLY "public"."member_account_events"
+    ADD CONSTRAINT "member_account_events_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."member_coverage"
     ADD CONSTRAINT "member_coverage_pkey" PRIMARY KEY ("id");
 
@@ -13501,6 +24235,11 @@ ALTER TABLE ONLY "public"."member_dependents"
 
 ALTER TABLE ONLY "public"."member_documents"
     ADD CONSTRAINT "member_documents_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."member_notification_rules"
+    ADD CONSTRAINT "member_notification_rules_pkey" PRIMARY KEY ("id");
 
 
 
@@ -13519,6 +24258,11 @@ ALTER TABLE ONLY "public"."member_profiles"
 
 
 
+ALTER TABLE ONLY "public"."message_templates"
+    ADD CONSTRAINT "message_templates_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."messages"
     ADD CONSTRAINT "messages_pkey" PRIMARY KEY ("id");
 
@@ -13531,6 +24275,11 @@ ALTER TABLE ONLY "public"."navigation_analytics"
 
 ALTER TABLE ONLY "public"."navigation_items"
     ADD CONSTRAINT "navigation_items_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."navigation_search_analytics"
+    ADD CONSTRAINT "navigation_search_analytics_pkey" PRIMARY KEY ("id");
 
 
 
@@ -13594,6 +24343,11 @@ ALTER TABLE ONLY "public"."notification_preferences"
 
 
 
+ALTER TABLE ONLY "public"."member_notification_rules"
+    ADD CONSTRAINT "notification_rules_unique" UNIQUE ("event_type", "department");
+
+
+
 ALTER TABLE ONLY "public"."notification_settings"
     ADD CONSTRAINT "notification_settings_pkey" PRIMARY KEY ("id");
 
@@ -13629,6 +24383,16 @@ ALTER TABLE ONLY "public"."onboarding_steps"
 
 
 
+ALTER TABLE ONLY "public"."org_feature_overrides"
+    ADD CONSTRAINT "org_feature_overrides_org_id_feature_id_key" UNIQUE ("org_id", "feature_id");
+
+
+
+ALTER TABLE ONLY "public"."org_feature_overrides"
+    ADD CONSTRAINT "org_feature_overrides_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."org_invites"
     ADD CONSTRAINT "org_invites_pkey" PRIMARY KEY ("id");
 
@@ -13646,6 +24410,31 @@ ALTER TABLE ONLY "public"."org_memberships"
 
 ALTER TABLE ONLY "public"."org_memberships"
     ADD CONSTRAINT "org_memberships_user_id_org_id_key" UNIQUE ("user_id", "org_id");
+
+
+
+ALTER TABLE ONLY "public"."org_module_licenses"
+    ADD CONSTRAINT "org_module_licenses_org_id_module_id_key" UNIQUE ("org_id", "module_id");
+
+
+
+ALTER TABLE ONLY "public"."org_module_licenses"
+    ADD CONSTRAINT "org_module_licenses_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."org_portal_access"
+    ADD CONSTRAINT "org_portal_access_org_portal_unique" UNIQUE ("org_id", "portal_slug");
+
+
+
+ALTER TABLE ONLY "public"."org_portal_access"
+    ADD CONSTRAINT "org_portal_access_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."organization_id_map"
+    ADD CONSTRAINT "organization_id_map_pkey" PRIMARY KEY ("slug", "purpose");
 
 
 
@@ -13689,6 +24478,11 @@ ALTER TABLE ONLY "public"."page_views"
 
 
 
+ALTER TABLE ONLY "public"."password_history"
+    ADD CONSTRAINT "password_history_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."payment_methods"
     ADD CONSTRAINT "payment_methods_pkey" PRIMARY KEY ("id");
 
@@ -13711,6 +24505,11 @@ ALTER TABLE ONLY "public"."permissions"
 
 ALTER TABLE ONLY "public"."permissions"
     ADD CONSTRAINT "permissions_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."phi_access_log"
+    ADD CONSTRAINT "phi_access_log_pkey" PRIMARY KEY ("id");
 
 
 
@@ -13774,6 +24573,16 @@ ALTER TABLE ONLY "public"."priority_lanes"
 
 
 
+ALTER TABLE ONLY "public"."product_modules"
+    ADD CONSTRAINT "product_modules_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."product_modules"
+    ADD CONSTRAINT "product_modules_slug_key" UNIQUE ("slug");
+
+
+
 ALTER TABLE ONLY "public"."profiles"
     ADD CONSTRAINT "profiles_pkey" PRIMARY KEY ("id");
 
@@ -13811,6 +24620,11 @@ ALTER TABLE ONLY "public"."providers"
 
 ALTER TABLE ONLY "public"."quick_actions"
     ADD CONSTRAINT "quick_actions_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."quote_calculator_funnel_events"
+    ADD CONSTRAINT "quote_calculator_funnel_events_pkey" PRIMARY KEY ("id");
 
 
 
@@ -13861,6 +24675,11 @@ ALTER TABLE ONLY "public"."role_permissions"
 
 ALTER TABLE ONLY "public"."saved_reports"
     ADD CONSTRAINT "saved_reports_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."saved_searches"
+    ADD CONSTRAINT "saved_searches_pkey" PRIMARY KEY ("id");
 
 
 
@@ -13954,6 +24773,16 @@ ALTER TABLE ONLY "public"."seo_sync_logs"
 
 
 
+ALTER TABLE ONLY "public"."sequence_enrollments"
+    ADD CONSTRAINT "sequence_enrollments_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."sequence_steps"
+    ADD CONSTRAINT "sequence_steps_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."sequences"
     ADD CONSTRAINT "sequences_pkey" PRIMARY KEY ("id");
 
@@ -13996,6 +24825,61 @@ ALTER TABLE ONLY "public"."sop_categories"
 
 ALTER TABLE ONLY "public"."sop_documents"
     ADD CONSTRAINT "sop_documents_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."staff_attendance_events"
+    ADD CONSTRAINT "staff_attendance_events_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."staff_attendance_sessions"
+    ADD CONSTRAINT "staff_attendance_sessions_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."staff_departments"
+    ADD CONSTRAINT "staff_departments_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."staff_notes"
+    ADD CONSTRAINT "staff_notes_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."staff_office_locations"
+    ADD CONSTRAINT "staff_office_locations_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."staff_profiles"
+    ADD CONSTRAINT "staff_profiles_org_user_uniq" UNIQUE ("org_id", "user_id");
+
+
+
+ALTER TABLE ONLY "public"."staff_profiles"
+    ADD CONSTRAINT "staff_profiles_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."staff_tasks"
+    ADD CONSTRAINT "staff_tasks_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."staff_time_documents"
+    ADD CONSTRAINT "staff_time_documents_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."staff_time_request_events"
+    ADD CONSTRAINT "staff_time_request_events_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."staff_time_requests"
+    ADD CONSTRAINT "staff_time_requests_pkey" PRIMARY KEY ("id");
 
 
 
@@ -14169,6 +25053,16 @@ ALTER TABLE ONLY "public"."user_achievements"
 
 
 
+ALTER TABLE ONLY "public"."user_mfa_settings"
+    ADD CONSTRAINT "user_mfa_settings_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."user_mfa_settings"
+    ADD CONSTRAINT "user_mfa_settings_user_id_key" UNIQUE ("user_id");
+
+
+
 ALTER TABLE ONLY "public"."user_navigation_preferences"
     ADD CONSTRAINT "user_navigation_preferences_pkey" PRIMARY KEY ("id");
 
@@ -14209,6 +25103,11 @@ ALTER TABLE ONLY "public"."user_roles"
 
 
 
+ALTER TABLE ONLY "public"."user_sessions"
+    ADD CONSTRAINT "user_sessions_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."utm_campaigns"
     ADD CONSTRAINT "utm_campaigns_pkey" PRIMARY KEY ("id");
 
@@ -14221,6 +25120,26 @@ ALTER TABLE ONLY "public"."visit_summaries"
 
 ALTER TABLE ONLY "public"."webhook_delivery_logs"
     ADD CONSTRAINT "webhook_delivery_logs_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."white_label_configs"
+    ADD CONSTRAINT "white_label_configs_org_id_key" UNIQUE ("org_id");
+
+
+
+ALTER TABLE ONLY "public"."white_label_configs"
+    ADD CONSTRAINT "white_label_configs_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."white_label_email_templates"
+    ADD CONSTRAINT "white_label_email_templates_org_id_template_type_key" UNIQUE ("org_id", "template_type");
+
+
+
+ALTER TABLE ONLY "public"."white_label_email_templates"
+    ADD CONSTRAINT "white_label_email_templates_pkey" PRIMARY KEY ("id");
 
 
 
@@ -14239,8 +25158,13 @@ ALTER TABLE ONLY "public"."wordpress_courses"
 
 
 
-ALTER TABLE ONLY "public"."zoho_lead_submissions"
-    ADD CONSTRAINT "zoho_lead_submissions_pkey" PRIMARY KEY ("id");
+ALTER TABLE ONLY "public"."workflow_steps"
+    ADD CONSTRAINT "workflow_steps_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."workflows"
+    ADD CONSTRAINT "workflows_pkey" PRIMARY KEY ("id");
 
 
 
@@ -14254,6 +25178,154 @@ ALTER TABLE ONLY "public"."zoho_salesiq_health_checks"
 
 
 
+CREATE INDEX "auth_login_attempts_email_timestamp_idx" ON "public"."auth_login_attempts" USING "btree" ("email", "timestamp" DESC);
+
+
+
+CREATE INDEX "auth_login_attempts_ip_timestamp_idx" ON "public"."auth_login_attempts" USING "btree" ("ip_address", "timestamp" DESC);
+
+
+
+CREATE INDEX "auth_security_events_event_type_timestamp_idx" ON "public"."auth_security_events" USING "btree" ("event_type", "timestamp" DESC);
+
+
+
+CREATE INDEX "auth_security_events_severity_timestamp_idx" ON "public"."auth_security_events" USING "btree" ("event_severity", "timestamp" DESC);
+
+
+
+CREATE INDEX "auth_security_events_user_id_timestamp_idx" ON "public"."auth_security_events" USING "btree" ("user_id", "timestamp" DESC);
+
+
+
+CREATE INDEX "cms_form_submissions_created_at_idx" ON "public"."cms_form_submissions" USING "btree" ("created_at" DESC);
+
+
+
+CREATE INDEX "cms_form_submissions_form_id_idx" ON "public"."cms_form_submissions" USING "btree" ("form_id");
+
+
+
+CREATE INDEX "cms_global_blocks_created_at_idx" ON "public"."cms_global_blocks" USING "btree" ("created_at" DESC);
+
+
+
+CREATE INDEX "cms_media_created_at_idx" ON "public"."cms_media" USING "btree" ("created_at" DESC);
+
+
+
+CREATE INDEX "cms_media_folder_idx" ON "public"."cms_media" USING "btree" ("folder");
+
+
+
+CREATE INDEX "cms_media_mime_type_idx" ON "public"."cms_media" USING "btree" ("mime_type");
+
+
+
+CREATE INDEX "cms_media_tags_idx" ON "public"."cms_media" USING "gin" ("tags");
+
+
+
+CREATE INDEX "cms_pages_path_idx" ON "public"."cms_pages" USING "btree" ("path");
+
+
+
+CREATE INDEX "cms_pages_published_idx" ON "public"."cms_pages" USING "btree" ("is_published") WHERE ("is_published" = true);
+
+
+
+CREATE INDEX "cms_pages_updated_at_idx" ON "public"."cms_pages" USING "btree" ("updated_at" DESC);
+
+
+
+CREATE INDEX "cms_popups_created_at_idx" ON "public"."cms_popups" USING "btree" ("created_at" DESC);
+
+
+
+CREATE INDEX "cms_popups_is_active_idx" ON "public"."cms_popups" USING "btree" ("is_active");
+
+
+
+CREATE INDEX "cms_redirects_active_idx" ON "public"."cms_redirects" USING "btree" ("is_active") WHERE ("is_active" = true);
+
+
+
+CREATE INDEX "cms_redirects_from_path_idx" ON "public"."cms_redirects" USING "btree" ("from_path");
+
+
+
+CREATE INDEX "cms_revisions_created_idx" ON "public"."cms_revisions" USING "btree" ("created_at" DESC);
+
+
+
+CREATE INDEX "cms_revisions_entity_idx" ON "public"."cms_revisions" USING "btree" ("entity_type", "entity_id", "version" DESC);
+
+
+
+CREATE INDEX "cms_templates_category_idx" ON "public"."cms_templates" USING "btree" ("category");
+
+
+
+CREATE INDEX "cms_templates_created_at_idx" ON "public"."cms_templates" USING "btree" ("created_at" DESC);
+
+
+
+CREATE UNIQUE INDEX "cms_theme_singleton_idx" ON "public"."cms_theme" USING "btree" ((true));
+
+
+
+CREATE UNIQUE INDEX "concierge_team_members_org_name_key" ON "public"."concierge_team_members" USING "btree" ("org_id", "name");
+
+
+
+CREATE UNIQUE INDEX "concierge_team_members_user_id_key" ON "public"."concierge_team_members" USING "btree" ("user_id") WHERE ("user_id" IS NOT NULL);
+
+
+
+CREATE INDEX "crm_performance_alert_log_dispatch_idx" ON "public"."crm_performance_alert_log" USING "btree" ("org_id", "notification_dispatched_at");
+
+
+
+CREATE INDEX "crm_rep_roster_org_active_idx" ON "public"."crm_rep_roster" USING "btree" ("org_id", "is_active");
+
+
+
+CREATE INDEX "crm_rep_roster_org_role_idx" ON "public"."crm_rep_roster" USING "btree" ("org_id", "role_type") WHERE ("is_active" = true);
+
+
+
+CREATE INDEX "crm_special_project_types_org_active_idx" ON "public"."crm_special_project_types" USING "btree" ("org_id", "is_active");
+
+
+
+CREATE UNIQUE INDEX "crm_special_project_types_org_name_uq" ON "public"."crm_special_project_types" USING "btree" ("org_id", "lower"("name"));
+
+
+
+CREATE INDEX "crm_special_projects_type_idx" ON "public"."crm_special_projects" USING "btree" ("project_type_id");
+
+
+
+CREATE INDEX "idx_account_events_actor" ON "public"."member_account_events" USING "btree" ("actor_user_id");
+
+
+
+CREATE INDEX "idx_account_events_created" ON "public"."member_account_events" USING "btree" ("created_at" DESC);
+
+
+
+CREATE INDEX "idx_account_events_department" ON "public"."member_account_events" USING "btree" ("actor_department");
+
+
+
+CREATE INDEX "idx_account_events_member" ON "public"."member_account_events" USING "btree" ("member_id");
+
+
+
+CREATE INDEX "idx_account_events_type" ON "public"."member_account_events" USING "btree" ("event_type");
+
+
+
 CREATE INDEX "idx_activities_actor" ON "public"."activities" USING "btree" ("actor_id", "created_at" DESC);
 
 
@@ -14263,6 +25335,10 @@ CREATE INDEX "idx_activities_created_at" ON "public"."activities" USING "btree" 
 
 
 CREATE INDEX "idx_activities_lead" ON "public"."activities" USING "btree" ("lead_id", "created_at" DESC) WHERE ("lead_id" IS NOT NULL);
+
+
+
+CREATE INDEX "idx_activities_lead_date" ON "public"."lead_activities" USING "btree" ("lead_id", "created_at" DESC);
 
 
 
@@ -14314,6 +25390,10 @@ CREATE INDEX "idx_advisor_announcements_dates" ON "public"."advisor_announcement
 
 
 
+CREATE INDEX "idx_advisor_announcements_org_id" ON "public"."advisor_announcements" USING "btree" ("org_id");
+
+
+
 CREATE INDEX "idx_advisor_categories_slug" ON "public"."advisor_categories" USING "btree" ("slug");
 
 
@@ -14322,11 +25402,19 @@ CREATE INDEX "idx_advisor_categories_type" ON "public"."advisor_categories" USIN
 
 
 
+CREATE INDEX "idx_advisor_contact_directory_org_id" ON "public"."advisor_contact_directory" USING "btree" ("org_id");
+
+
+
 CREATE INDEX "idx_advisor_content_bookmarks_advisor" ON "public"."advisor_content_bookmarks" USING "btree" ("advisor_id");
 
 
 
 CREATE INDEX "idx_advisor_content_bookmarks_content" ON "public"."advisor_content_bookmarks" USING "btree" ("content_id");
+
+
+
+CREATE INDEX "idx_advisor_content_categories_org_id" ON "public"."advisor_content_categories" USING "btree" ("org_id");
 
 
 
@@ -14343,6 +25431,10 @@ CREATE INDEX "idx_advisor_content_featured" ON "public"."advisor_content" USING 
 
 
 CREATE INDEX "idx_advisor_content_notification_sent" ON "public"."advisor_content" USING "btree" ("notification_sent_at") WHERE ("content_type" = 'bulletin'::"text");
+
+
+
+CREATE INDEX "idx_advisor_content_org_id" ON "public"."advisor_content" USING "btree" ("org_id");
 
 
 
@@ -14371,6 +25463,14 @@ CREATE INDEX "idx_advisor_content_views_advisor" ON "public"."advisor_content_vi
 
 
 CREATE INDEX "idx_advisor_content_views_content" ON "public"."advisor_content_views" USING "btree" ("content_id");
+
+
+
+CREATE INDEX "idx_advisor_dashboard_widgets_org_id" ON "public"."advisor_dashboard_widgets" USING "btree" ("org_id");
+
+
+
+CREATE INDEX "idx_advisor_enrollment_links_org_id" ON "public"."advisor_enrollment_links" USING "btree" ("org_id");
 
 
 
@@ -14446,6 +25546,10 @@ CREATE INDEX "idx_advisor_nav_menu_order" ON "public"."advisor_nav_menu" USING "
 
 
 
+CREATE INDEX "idx_advisor_nav_menu_org_id" ON "public"."advisor_nav_menu" USING "btree" ("org_id");
+
+
+
 CREATE UNIQUE INDEX "idx_advisor_nav_menu_url_unique" ON "public"."advisor_nav_menu" USING "btree" ("url") WHERE ("url" IS NOT NULL);
 
 
@@ -14467,6 +25571,10 @@ CREATE INDEX "idx_advisor_plan_resources_slug" ON "public"."advisor_plan_resourc
 
 
 CREATE INDEX "idx_advisor_plan_resources_updated_by" ON "public"."advisor_plan_resources" USING "btree" ("updated_by");
+
+
+
+CREATE INDEX "idx_advisor_portal_settings_org_id" ON "public"."advisor_portal_settings" USING "btree" ("org_id");
 
 
 
@@ -14511,6 +25619,14 @@ CREATE INDEX "idx_advisor_quick_links_dashboard_actions" ON "public"."advisor_qu
 
 
 CREATE INDEX "idx_advisor_quick_links_order" ON "public"."advisor_quick_links" USING "btree" ("order_index");
+
+
+
+CREATE INDEX "idx_advisor_quick_links_org_id" ON "public"."advisor_quick_links" USING "btree" ("org_id");
+
+
+
+CREATE INDEX "idx_advisor_videos_org_id" ON "public"."advisor_videos" USING "btree" ("org_id");
 
 
 
@@ -14634,6 +25750,10 @@ CREATE INDEX "idx_analytics_sessions_user_id" ON "public"."analytics_sessions" U
 
 
 
+CREATE INDEX "idx_analytics_sessions_visitor_id" ON "public"."analytics_sessions" USING "btree" ("visitor_id");
+
+
+
 CREATE INDEX "idx_approved_links_category" ON "public"."approved_links" USING "btree" ("category");
 
 
@@ -14659,6 +25779,10 @@ CREATE INDEX "idx_assignments_priority" ON "public"."assignments" USING "btree" 
 
 
 CREATE INDEX "idx_assignments_status" ON "public"."assignments" USING "btree" ("status");
+
+
+
+CREATE INDEX "idx_attachments_entity_lookup" ON "public"."crm_attachments" USING "btree" ("entity_type", "entity_id", "created_at" DESC);
 
 
 
@@ -14711,6 +25835,10 @@ CREATE INDEX "idx_benefits_active" ON "public"."benefits" USING "btree" ("is_act
 
 
 CREATE INDEX "idx_benefits_order" ON "public"."benefits" USING "btree" ("order_index");
+
+
+
+CREATE INDEX "idx_blog_articles_author_id" ON "public"."blog_articles" USING "btree" ("author_id");
 
 
 
@@ -14798,6 +25926,10 @@ CREATE INDEX "idx_calendar_events_status" ON "public"."calendar_events" USING "b
 
 
 
+CREATE INDEX "idx_calendar_org_start" ON "public"."calendar_events" USING "btree" ("org_id", "start_time") WHERE ("status" <> 'cancelled'::"text");
+
+
+
 CREATE INDEX "idx_certifications_advisor" ON "public"."certifications" USING "btree" ("advisor_id");
 
 
@@ -14874,6 +26006,22 @@ CREATE INDEX "idx_claims_status" ON "public"."claims" USING "btree" ("status");
 
 
 
+CREATE INDEX "idx_cms_events_created_at" ON "public"."cms_events" USING "btree" ("created_at");
+
+
+
+CREATE INDEX "idx_cms_events_is_published" ON "public"."cms_events" USING "btree" ("is_published");
+
+
+
+CREATE INDEX "idx_cms_resources_created_at" ON "public"."cms_resources" USING "btree" ("created_at");
+
+
+
+CREATE INDEX "idx_cms_resources_is_published" ON "public"."cms_resources" USING "btree" ("is_published");
+
+
+
 CREATE INDEX "idx_code_batches_created_by" ON "public"."code_batches" USING "btree" ("created_by");
 
 
@@ -14914,7 +26062,63 @@ CREATE INDEX "idx_cognito_forms_menu" ON "public"."cognito_forms" USING "btree" 
 
 
 
+CREATE INDEX "idx_cognito_forms_org_id" ON "public"."cognito_forms" USING "btree" ("org_id");
+
+
+
 CREATE INDEX "idx_cognito_forms_slug" ON "public"."cognito_forms" USING "btree" ("slug");
+
+
+
+CREATE INDEX "idx_commission_payouts_advisor" ON "public"."commission_payouts" USING "btree" ("advisor_id");
+
+
+
+CREATE INDEX "idx_commission_payouts_date" ON "public"."commission_payouts" USING "btree" ("payout_date");
+
+
+
+CREATE INDEX "idx_commission_payouts_org" ON "public"."commission_payouts" USING "btree" ("org_id");
+
+
+
+CREATE INDEX "idx_commission_records_advisor" ON "public"."commission_records" USING "btree" ("advisor_id");
+
+
+
+CREATE INDEX "idx_commission_records_contact" ON "public"."commission_records" USING "btree" ("contact_id");
+
+
+
+CREATE INDEX "idx_commission_records_lead" ON "public"."commission_records" USING "btree" ("lead_id");
+
+
+
+CREATE INDEX "idx_commission_records_org" ON "public"."commission_records" USING "btree" ("org_id");
+
+
+
+CREATE INDEX "idx_commission_records_period" ON "public"."commission_records" USING "btree" ("period_start", "period_end");
+
+
+
+CREATE INDEX "idx_commission_records_status" ON "public"."commission_records" USING "btree" ("status");
+
+
+
+CREATE INDEX "idx_commission_schedules_org" ON "public"."commission_schedules" USING "btree" ("org_id", "is_active");
+
+
+
+CREATE INDEX "idx_commission_schedules_plan" ON "public"."commission_schedules" USING "btree" ("plan_id");
+
+
+
+CREATE INDEX "idx_compliance_ack_created_at" ON "public"."compliance_acknowledgments" USING "btree" ("created_at");
+
+
+
+CREATE INDEX "idx_compliance_ack_org_id" ON "public"."compliance_acknowledgments" USING "btree" ("org_id");
 
 
 
@@ -14930,6 +26134,62 @@ CREATE INDEX "idx_compliance_documents_org_id" ON "public"."compliance_documents
 
 
 
+CREATE INDEX "idx_concierge_daily_log_entries_created_at" ON "public"."concierge_daily_log_entries" USING "btree" ("created_at" DESC);
+
+
+
+CREATE INDEX "idx_concierge_daily_log_entries_log_date" ON "public"."concierge_daily_log_entries" USING "btree" ("log_date" DESC);
+
+
+
+CREATE INDEX "idx_concierge_daily_log_entries_org_id" ON "public"."concierge_daily_log_entries" USING "btree" ("org_id");
+
+
+
+CREATE INDEX "idx_concierge_daily_log_entries_team_member" ON "public"."concierge_daily_log_entries" USING "btree" ("team_member_name");
+
+
+
+CREATE INDEX "idx_concierge_daily_log_entries_team_member_id" ON "public"."concierge_daily_log_entries" USING "btree" ("team_member_id");
+
+
+
+CREATE INDEX "idx_concierge_escalations_org_id" ON "public"."concierge_escalations" USING "btree" ("org_id");
+
+
+
+CREATE INDEX "idx_concierge_escalations_status" ON "public"."concierge_escalations" USING "btree" ("status");
+
+
+
+CREATE INDEX "idx_concierge_handoff_lead" ON "public"."crm_concierge_handoff_log" USING "btree" ("lead_id");
+
+
+
+CREATE INDEX "idx_concierge_handoff_org" ON "public"."crm_concierge_handoff_log" USING "btree" ("org_id", "handoff_at" DESC);
+
+
+
+CREATE INDEX "idx_concierge_member_off_days_member" ON "public"."concierge_member_off_days" USING "btree" ("team_member_id");
+
+
+
+CREATE INDEX "idx_concierge_member_off_days_org_id" ON "public"."concierge_member_off_days" USING "btree" ("org_id");
+
+
+
+CREATE INDEX "idx_concierge_portal_config_updated" ON "public"."concierge_portal_config" USING "btree" ("updated_at" DESC);
+
+
+
+CREATE INDEX "idx_concierge_team_members_display_order" ON "public"."concierge_team_members" USING "btree" ("display_order");
+
+
+
+CREATE INDEX "idx_concierge_team_members_org_id" ON "public"."concierge_team_members" USING "btree" ("org_id");
+
+
+
 CREATE INDEX "idx_contact_directory_department" ON "public"."advisor_contact_directory" USING "btree" ("department");
 
 
@@ -14939,6 +26199,34 @@ CREATE INDEX "idx_contact_directory_display_order" ON "public"."advisor_contact_
 
 
 CREATE INDEX "idx_contact_directory_is_active" ON "public"."advisor_contact_directory" USING "btree" ("is_active");
+
+
+
+CREATE INDEX "idx_contacts_carrier" ON "public"."crm_contacts" USING "btree" ("carrier_id");
+
+
+
+CREATE INDEX "idx_contacts_created_at" ON "public"."contacts" USING "btree" ("created_at");
+
+
+
+CREATE INDEX "idx_contacts_email" ON "public"."contacts" USING "btree" ("email");
+
+
+
+CREATE INDEX "idx_contacts_org_created" ON "public"."crm_contacts" USING "btree" ("org_id", "created_at" DESC);
+
+
+
+CREATE INDEX "idx_contacts_org_id" ON "public"."contacts" USING "btree" ("org_id");
+
+
+
+CREATE INDEX "idx_contacts_plan_type" ON "public"."crm_contacts" USING "btree" ("plan_type");
+
+
+
+CREATE INDEX "idx_contacts_state" ON "public"."crm_contacts" USING "btree" ("state");
 
 
 
@@ -14975,6 +26263,14 @@ CREATE INDEX "idx_conversion_events_created_by" ON "public"."conversion_events" 
 
 
 CREATE INDEX "idx_coverage_documents_coverage_id" ON "public"."coverage_documents" USING "btree" ("coverage_id");
+
+
+
+CREATE INDEX "idx_crm_ab_tests_org" ON "public"."crm_email_ab_tests" USING "btree" ("org_id");
+
+
+
+CREATE INDEX "idx_crm_ab_tests_status" ON "public"."crm_email_ab_tests" USING "btree" ("status");
 
 
 
@@ -15070,6 +26366,22 @@ CREATE INDEX "idx_crm_activities_type" ON "public"."crm_activities" USING "btree
 
 
 
+CREATE INDEX "idx_crm_activity_targets_org" ON "public"."crm_activity_targets" USING "btree" ("org_id");
+
+
+
+CREATE INDEX "idx_crm_activity_targets_period" ON "public"."crm_activity_targets" USING "btree" ("period_start", "period_end");
+
+
+
+CREATE INDEX "idx_crm_activity_targets_rep" ON "public"."crm_activity_targets" USING "btree" ("rep_id");
+
+
+
+CREATE INDEX "idx_crm_activity_targets_type" ON "public"."crm_activity_targets" USING "btree" ("org_id", "target_type");
+
+
+
 CREATE INDEX "idx_crm_approval_actions_approver" ON "public"."crm_approval_actions" USING "btree" ("approver_id");
 
 
@@ -15131,6 +26443,54 @@ CREATE INDEX "idx_crm_approval_steps_order" ON "public"."crm_approval_steps" USI
 
 
 CREATE INDEX "idx_crm_approval_steps_process" ON "public"."crm_approval_steps" USING "btree" ("process_id");
+
+
+
+CREATE INDEX "idx_crm_attachments_entity" ON "public"."crm_attachments" USING "btree" ("entity_type", "entity_id");
+
+
+
+CREATE INDEX "idx_crm_attachments_org" ON "public"."crm_attachments" USING "btree" ("org_id");
+
+
+
+CREATE INDEX "idx_crm_attachments_uploaded_by" ON "public"."crm_attachments" USING "btree" ("uploaded_by");
+
+
+
+CREATE INDEX "idx_crm_audit_log_action" ON "public"."crm_audit_log" USING "btree" ("action");
+
+
+
+CREATE INDEX "idx_crm_audit_log_entity" ON "public"."crm_audit_log" USING "btree" ("entity_type", "entity_id");
+
+
+
+CREATE INDEX "idx_crm_audit_log_org_date" ON "public"."crm_audit_log" USING "btree" ("org_id", "created_at" DESC);
+
+
+
+CREATE INDEX "idx_crm_audit_log_user" ON "public"."crm_audit_log" USING "btree" ("user_id", "created_at" DESC);
+
+
+
+CREATE INDEX "idx_crm_cadences_default" ON "public"."crm_follow_up_cadences" USING "btree" ("org_id", "is_default") WHERE ("is_default" = true);
+
+
+
+CREATE INDEX "idx_crm_cadences_org" ON "public"."crm_follow_up_cadences" USING "btree" ("org_id");
+
+
+
+CREATE INDEX "idx_crm_cadences_org_scope_active" ON "public"."crm_follow_up_cadences" USING "btree" ("org_id", "module_scope", "is_active");
+
+
+
+CREATE INDEX "idx_crm_calendar_booking_lead" ON "public"."crm_calendar_booking_log" USING "btree" ("lead_id") WHERE ("lead_id" IS NOT NULL);
+
+
+
+CREATE INDEX "idx_crm_calendar_booking_org_date" ON "public"."crm_calendar_booking_log" USING "btree" ("org_id", "scheduled_start" DESC);
 
 
 
@@ -15246,6 +26606,30 @@ CREATE INDEX "idx_crm_cases_status" ON "public"."crm_cases" USING "btree" ("stat
 
 
 
+CREATE INDEX "idx_crm_challenge_entries_challenge" ON "public"."crm_challenge_entries" USING "btree" ("challenge_id");
+
+
+
+CREATE INDEX "idx_crm_challenges_org" ON "public"."crm_challenges" USING "btree" ("org_id", "is_active", "ends_at");
+
+
+
+CREATE INDEX "idx_crm_community_events_date" ON "public"."crm_community_events" USING "btree" ("org_id", "event_date" DESC);
+
+
+
+CREATE INDEX "idx_crm_community_events_org" ON "public"."crm_community_events" USING "btree" ("org_id");
+
+
+
+CREATE INDEX "idx_crm_community_events_rep" ON "public"."crm_community_events" USING "btree" ("rep_id");
+
+
+
+CREATE INDEX "idx_crm_community_events_type" ON "public"."crm_community_events" USING "btree" ("event_type");
+
+
+
 CREATE INDEX "idx_crm_contacts_account_id" ON "public"."crm_contacts" USING "btree" ("account_id");
 
 
@@ -15306,11 +26690,47 @@ CREATE INDEX "idx_crm_deal_contacts_deal" ON "public"."crm_deal_contacts" USING 
 
 
 
+CREATE INDEX "idx_crm_deal_predictions_deal_id" ON "public"."crm_deal_predictions" USING "btree" ("deal_id");
+
+
+
+CREATE INDEX "idx_crm_deal_predictions_org_probability" ON "public"."crm_deal_predictions" USING "btree" ("org_id", "win_probability" DESC);
+
+
+
 CREATE INDEX "idx_crm_deal_products_deal" ON "public"."crm_deal_products" USING "btree" ("deal_id");
 
 
 
 CREATE INDEX "idx_crm_deal_products_product" ON "public"."crm_deal_products" USING "btree" ("product_id");
+
+
+
+CREATE INDEX "idx_crm_deal_room_messages_org" ON "public"."crm_deal_room_messages" USING "btree" ("org_id");
+
+
+
+CREATE INDEX "idx_crm_deal_room_messages_room_created" ON "public"."crm_deal_room_messages" USING "btree" ("room_id", "created_at" DESC);
+
+
+
+CREATE INDEX "idx_crm_deal_room_participants_room" ON "public"."crm_deal_room_participants" USING "btree" ("room_id");
+
+
+
+CREATE INDEX "idx_crm_deal_room_participants_user" ON "public"."crm_deal_room_participants" USING "btree" ("user_id");
+
+
+
+CREATE INDEX "idx_crm_deal_room_pinned_items_room" ON "public"."crm_deal_room_pinned_items" USING "btree" ("room_id", "pinned_at" DESC);
+
+
+
+CREATE INDEX "idx_crm_deal_rooms_deal" ON "public"."crm_deal_rooms" USING "btree" ("deal_id");
+
+
+
+CREATE INDEX "idx_crm_deal_rooms_org" ON "public"."crm_deal_rooms" USING "btree" ("org_id");
 
 
 
@@ -15382,6 +26802,10 @@ CREATE INDEX "idx_crm_deals_owner_id" ON "public"."crm_deals" USING "btree" ("ow
 
 
 
+CREATE INDEX "idx_crm_deals_product_line" ON "public"."crm_deals" USING "btree" ("org_id", "product_line") WHERE ("product_line" IS NOT NULL);
+
+
+
 CREATE INDEX "idx_crm_deals_search" ON "public"."crm_deals" USING "gin" ("search_vector");
 
 
@@ -15450,6 +26874,10 @@ CREATE INDEX "idx_crm_email_drafts_user" ON "public"."crm_email_drafts" USING "b
 
 
 
+CREATE INDEX "idx_crm_email_log_ab_test" ON "public"."crm_email_log" USING "btree" ("ab_test_id") WHERE ("ab_test_id" IS NOT NULL);
+
+
+
 CREATE INDEX "idx_crm_email_log_archived" ON "public"."crm_email_log" USING "btree" ("is_archived") WHERE ("is_archived" = false);
 
 
@@ -15466,11 +26894,19 @@ CREATE INDEX "idx_crm_email_log_lead" ON "public"."crm_email_log" USING "btree" 
 
 
 
+CREATE INDEX "idx_crm_email_log_master_template" ON "public"."crm_email_log" USING "btree" ("master_template_id") WHERE ("master_template_id" IS NOT NULL);
+
+
+
 CREATE INDEX "idx_crm_email_log_message_id" ON "public"."crm_email_log" USING "btree" ("message_id") WHERE ("message_id" IS NOT NULL);
 
 
 
 CREATE INDEX "idx_crm_email_log_org" ON "public"."crm_email_log" USING "btree" ("org_id");
+
+
+
+CREATE INDEX "idx_crm_email_log_recruit_id" ON "public"."crm_email_log" USING "btree" ("recruit_id") WHERE ("recruit_id" IS NOT NULL);
 
 
 
@@ -15551,6 +26987,26 @@ CREATE INDEX "idx_crm_email_tracking_time" ON "public"."crm_email_tracking" USIN
 
 
 CREATE INDEX "idx_crm_email_tracking_type" ON "public"."crm_email_tracking" USING "btree" ("tracking_type");
+
+
+
+CREATE INDEX "idx_crm_family_members_contact" ON "public"."crm_family_members" USING "btree" ("contact_id");
+
+
+
+CREATE INDEX "idx_crm_family_members_lead" ON "public"."crm_family_members" USING "btree" ("lead_id");
+
+
+
+CREATE INDEX "idx_crm_family_members_name_trgm" ON "public"."crm_family_members" USING "gin" (((("first_name" || ' '::"text") || "last_name")) "extensions"."gin_trgm_ops");
+
+
+
+CREATE INDEX "idx_crm_family_members_org" ON "public"."crm_family_members" USING "btree" ("org_id");
+
+
+
+CREATE INDEX "idx_crm_family_members_search" ON "public"."crm_family_members" USING "gin" ("search_vector");
 
 
 
@@ -15662,6 +27118,18 @@ CREATE INDEX "idx_crm_invoices_status" ON "public"."crm_invoices" USING "btree" 
 
 
 
+CREATE INDEX "idx_crm_lead_cadence_lead" ON "public"."crm_lead_cadence_state" USING "btree" ("lead_id");
+
+
+
+CREATE INDEX "idx_crm_lead_cadence_next" ON "public"."crm_lead_cadence_state" USING "btree" ("next_action_at") WHERE (("completed_at" IS NULL) AND ("paused" = false));
+
+
+
+CREATE INDEX "idx_crm_lead_cadence_org" ON "public"."crm_lead_cadence_state" USING "btree" ("org_id");
+
+
+
 CREATE INDEX "idx_crm_lead_health_quotes_created_at" ON "public"."crm_lead_health_quotes" USING "btree" ("created_at" DESC);
 
 
@@ -15706,6 +27174,22 @@ CREATE INDEX "idx_crm_lead_plan_interests_plan_id" ON "public"."crm_lead_plan_in
 
 
 
+CREATE INDEX "idx_crm_lead_quote_history_lead" ON "public"."crm_lead_quote_history" USING "btree" ("lead_id", "quote_date" DESC);
+
+
+
+CREATE INDEX "idx_crm_lead_time_entries_lead" ON "public"."crm_lead_time_entries" USING "btree" ("lead_id", "occurred_at" DESC);
+
+
+
+CREATE INDEX "idx_crm_master_templates_channel" ON "public"."crm_master_templates" USING "btree" ("org_id", "channel") WHERE ("archived_at" IS NULL);
+
+
+
+CREATE INDEX "idx_crm_master_templates_org" ON "public"."crm_master_templates" USING "btree" ("org_id");
+
+
+
 CREATE INDEX "idx_crm_meeting_bookings_calendar_event_id" ON "public"."crm_meeting_bookings" USING "btree" ("calendar_event_id");
 
 
@@ -15746,6 +27230,54 @@ CREATE INDEX "idx_crm_meeting_schedules_user" ON "public"."crm_meeting_schedules
 
 
 
+CREATE INDEX "idx_crm_mentions_entity" ON "public"."crm_mentions" USING "btree" ("entity_id");
+
+
+
+CREATE INDEX "idx_crm_mentions_org" ON "public"."crm_mentions" USING "btree" ("org_id");
+
+
+
+CREATE INDEX "idx_crm_mentions_user_unread" ON "public"."crm_mentions" USING "btree" ("mentioned_user_id", "read", "created_at" DESC);
+
+
+
+CREATE INDEX "idx_crm_milestones_org" ON "public"."crm_quarterly_milestones" USING "btree" ("org_id");
+
+
+
+CREATE INDEX "idx_crm_milestones_period" ON "public"."crm_quarterly_milestones" USING "btree" ("org_id", "year", "quarter");
+
+
+
+CREATE INDEX "idx_crm_optout_keywords_active" ON "public"."crm_optout_keywords" USING "btree" ("org_id", "is_active") WHERE ("is_active" = true);
+
+
+
+CREATE INDEX "idx_crm_outside_advisors_active" ON "public"."crm_outside_advisors" USING "btree" ("org_id", "is_active");
+
+
+
+CREATE INDEX "idx_crm_outside_advisors_org" ON "public"."crm_outside_advisors" USING "btree" ("org_id");
+
+
+
+CREATE INDEX "idx_crm_phone_numbers_number" ON "public"."crm_phone_numbers" USING "btree" ("phone_number");
+
+
+
+CREATE INDEX "idx_crm_phone_numbers_number_trgm" ON "public"."crm_phone_numbers" USING "gin" ("phone_number" "extensions"."gin_trgm_ops");
+
+
+
+CREATE INDEX "idx_crm_phone_numbers_org" ON "public"."crm_phone_numbers" USING "btree" ("org_id");
+
+
+
+CREATE INDEX "idx_crm_phone_numbers_owner" ON "public"."crm_phone_numbers" USING "btree" ("owner_type", "owner_id");
+
+
+
 CREATE INDEX "idx_crm_pipeline_stages_org_id" ON "public"."crm_pipeline_stages" USING "btree" ("org_id");
 
 
@@ -15775,6 +27307,14 @@ CREATE UNIQUE INDEX "idx_crm_price_books_default" ON "public"."crm_price_books" 
 
 
 CREATE INDEX "idx_crm_price_books_org_id" ON "public"."crm_price_books" USING "btree" ("org_id");
+
+
+
+CREATE INDEX "idx_crm_product_form_fields_org" ON "public"."crm_product_form_fields" USING "btree" ("org_id");
+
+
+
+CREATE INDEX "idx_crm_product_form_fields_product" ON "public"."crm_product_form_fields" USING "btree" ("product_id");
 
 
 
@@ -15842,6 +27382,10 @@ CREATE INDEX "idx_crm_purchase_orders_vendor" ON "public"."crm_purchase_orders" 
 
 
 
+CREATE INDEX "idx_crm_quote_line_item_answers_li" ON "public"."crm_quote_line_item_answers" USING "btree" ("line_item_id");
+
+
+
 CREATE INDEX "idx_crm_quote_line_items_product" ON "public"."crm_quote_line_items" USING "btree" ("product_id");
 
 
@@ -15851,6 +27395,10 @@ CREATE INDEX "idx_crm_quote_line_items_quote" ON "public"."crm_quote_line_items"
 
 
 CREATE INDEX "idx_crm_quote_line_items_sort" ON "public"."crm_quote_line_items" USING "btree" ("quote_id", "sort_order");
+
+
+
+CREATE INDEX "idx_crm_quote_templates_org" ON "public"."crm_quote_templates" USING "btree" ("org_id");
 
 
 
@@ -15895,6 +27443,70 @@ CREATE INDEX "idx_crm_quotes_status" ON "public"."crm_quotes" USING "btree" ("st
 
 
 CREATE INDEX "idx_crm_quotes_valid_until" ON "public"."crm_quotes" USING "btree" ("valid_until");
+
+
+
+CREATE INDEX "idx_crm_recruit_cadence_state_org" ON "public"."crm_recruit_cadence_state" USING "btree" ("org_id", "paused", "next_action_at");
+
+
+
+CREATE INDEX "idx_crm_referral_partners_active" ON "public"."crm_referral_partners" USING "btree" ("org_id", "is_active");
+
+
+
+CREATE INDEX "idx_crm_referral_partners_org" ON "public"."crm_referral_partners" USING "btree" ("org_id");
+
+
+
+CREATE INDEX "idx_crm_referral_partners_type" ON "public"."crm_referral_partners" USING "btree" ("partner_type");
+
+
+
+CREATE INDEX "idx_crm_referrals_created" ON "public"."crm_referrals" USING "btree" ("created_at" DESC);
+
+
+
+CREATE INDEX "idx_crm_referrals_direction" ON "public"."crm_referrals" USING "btree" ("org_id", "direction");
+
+
+
+CREATE INDEX "idx_crm_referrals_lead" ON "public"."crm_referrals" USING "btree" ("lead_id");
+
+
+
+CREATE INDEX "idx_crm_referrals_org" ON "public"."crm_referrals" USING "btree" ("org_id");
+
+
+
+CREATE INDEX "idx_crm_referrals_partner" ON "public"."crm_referrals" USING "btree" ("partner_id");
+
+
+
+CREATE INDEX "idx_crm_referrals_referred_by" ON "public"."crm_referrals" USING "btree" ("referred_by");
+
+
+
+CREATE INDEX "idx_crm_rep_templates_org_user" ON "public"."crm_rep_message_templates" USING "btree" ("org_id", "user_id", "channel");
+
+
+
+CREATE INDEX "idx_crm_round_robin_config_org" ON "public"."crm_round_robin_config" USING "btree" ("org_id");
+
+
+
+CREATE INDEX "idx_crm_rr_audit_assigned" ON "public"."crm_round_robin_audit" USING "btree" ("assigned_to");
+
+
+
+CREATE INDEX "idx_crm_rr_audit_created" ON "public"."crm_round_robin_audit" USING "btree" ("created_at" DESC);
+
+
+
+CREATE INDEX "idx_crm_rr_audit_lead" ON "public"."crm_round_robin_audit" USING "btree" ("lead_id");
+
+
+
+CREATE INDEX "idx_crm_rr_audit_org" ON "public"."crm_round_robin_audit" USING "btree" ("org_id");
 
 
 
@@ -15978,7 +27590,39 @@ CREATE INDEX "idx_crm_sequence_steps_template" ON "public"."crm_email_sequence_s
 
 
 
+CREATE INDEX "idx_crm_sequence_triggers_active" ON "public"."crm_sequence_triggers" USING "btree" ("org_id", "is_active") WHERE ("is_active" = true);
+
+
+
+CREATE INDEX "idx_crm_sequence_triggers_org" ON "public"."crm_sequence_triggers" USING "btree" ("org_id");
+
+
+
+CREATE INDEX "idx_crm_sequence_triggers_sequence" ON "public"."crm_sequence_triggers" USING "btree" ("sequence_id");
+
+
+
+CREATE INDEX "idx_crm_sla_config_org" ON "public"."crm_sla_config" USING "btree" ("org_id");
+
+
+
 CREATE INDEX "idx_crm_so_line_items_order" ON "public"."crm_sales_order_line_items" USING "btree" ("sales_order_id");
+
+
+
+CREATE INDEX "idx_crm_social_platform_connections_org" ON "public"."crm_social_platform_connections" USING "btree" ("org_id");
+
+
+
+CREATE INDEX "idx_crm_social_posts_org" ON "public"."crm_social_posts" USING "btree" ("org_id");
+
+
+
+CREATE INDEX "idx_crm_social_posts_platform" ON "public"."crm_social_posts" USING "btree" ("org_id", "platform");
+
+
+
+CREATE INDEX "idx_crm_social_posts_post_date" ON "public"."crm_social_posts" USING "btree" ("post_date");
 
 
 
@@ -16050,7 +27694,23 @@ CREATE INDEX "idx_crm_templates_version" ON "public"."crm_templates" USING "btre
 
 
 
+CREATE INDEX "idx_crm_user_achievements_user" ON "public"."crm_user_achievements" USING "btree" ("user_id", "org_id");
+
+
+
 CREATE INDEX "idx_crm_user_goals_assigned_by" ON "public"."crm_user_goals" USING "btree" ("assigned_by");
+
+
+
+CREATE INDEX "idx_crm_user_xp_org" ON "public"."crm_user_xp" USING "btree" ("org_id");
+
+
+
+CREATE INDEX "idx_crm_user_xp_total" ON "public"."crm_user_xp" USING "btree" ("org_id", "total_xp" DESC);
+
+
+
+CREATE INDEX "idx_crm_user_xp_weekly" ON "public"."crm_user_xp" USING "btree" ("org_id", "weekly_xp" DESC);
 
 
 
@@ -16114,7 +27774,43 @@ CREATE INDEX "idx_crm_website_quote_sync_status" ON "public"."crm_website_quote_
 
 
 
+CREATE INDEX "idx_crm_win_feed_org" ON "public"."crm_win_feed" USING "btree" ("org_id", "created_at" DESC);
+
+
+
+CREATE INDEX "idx_crm_xp_events_org" ON "public"."crm_xp_events" USING "btree" ("org_id", "created_at" DESC);
+
+
+
+CREATE INDEX "idx_crm_xp_events_user" ON "public"."crm_xp_events" USING "btree" ("user_id", "created_at" DESC);
+
+
+
 CREATE INDEX "idx_daily_analytics_summary_date" ON "public"."daily_analytics_summary" USING "btree" ("date" DESC);
+
+
+
+CREATE INDEX "idx_daily_log_events_linked_record" ON "public"."crm_daily_log_events" USING "btree" ("linked_record_type", "linked_record_id");
+
+
+
+CREATE INDEX "idx_daily_log_events_org_date" ON "public"."crm_daily_log_events" USING "btree" ("org_id", "log_date");
+
+
+
+CREATE INDEX "idx_daily_log_events_search_tsv" ON "public"."crm_daily_log_events" USING "gin" ("search_tsv");
+
+
+
+CREATE INDEX "idx_daily_log_events_section" ON "public"."crm_daily_log_events" USING "btree" ("org_id", "section", "log_date");
+
+
+
+CREATE INDEX "idx_daily_log_events_source" ON "public"."crm_daily_log_events" USING "btree" ("source", "source_id");
+
+
+
+CREATE INDEX "idx_daily_log_events_user_date" ON "public"."crm_daily_log_events" USING "btree" ("user_id", "log_date");
 
 
 
@@ -16146,11 +27842,23 @@ CREATE INDEX "idx_dashboard_notes_user" ON "public"."crm_dashboard_notes" USING 
 
 
 
+CREATE INDEX "idx_deals_org_stage" ON "public"."crm_deals" USING "btree" ("org_id", "stage_id", "created_at" DESC);
+
+
+
 CREATE INDEX "idx_default_layouts_active" ON "public"."crm_default_layout_templates" USING "btree" ("is_active") WHERE ("is_active" = true);
 
 
 
 CREATE INDEX "idx_default_layouts_org" ON "public"."crm_default_layout_templates" USING "btree" ("org_id");
+
+
+
+CREATE INDEX "idx_dl_corrections_event" ON "public"."crm_daily_log_corrections" USING "btree" ("event_id");
+
+
+
+CREATE INDEX "idx_dl_corrections_org_date" ON "public"."crm_daily_log_corrections" USING "btree" ("org_id", "corrected_at" DESC);
 
 
 
@@ -16171,6 +27879,22 @@ CREATE INDEX "idx_educational_content_slug" ON "public"."educational_content" US
 
 
 CREATE INDEX "idx_educational_content_type" ON "public"."educational_content" USING "btree" ("content_type");
+
+
+
+CREATE INDEX "idx_email_log_created_at" ON "public"."email_log" USING "btree" ("created_at");
+
+
+
+CREATE INDEX "idx_email_log_lead_date" ON "public"."crm_email_log" USING "btree" ("lead_id", "sent_at" DESC);
+
+
+
+CREATE INDEX "idx_email_log_org_id" ON "public"."email_log" USING "btree" ("org_id");
+
+
+
+CREATE INDEX "idx_email_log_status" ON "public"."email_log" USING "btree" ("status");
 
 
 
@@ -16266,6 +27990,10 @@ CREATE INDEX "idx_events_event_type" ON "public"."events" USING "btree" ("event_
 
 
 
+CREATE INDEX "idx_events_org_id" ON "public"."events" USING "btree" ("org_id");
+
+
+
 CREATE INDEX "idx_events_published_date" ON "public"."events" USING "btree" ("is_published", "event_date" DESC);
 
 
@@ -16294,7 +28022,27 @@ CREATE INDEX "idx_faq_items_order" ON "public"."faq_items" USING "btree" ("order
 
 
 
+CREATE INDEX "idx_feature_flags_module" ON "public"."feature_flags" USING "btree" ("module_id");
+
+
+
+CREATE INDEX "idx_feature_flags_slug" ON "public"."feature_flags" USING "btree" ("slug");
+
+
+
+CREATE INDEX "idx_focus_items_entity" ON "public"."crm_focus_items" USING "btree" ("entity_type", "entity_id");
+
+
+
+CREATE INDEX "idx_focus_items_user" ON "public"."crm_focus_items" USING "btree" ("user_id", "completed_at") WHERE ("completed_at" IS NULL);
+
+
+
 CREATE INDEX "idx_form_submissions_advisor_id" ON "public"."form_submissions" USING "btree" ("advisor_id");
+
+
+
+CREATE INDEX "idx_form_submissions_cognito_entry_id" ON "public"."form_submissions" USING "btree" ("cognito_entry_id") WHERE ("cognito_entry_id" IS NOT NULL);
 
 
 
@@ -16350,11 +28098,43 @@ CREATE INDEX "idx_immunizations_member_id" ON "public"."immunizations" USING "bt
 
 
 
+CREATE INDEX "idx_impersonation_log_admin_id" ON "public"."impersonation_log" USING "btree" ("admin_id");
+
+
+
+CREATE INDEX "idx_impersonation_log_created_at" ON "public"."impersonation_log" USING "btree" ("created_at" DESC);
+
+
+
+CREATE INDEX "idx_impersonation_log_target_user_id" ON "public"."impersonation_log" USING "btree" ("target_user_id");
+
+
+
+CREATE INDEX "idx_insurance_carriers_org_active" ON "public"."insurance_carriers" USING "btree" ("org_id", "is_active");
+
+
+
+CREATE INDEX "idx_insurance_carriers_slug" ON "public"."insurance_carriers" USING "btree" ("slug");
+
+
+
+CREATE INDEX "idx_insurance_carriers_type" ON "public"."insurance_carriers" USING "btree" ("carrier_type");
+
+
+
 CREATE INDEX "idx_integration_health_platform" ON "public"."integration_health" USING "btree" ("platform_id");
 
 
 
 CREATE INDEX "idx_integration_health_status" ON "public"."integration_health" USING "btree" ("status");
+
+
+
+CREATE INDEX "idx_integrations_status" ON "public"."integrations" USING "btree" ("status");
+
+
+
+CREATE INDEX "idx_integrations_type" ON "public"."integrations" USING "btree" ("type");
 
 
 
@@ -16382,11 +28162,23 @@ CREATE INDEX "idx_lab_results_member_id" ON "public"."lab_results" USING "btree"
 
 
 
+CREATE INDEX "idx_lead_activities_account" ON "public"."lead_activities" USING "btree" ("account_id") WHERE ("account_id" IS NOT NULL);
+
+
+
+CREATE INDEX "idx_lead_activities_contact" ON "public"."lead_activities" USING "btree" ("contact_id") WHERE ("contact_id" IS NOT NULL);
+
+
+
 CREATE INDEX "idx_lead_activities_created_at" ON "public"."lead_activities" USING "btree" ("created_at" DESC);
 
 
 
 CREATE INDEX "idx_lead_activities_created_by" ON "public"."lead_activities" USING "btree" ("created_by");
+
+
+
+CREATE INDEX "idx_lead_activities_deal" ON "public"."lead_activities" USING "btree" ("deal_id") WHERE ("deal_id" IS NOT NULL);
 
 
 
@@ -16422,7 +28214,15 @@ CREATE INDEX "idx_lead_notifications_priority" ON "public"."lead_notifications" 
 
 
 
+CREATE INDEX "idx_lead_notifications_type" ON "public"."lead_notifications" USING "btree" ("notification_type", "notified_at" DESC);
+
+
+
 CREATE INDEX "idx_lead_notifications_unacknowledged" ON "public"."lead_notifications" USING "btree" ("acknowledged_at") WHERE ("acknowledged_at" IS NULL);
+
+
+
+CREATE INDEX "idx_lead_notifications_user_id" ON "public"."lead_notifications" USING "btree" ("user_id", "acknowledged_at") WHERE ("acknowledged_at" IS NULL);
 
 
 
@@ -16442,11 +28242,35 @@ CREATE INDEX "idx_lead_routing_logs_user_id" ON "public"."lead_routing_logs" USI
 
 
 
-CREATE INDEX "idx_lead_submissions_assigned_to" ON "public"."lead_submissions" USING "btree" ("assigned_to");
+CREATE INDEX "idx_lead_submissions_app_started" ON "public"."lead_submissions" USING "btree" ("application_started_at") WHERE ("application_started_at" IS NOT NULL);
 
 
 
-CREATE INDEX "idx_lead_submissions_referral_source" ON "public"."lead_submissions" USING "btree" ("referral_source");
+CREATE INDEX "idx_lead_submissions_community_event" ON "public"."lead_submissions" USING "btree" ("community_event_id") WHERE ("community_event_id" IS NOT NULL);
+
+
+
+CREATE INDEX "idx_lead_submissions_dnc" ON "public"."lead_submissions" USING "btree" ("org_id") WHERE ("do_not_contact" = true);
+
+
+
+CREATE INDEX "idx_lead_submissions_last_activity" ON "public"."lead_submissions" USING "btree" ("org_id", "last_activity_at" DESC NULLS LAST);
+
+
+
+CREATE INDEX "idx_lead_submissions_last_touched" ON "public"."lead_submissions" USING "btree" ("org_id", "last_touched_at" DESC NULLS LAST);
+
+
+
+CREATE INDEX "idx_lead_submissions_outside_advisor_id" ON "public"."lead_submissions" USING "btree" ("outside_advisor_id") WHERE ("outside_advisor_id" IS NOT NULL);
+
+
+
+CREATE INDEX "idx_lead_submissions_referral_partner_id" ON "public"."lead_submissions" USING "btree" ("referral_partner_id") WHERE ("referral_partner_id" IS NOT NULL);
+
+
+
+CREATE INDEX "idx_lead_submissions_workflow_subsection" ON "public"."lead_submissions" USING "btree" ("org_id", "workflow_subsection") WHERE ("workflow_subsection" IS NOT NULL);
 
 
 
@@ -16482,31 +28306,63 @@ CREATE INDEX "idx_lead_tasks_overdue" ON "public"."lead_tasks" USING "btree" ("d
 
 
 
-CREATE INDEX "idx_leads_assigned_advisor_id" ON "public"."leads" USING "btree" ("assigned_advisor_id");
+CREATE INDEX "idx_leads_assigned" ON "public"."lead_submissions" USING "btree" ("assigned_to");
 
 
 
-CREATE INDEX "idx_leads_assigned_to" ON "public"."leads" USING "btree" ("assigned_to");
+CREATE INDEX "idx_leads_assigned_advisor_id" ON "public"."_deprecated_leads" USING "btree" ("assigned_advisor_id");
 
 
 
-CREATE INDEX "idx_leads_created_at" ON "public"."leads" USING "btree" ("created_at" DESC);
+CREATE INDEX "idx_leads_assigned_to" ON "public"."_deprecated_leads" USING "btree" ("assigned_to");
 
 
 
-CREATE INDEX "idx_leads_email" ON "public"."leads" USING "btree" ("email");
+CREATE INDEX "idx_leads_carrier" ON "public"."lead_submissions" USING "btree" ("carrier_id");
 
 
 
-CREATE INDEX "idx_leads_org_id" ON "public"."leads" USING "btree" ("org_id");
+CREATE INDEX "idx_leads_created_at" ON "public"."_deprecated_leads" USING "btree" ("created_at" DESC);
 
 
 
-CREATE INDEX "idx_leads_phone" ON "public"."leads" USING "btree" ("phone");
+CREATE INDEX "idx_leads_effective_date" ON "public"."lead_submissions" USING "btree" ("original_effective_date");
 
 
 
-CREATE INDEX "idx_leads_status" ON "public"."leads" USING "btree" ("org_id", "status");
+CREATE INDEX "idx_leads_email" ON "public"."_deprecated_leads" USING "btree" ("email");
+
+
+
+CREATE INDEX "idx_leads_org_id" ON "public"."_deprecated_leads" USING "btree" ("org_id");
+
+
+
+CREATE INDEX "idx_leads_org_plantype_created" ON "public"."lead_submissions" USING "btree" ("org_id", "plan_type", "created_at" DESC);
+
+
+
+CREATE INDEX "idx_leads_org_priority_created" ON "public"."lead_submissions" USING "btree" ("org_id", "priority", "created_at" DESC);
+
+
+
+CREATE INDEX "idx_leads_org_stage_created" ON "public"."lead_submissions" USING "btree" ("org_id", "pipeline_stage", "created_at" DESC);
+
+
+
+CREATE INDEX "idx_leads_phone" ON "public"."_deprecated_leads" USING "btree" ("phone");
+
+
+
+CREATE INDEX "idx_leads_plan_type" ON "public"."lead_submissions" USING "btree" ("plan_type");
+
+
+
+CREATE INDEX "idx_leads_state" ON "public"."lead_submissions" USING "btree" ("state");
+
+
+
+CREATE INDEX "idx_leads_status" ON "public"."_deprecated_leads" USING "btree" ("org_id", "status");
 
 
 
@@ -16531,6 +28387,10 @@ CREATE INDEX "idx_mail_accounts_next_sync" ON "public"."mail_accounts" USING "bt
 
 
 CREATE INDEX "idx_mail_accounts_org" ON "public"."mail_accounts" USING "btree" ("org_id");
+
+
+
+CREATE UNIQUE INDEX "idx_mail_accounts_primary_shared_inbox" ON "public"."mail_accounts" USING "btree" ("org_id") WHERE ("is_primary_shared_inbox" = true);
 
 
 
@@ -16699,6 +28559,18 @@ CREATE INDEX "idx_member_documents_member_id" ON "public"."member_documents" USI
 
 
 CREATE INDEX "idx_member_documents_uploaded_by" ON "public"."member_documents" USING "btree" ("uploaded_by");
+
+
+
+CREATE INDEX "idx_member_notifications_created_at" ON "public"."member_notifications" USING "btree" ("created_at" DESC);
+
+
+
+CREATE INDEX "idx_member_notifications_source_event" ON "public"."member_notifications" USING "btree" ("source_event_id") WHERE ("source_event_id" IS NOT NULL);
+
+
+
+CREATE INDEX "idx_member_notifications_unread" ON "public"."member_notifications" USING "btree" ("member_id", "is_read") WHERE ("is_read" = false);
 
 
 
@@ -16938,6 +28810,10 @@ CREATE INDEX "idx_onboarding_steps_org_id" ON "public"."onboarding_steps" USING 
 
 
 
+CREATE INDEX "idx_org_feature_overrides_org" ON "public"."org_feature_overrides" USING "btree" ("org_id");
+
+
+
 CREATE INDEX "idx_org_invites_accepted_by" ON "public"."org_invites" USING "btree" ("accepted_by");
 
 
@@ -16998,6 +28874,26 @@ CREATE INDEX "idx_org_memberships_user_org" ON "public"."org_memberships" USING 
 
 
 
+CREATE INDEX "idx_org_module_licenses_module" ON "public"."org_module_licenses" USING "btree" ("module_id");
+
+
+
+CREATE INDEX "idx_org_module_licenses_org" ON "public"."org_module_licenses" USING "btree" ("org_id");
+
+
+
+CREATE INDEX "idx_org_module_licenses_status" ON "public"."org_module_licenses" USING "btree" ("status");
+
+
+
+CREATE INDEX "idx_org_portal_access_custom_domain" ON "public"."org_portal_access" USING "btree" ("lower"("custom_domain")) WHERE ("custom_domain" IS NOT NULL);
+
+
+
+CREATE INDEX "idx_org_portal_access_org_id" ON "public"."org_portal_access" USING "btree" ("org_id");
+
+
+
 CREATE INDEX "idx_organizations_slug" ON "public"."organizations" USING "btree" ("slug");
 
 
@@ -17055,6 +28951,14 @@ CREATE INDEX "idx_payment_processors_created_by" ON "public"."payment_processors
 
 
 CREATE INDEX "idx_payment_processors_org" ON "public"."payment_processors" USING "btree" ("org_id");
+
+
+
+CREATE INDEX "idx_perf_alert_org" ON "public"."crm_performance_alert_log" USING "btree" ("org_id", "fired_at" DESC);
+
+
+
+CREATE INDEX "idx_perf_alert_user" ON "public"."crm_performance_alert_log" USING "btree" ("user_id", "fired_at" DESC);
 
 
 
@@ -17214,6 +29118,18 @@ CREATE INDEX "idx_quick_actions_org" ON "public"."quick_actions" USING "btree" (
 
 
 
+CREATE INDEX "idx_quote_funnel_created_at" ON "public"."quote_calculator_funnel_events" USING "btree" ("created_at" DESC);
+
+
+
+CREATE INDEX "idx_quote_funnel_event_type" ON "public"."quote_calculator_funnel_events" USING "btree" ("event_type", "created_at" DESC);
+
+
+
+CREATE INDEX "idx_quote_funnel_session" ON "public"."quote_calculator_funnel_events" USING "btree" ("session_id", "created_at" DESC);
+
+
+
 CREATE INDEX "idx_rate_config_active" ON "public"."rate_configuration" USING "btree" ("is_active");
 
 
@@ -17227,6 +29143,30 @@ CREATE INDEX "idx_rate_config_effective" ON "public"."rate_configuration" USING 
 
 
 CREATE INDEX "idx_rate_config_plan" ON "public"."rate_configuration" USING "btree" ("plan_name");
+
+
+
+CREATE INDEX "idx_recruiting_records_assigned" ON "public"."crm_recruiting_records" USING "btree" ("assigned_to");
+
+
+
+CREATE INDEX "idx_recruiting_records_last_touched" ON "public"."crm_recruiting_records" USING "btree" ("last_touched_at");
+
+
+
+CREATE INDEX "idx_recruiting_records_org" ON "public"."crm_recruiting_records" USING "btree" ("org_id");
+
+
+
+CREATE INDEX "idx_recruiting_records_stage" ON "public"."crm_recruiting_records" USING "btree" ("org_id", "pipeline_stage");
+
+
+
+CREATE INDEX "idx_recruiting_records_subsection" ON "public"."crm_recruiting_records" USING "btree" ("org_id", "workflow_subsection");
+
+
+
+CREATE INDEX "idx_recruiting_stages_org_sort" ON "public"."crm_recruiting_pipeline_stages" USING "btree" ("org_id", "sort_order");
 
 
 
@@ -17255,6 +29195,10 @@ CREATE INDEX "idx_resource_library_type" ON "public"."resource_library" USING "b
 
 
 CREATE INDEX "idx_role_permissions_granted_by" ON "public"."role_permissions" USING "btree" ("granted_by");
+
+
+
+CREATE INDEX "idx_role_permissions_org_role" ON "public"."role_permissions" USING "btree" ("org_id", "role");
 
 
 
@@ -17418,11 +29362,47 @@ CREATE INDEX "idx_seo_sync_logs_site" ON "public"."seo_sync_logs" USING "btree" 
 
 
 
+CREATE INDEX "idx_sequence_enrollments_created_at" ON "public"."sequence_enrollments" USING "btree" ("created_at");
+
+
+
+CREATE INDEX "idx_sequence_enrollments_org_id" ON "public"."sequence_enrollments" USING "btree" ("org_id");
+
+
+
+CREATE INDEX "idx_sequence_enrollments_sequence_id" ON "public"."sequence_enrollments" USING "btree" ("sequence_id");
+
+
+
+CREATE INDEX "idx_sequence_enrollments_status" ON "public"."sequence_enrollments" USING "btree" ("status");
+
+
+
+CREATE INDEX "idx_sequence_steps_created_at" ON "public"."sequence_steps" USING "btree" ("created_at");
+
+
+
+CREATE INDEX "idx_sequence_steps_sequence_id" ON "public"."sequence_steps" USING "btree" ("sequence_id");
+
+
+
+CREATE INDEX "idx_sequence_steps_step_number" ON "public"."sequence_steps" USING "btree" ("step_number");
+
+
+
+CREATE INDEX "idx_sequences_created_at" ON "public"."sequences" USING "btree" ("created_at");
+
+
+
 CREATE INDEX "idx_sequences_created_by" ON "public"."sequences" USING "btree" ("created_by");
 
 
 
 CREATE INDEX "idx_sequences_org_id" ON "public"."sequences" USING "btree" ("org_id");
+
+
+
+CREATE INDEX "idx_sequences_status" ON "public"."sequences" USING "btree" ("status");
 
 
 
@@ -17495,6 +29475,106 @@ CREATE INDEX "idx_sop_documents_order" ON "public"."sop_documents" USING "btree"
 
 
 CREATE INDEX "idx_sop_documents_org_id" ON "public"."sop_documents" USING "btree" ("org_id");
+
+
+
+CREATE INDEX "idx_special_projects_org_date" ON "public"."crm_special_projects" USING "btree" ("org_id", "log_date");
+
+
+
+CREATE INDEX "idx_special_projects_org_user_date" ON "public"."crm_special_projects" USING "btree" ("org_id", "user_id", "log_date");
+
+
+
+CREATE INDEX "idx_staff_attendance_events_org" ON "public"."staff_attendance_events" USING "btree" ("org_id", "created_at" DESC);
+
+
+
+CREATE INDEX "idx_staff_attendance_events_session" ON "public"."staff_attendance_events" USING "btree" ("session_id", "created_at" DESC);
+
+
+
+CREATE INDEX "idx_staff_attendance_sessions_day" ON "public"."staff_attendance_sessions" USING "btree" ("org_id", "clock_in_at" DESC);
+
+
+
+CREATE UNIQUE INDEX "idx_staff_attendance_sessions_idempotency" ON "public"."staff_attendance_sessions" USING "btree" ("org_id", (("metadata" ->> 'idempotency_key'::"text"))) WHERE ("metadata" ? 'idempotency_key'::"text");
+
+
+
+CREATE INDEX "idx_staff_attendance_sessions_open" ON "public"."staff_attendance_sessions" USING "btree" ("org_id", "user_id") WHERE ("status" = 'open'::"public"."staff_attendance_session_status");
+
+
+
+CREATE INDEX "idx_staff_attendance_sessions_user" ON "public"."staff_attendance_sessions" USING "btree" ("org_id", "user_id", "clock_in_at" DESC);
+
+
+
+CREATE INDEX "idx_staff_departments_org_active" ON "public"."staff_departments" USING "btree" ("org_id", "is_active", "sort_order");
+
+
+
+CREATE UNIQUE INDEX "idx_staff_departments_org_name_lower" ON "public"."staff_departments" USING "btree" ("org_id", "lower"("name"));
+
+
+
+CREATE INDEX "idx_staff_notes_org_user" ON "public"."staff_notes" USING "btree" ("org_id", "user_id");
+
+
+
+CREATE INDEX "idx_staff_notes_user" ON "public"."staff_notes" USING "btree" ("user_id", "pinned" DESC, "updated_at" DESC);
+
+
+
+CREATE INDEX "idx_staff_office_locations_org_active" ON "public"."staff_office_locations" USING "btree" ("org_id", "is_active");
+
+
+
+CREATE INDEX "idx_staff_profiles_department" ON "public"."staff_profiles" USING "btree" ("department_id");
+
+
+
+CREATE INDEX "idx_staff_profiles_org_active" ON "public"."staff_profiles" USING "btree" ("org_id", "is_active", "display_name");
+
+
+
+CREATE INDEX "idx_staff_profiles_remote_status" ON "public"."staff_profiles" USING "btree" ("org_id", "remote_status") WHERE ("remote_status" = ANY (ARRAY['pending'::"public"."staff_remote_status", 'approved'::"public"."staff_remote_status"]));
+
+
+
+CREATE INDEX "idx_staff_tasks_org_user" ON "public"."staff_tasks" USING "btree" ("org_id", "user_id");
+
+
+
+CREATE INDEX "idx_staff_tasks_user" ON "public"."staff_tasks" USING "btree" ("user_id", "status", "due_date");
+
+
+
+CREATE INDEX "idx_staff_time_documents_request" ON "public"."staff_time_documents" USING "btree" ("request_id");
+
+
+
+CREATE INDEX "idx_staff_time_request_events_action" ON "public"."staff_time_request_events" USING "btree" ("request_id", "action", "created_at" DESC);
+
+
+
+CREATE INDEX "idx_staff_time_request_events_request" ON "public"."staff_time_request_events" USING "btree" ("request_id", "created_at" DESC);
+
+
+
+CREATE UNIQUE INDEX "idx_staff_time_requests_idempotency" ON "public"."staff_time_requests" USING "btree" ("org_id", (("metadata" ->> 'idempotency_key'::"text"))) WHERE ("metadata" ? 'idempotency_key'::"text");
+
+
+
+CREATE INDEX "idx_staff_time_requests_org_range" ON "public"."staff_time_requests" USING "btree" ("org_id", "starts_at", "ends_at");
+
+
+
+CREATE INDEX "idx_staff_time_requests_status" ON "public"."staff_time_requests" USING "btree" ("org_id", "status", "created_at" DESC);
+
+
+
+CREATE INDEX "idx_staff_time_requests_user" ON "public"."staff_time_requests" USING "btree" ("org_id", "user_id", "created_at" DESC);
 
 
 
@@ -17611,6 +29691,14 @@ CREATE INDEX "idx_tasks_due_date" ON "public"."tasks" USING "btree" ("due_date")
 
 
 CREATE INDEX "idx_tasks_lead_id" ON "public"."tasks" USING "btree" ("lead_id");
+
+
+
+CREATE INDEX "idx_tasks_lead_status" ON "public"."lead_tasks" USING "btree" ("lead_id", "completed", "due_date");
+
+
+
+CREATE INDEX "idx_tasks_org_due_incomplete" ON "public"."lead_tasks" USING "btree" ("org_id", "due_date") WHERE ("completed" = false);
 
 
 
@@ -17786,6 +29874,10 @@ CREATE INDEX "idx_user_preferences_org_id" ON "public"."user_preferences" USING 
 
 
 
+CREATE INDEX "idx_user_presence_entity" ON "public"."user_presence" USING "btree" ("viewing_entity_type", "viewing_entity_id") WHERE ("viewing_entity_type" IS NOT NULL);
+
+
+
 CREATE INDEX "idx_user_presence_last_activity" ON "public"."user_presence" USING "btree" ("last_activity_at" DESC);
 
 
@@ -17850,6 +29942,18 @@ CREATE INDEX "idx_webhook_logs_success" ON "public"."webhook_delivery_logs" USIN
 
 
 
+CREATE INDEX "idx_white_label_configs_domain" ON "public"."white_label_configs" USING "btree" ("custom_domain") WHERE ("custom_domain" IS NOT NULL);
+
+
+
+CREATE INDEX "idx_white_label_configs_org" ON "public"."white_label_configs" USING "btree" ("org_id");
+
+
+
+CREATE INDEX "idx_white_label_email_templates_org" ON "public"."white_label_email_templates" USING "btree" ("org_id");
+
+
+
 CREATE INDEX "idx_wordpress_courses_active" ON "public"."wordpress_courses" USING "btree" ("is_active");
 
 
@@ -17870,59 +29974,135 @@ CREATE INDEX "idx_wordpress_courses_status" ON "public"."wordpress_courses" USIN
 
 
 
-CREATE INDEX "idx_zoho_lead_submissions_assigned_to" ON "public"."zoho_lead_submissions" USING "btree" ("assigned_to");
+CREATE INDEX "idx_workflow_steps_step_order" ON "public"."workflow_steps" USING "btree" ("step_order");
 
 
 
-CREATE INDEX "idx_zoho_lead_submissions_created_at" ON "public"."zoho_lead_submissions" USING "btree" ("created_at" DESC);
+CREATE INDEX "idx_workflow_steps_workflow_id" ON "public"."workflow_steps" USING "btree" ("workflow_id");
 
 
 
-CREATE INDEX "idx_zoho_lead_submissions_email" ON "public"."zoho_lead_submissions" USING "btree" ("email");
+CREATE INDEX "idx_workflows_created_at" ON "public"."workflows" USING "btree" ("created_at");
 
 
 
-CREATE INDEX "idx_zoho_lead_submissions_interested_plans" ON "public"."zoho_lead_submissions" USING "gin" ("interested_plans");
+CREATE INDEX "idx_workflows_org_id" ON "public"."workflows" USING "btree" ("org_id");
 
 
 
-CREATE INDEX "idx_zoho_lead_submissions_next_followup" ON "public"."zoho_lead_submissions" USING "btree" ("next_followup_at") WHERE ("next_followup_at" IS NOT NULL);
+CREATE INDEX "idx_workspaces_active" ON "public"."crm_workspaces" USING "btree" ("org_id", "is_active", "sort_order");
 
 
 
-CREATE INDEX "idx_zoho_lead_submissions_org_id" ON "public"."zoho_lead_submissions" USING "btree" ("org_id");
+CREATE INDEX "idx_workspaces_org" ON "public"."crm_workspaces" USING "btree" ("org_id", "module");
 
 
 
-CREATE INDEX "idx_zoho_lead_submissions_pending_sync" ON "public"."zoho_lead_submissions" USING "btree" ("zoho_sync_status", "zoho_sync_attempts") WHERE ("zoho_sync_status" = ANY (ARRAY['pending'::"text", 'failed'::"text"]));
+CREATE INDEX "idx_zls_is_self_generated" ON "public"."lead_submissions" USING "btree" ("is_self_generated");
 
 
 
-CREATE INDEX "idx_zoho_lead_submissions_pipeline_stage" ON "public"."zoho_lead_submissions" USING "btree" ("pipeline_stage");
+CREATE INDEX "idx_zls_lead_source" ON "public"."lead_submissions" USING "btree" ("lead_source");
 
 
 
-CREATE INDEX "idx_zoho_lead_submissions_priority" ON "public"."zoho_lead_submissions" USING "btree" ("priority");
+CREATE INDEX "idx_zls_reactivation_source" ON "public"."lead_submissions" USING "btree" ("reactivation_source_lead_id") WHERE ("reactivation_source_lead_id" IS NOT NULL);
 
 
 
-CREATE INDEX "idx_zoho_lead_submissions_quoted_plans" ON "public"."zoho_lead_submissions" USING "gin" ("quoted_plans");
+CREATE INDEX "idx_zoho_lead_submissions_assigned_to" ON "public"."lead_submissions" USING "btree" ("assigned_to");
 
 
 
-CREATE INDEX "idx_zoho_lead_submissions_sync_status" ON "public"."zoho_lead_submissions" USING "btree" ("zoho_sync_status");
+CREATE INDEX "idx_zoho_lead_submissions_created_at" ON "public"."lead_submissions" USING "btree" ("created_at" DESC);
 
 
 
-CREATE INDEX "idx_zoho_lead_submissions_tags" ON "public"."zoho_lead_submissions" USING "gin" ("tags");
+CREATE INDEX "idx_zoho_lead_submissions_email" ON "public"."lead_submissions" USING "btree" ("email");
 
 
 
-CREATE INDEX "idx_zoho_lead_submissions_user_id" ON "public"."zoho_lead_submissions" USING "btree" ("user_id");
+CREATE INDEX "idx_zoho_lead_submissions_email_trgm" ON "public"."lead_submissions" USING "gin" ("email" "extensions"."gin_trgm_ops");
 
 
 
-CREATE INDEX "idx_zoho_lead_submissions_zoho_lead_id" ON "public"."zoho_lead_submissions" USING "btree" ("zoho_lead_id");
+CREATE INDEX "idx_zoho_lead_submissions_interested_plans" ON "public"."lead_submissions" USING "gin" ("interested_plans");
+
+
+
+CREATE INDEX "idx_zoho_lead_submissions_name_trgm" ON "public"."lead_submissions" USING "gin" (((("first_name" || ' '::"text") || "last_name")) "extensions"."gin_trgm_ops");
+
+
+
+CREATE INDEX "idx_zoho_lead_submissions_next_followup" ON "public"."lead_submissions" USING "btree" ("next_followup_at") WHERE ("next_followup_at" IS NOT NULL);
+
+
+
+CREATE INDEX "idx_zoho_lead_submissions_org_id" ON "public"."lead_submissions" USING "btree" ("org_id");
+
+
+
+CREATE INDEX "idx_zoho_lead_submissions_pipeline_stage" ON "public"."lead_submissions" USING "btree" ("pipeline_stage");
+
+
+
+CREATE INDEX "idx_zoho_lead_submissions_priority" ON "public"."lead_submissions" USING "btree" ("priority");
+
+
+
+CREATE INDEX "idx_zoho_lead_submissions_quoted_plans" ON "public"."lead_submissions" USING "gin" ("quoted_plans");
+
+
+
+CREATE INDEX "idx_zoho_lead_submissions_tags" ON "public"."lead_submissions" USING "gin" ("tags");
+
+
+
+CREATE INDEX "idx_zoho_lead_submissions_user_id" ON "public"."lead_submissions" USING "btree" ("user_id");
+
+
+
+CREATE INDEX "navigation_search_analytics_created_at_idx" ON "public"."navigation_search_analytics" USING "btree" ("created_at" DESC);
+
+
+
+CREATE INDEX "navigation_search_analytics_query_idx" ON "public"."navigation_search_analytics" USING "btree" ("query");
+
+
+
+CREATE INDEX "password_history_user_id_changed_at_idx" ON "public"."password_history" USING "btree" ("user_id", "changed_at" DESC);
+
+
+
+CREATE INDEX "phi_access_log_user_id_accessed_at_idx" ON "public"."phi_access_log" USING "btree" ("user_id", "accessed_at" DESC);
+
+
+
+CREATE UNIQUE INDEX "training_progress_advisor_module_key" ON "public"."training_progress" USING "btree" ("advisor_id", "module_id");
+
+
+
+CREATE UNIQUE INDEX "uq_crm_calendar_booking_provider_uri" ON "public"."crm_calendar_booking_log" USING "btree" ("provider", "external_uri");
+
+
+
+CREATE UNIQUE INDEX "uq_crm_master_templates_name_version" ON "public"."crm_master_templates" USING "btree" ("org_id", "channel", "name", "version") WHERE ("archived_at" IS NULL);
+
+
+
+CREATE UNIQUE INDEX "uq_crm_optout_keywords_org_phrase" ON "public"."crm_optout_keywords" USING "btree" (COALESCE("org_id", '00000000-0000-0000-0000-000000000000'::"uuid"), "lower"("phrase"));
+
+
+
+CREATE UNIQUE INDEX "uq_crm_pipeline_stages_org_name" ON "public"."crm_pipeline_stages" USING "btree" ("org_id", "name") WHERE ("org_id" IS NOT NULL);
+
+
+
+CREATE UNIQUE INDEX "uq_crm_rep_templates_name" ON "public"."crm_rep_message_templates" USING "btree" ("org_id", "user_id", "channel", "name");
+
+
+
+CREATE INDEX "user_sessions_user_id_revoked_expires_idx" ON "public"."user_sessions" USING "btree" ("user_id", "revoked", "expires_at" DESC);
 
 
 
@@ -17947,6 +30127,42 @@ CREATE OR REPLACE TRIGGER "advisor_videos_updated_at" BEFORE UPDATE ON "public".
 
 
 CREATE OR REPLACE TRIGGER "calculate_acknowledge_time" BEFORE UPDATE ON "public"."lead_notifications" FOR EACH ROW EXECUTE FUNCTION "public"."calculate_time_to_acknowledge"();
+
+
+
+CREATE OR REPLACE TRIGGER "cms_forms_set_updated_at" BEFORE UPDATE ON "public"."cms_forms" FOR EACH ROW EXECUTE FUNCTION "public"."cms_forms_set_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "cms_global_blocks_set_updated_at" BEFORE UPDATE ON "public"."cms_global_blocks" FOR EACH ROW EXECUTE FUNCTION "public"."cms_global_blocks_set_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "cms_media_set_updated_at" BEFORE UPDATE ON "public"."cms_media" FOR EACH ROW EXECUTE FUNCTION "public"."cms_media_set_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "cms_pages_set_updated_at" BEFORE UPDATE ON "public"."cms_pages" FOR EACH ROW EXECUTE FUNCTION "public"."cms_pages_set_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "cms_popups_set_updated_at" BEFORE UPDATE ON "public"."cms_popups" FOR EACH ROW EXECUTE FUNCTION "public"."cms_popups_set_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "cms_redirects_set_updated_at" BEFORE UPDATE ON "public"."cms_redirects" FOR EACH ROW EXECUTE FUNCTION "public"."cms_redirects_set_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "cms_templates_set_updated_at" BEFORE UPDATE ON "public"."cms_templates" FOR EACH ROW EXECUTE FUNCTION "public"."cms_templates_set_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "cms_theme_set_updated_at" BEFORE UPDATE ON "public"."cms_theme" FOR EACH ROW EXECUTE FUNCTION "public"."cms_theme_set_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "crm_recruiting_pipeline_lock_guard" BEFORE DELETE OR UPDATE ON "public"."crm_recruiting_pipeline_stages" FOR EACH ROW EXECUTE FUNCTION "public"."crm_recruiting_pipeline_lock_guard"();
 
 
 
@@ -17978,11 +30194,31 @@ CREATE OR REPLACE TRIGGER "meeting_template_updated" BEFORE UPDATE ON "public"."
 
 
 
+CREATE OR REPLACE TRIGGER "notify-sales-on-new-lead" AFTER INSERT ON "public"."lead_submissions" FOR EACH ROW EXECUTE FUNCTION "supabase_functions"."http_request"('https://join.mpb.health/api/notify-lead', 'POST', '{"Content-type":"application/json","x-webhook-secret":"08866559703d6c2a7431dcc0cee42230bbb6557bae0f71885b75c163146d97b5"}', '{}', '5000');
+
+
+
 CREATE OR REPLACE TRIGGER "on_profile_updated" BEFORE UPDATE ON "public"."profiles" FOR EACH ROW EXECUTE FUNCTION "public"."handle_updated_at"();
 
 
 
 CREATE OR REPLACE TRIGGER "set_onboarding_updated_at" BEFORE UPDATE ON "public"."onboarding_responses" FOR EACH ROW EXECUTE FUNCTION "public"."update_onboarding_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "set_updated_at_concierge_daily_log_entries" BEFORE UPDATE ON "public"."concierge_daily_log_entries" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
+
+
+
+CREATE OR REPLACE TRIGGER "set_updated_at_concierge_escalations" BEFORE UPDATE ON "public"."concierge_escalations" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
+
+
+
+CREATE OR REPLACE TRIGGER "set_updated_at_concierge_team_members" BEFORE UPDATE ON "public"."concierge_team_members" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
+
+
+
+CREATE OR REPLACE TRIGGER "set_updated_at_concierge_weekly_report_extras" BEFORE UPDATE ON "public"."concierge_weekly_report_extras" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
 
 
 
@@ -18006,11 +30242,23 @@ CREATE OR REPLACE TRIGGER "set_updated_at_crm_vendors" BEFORE UPDATE ON "public"
 
 
 
+CREATE OR REPLACE TRIGGER "trg_advisor_profiles_sync_announcements_channel" AFTER INSERT OR UPDATE OF "status" ON "public"."advisor_profiles" FOR EACH ROW WHEN ((NOT ("new"."status" IS DISTINCT FROM 'active'::"text"))) EXECUTE FUNCTION "public"."trg_advisor_profiles_sync_announcements_channel"();
+
+
+
 CREATE OR REPLACE TRIGGER "trg_ai_lead_insights_updated" BEFORE UPDATE ON "public"."ai_lead_insights" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
 
 
 
-CREATE OR REPLACE TRIGGER "trg_calculate_lead_score" AFTER INSERT OR UPDATE ON "public"."zoho_lead_submissions" FOR EACH ROW EXECUTE FUNCTION "public"."trigger_calculate_lead_score"();
+CREATE OR REPLACE TRIGGER "trg_blog_articles_updated_at" BEFORE UPDATE ON "public"."blog_articles" FOR EACH ROW EXECUTE FUNCTION "public"."set_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_blog_authors_updated_at" BEFORE UPDATE ON "public"."blog_authors" FOR EACH ROW EXECUTE FUNCTION "public"."set_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_calculate_lead_score" AFTER INSERT OR UPDATE ON "public"."lead_submissions" FOR EACH ROW EXECUTE FUNCTION "public"."trigger_calculate_lead_score"();
 
 
 
@@ -18038,6 +30286,46 @@ CREATE OR REPLACE TRIGGER "trg_chat_messages_updated_at" BEFORE UPDATE ON "publi
 
 
 
+CREATE OR REPLACE TRIGGER "trg_cms_events_updated_at" BEFORE UPDATE ON "public"."cms_events" FOR EACH ROW EXECUTE FUNCTION "public"."set_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_cms_resources_updated_at" BEFORE UPDATE ON "public"."cms_resources" FOR EACH ROW EXECUTE FUNCTION "public"."set_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_compliance_acknowledgments_updated_at" BEFORE UPDATE ON "public"."compliance_acknowledgments" FOR EACH ROW EXECUTE FUNCTION "public"."set_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_compliance_documents_updated_at" BEFORE UPDATE ON "public"."compliance_documents" FOR EACH ROW EXECUTE FUNCTION "public"."set_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_contacts_updated_at" BEFORE UPDATE ON "public"."contacts" FOR EACH ROW EXECUTE FUNCTION "public"."set_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_crm_ab_tests_updated" BEFORE UPDATE ON "public"."crm_email_ab_tests" FOR EACH ROW EXECUTE FUNCTION "public"."handle_crm_sp2026_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_crm_activities_bump_last_touched" AFTER INSERT ON "public"."crm_activities" FOR EACH ROW EXECUTE FUNCTION "public"."crm_lead_bump_last_touched"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_crm_activity_targets_updated" BEFORE UPDATE ON "public"."crm_activity_targets" FOR EACH ROW EXECUTE FUNCTION "public"."handle_crm_sp2026_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_crm_attachments_updated_at" BEFORE UPDATE ON "public"."crm_attachments" FOR EACH ROW EXECUTE FUNCTION "public"."trg_crm_attachments_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_crm_cadences_updated" BEFORE UPDATE ON "public"."crm_follow_up_cadences" FOR EACH ROW EXECUTE FUNCTION "public"."handle_crm_sp2026_updated_at"();
+
+
+
 CREATE OR REPLACE TRIGGER "trg_crm_calendar_integrations_updated" BEFORE UPDATE ON "public"."crm_calendar_integrations" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
 
 
@@ -18050,6 +30338,30 @@ CREATE OR REPLACE TRIGGER "trg_crm_cases_updated_at" BEFORE UPDATE ON "public"."
 
 
 
+CREATE OR REPLACE TRIGGER "trg_crm_community_events_updated" BEFORE UPDATE ON "public"."crm_community_events" FOR EACH ROW EXECUTE FUNCTION "public"."handle_crm_sp2026_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_crm_concierge_handoff" AFTER UPDATE OF "pipeline_stage" ON "public"."lead_submissions" FOR EACH ROW EXECUTE FUNCTION "public"."crm_concierge_handoff_emit"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_crm_daily_log_ui_config_seed_org" AFTER INSERT ON "public"."organizations" FOR EACH ROW EXECUTE FUNCTION "public"."crm_daily_log_ui_config_seed_org"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_crm_daily_log_ui_config_touch" BEFORE UPDATE ON "public"."crm_daily_log_ui_config" FOR EACH ROW EXECUTE FUNCTION "public"."crm_daily_log_ui_config_touch_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_crm_deal_rooms_updated" BEFORE UPDATE ON "public"."crm_deal_rooms" FOR EACH ROW EXECUTE FUNCTION "public"."handle_crm_deal_rooms_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_crm_deals_validate_product_line" BEFORE INSERT OR UPDATE OF "product_line" ON "public"."crm_deals" FOR EACH ROW EXECUTE FUNCTION "public"."crm_validate_deal_product_line"();
+
+
+
 CREATE OR REPLACE TRIGGER "trg_crm_documents_updated_at" BEFORE UPDATE ON "public"."crm_documents" FOR EACH ROW EXECUTE FUNCTION "public"."handle_crm_documents_updated_at"();
 
 
@@ -18058,11 +30370,79 @@ CREATE OR REPLACE TRIGGER "trg_crm_email_sequences_updated" BEFORE UPDATE ON "pu
 
 
 
+CREATE OR REPLACE TRIGGER "trg_crm_lead_app_started" BEFORE UPDATE OF "pipeline_stage" ON "public"."lead_submissions" FOR EACH ROW EXECUTE FUNCTION "public"."crm_lead_app_started_stamp"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_crm_lead_cadence_updated" BEFORE UPDATE ON "public"."crm_lead_cadence_state" FOR EACH ROW EXECUTE FUNCTION "public"."handle_crm_sp2026_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_crm_lead_quoted_to_working" AFTER INSERT ON "public"."crm_activities" FOR EACH ROW EXECUTE FUNCTION "public"."crm_lead_quoted_to_working_advance"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_crm_linkedin_config_updated" BEFORE UPDATE ON "public"."crm_linkedin_config" FOR EACH ROW EXECUTE FUNCTION "public"."handle_crm_sp2026_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_crm_master_templates_touch" BEFORE UPDATE ON "public"."crm_master_templates" FOR EACH ROW EXECUTE FUNCTION "public"."crm_master_templates_touch_updated_at"();
+
+
+
 CREATE OR REPLACE TRIGGER "trg_crm_meeting_schedules_updated" BEFORE UPDATE ON "public"."crm_meeting_schedules" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
 
 
 
+CREATE OR REPLACE TRIGGER "trg_crm_milestones_updated" BEFORE UPDATE ON "public"."crm_quarterly_milestones" FOR EACH ROW EXECUTE FUNCTION "public"."handle_crm_sp2026_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_crm_outside_advisors_updated" BEFORE UPDATE ON "public"."crm_outside_advisors" FOR EACH ROW EXECUTE FUNCTION "public"."handle_crm_sp2026_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_crm_performance_lag_config_seed_org" AFTER INSERT ON "public"."organizations" FOR EACH ROW EXECUTE FUNCTION "public"."crm_performance_lag_config_seed_org"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_crm_performance_lag_config_touch" BEFORE UPDATE ON "public"."crm_performance_lag_config" FOR EACH ROW EXECUTE FUNCTION "public"."crm_performance_lag_config_touch_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_crm_ref_partners_updated" BEFORE UPDATE ON "public"."crm_referral_partners" FOR EACH ROW EXECUTE FUNCTION "public"."handle_crm_sp2026_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_crm_referrals_updated" BEFORE UPDATE ON "public"."crm_referrals" FOR EACH ROW EXECUTE FUNCTION "public"."handle_crm_sp2026_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_crm_rr_config_updated" BEFORE UPDATE ON "public"."crm_round_robin_config" FOR EACH ROW EXECUTE FUNCTION "public"."handle_crm_sp2026_updated_at"();
+
+
+
 CREATE OR REPLACE TRIGGER "trg_crm_saved_views_updated_at" BEFORE UPDATE ON "public"."crm_saved_views" FOR EACH ROW EXECUTE FUNCTION "public"."handle_crm_saved_views_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_crm_sla_config_updated" BEFORE UPDATE ON "public"."crm_sla_config" FOR EACH ROW EXECUTE FUNCTION "public"."handle_crm_sp2026_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_crm_sla_config_validate_emails" BEFORE INSERT OR UPDATE OF "escalation_emails" ON "public"."crm_sla_config" FOR EACH ROW EXECUTE FUNCTION "public"."crm_sla_config_validate_escalation_emails"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_crm_social_platform_connections_updated_at" BEFORE UPDATE ON "public"."crm_social_platform_connections" FOR EACH ROW EXECUTE FUNCTION "public"."update_crm_social_platform_connections_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_crm_social_posts_updated_at" BEFORE UPDATE ON "public"."crm_social_posts" FOR EACH ROW EXECUTE FUNCTION "public"."update_crm_social_posts_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_crm_special_project_types_touch" BEFORE UPDATE ON "public"."crm_special_project_types" FOR EACH ROW EXECUTE FUNCTION "public"."crm_special_project_types_touch_updated_at"();
 
 
 
@@ -18074,7 +30454,51 @@ CREATE OR REPLACE TRIGGER "trg_crm_templates_updated" BEFORE UPDATE ON "public".
 
 
 
+CREATE OR REPLACE TRIGGER "trg_crm_tracking_to_engagement" AFTER INSERT ON "public"."crm_email_tracking" FOR EACH ROW EXECUTE FUNCTION "public"."crm_tracking_to_engagement_signal"();
+
+
+
 CREATE OR REPLACE TRIGGER "trg_crm_web_forms_updated_at" BEFORE UPDATE ON "public"."crm_web_forms" FOR EACH ROW EXECUTE FUNCTION "public"."update_crm_web_forms_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_crm_workspaces_updated_at" BEFORE UPDATE ON "public"."crm_workspaces" FOR EACH ROW EXECUTE FUNCTION "public"."handle_crm_workspaces_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_daily_log_rollup" AFTER INSERT ON "public"."crm_daily_log_events" FOR EACH ROW EXECUTE FUNCTION "public"."crm_daily_log_rollup"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_dl_emit_from_activity" AFTER INSERT ON "public"."crm_activities" FOR EACH ROW EXECUTE FUNCTION "public"."crm_dl_emit_from_activity"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_dl_emit_from_email_log" AFTER INSERT ON "public"."crm_email_log" FOR EACH ROW EXECUTE FUNCTION "public"."crm_dl_emit_from_email_log"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_dl_emit_from_lead_profile_edit" AFTER UPDATE ON "public"."lead_submissions" FOR EACH ROW EXECUTE FUNCTION "public"."crm_dl_emit_from_lead_profile_edit"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_dl_emit_from_master_template_create" AFTER INSERT ON "public"."crm_master_templates" FOR EACH ROW EXECUTE FUNCTION "public"."crm_dl_emit_from_template_create"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_dl_emit_from_signature_create" AFTER INSERT ON "public"."crm_email_signatures" FOR EACH ROW EXECUTE FUNCTION "public"."crm_dl_emit_from_signature_create"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_dl_emit_from_special_project" AFTER INSERT ON "public"."crm_special_projects" FOR EACH ROW EXECUTE FUNCTION "public"."crm_dl_emit_from_special_project"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_dl_emit_from_task_complete" AFTER UPDATE ON "public"."lead_tasks" FOR EACH ROW EXECUTE FUNCTION "public"."crm_dl_emit_from_task_complete"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_dl_emit_from_template_create" AFTER INSERT ON "public"."crm_templates" FOR EACH ROW EXECUTE FUNCTION "public"."crm_dl_emit_from_template_create"();
 
 
 
@@ -18086,7 +30510,67 @@ CREATE OR REPLACE TRIGGER "trg_ensure_advisor_profile_on_role_grant" AFTER INSER
 
 
 
+CREATE OR REPLACE TRIGGER "trg_feature_flags_updated" BEFORE UPDATE ON "public"."feature_flags" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
+
+
+
 CREATE OR REPLACE TRIGGER "trg_generate_case_number" BEFORE INSERT ON "public"."crm_cases" FOR EACH ROW WHEN ((("new"."case_number" IS NULL) OR ("new"."case_number" = ''::"text"))) EXECUTE FUNCTION "public"."generate_case_number"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_generate_member_notification" AFTER INSERT ON "public"."member_account_events" FOR EACH ROW EXECUTE FUNCTION "public"."generate_member_notification_from_event"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_integrations_updated_at" BEFORE UPDATE ON "public"."integrations" FOR EACH ROW EXECUTE FUNCTION "public"."update_integrations_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_lead_activities_cadence_pause" AFTER INSERT ON "public"."lead_activities" FOR EACH ROW EXECUTE FUNCTION "public"."crm_activity_cadence_pause"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_lead_assignment_stage_promote_upd" BEFORE UPDATE OF "assigned_to" ON "public"."lead_submissions" FOR EACH ROW EXECUTE FUNCTION "public"."crm_lead_assignment_stage_promote"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_lead_default_org" BEFORE INSERT ON "public"."lead_submissions" FOR EACH ROW EXECUTE FUNCTION "public"."crm_lead_default_org_on_insert"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_lead_stage_change" AFTER UPDATE OF "pipeline_stage" ON "public"."lead_submissions" FOR EACH ROW EXECUTE FUNCTION "public"."fn_lead_stage_change_notify"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_lead_stage_quote_ts" BEFORE UPDATE OF "pipeline_stage" ON "public"."lead_submissions" FOR EACH ROW EXECUTE FUNCTION "public"."crm_lead_stage_quote_timestamps"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_lead_start_quote_cadence" AFTER UPDATE OF "pipeline_stage" ON "public"."lead_submissions" FOR EACH ROW WHEN ((("new"."pipeline_stage" = 'quoted'::"text") AND ("old"."pipeline_stage" IS DISTINCT FROM "new"."pipeline_stage"))) EXECUTE FUNCTION "public"."crm_lead_start_quote_cadence"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_lead_submissions_automation" BEFORE INSERT ON "public"."lead_submissions" FOR EACH ROW EXECUTE FUNCTION "public"."crm_lead_after_insert_automation"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_lead_submissions_cadence_pause" AFTER UPDATE OF "pipeline_stage" ON "public"."lead_submissions" FOR EACH ROW EXECUTE FUNCTION "public"."crm_lead_stage_cadence_pause"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_lead_submissions_community_counter" AFTER INSERT OR DELETE OR UPDATE OF "community_event_id" ON "public"."lead_submissions" FOR EACH ROW EXECUTE FUNCTION "public"."crm_community_event_bump_counter"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_lead_submissions_contact_cadence_pause" AFTER UPDATE OF "last_contacted_at" ON "public"."lead_submissions" FOR EACH ROW EXECUTE FUNCTION "public"."crm_lead_contact_cadence_pause"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_lead_submissions_validate_lead_source" BEFORE INSERT OR UPDATE OF "lead_source" ON "public"."lead_submissions" FOR EACH ROW EXECUTE FUNCTION "public"."crm_validate_lead_source"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_lead_submissions_workflow_subsection_sync" BEFORE INSERT OR UPDATE OF "pipeline_stage", "do_not_contact", "lead_source", "workflow_subsection" ON "public"."lead_submissions" FOR EACH ROW EXECUTE FUNCTION "public"."crm_lead_workflow_subsection_sync"();
 
 
 
@@ -18098,7 +30582,71 @@ CREATE OR REPLACE TRIGGER "trg_notification_settings_updated_at" BEFORE UPDATE O
 
 
 
+CREATE OR REPLACE TRIGGER "trg_org_feature_overrides_updated" BEFORE UPDATE ON "public"."org_feature_overrides" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_org_memberships_sync_announcements_channel" AFTER INSERT OR UPDATE OF "status" ON "public"."org_memberships" FOR EACH ROW WHEN ((("new"."org_id" = '00000000-0000-4000-a000-000000000001'::"uuid") AND (NOT ("new"."status" IS DISTINCT FROM 'active'::"text")))) EXECUTE FUNCTION "public"."trg_org_memberships_sync_announcements_channel"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_org_module_licenses_updated" BEFORE UPDATE ON "public"."org_module_licenses" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_pause_cadence_on_owner_change" AFTER UPDATE OF "assigned_to" ON "public"."lead_submissions" FOR EACH ROW WHEN (("new"."assigned_to" IS DISTINCT FROM "old"."assigned_to")) EXECUTE FUNCTION "public"."crm_pause_cadence_on_owner_change"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_product_modules_updated" BEFORE UPDATE ON "public"."product_modules" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
+
+
+
 CREATE OR REPLACE TRIGGER "trg_push_subs_updated_at" BEFORE UPDATE ON "public"."device_push_subscriptions" FOR EACH ROW EXECUTE FUNCTION "public"."update_chat_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_recruiting_records_touch" BEFORE UPDATE ON "public"."crm_recruiting_records" FOR EACH ROW EXECUTE FUNCTION "public"."crm_recruiting_records_touch"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_sequence_enrollments_updated_at" BEFORE UPDATE ON "public"."sequence_enrollments" FOR EACH ROW EXECUTE FUNCTION "public"."set_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_sequence_steps_updated_at" BEFORE UPDATE ON "public"."sequence_steps" FOR EACH ROW EXECUTE FUNCTION "public"."set_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_sequences_updated_at" BEFORE UPDATE ON "public"."sequences" FOR EACH ROW EXECUTE FUNCTION "public"."set_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_staff_attendance_link_remote_request" AFTER INSERT ON "public"."staff_attendance_sessions" FOR EACH ROW EXECUTE FUNCTION "public"."trg_staff_attendance_link_remote_request"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_staff_attendance_sessions_updated_at" BEFORE UPDATE ON "public"."staff_attendance_sessions" FOR EACH ROW EXECUTE FUNCTION "public"."trg_staff_hr_set_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_staff_departments_updated_at" BEFORE UPDATE ON "public"."staff_departments" FOR EACH ROW EXECUTE FUNCTION "public"."trg_staff_hr_set_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_staff_office_locations_updated_at" BEFORE UPDATE ON "public"."staff_office_locations" FOR EACH ROW EXECUTE FUNCTION "public"."trg_staff_hr_set_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_staff_profiles_remote_guard" BEFORE INSERT OR UPDATE ON "public"."staff_profiles" FOR EACH ROW EXECUTE FUNCTION "public"."trg_staff_profiles_remote_guard"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_staff_profiles_updated_at" BEFORE UPDATE ON "public"."staff_profiles" FOR EACH ROW EXECUTE FUNCTION "public"."trg_staff_hr_set_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_staff_time_requests_updated_at" BEFORE UPDATE ON "public"."staff_time_requests" FOR EACH ROW EXECUTE FUNCTION "public"."trg_staff_time_requests_updated_at"();
 
 
 
@@ -18110,11 +30658,27 @@ CREATE OR REPLACE TRIGGER "trg_sync_user_to_itsts" AFTER INSERT OR UPDATE ON "pu
 
 
 
-CREATE OR REPLACE TRIGGER "trg_update_goals_on_lead" AFTER INSERT ON "public"."zoho_lead_submissions" FOR EACH ROW EXECUTE FUNCTION "public"."update_goal_progress"();
+CREATE OR REPLACE TRIGGER "trg_update_goals_on_lead" AFTER INSERT ON "public"."lead_submissions" FOR EACH ROW EXECUTE FUNCTION "public"."update_goal_progress"();
 
 
 
 CREATE OR REPLACE TRIGGER "trg_update_goals_on_task" AFTER UPDATE OF "completed" ON "public"."lead_tasks" FOR EACH ROW EXECUTE FUNCTION "public"."update_goal_progress"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_white_label_configs_updated" BEFORE UPDATE ON "public"."white_label_configs" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_white_label_email_templates_updated" BEFORE UPDATE ON "public"."white_label_email_templates" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_workflow_steps_updated_at" BEFORE UPDATE ON "public"."workflow_steps" FOR EACH ROW EXECUTE FUNCTION "public"."set_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_workflows_updated_at" BEFORE UPDATE ON "public"."workflows" FOR EACH ROW EXECUTE FUNCTION "public"."set_updated_at"();
 
 
 
@@ -18123,6 +30687,14 @@ CREATE OR REPLACE TRIGGER "trigger_calculate_ranking_change" BEFORE INSERT ON "p
 
 
 CREATE OR REPLACE TRIGGER "trigger_cognito_forms_updated_at" BEFORE UPDATE ON "public"."cognito_forms" FOR EACH ROW EXECUTE FUNCTION "public"."update_cognito_forms_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "trigger_commission_records_updated_at" BEFORE UPDATE ON "public"."commission_records" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
+
+
+
+CREATE OR REPLACE TRIGGER "trigger_commission_schedules_updated_at" BEFORE UPDATE ON "public"."commission_schedules" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
 
 
 
@@ -18238,6 +30810,10 @@ CREATE OR REPLACE TRIGGER "trigger_increment_promo_usage" AFTER INSERT ON "publi
 
 
 
+CREATE OR REPLACE TRIGGER "trigger_insurance_carriers_updated_at" BEFORE UPDATE ON "public"."insurance_carriers" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
+
+
+
 CREATE OR REPLACE TRIGGER "trigger_invoice_number" BEFORE INSERT ON "public"."crm_invoices" FOR EACH ROW EXECUTE FUNCTION "public"."handle_invoice_number"();
 
 
@@ -18246,7 +30822,7 @@ CREATE OR REPLACE TRIGGER "trigger_invoice_payment" AFTER INSERT ON "public"."cr
 
 
 
-CREATE OR REPLACE TRIGGER "trigger_lead_stage_changed" BEFORE UPDATE ON "public"."zoho_lead_submissions" FOR EACH ROW EXECUTE FUNCTION "public"."update_lead_stage_changed_at"();
+CREATE OR REPLACE TRIGGER "trigger_lead_stage_changed" BEFORE UPDATE ON "public"."lead_submissions" FOR EACH ROW EXECUTE FUNCTION "public"."update_lead_stage_changed_at"();
 
 
 
@@ -18338,6 +30914,10 @@ CREATE OR REPLACE TRIGGER "trigger_update_crm_deals_search" BEFORE INSERT OR UPD
 
 
 
+CREATE OR REPLACE TRIGGER "trigger_update_crm_family_members_search" BEFORE INSERT OR UPDATE ON "public"."crm_family_members" FOR EACH ROW EXECUTE FUNCTION "public"."update_crm_family_members_search"();
+
+
+
 CREATE OR REPLACE TRIGGER "trigger_update_crm_products_search" BEFORE INSERT OR UPDATE ON "public"."crm_products" FOR EACH ROW EXECUTE FUNCTION "public"."update_crm_products_search"();
 
 
@@ -18410,6 +30990,10 @@ CREATE OR REPLACE TRIGGER "update_enrollment_progress" AFTER INSERT OR UPDATE ON
 
 
 
+CREATE OR REPLACE TRIGGER "update_lead_submissions_updated_at" BEFORE UPDATE ON "public"."lead_submissions" FOR EACH ROW EXECUTE FUNCTION "public"."update_lead_submission_updated_at"();
+
+
+
 CREATE OR REPLACE TRIGGER "update_member_documents_updated_at" BEFORE UPDATE ON "public"."member_documents" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at_column"();
 
 
@@ -18470,10 +31054,6 @@ CREATE OR REPLACE TRIGGER "update_user_preferences_updated_at" BEFORE UPDATE ON 
 
 
 
-CREATE OR REPLACE TRIGGER "update_zoho_lead_submissions_updated_at" BEFORE UPDATE ON "public"."zoho_lead_submissions" FOR EACH ROW EXECUTE FUNCTION "public"."update_zoho_lead_submission_updated_at"();
-
-
-
 CREATE OR REPLACE TRIGGER "user_organization_roles_instead_of_delete" INSTEAD OF DELETE ON "public"."user_organization_roles" FOR EACH ROW EXECUTE FUNCTION "public"."user_organization_roles_delete_trigger"();
 
 
@@ -18496,7 +31076,7 @@ ALTER TABLE ONLY "public"."activities"
 
 
 ALTER TABLE ONLY "public"."activities"
-    ADD CONSTRAINT "activities_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "public"."leads"("id") ON DELETE SET NULL;
+    ADD CONSTRAINT "activities_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "public"."_deprecated_leads"("id") ON DELETE SET NULL;
 
 
 
@@ -18525,6 +31105,16 @@ ALTER TABLE ONLY "public"."advisor_announcements"
 
 
 
+ALTER TABLE ONLY "public"."advisor_announcements"
+    ADD CONSTRAINT "advisor_announcements_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id");
+
+
+
+ALTER TABLE ONLY "public"."advisor_contact_directory"
+    ADD CONSTRAINT "advisor_contact_directory_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id");
+
+
+
 ALTER TABLE ONLY "public"."advisor_content_bookmarks"
     ADD CONSTRAINT "advisor_content_bookmarks_advisor_id_fkey" FOREIGN KEY ("advisor_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
 
@@ -18535,8 +31125,18 @@ ALTER TABLE ONLY "public"."advisor_content_bookmarks"
 
 
 
+ALTER TABLE ONLY "public"."advisor_content_categories"
+    ADD CONSTRAINT "advisor_content_categories_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id");
+
+
+
 ALTER TABLE ONLY "public"."advisor_content"
     ADD CONSTRAINT "advisor_content_category_id_fkey" FOREIGN KEY ("category_id") REFERENCES "public"."advisor_content_categories"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."advisor_content"
+    ADD CONSTRAINT "advisor_content_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id");
 
 
 
@@ -18547,6 +31147,16 @@ ALTER TABLE ONLY "public"."advisor_content_views"
 
 ALTER TABLE ONLY "public"."advisor_content_views"
     ADD CONSTRAINT "advisor_content_views_content_id_fkey" FOREIGN KEY ("content_id") REFERENCES "public"."advisor_content"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."advisor_dashboard_widgets"
+    ADD CONSTRAINT "advisor_dashboard_widgets_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id");
+
+
+
+ALTER TABLE ONLY "public"."advisor_enrollment_links"
+    ADD CONSTRAINT "advisor_enrollment_links_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id");
 
 
 
@@ -18630,6 +31240,11 @@ ALTER TABLE ONLY "public"."advisor_nav_menu"
 
 
 
+ALTER TABLE ONLY "public"."advisor_nav_menu"
+    ADD CONSTRAINT "advisor_nav_menu_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id");
+
+
+
 ALTER TABLE ONLY "public"."advisor_plan_resources"
     ADD CONSTRAINT "advisor_plan_resources_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
 
@@ -18637,6 +31252,11 @@ ALTER TABLE ONLY "public"."advisor_plan_resources"
 
 ALTER TABLE ONLY "public"."advisor_plan_resources"
     ADD CONSTRAINT "advisor_plan_resources_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "auth"."users"("id");
+
+
+
+ALTER TABLE ONLY "public"."advisor_portal_settings"
+    ADD CONSTRAINT "advisor_portal_settings_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id");
 
 
 
@@ -18665,6 +31285,11 @@ ALTER TABLE ONLY "public"."advisor_quick_links"
 
 
 
+ALTER TABLE ONLY "public"."advisor_quick_links"
+    ADD CONSTRAINT "advisor_quick_links_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id");
+
+
+
 ALTER TABLE ONLY "public"."advisor_terminal_commands"
     ADD CONSTRAINT "advisor_terminal_commands_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
 
@@ -18675,13 +31300,18 @@ ALTER TABLE ONLY "public"."advisor_terminal_sessions"
 
 
 
+ALTER TABLE ONLY "public"."advisor_videos"
+    ADD CONSTRAINT "advisor_videos_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id");
+
+
+
 ALTER TABLE ONLY "public"."ai_automation_rules"
     ADD CONSTRAINT "ai_automation_rules_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
 
 
 
 ALTER TABLE ONLY "public"."ai_lead_insights"
-    ADD CONSTRAINT "ai_lead_insights_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "public"."zoho_lead_submissions"("id") ON DELETE CASCADE;
+    ADD CONSTRAINT "ai_lead_insights_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "public"."lead_submissions"("id") ON DELETE CASCADE;
 
 
 
@@ -18730,8 +31360,13 @@ ALTER TABLE ONLY "public"."audit_logs"
 
 
 
+ALTER TABLE ONLY "public"."auth_security_events"
+    ADD CONSTRAINT "auth_security_events_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+
+
 ALTER TABLE ONLY "public"."automation_execution_log"
-    ADD CONSTRAINT "automation_execution_log_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "public"."zoho_lead_submissions"("id") ON DELETE SET NULL;
+    ADD CONSTRAINT "automation_execution_log_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "public"."lead_submissions"("id") ON DELETE SET NULL;
 
 
 
@@ -18742,6 +31377,11 @@ ALTER TABLE ONLY "public"."automation_execution_log"
 
 ALTER TABLE ONLY "public"."benefit_usage"
     ADD CONSTRAINT "benefit_usage_coverage_id_fkey" FOREIGN KEY ("coverage_id") REFERENCES "public"."member_coverage"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."blog_articles"
+    ADD CONSTRAINT "blog_articles_author_id_fkey" FOREIGN KEY ("author_id") REFERENCES "public"."blog_authors"("id");
 
 
 
@@ -18786,7 +31426,7 @@ ALTER TABLE ONLY "public"."calendar_events"
 
 
 ALTER TABLE ONLY "public"."calendar_events"
-    ADD CONSTRAINT "calendar_events_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "public"."zoho_lead_submissions"("id") ON DELETE SET NULL;
+    ADD CONSTRAINT "calendar_events_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "public"."lead_submissions"("id") ON DELETE SET NULL;
 
 
 
@@ -18865,6 +31505,56 @@ ALTER TABLE ONLY "public"."claims"
 
 
 
+ALTER TABLE ONLY "public"."cms_form_submissions"
+    ADD CONSTRAINT "cms_form_submissions_form_id_fkey" FOREIGN KEY ("form_id") REFERENCES "public"."cms_forms"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."cms_forms"
+    ADD CONSTRAINT "cms_forms_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."cms_global_blocks"
+    ADD CONSTRAINT "cms_global_blocks_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."cms_media"
+    ADD CONSTRAINT "cms_media_uploaded_by_fkey" FOREIGN KEY ("uploaded_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."cms_pages"
+    ADD CONSTRAINT "cms_pages_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."cms_popups"
+    ADD CONSTRAINT "cms_popups_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."cms_redirects"
+    ADD CONSTRAINT "cms_redirects_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."cms_revisions"
+    ADD CONSTRAINT "cms_revisions_changed_by_fkey" FOREIGN KEY ("changed_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."cms_templates"
+    ADD CONSTRAINT "cms_templates_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."cms_theme"
+    ADD CONSTRAINT "cms_theme_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+
+
 ALTER TABLE ONLY "public"."code_batches"
     ADD CONSTRAINT "code_batches_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
 
@@ -18890,6 +31580,56 @@ ALTER TABLE ONLY "public"."code_inventory"
 
 
 
+ALTER TABLE ONLY "public"."cognito_forms"
+    ADD CONSTRAINT "cognito_forms_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id");
+
+
+
+ALTER TABLE ONLY "public"."commission_payouts"
+    ADD CONSTRAINT "commission_payouts_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."orgs"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."commission_records"
+    ADD CONSTRAINT "commission_records_carrier_id_fkey" FOREIGN KEY ("carrier_id") REFERENCES "public"."insurance_carriers"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."commission_records"
+    ADD CONSTRAINT "commission_records_contact_id_fkey" FOREIGN KEY ("contact_id") REFERENCES "public"."crm_contacts"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."commission_records"
+    ADD CONSTRAINT "commission_records_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "public"."lead_submissions"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."commission_records"
+    ADD CONSTRAINT "commission_records_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."orgs"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."commission_records"
+    ADD CONSTRAINT "commission_records_schedule_id_fkey" FOREIGN KEY ("schedule_id") REFERENCES "public"."commission_schedules"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."commission_schedules"
+    ADD CONSTRAINT "commission_schedules_carrier_id_fkey" FOREIGN KEY ("carrier_id") REFERENCES "public"."insurance_carriers"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."commission_schedules"
+    ADD CONSTRAINT "commission_schedules_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."orgs"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."commission_schedules"
+    ADD CONSTRAINT "commission_schedules_plan_id_fkey" FOREIGN KEY ("plan_id") REFERENCES "public"."plans"("id") ON DELETE SET NULL;
+
+
+
 ALTER TABLE ONLY "public"."compliance_acknowledgments"
     ADD CONSTRAINT "compliance_acknowledgments_document_id_fkey" FOREIGN KEY ("document_id") REFERENCES "public"."compliance_documents"("id") ON DELETE CASCADE;
 
@@ -18902,6 +31642,66 @@ ALTER TABLE ONLY "public"."compliance_acknowledgments"
 
 ALTER TABLE ONLY "public"."compliance_documents"
     ADD CONSTRAINT "compliance_documents_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."concierge_daily_log_entries"
+    ADD CONSTRAINT "concierge_daily_log_entries_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."concierge_daily_log_entries"
+    ADD CONSTRAINT "concierge_daily_log_entries_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id");
+
+
+
+ALTER TABLE ONLY "public"."concierge_daily_log_entries"
+    ADD CONSTRAINT "concierge_daily_log_entries_team_member_id_fkey" FOREIGN KEY ("team_member_id") REFERENCES "public"."concierge_team_members"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."concierge_escalations"
+    ADD CONSTRAINT "concierge_escalations_log_entry_id_fkey" FOREIGN KEY ("log_entry_id") REFERENCES "public"."concierge_daily_log_entries"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."concierge_escalations"
+    ADD CONSTRAINT "concierge_escalations_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id");
+
+
+
+ALTER TABLE ONLY "public"."concierge_member_off_days"
+    ADD CONSTRAINT "concierge_member_off_days_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id");
+
+
+
+ALTER TABLE ONLY "public"."concierge_member_off_days"
+    ADD CONSTRAINT "concierge_member_off_days_team_member_id_fkey" FOREIGN KEY ("team_member_id") REFERENCES "public"."concierge_team_members"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."concierge_portal_config"
+    ADD CONSTRAINT "concierge_portal_config_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."concierge_team_members"
+    ADD CONSTRAINT "concierge_team_members_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id");
+
+
+
+ALTER TABLE ONLY "public"."concierge_team_members"
+    ADD CONSTRAINT "concierge_team_members_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."concierge_weekly_report_extras"
+    ADD CONSTRAINT "concierge_weekly_report_extras_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id");
+
+
+
+ALTER TABLE ONLY "public"."contacts"
+    ADD CONSTRAINT "contacts_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id");
 
 
 
@@ -18945,6 +31745,11 @@ ALTER TABLE ONLY "public"."crm_accounts"
 
 
 
+ALTER TABLE ONLY "public"."crm_achievements"
+    ADD CONSTRAINT "crm_achievements_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
+
+
+
 ALTER TABLE ONLY "public"."crm_activities"
     ADD CONSTRAINT "crm_activities_account_id_fkey" FOREIGN KEY ("account_id") REFERENCES "public"."crm_accounts"("id") ON DELETE CASCADE;
 
@@ -18980,6 +31785,21 @@ ALTER TABLE ONLY "public"."crm_activities"
 
 
 
+ALTER TABLE ONLY "public"."crm_activity_targets"
+    ADD CONSTRAINT "crm_activity_targets_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_activity_targets"
+    ADD CONSTRAINT "crm_activity_targets_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."orgs"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_activity_targets"
+    ADD CONSTRAINT "crm_activity_targets_rep_id_fkey" FOREIGN KEY ("rep_id") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+
+
 ALTER TABLE ONLY "public"."crm_approval_actions"
     ADD CONSTRAINT "crm_approval_actions_approver_id_fkey" FOREIGN KEY ("approver_id") REFERENCES "auth"."users"("id");
 
@@ -19012,6 +31832,41 @@ ALTER TABLE ONLY "public"."crm_approval_requests"
 
 ALTER TABLE ONLY "public"."crm_approval_steps"
     ADD CONSTRAINT "crm_approval_steps_process_id_fkey" FOREIGN KEY ("process_id") REFERENCES "public"."crm_approval_processes"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_attachments"
+    ADD CONSTRAINT "crm_attachments_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_attachments"
+    ADD CONSTRAINT "crm_attachments_uploaded_by_fkey" FOREIGN KEY ("uploaded_by") REFERENCES "auth"."users"("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_audit_log"
+    ADD CONSTRAINT "crm_audit_log_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_audit_log"
+    ADD CONSTRAINT "crm_audit_log_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_calendar_booking_log"
+    ADD CONSTRAINT "crm_calendar_booking_log_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "public"."lead_submissions"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."crm_calendar_booking_log"
+    ADD CONSTRAINT "crm_calendar_booking_log_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."orgs"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_calendar_booking_log"
+    ADD CONSTRAINT "crm_calendar_booking_log_recruit_id_fkey" FOREIGN KEY ("recruit_id") REFERENCES "public"."crm_recruiting_records"("id") ON DELETE SET NULL;
 
 
 
@@ -19095,8 +31950,68 @@ ALTER TABLE ONLY "public"."crm_cases"
 
 
 
+ALTER TABLE ONLY "public"."crm_challenge_entries"
+    ADD CONSTRAINT "crm_challenge_entries_challenge_id_fkey" FOREIGN KEY ("challenge_id") REFERENCES "public"."crm_challenges"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_challenge_entries"
+    ADD CONSTRAINT "crm_challenge_entries_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_challenge_entries"
+    ADD CONSTRAINT "crm_challenge_entries_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_challenges"
+    ADD CONSTRAINT "crm_challenges_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_challenges"
+    ADD CONSTRAINT "crm_challenges_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_community_events"
+    ADD CONSTRAINT "crm_community_events_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_community_events"
+    ADD CONSTRAINT "crm_community_events_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."orgs"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_community_events"
+    ADD CONSTRAINT "crm_community_events_rep_id_fkey" FOREIGN KEY ("rep_id") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."crm_concierge_handoff_log"
+    ADD CONSTRAINT "crm_concierge_handoff_log_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "public"."lead_submissions"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_concierge_handoff_log"
+    ADD CONSTRAINT "crm_concierge_handoff_log_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."orgs"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_concierge_handoff_log"
+    ADD CONSTRAINT "crm_concierge_handoff_log_received_by_fkey" FOREIGN KEY ("received_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+
+
 ALTER TABLE ONLY "public"."crm_contacts"
     ADD CONSTRAINT "crm_contacts_account_id_fkey" FOREIGN KEY ("account_id") REFERENCES "public"."crm_accounts"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."crm_contacts"
+    ADD CONSTRAINT "crm_contacts_carrier_id_fkey" FOREIGN KEY ("carrier_id") REFERENCES "public"."insurance_carriers"("id") ON DELETE SET NULL;
 
 
 
@@ -19120,6 +32035,36 @@ ALTER TABLE ONLY "public"."crm_contacts"
 
 
 
+ALTER TABLE ONLY "public"."crm_conversation_goal_config"
+    ADD CONSTRAINT "crm_conversation_goal_config_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."orgs"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_daily_log_corrections"
+    ADD CONSTRAINT "crm_daily_log_corrections_corrected_by_fkey" FOREIGN KEY ("corrected_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."crm_daily_log_corrections"
+    ADD CONSTRAINT "crm_daily_log_corrections_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."orgs"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_daily_log_events"
+    ADD CONSTRAINT "crm_daily_log_events_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."orgs"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_daily_log_events"
+    ADD CONSTRAINT "crm_daily_log_events_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_daily_log_ui_config"
+    ADD CONSTRAINT "crm_daily_log_ui_config_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
+
+
+
 ALTER TABLE ONLY "public"."crm_dashboard_layouts"
     ADD CONSTRAINT "crm_dashboard_layouts_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
 
@@ -19140,6 +32085,16 @@ ALTER TABLE ONLY "public"."crm_deal_contacts"
 
 
 
+ALTER TABLE ONLY "public"."crm_deal_predictions"
+    ADD CONSTRAINT "crm_deal_predictions_deal_id_fkey" FOREIGN KEY ("deal_id") REFERENCES "public"."crm_deals"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_deal_predictions"
+    ADD CONSTRAINT "crm_deal_predictions_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
+
+
+
 ALTER TABLE ONLY "public"."crm_deal_products"
     ADD CONSTRAINT "crm_deal_products_deal_id_fkey" FOREIGN KEY ("deal_id") REFERENCES "public"."crm_deals"("id") ON DELETE CASCADE;
 
@@ -19147,6 +32102,56 @@ ALTER TABLE ONLY "public"."crm_deal_products"
 
 ALTER TABLE ONLY "public"."crm_deal_products"
     ADD CONSTRAINT "crm_deal_products_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."crm_products"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_deal_room_messages"
+    ADD CONSTRAINT "crm_deal_room_messages_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_deal_room_messages"
+    ADD CONSTRAINT "crm_deal_room_messages_room_id_fkey" FOREIGN KEY ("room_id") REFERENCES "public"."crm_deal_rooms"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_deal_room_messages"
+    ADD CONSTRAINT "crm_deal_room_messages_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_deal_room_participants"
+    ADD CONSTRAINT "crm_deal_room_participants_room_id_fkey" FOREIGN KEY ("room_id") REFERENCES "public"."crm_deal_rooms"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_deal_room_participants"
+    ADD CONSTRAINT "crm_deal_room_participants_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_deal_room_pinned_items"
+    ADD CONSTRAINT "crm_deal_room_pinned_items_pinned_by_fkey" FOREIGN KEY ("pinned_by") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_deal_room_pinned_items"
+    ADD CONSTRAINT "crm_deal_room_pinned_items_room_id_fkey" FOREIGN KEY ("room_id") REFERENCES "public"."crm_deal_rooms"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_deal_rooms"
+    ADD CONSTRAINT "crm_deal_rooms_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_deal_rooms"
+    ADD CONSTRAINT "crm_deal_rooms_deal_id_fkey" FOREIGN KEY ("deal_id") REFERENCES "public"."crm_deals"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_deal_rooms"
+    ADD CONSTRAINT "crm_deal_rooms_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
 
 
 
@@ -19220,13 +32225,23 @@ ALTER TABLE ONLY "public"."crm_documents"
 
 
 
+ALTER TABLE ONLY "public"."crm_email_ab_tests"
+    ADD CONSTRAINT "crm_email_ab_tests_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_email_ab_tests"
+    ADD CONSTRAINT "crm_email_ab_tests_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."orgs"("id") ON DELETE CASCADE;
+
+
+
 ALTER TABLE ONLY "public"."crm_email_attachments"
     ADD CONSTRAINT "crm_email_attachments_uploaded_by_fkey" FOREIGN KEY ("uploaded_by") REFERENCES "auth"."users"("id");
 
 
 
 ALTER TABLE ONLY "public"."crm_email_drafts"
-    ADD CONSTRAINT "crm_email_drafts_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "public"."zoho_lead_submissions"("id") ON DELETE SET NULL;
+    ADD CONSTRAINT "crm_email_drafts_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "public"."lead_submissions"("id") ON DELETE SET NULL;
 
 
 
@@ -19241,7 +32256,22 @@ ALTER TABLE ONLY "public"."crm_email_drafts"
 
 
 ALTER TABLE ONLY "public"."crm_email_log"
-    ADD CONSTRAINT "crm_email_log_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "public"."zoho_lead_submissions"("id") ON DELETE SET NULL;
+    ADD CONSTRAINT "crm_email_log_ab_test_id_fkey" FOREIGN KEY ("ab_test_id") REFERENCES "public"."crm_email_ab_tests"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."crm_email_log"
+    ADD CONSTRAINT "crm_email_log_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "public"."lead_submissions"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."crm_email_log"
+    ADD CONSTRAINT "crm_email_log_master_template_id_fkey" FOREIGN KEY ("master_template_id") REFERENCES "public"."crm_master_templates"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."crm_email_log"
+    ADD CONSTRAINT "crm_email_log_recruit_id_fkey" FOREIGN KEY ("recruit_id") REFERENCES "public"."crm_recruiting_records"("id") ON DELETE SET NULL;
 
 
 
@@ -19286,12 +32316,42 @@ ALTER TABLE ONLY "public"."crm_email_signatures"
 
 
 ALTER TABLE ONLY "public"."crm_email_threads"
-    ADD CONSTRAINT "crm_email_threads_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "public"."zoho_lead_submissions"("id") ON DELETE SET NULL;
+    ADD CONSTRAINT "crm_email_threads_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "public"."lead_submissions"("id") ON DELETE SET NULL;
 
 
 
 ALTER TABLE ONLY "public"."crm_email_tracking"
     ADD CONSTRAINT "crm_email_tracking_email_log_id_fkey" FOREIGN KEY ("email_log_id") REFERENCES "public"."crm_email_log"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_family_members"
+    ADD CONSTRAINT "crm_family_members_contact_id_fkey" FOREIGN KEY ("contact_id") REFERENCES "public"."crm_contacts"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_family_members"
+    ADD CONSTRAINT "crm_family_members_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "public"."lead_submissions"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_family_members"
+    ADD CONSTRAINT "crm_family_members_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."orgs"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_follow_up_cadences"
+    ADD CONSTRAINT "crm_follow_up_cadences_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_follow_up_cadences"
+    ADD CONSTRAINT "crm_follow_up_cadences_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."orgs"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_follow_up_cadences"
+    ADD CONSTRAINT "crm_follow_up_cadences_pipeline_stage_id_fkey" FOREIGN KEY ("pipeline_stage_id") REFERENCES "public"."crm_pipeline_stages"("id") ON DELETE SET NULL;
 
 
 
@@ -19317,6 +32377,16 @@ ALTER TABLE ONLY "public"."crm_forecasts"
 
 ALTER TABLE ONLY "public"."crm_forecasts"
     ADD CONSTRAINT "crm_forecasts_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."orgs"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_integration_accounts"
+    ADD CONSTRAINT "crm_integration_accounts_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."orgs"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_integration_accounts"
+    ADD CONSTRAINT "crm_integration_accounts_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
 
 
 
@@ -19380,13 +32450,23 @@ ALTER TABLE ONLY "public"."crm_invoices"
 
 
 
+ALTER TABLE ONLY "public"."crm_lead_cadence_state"
+    ADD CONSTRAINT "crm_lead_cadence_state_cadence_id_fkey" FOREIGN KEY ("cadence_id") REFERENCES "public"."crm_follow_up_cadences"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_lead_cadence_state"
+    ADD CONSTRAINT "crm_lead_cadence_state_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."orgs"("id") ON DELETE CASCADE;
+
+
+
 ALTER TABLE ONLY "public"."crm_lead_health_quotes"
     ADD CONSTRAINT "crm_lead_health_quotes_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
 
 
 
 ALTER TABLE ONLY "public"."crm_lead_health_quotes"
-    ADD CONSTRAINT "crm_lead_health_quotes_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "public"."zoho_lead_submissions"("id") ON DELETE CASCADE;
+    ADD CONSTRAINT "crm_lead_health_quotes_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "public"."lead_submissions"("id") ON DELETE CASCADE;
 
 
 
@@ -19396,12 +32476,62 @@ ALTER TABLE ONLY "public"."crm_lead_plan_interests"
 
 
 ALTER TABLE ONLY "public"."crm_lead_plan_interests"
-    ADD CONSTRAINT "crm_lead_plan_interests_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "public"."zoho_lead_submissions"("id") ON DELETE CASCADE;
+    ADD CONSTRAINT "crm_lead_plan_interests_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "public"."lead_submissions"("id") ON DELETE CASCADE;
 
 
 
 ALTER TABLE ONLY "public"."crm_lead_plan_interests"
     ADD CONSTRAINT "crm_lead_plan_interests_plan_id_fkey" FOREIGN KEY ("plan_id") REFERENCES "public"."plans"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."crm_lead_quote_history"
+    ADD CONSTRAINT "crm_lead_quote_history_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."crm_lead_quote_history"
+    ADD CONSTRAINT "crm_lead_quote_history_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "public"."lead_submissions"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_lead_quote_history"
+    ADD CONSTRAINT "crm_lead_quote_history_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."orgs"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_lead_time_entries"
+    ADD CONSTRAINT "crm_lead_time_entries_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "public"."lead_submissions"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_lead_time_entries"
+    ADD CONSTRAINT "crm_lead_time_entries_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."orgs"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_lead_time_entries"
+    ADD CONSTRAINT "crm_lead_time_entries_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."crm_linkedin_config"
+    ADD CONSTRAINT "crm_linkedin_config_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."orgs"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_master_templates"
+    ADD CONSTRAINT "crm_master_templates_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."crm_master_templates"
+    ADD CONSTRAINT "crm_master_templates_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."orgs"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_master_templates"
+    ADD CONSTRAINT "crm_master_templates_parent_template_id_fkey" FOREIGN KEY ("parent_template_id") REFERENCES "public"."crm_master_templates"("id") ON DELETE SET NULL;
 
 
 
@@ -19422,6 +32552,76 @@ ALTER TABLE ONLY "public"."crm_meeting_schedules"
 
 ALTER TABLE ONLY "public"."crm_meeting_schedules"
     ADD CONSTRAINT "crm_meeting_schedules_reminder_template_id_fkey" FOREIGN KEY ("reminder_template_id") REFERENCES "public"."crm_templates"("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_mentions"
+    ADD CONSTRAINT "crm_mentions_mentioned_by_fkey" FOREIGN KEY ("mentioned_by") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_mentions"
+    ADD CONSTRAINT "crm_mentions_mentioned_user_id_fkey" FOREIGN KEY ("mentioned_user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_mentions"
+    ADD CONSTRAINT "crm_mentions_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_oe_reactivation_runs"
+    ADD CONSTRAINT "crm_oe_reactivation_runs_cadence_id_fkey" FOREIGN KEY ("cadence_id") REFERENCES "public"."crm_follow_up_cadences"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."crm_oe_reactivation_runs"
+    ADD CONSTRAINT "crm_oe_reactivation_runs_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."crm_oe_reactivation_runs"
+    ADD CONSTRAINT "crm_oe_reactivation_runs_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."orgs"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_optout_keywords"
+    ADD CONSTRAINT "crm_optout_keywords_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."crm_optout_keywords"
+    ADD CONSTRAINT "crm_optout_keywords_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."orgs"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_outside_advisors"
+    ADD CONSTRAINT "crm_outside_advisors_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_outside_advisors"
+    ADD CONSTRAINT "crm_outside_advisors_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."orgs"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_performance_alert_log"
+    ADD CONSTRAINT "crm_performance_alert_log_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."orgs"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_performance_alert_log"
+    ADD CONSTRAINT "crm_performance_alert_log_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_performance_lag_config"
+    ADD CONSTRAINT "crm_performance_lag_config_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_phone_numbers"
+    ADD CONSTRAINT "crm_phone_numbers_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."orgs"("id") ON DELETE CASCADE;
 
 
 
@@ -19447,6 +32647,21 @@ ALTER TABLE ONLY "public"."crm_price_books"
 
 ALTER TABLE ONLY "public"."crm_price_books"
     ADD CONSTRAINT "crm_price_books_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."orgs"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_product_form_fields"
+    ADD CONSTRAINT "crm_product_form_fields_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."orgs"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_product_form_fields"
+    ADD CONSTRAINT "crm_product_form_fields_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."crm_products"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_product_lines"
+    ADD CONSTRAINT "crm_product_lines_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."orgs"("id") ON DELETE CASCADE;
 
 
 
@@ -19495,6 +32710,26 @@ ALTER TABLE ONLY "public"."crm_purchase_orders"
 
 
 
+ALTER TABLE ONLY "public"."crm_quarterly_milestones"
+    ADD CONSTRAINT "crm_quarterly_milestones_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_quarterly_milestones"
+    ADD CONSTRAINT "crm_quarterly_milestones_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."orgs"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_quote_line_item_answers"
+    ADD CONSTRAINT "crm_quote_line_item_answers_field_id_fkey" FOREIGN KEY ("field_id") REFERENCES "public"."crm_product_form_fields"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_quote_line_item_answers"
+    ADD CONSTRAINT "crm_quote_line_item_answers_line_item_id_fkey" FOREIGN KEY ("line_item_id") REFERENCES "public"."crm_quote_line_items"("id") ON DELETE CASCADE;
+
+
+
 ALTER TABLE ONLY "public"."crm_quote_line_items"
     ADD CONSTRAINT "crm_quote_line_items_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."crm_products"("id") ON DELETE SET NULL;
 
@@ -19502,6 +32737,16 @@ ALTER TABLE ONLY "public"."crm_quote_line_items"
 
 ALTER TABLE ONLY "public"."crm_quote_line_items"
     ADD CONSTRAINT "crm_quote_line_items_quote_id_fkey" FOREIGN KEY ("quote_id") REFERENCES "public"."crm_quotes"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_quote_templates"
+    ADD CONSTRAINT "crm_quote_templates_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."crm_quote_templates"
+    ADD CONSTRAINT "crm_quote_templates_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."orgs"("id") ON DELETE CASCADE;
 
 
 
@@ -19537,6 +32782,126 @@ ALTER TABLE ONLY "public"."crm_quotes"
 
 ALTER TABLE ONLY "public"."crm_quotes"
     ADD CONSTRAINT "crm_quotes_owner_id_fkey" FOREIGN KEY ("owner_id") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."crm_quotes"
+    ADD CONSTRAINT "crm_quotes_template_id_fkey" FOREIGN KEY ("template_id") REFERENCES "public"."crm_quote_templates"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."crm_recruit_cadence_state"
+    ADD CONSTRAINT "crm_recruit_cadence_state_cadence_id_fkey" FOREIGN KEY ("cadence_id") REFERENCES "public"."crm_follow_up_cadences"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_recruit_cadence_state"
+    ADD CONSTRAINT "crm_recruit_cadence_state_recruit_id_fkey" FOREIGN KEY ("recruit_id") REFERENCES "public"."crm_recruiting_records"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_recruiting_pipeline_stages"
+    ADD CONSTRAINT "crm_recruiting_pipeline_stages_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."orgs"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_recruiting_records"
+    ADD CONSTRAINT "crm_recruiting_records_assigned_to_fkey" FOREIGN KEY ("assigned_to") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."crm_recruiting_records"
+    ADD CONSTRAINT "crm_recruiting_records_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."crm_recruiting_records"
+    ADD CONSTRAINT "crm_recruiting_records_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."orgs"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_referral_partners"
+    ADD CONSTRAINT "crm_referral_partners_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_referral_partners"
+    ADD CONSTRAINT "crm_referral_partners_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."orgs"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_referrals"
+    ADD CONSTRAINT "crm_referrals_contact_id_fkey" FOREIGN KEY ("contact_id") REFERENCES "public"."crm_contacts"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."crm_referrals"
+    ADD CONSTRAINT "crm_referrals_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."orgs"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_referrals"
+    ADD CONSTRAINT "crm_referrals_partner_id_fkey" FOREIGN KEY ("partner_id") REFERENCES "public"."crm_referral_partners"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_referrals"
+    ADD CONSTRAINT "crm_referrals_referred_by_fkey" FOREIGN KEY ("referred_by") REFERENCES "auth"."users"("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_rep_daily_log_entries"
+    ADD CONSTRAINT "crm_rep_daily_log_entries_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."orgs"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_rep_daily_log_entries"
+    ADD CONSTRAINT "crm_rep_daily_log_entries_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_rep_message_templates"
+    ADD CONSTRAINT "crm_rep_message_templates_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."orgs"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_rep_message_templates"
+    ADD CONSTRAINT "crm_rep_message_templates_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_rep_roster"
+    ADD CONSTRAINT "crm_rep_roster_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_rep_roster"
+    ADD CONSTRAINT "crm_rep_roster_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_round_robin_audit"
+    ADD CONSTRAINT "crm_round_robin_audit_assigned_to_fkey" FOREIGN KEY ("assigned_to") REFERENCES "auth"."users"("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_round_robin_audit"
+    ADD CONSTRAINT "crm_round_robin_audit_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."orgs"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_round_robin_audit"
+    ADD CONSTRAINT "crm_round_robin_audit_override_by_fkey" FOREIGN KEY ("override_by") REFERENCES "auth"."users"("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_round_robin_config"
+    ADD CONSTRAINT "crm_round_robin_config_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."orgs"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_round_robin_config"
+    ADD CONSTRAINT "crm_round_robin_config_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "auth"."users"("id");
 
 
 
@@ -19597,6 +32962,76 @@ ALTER TABLE ONLY "public"."crm_saved_views"
 
 ALTER TABLE ONLY "public"."crm_saved_views"
     ADD CONSTRAINT "crm_saved_views_owner_id_fkey" FOREIGN KEY ("owner_id") REFERENCES "auth"."users"("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_sequence_triggers"
+    ADD CONSTRAINT "crm_sequence_triggers_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_sequence_triggers"
+    ADD CONSTRAINT "crm_sequence_triggers_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_sequence_triggers"
+    ADD CONSTRAINT "crm_sequence_triggers_sequence_id_fkey" FOREIGN KEY ("sequence_id") REFERENCES "public"."crm_email_sequences"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_sla_config"
+    ADD CONSTRAINT "crm_sla_config_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."orgs"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_social_platform_connections"
+    ADD CONSTRAINT "crm_social_platform_connections_connected_by_fkey" FOREIGN KEY ("connected_by") REFERENCES "auth"."users"("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_social_platform_connections"
+    ADD CONSTRAINT "crm_social_platform_connections_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_social_posts"
+    ADD CONSTRAINT "crm_social_posts_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
+
+
+
+ALTER TABLE ONLY "public"."crm_social_posts"
+    ADD CONSTRAINT "crm_social_posts_linked_campaign_id_fkey" FOREIGN KEY ("linked_campaign_id") REFERENCES "public"."crm_campaigns"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."crm_social_posts"
+    ADD CONSTRAINT "crm_social_posts_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_special_project_types"
+    ADD CONSTRAINT "crm_special_project_types_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."crm_special_project_types"
+    ADD CONSTRAINT "crm_special_project_types_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_special_projects"
+    ADD CONSTRAINT "crm_special_projects_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."orgs"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_special_projects"
+    ADD CONSTRAINT "crm_special_projects_project_type_id_fkey" FOREIGN KEY ("project_type_id") REFERENCES "public"."crm_special_project_types"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."crm_special_projects"
+    ADD CONSTRAINT "crm_special_projects_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
 
 
 
@@ -19710,6 +33145,31 @@ ALTER TABLE ONLY "public"."crm_templates"
 
 
 
+ALTER TABLE ONLY "public"."crm_user_achievements"
+    ADD CONSTRAINT "crm_user_achievements_achievement_id_fkey" FOREIGN KEY ("achievement_id") REFERENCES "public"."crm_achievements"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_user_achievements"
+    ADD CONSTRAINT "crm_user_achievements_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_user_achievements"
+    ADD CONSTRAINT "crm_user_achievements_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_user_conversation_goal_overrides"
+    ADD CONSTRAINT "crm_user_conversation_goal_overrides_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."orgs"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_user_conversation_goal_overrides"
+    ADD CONSTRAINT "crm_user_conversation_goal_overrides_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+
 ALTER TABLE ONLY "public"."crm_user_goals"
     ADD CONSTRAINT "crm_user_goals_assigned_by_fkey" FOREIGN KEY ("assigned_by") REFERENCES "auth"."users"("id");
 
@@ -19717,6 +33177,16 @@ ALTER TABLE ONLY "public"."crm_user_goals"
 
 ALTER TABLE ONLY "public"."crm_user_goals"
     ADD CONSTRAINT "crm_user_goals_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_user_xp"
+    ADD CONSTRAINT "crm_user_xp_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_user_xp"
+    ADD CONSTRAINT "crm_user_xp_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
 
 
 
@@ -19756,7 +33226,7 @@ ALTER TABLE ONLY "public"."crm_web_forms"
 
 
 ALTER TABLE ONLY "public"."crm_website_quote_sync"
-    ADD CONSTRAINT "crm_website_quote_sync_crm_lead_id_fkey" FOREIGN KEY ("crm_lead_id") REFERENCES "public"."zoho_lead_submissions"("id");
+    ADD CONSTRAINT "crm_website_quote_sync_crm_lead_id_fkey" FOREIGN KEY ("crm_lead_id") REFERENCES "public"."lead_submissions"("id");
 
 
 
@@ -19766,7 +33236,27 @@ ALTER TABLE ONLY "public"."crm_website_quote_sync"
 
 
 ALTER TABLE ONLY "public"."crm_website_quote_sync"
-    ADD CONSTRAINT "crm_website_quote_sync_website_submission_id_fkey" FOREIGN KEY ("website_submission_id") REFERENCES "public"."zoho_lead_submissions"("id") ON DELETE CASCADE;
+    ADD CONSTRAINT "crm_website_quote_sync_website_submission_id_fkey" FOREIGN KEY ("website_submission_id") REFERENCES "public"."lead_submissions"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_win_feed"
+    ADD CONSTRAINT "crm_win_feed_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_win_feed"
+    ADD CONSTRAINT "crm_win_feed_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_xp_events"
+    ADD CONSTRAINT "crm_xp_events_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_xp_events"
+    ADD CONSTRAINT "crm_xp_events_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
 
 
 
@@ -19782,6 +33272,11 @@ ALTER TABLE ONLY "public"."document_access_log"
 
 ALTER TABLE ONLY "public"."document_access_log"
     ADD CONSTRAINT "document_access_log_document_id_fkey" FOREIGN KEY ("document_id") REFERENCES "public"."member_documents"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."email_log"
+    ADD CONSTRAINT "email_log_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id");
 
 
 
@@ -19840,8 +33335,18 @@ ALTER TABLE ONLY "public"."events"
 
 
 
+ALTER TABLE ONLY "public"."events"
+    ADD CONSTRAINT "events_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id");
+
+
+
 ALTER TABLE ONLY "public"."external_lms_lessons"
     ADD CONSTRAINT "external_lms_lessons_course_id_fkey" FOREIGN KEY ("course_id") REFERENCES "public"."external_lms_courses"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."feature_flags"
+    ADD CONSTRAINT "feature_flags_module_id_fkey" FOREIGN KEY ("module_id") REFERENCES "public"."product_modules"("id") ON DELETE CASCADE;
 
 
 
@@ -19852,6 +33357,11 @@ ALTER TABLE ONLY "public"."crm_email_attachments"
 
 ALTER TABLE ONLY "public"."crm_email_attachments"
     ADD CONSTRAINT "fk_email_attachments_email" FOREIGN KEY ("email_id") REFERENCES "public"."crm_email_log"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."crm_saved_views"
+    ADD CONSTRAINT "fk_saved_views_workspace" FOREIGN KEY ("workspace_id") REFERENCES "public"."crm_workspaces"("id") ON DELETE SET NULL;
 
 
 
@@ -19867,6 +33377,21 @@ ALTER TABLE ONLY "public"."form_submissions"
 
 ALTER TABLE ONLY "public"."geo_state_settings"
     ADD CONSTRAINT "geo_state_settings_updated_by_fkey" FOREIGN KEY ("updated_by") REFERENCES "auth"."users"("id");
+
+
+
+ALTER TABLE ONLY "public"."impersonation_log"
+    ADD CONSTRAINT "impersonation_log_admin_id_fkey" FOREIGN KEY ("admin_id") REFERENCES "auth"."users"("id");
+
+
+
+ALTER TABLE ONLY "public"."impersonation_log"
+    ADD CONSTRAINT "impersonation_log_target_user_id_fkey" FOREIGN KEY ("target_user_id") REFERENCES "auth"."users"("id");
+
+
+
+ALTER TABLE ONLY "public"."insurance_carriers"
+    ADD CONSTRAINT "insurance_carriers_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."orgs"("id") ON DELETE CASCADE;
 
 
 
@@ -19891,7 +33416,7 @@ ALTER TABLE ONLY "public"."lead_activities"
 
 
 ALTER TABLE ONLY "public"."lead_activities"
-    ADD CONSTRAINT "lead_activities_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "public"."zoho_lead_submissions"("id") ON DELETE CASCADE;
+    ADD CONSTRAINT "lead_activities_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "public"."lead_submissions"("id") ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
 
 
 
@@ -19906,12 +33431,17 @@ ALTER TABLE ONLY "public"."lead_notifications"
 
 
 ALTER TABLE ONLY "public"."lead_notifications"
-    ADD CONSTRAINT "lead_notifications_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "public"."zoho_lead_submissions"("id") ON DELETE CASCADE;
+    ADD CONSTRAINT "lead_notifications_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "public"."lead_submissions"("id") ON DELETE CASCADE;
 
 
 
 ALTER TABLE ONLY "public"."lead_notifications"
     ADD CONSTRAINT "lead_notifications_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."orgs"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."lead_notifications"
+    ADD CONSTRAINT "lead_notifications_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
 
 
 
@@ -19921,7 +33451,37 @@ ALTER TABLE ONLY "public"."lead_routing_logs"
 
 
 ALTER TABLE ONLY "public"."lead_submissions"
-    ADD CONSTRAINT "lead_submissions_assigned_to_fkey" FOREIGN KEY ("assigned_to") REFERENCES "auth"."users"("id");
+    ADD CONSTRAINT "lead_submissions_assigned_to_fkey" FOREIGN KEY ("assigned_to") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."lead_submissions"
+    ADD CONSTRAINT "lead_submissions_carrier_id_fkey" FOREIGN KEY ("carrier_id") REFERENCES "public"."insurance_carriers"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."lead_submissions"
+    ADD CONSTRAINT "lead_submissions_community_event_id_fkey" FOREIGN KEY ("community_event_id") REFERENCES "public"."crm_community_events"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."lead_submissions"
+    ADD CONSTRAINT "lead_submissions_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."orgs"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."lead_submissions"
+    ADD CONSTRAINT "lead_submissions_outside_advisor_id_fkey" FOREIGN KEY ("outside_advisor_id") REFERENCES "public"."crm_outside_advisors"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."lead_submissions"
+    ADD CONSTRAINT "lead_submissions_referral_partner_id_fkey" FOREIGN KEY ("referral_partner_id") REFERENCES "public"."crm_referral_partners"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."lead_submissions"
+    ADD CONSTRAINT "lead_submissions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
 
 
 
@@ -19941,7 +33501,7 @@ ALTER TABLE ONLY "public"."lead_tasks"
 
 
 ALTER TABLE ONLY "public"."lead_tasks"
-    ADD CONSTRAINT "lead_tasks_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "public"."zoho_lead_submissions"("id") ON DELETE CASCADE;
+    ADD CONSTRAINT "lead_tasks_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "public"."lead_submissions"("id") ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
 
 
 
@@ -19950,17 +33510,17 @@ ALTER TABLE ONLY "public"."lead_tasks"
 
 
 
-ALTER TABLE ONLY "public"."leads"
+ALTER TABLE ONLY "public"."_deprecated_leads"
     ADD CONSTRAINT "leads_assigned_advisor_id_fkey" FOREIGN KEY ("assigned_advisor_id") REFERENCES "auth"."users"("id");
 
 
 
-ALTER TABLE ONLY "public"."leads"
+ALTER TABLE ONLY "public"."_deprecated_leads"
     ADD CONSTRAINT "leads_assigned_to_fkey" FOREIGN KEY ("assigned_to") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
 
 
 
-ALTER TABLE ONLY "public"."leads"
+ALTER TABLE ONLY "public"."_deprecated_leads"
     ADD CONSTRAINT "leads_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
 
 
@@ -20080,6 +33640,16 @@ ALTER TABLE ONLY "public"."meeting_templates"
 
 
 
+ALTER TABLE ONLY "public"."member_account_events"
+    ADD CONSTRAINT "member_account_events_member_id_fkey" FOREIGN KEY ("member_id") REFERENCES "public"."member_profiles"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."member_account_events"
+    ADD CONSTRAINT "member_account_events_member_notification_id_fkey" FOREIGN KEY ("member_notification_id") REFERENCES "public"."member_notifications"("id") ON DELETE SET NULL;
+
+
+
 ALTER TABLE ONLY "public"."member_dependents"
     ADD CONSTRAINT "member_dependents_member_id_fkey" FOREIGN KEY ("member_id") REFERENCES "public"."member_profiles"("id") ON DELETE CASCADE;
 
@@ -20090,6 +33660,11 @@ ALTER TABLE ONLY "public"."member_documents"
 
 
 
+ALTER TABLE ONLY "public"."member_notifications"
+    ADD CONSTRAINT "member_notifications_member_id_fkey" FOREIGN KEY ("member_id") REFERENCES "public"."member_profiles"("id") ON DELETE CASCADE;
+
+
+
 ALTER TABLE ONLY "public"."member_profiles"
     ADD CONSTRAINT "member_profiles_assigned_advisor_id_fkey" FOREIGN KEY ("assigned_advisor_id") REFERENCES "auth"."users"("id");
 
@@ -20097,6 +33672,11 @@ ALTER TABLE ONLY "public"."member_profiles"
 
 ALTER TABLE ONLY "public"."member_profiles"
     ADD CONSTRAINT "member_profiles_id_fkey" FOREIGN KEY ("id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."message_templates"
+    ADD CONSTRAINT "message_templates_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
 
 
 
@@ -20127,6 +33707,11 @@ ALTER TABLE ONLY "public"."navigation_analytics"
 
 ALTER TABLE ONLY "public"."navigation_items"
     ADD CONSTRAINT "navigation_items_parent_id_fkey" FOREIGN KEY ("parent_id") REFERENCES "public"."navigation_items"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."navigation_search_analytics"
+    ADD CONSTRAINT "navigation_search_analytics_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
 
 
 
@@ -20201,7 +33786,7 @@ ALTER TABLE ONLY "public"."notification_log"
 
 
 ALTER TABLE ONLY "public"."notification_log"
-    ADD CONSTRAINT "notification_log_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "public"."zoho_lead_submissions"("id") ON DELETE SET NULL;
+    ADD CONSTRAINT "notification_log_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "public"."lead_submissions"("id") ON DELETE SET NULL;
 
 
 
@@ -20260,6 +33845,11 @@ ALTER TABLE ONLY "public"."onboarding_steps"
 
 
 
+ALTER TABLE ONLY "public"."org_feature_overrides"
+    ADD CONSTRAINT "org_feature_overrides_feature_id_fkey" FOREIGN KEY ("feature_id") REFERENCES "public"."feature_flags"("id") ON DELETE CASCADE;
+
+
+
 ALTER TABLE ONLY "public"."org_invites"
     ADD CONSTRAINT "org_invites_accepted_by_fkey" FOREIGN KEY ("accepted_by") REFERENCES "auth"."users"("id");
 
@@ -20290,8 +33880,28 @@ ALTER TABLE ONLY "public"."org_memberships"
 
 
 
+ALTER TABLE ONLY "public"."org_memberships"
+    ADD CONSTRAINT "org_memberships_user_id_profile_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."profiles"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."org_module_licenses"
+    ADD CONSTRAINT "org_module_licenses_module_id_fkey" FOREIGN KEY ("module_id") REFERENCES "public"."product_modules"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."org_portal_access"
+    ADD CONSTRAINT "org_portal_access_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id") ON DELETE CASCADE;
+
+
+
 ALTER TABLE ONLY "public"."page_views"
     ADD CONSTRAINT "page_views_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."password_history"
+    ADD CONSTRAINT "password_history_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
 
 
 
@@ -20312,6 +33922,11 @@ ALTER TABLE ONLY "public"."performance_goals"
 
 ALTER TABLE ONLY "public"."performance_goals"
     ADD CONSTRAINT "performance_goals_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."phi_access_log"
+    ADD CONSTRAINT "phi_access_log_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
 
 
 
@@ -20351,7 +33966,7 @@ ALTER TABLE ONLY "public"."priority_items"
 
 
 ALTER TABLE ONLY "public"."priority_items"
-    ADD CONSTRAINT "priority_items_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "public"."zoho_lead_submissions"("id") ON DELETE CASCADE;
+    ADD CONSTRAINT "priority_items_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "public"."lead_submissions"("id") ON DELETE CASCADE;
 
 
 
@@ -20450,6 +34065,11 @@ ALTER TABLE ONLY "public"."saved_reports"
 
 
 
+ALTER TABLE ONLY "public"."saved_searches"
+    ADD CONSTRAINT "saved_searches_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id");
+
+
+
 ALTER TABLE ONLY "public"."scoring_rules"
     ADD CONSTRAINT "scoring_rules_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
 
@@ -20477,6 +34097,26 @@ ALTER TABLE ONLY "public"."security_alert_webhooks"
 
 ALTER TABLE ONLY "public"."seo_google_credentials"
     ADD CONSTRAINT "seo_google_credentials_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
+
+
+
+ALTER TABLE ONLY "public"."sequence_enrollments"
+    ADD CONSTRAINT "sequence_enrollments_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "public"."_deprecated_leads"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."sequence_enrollments"
+    ADD CONSTRAINT "sequence_enrollments_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id");
+
+
+
+ALTER TABLE ONLY "public"."sequence_enrollments"
+    ADD CONSTRAINT "sequence_enrollments_sequence_id_fkey" FOREIGN KEY ("sequence_id") REFERENCES "public"."sequences"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."sequence_steps"
+    ADD CONSTRAINT "sequence_steps_sequence_id_fkey" FOREIGN KEY ("sequence_id") REFERENCES "public"."sequences"("id") ON DELETE CASCADE;
 
 
 
@@ -20535,6 +34175,136 @@ ALTER TABLE ONLY "public"."sop_documents"
 
 
 
+ALTER TABLE ONLY "public"."staff_attendance_events"
+    ADD CONSTRAINT "staff_attendance_events_actor_id_fkey" FOREIGN KEY ("actor_id") REFERENCES "auth"."users"("id");
+
+
+
+ALTER TABLE ONLY "public"."staff_attendance_events"
+    ADD CONSTRAINT "staff_attendance_events_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id");
+
+
+
+ALTER TABLE ONLY "public"."staff_attendance_events"
+    ADD CONSTRAINT "staff_attendance_events_session_id_fkey" FOREIGN KEY ("session_id") REFERENCES "public"."staff_attendance_sessions"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."staff_attendance_events"
+    ADD CONSTRAINT "staff_attendance_events_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id");
+
+
+
+ALTER TABLE ONLY "public"."staff_attendance_sessions"
+    ADD CONSTRAINT "staff_attendance_sessions_office_location_id_fkey" FOREIGN KEY ("office_location_id") REFERENCES "public"."staff_office_locations"("id");
+
+
+
+ALTER TABLE ONLY "public"."staff_attendance_sessions"
+    ADD CONSTRAINT "staff_attendance_sessions_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id");
+
+
+
+ALTER TABLE ONLY "public"."staff_attendance_sessions"
+    ADD CONSTRAINT "staff_attendance_sessions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id");
+
+
+
+ALTER TABLE ONLY "public"."staff_departments"
+    ADD CONSTRAINT "staff_departments_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id");
+
+
+
+ALTER TABLE ONLY "public"."staff_notes"
+    ADD CONSTRAINT "staff_notes_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id");
+
+
+
+ALTER TABLE ONLY "public"."staff_notes"
+    ADD CONSTRAINT "staff_notes_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."staff_office_locations"
+    ADD CONSTRAINT "staff_office_locations_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id");
+
+
+
+ALTER TABLE ONLY "public"."staff_profiles"
+    ADD CONSTRAINT "staff_profiles_department_id_fkey" FOREIGN KEY ("department_id") REFERENCES "public"."staff_departments"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."staff_profiles"
+    ADD CONSTRAINT "staff_profiles_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id");
+
+
+
+ALTER TABLE ONLY "public"."staff_profiles"
+    ADD CONSTRAINT "staff_profiles_remote_decided_by_fkey" FOREIGN KEY ("remote_decided_by") REFERENCES "auth"."users"("id");
+
+
+
+ALTER TABLE ONLY "public"."staff_profiles"
+    ADD CONSTRAINT "staff_profiles_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."staff_tasks"
+    ADD CONSTRAINT "staff_tasks_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id");
+
+
+
+ALTER TABLE ONLY "public"."staff_tasks"
+    ADD CONSTRAINT "staff_tasks_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."staff_time_documents"
+    ADD CONSTRAINT "staff_time_documents_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id");
+
+
+
+ALTER TABLE ONLY "public"."staff_time_documents"
+    ADD CONSTRAINT "staff_time_documents_request_id_fkey" FOREIGN KEY ("request_id") REFERENCES "public"."staff_time_requests"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."staff_time_documents"
+    ADD CONSTRAINT "staff_time_documents_uploaded_by_fkey" FOREIGN KEY ("uploaded_by") REFERENCES "auth"."users"("id");
+
+
+
+ALTER TABLE ONLY "public"."staff_time_request_events"
+    ADD CONSTRAINT "staff_time_request_events_actor_id_fkey" FOREIGN KEY ("actor_id") REFERENCES "auth"."users"("id");
+
+
+
+ALTER TABLE ONLY "public"."staff_time_request_events"
+    ADD CONSTRAINT "staff_time_request_events_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id");
+
+
+
+ALTER TABLE ONLY "public"."staff_time_request_events"
+    ADD CONSTRAINT "staff_time_request_events_request_id_fkey" FOREIGN KEY ("request_id") REFERENCES "public"."staff_time_requests"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."staff_time_requests"
+    ADD CONSTRAINT "staff_time_requests_decided_by_fkey" FOREIGN KEY ("decided_by") REFERENCES "auth"."users"("id");
+
+
+
+ALTER TABLE ONLY "public"."staff_time_requests"
+    ADD CONSTRAINT "staff_time_requests_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id");
+
+
+
+ALTER TABLE ONLY "public"."staff_time_requests"
+    ADD CONSTRAINT "staff_time_requests_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id");
+
+
+
 ALTER TABLE ONLY "public"."support_tickets"
     ADD CONSTRAINT "support_tickets_assigned_to_fkey" FOREIGN KEY ("assigned_to") REFERENCES "auth"."users"("id");
 
@@ -20561,7 +34331,7 @@ ALTER TABLE ONLY "public"."tasks"
 
 
 ALTER TABLE ONLY "public"."tasks"
-    ADD CONSTRAINT "tasks_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "public"."leads"("id") ON DELETE SET NULL;
+    ADD CONSTRAINT "tasks_lead_id_fkey" FOREIGN KEY ("lead_id") REFERENCES "public"."_deprecated_leads"("id") ON DELETE SET NULL;
 
 
 
@@ -20630,6 +34400,11 @@ ALTER TABLE ONLY "public"."user_achievements"
 
 
 
+ALTER TABLE ONLY "public"."user_mfa_settings"
+    ADD CONSTRAINT "user_mfa_settings_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+
 ALTER TABLE ONLY "public"."user_navigation_preferences"
     ADD CONSTRAINT "user_navigation_preferences_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
 
@@ -20665,6 +34440,11 @@ ALTER TABLE ONLY "public"."user_roles"
 
 
 
+ALTER TABLE ONLY "public"."user_sessions"
+    ADD CONSTRAINT "user_sessions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+
 ALTER TABLE ONLY "public"."utm_campaigns"
     ADD CONSTRAINT "utm_campaigns_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "auth"."users"("id");
 
@@ -20675,18 +34455,13 @@ ALTER TABLE ONLY "public"."visit_summaries"
 
 
 
-ALTER TABLE ONLY "public"."zoho_lead_submissions"
-    ADD CONSTRAINT "zoho_lead_submissions_assigned_to_fkey" FOREIGN KEY ("assigned_to") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+ALTER TABLE ONLY "public"."workflow_steps"
+    ADD CONSTRAINT "workflow_steps_workflow_id_fkey" FOREIGN KEY ("workflow_id") REFERENCES "public"."workflows"("id") ON DELETE CASCADE;
 
 
 
-ALTER TABLE ONLY "public"."zoho_lead_submissions"
-    ADD CONSTRAINT "zoho_lead_submissions_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."orgs"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."zoho_lead_submissions"
-    ADD CONSTRAINT "zoho_lead_submissions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+ALTER TABLE ONLY "public"."workflows"
+    ADD CONSTRAINT "workflows_org_id_fkey" FOREIGN KEY ("org_id") REFERENCES "public"."organizations"("id");
 
 
 
@@ -20696,9 +34471,21 @@ CREATE POLICY "Admin can delete events" ON "public"."events" FOR DELETE TO "auth
 
 
 
+CREATE POLICY "Admin can delete tracking snippets" ON "public"."tracking_snippets" FOR DELETE TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = "auth"."uid"()) AND ("profiles"."role" = 'admin'::"text")))));
+
+
+
 CREATE POLICY "Admin can insert events" ON "public"."events" FOR INSERT TO "authenticated" WITH CHECK ((EXISTS ( SELECT 1
    FROM "public"."profiles"
   WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text", 'staff'::"text"]))))));
+
+
+
+CREATE POLICY "Admin can insert tracking snippets" ON "public"."tracking_snippets" FOR INSERT TO "authenticated" WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = "auth"."uid"()) AND ("profiles"."role" = 'admin'::"text")))));
 
 
 
@@ -20772,6 +34559,22 @@ CREATE POLICY "Admin can update events" ON "public"."events" FOR UPDATE TO "auth
 
 
 
+CREATE POLICY "Admin can update tracking platforms" ON "public"."tracking_platforms" FOR UPDATE TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = "auth"."uid"()) AND ("profiles"."role" = 'admin'::"text"))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = "auth"."uid"()) AND ("profiles"."role" = 'admin'::"text")))));
+
+
+
+CREATE POLICY "Admin can update tracking snippets" ON "public"."tracking_snippets" FOR UPDATE TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = "auth"."uid"()) AND ("profiles"."role" = 'admin'::"text"))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = "auth"."uid"()) AND ("profiles"."role" = 'admin'::"text")))));
+
+
+
 CREATE POLICY "Admin can view SEO metadata" ON "public"."seo_metadata" FOR SELECT TO "authenticated" USING ("public"."current_user_has_admin_access"());
 
 
@@ -20804,6 +34607,20 @@ CREATE POLICY "Admin can view tracking event log" ON "public"."tracking_event_lo
 
 
 
+CREATE POLICY "Admin role read" ON "public"."auth_security_events" FOR SELECT USING ((("auth"."role"() = 'authenticated'::"text") AND (EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = "auth"."uid"()) AND ("profiles"."role" = 'admin'::"text"))))));
+
+
+
+CREATE POLICY "Admins can create integrations" ON "public"."integrations" FOR INSERT TO "authenticated" WITH CHECK (((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text"]))))) OR (EXISTS ( SELECT 1
+   FROM "public"."user_roles"
+  WHERE (("user_roles"."user_id" = ( SELECT "auth"."uid"() AS "uid")) AND ("user_roles"."role" = ANY (ARRAY['super_admin'::"text", 'admin'::"text"])))))));
+
+
+
 CREATE POLICY "Admins can delete categories" ON "public"."blog_categories" FOR DELETE TO "authenticated" USING ("public"."current_user_has_admin_access"());
 
 
@@ -20816,19 +34633,29 @@ CREATE POLICY "Admins can delete handbooks" ON "public"."handbooks" FOR DELETE T
 
 
 
+CREATE POLICY "Admins can delete integrations" ON "public"."integrations" FOR DELETE TO "authenticated" USING (((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text"]))))) OR (EXISTS ( SELECT 1
+   FROM "public"."user_roles"
+  WHERE (("user_roles"."user_id" = ( SELECT "auth"."uid"() AS "uid")) AND ("user_roles"."role" = ANY (ARRAY['super_admin'::"text", 'admin'::"text"])))))));
+
+
+
 CREATE POLICY "Admins can delete lanes" ON "public"."priority_lanes" FOR DELETE TO "authenticated" USING ("public"."user_is_org_owner_or_admin"("org_id"));
 
 
 
-CREATE POLICY "Admins can delete lead activities" ON "public"."lead_activities" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
-   FROM "public"."profiles"
-  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text"]))))));
+CREATE POLICY "Admins can delete lead submissions" ON "public"."lead_submissions" FOR DELETE TO "authenticated" USING (("public"."current_user_has_admin_access"() OR "public"."current_user_has_super_admin_access"()));
 
 
 
 CREATE POLICY "Admins can delete lead tasks" ON "public"."lead_tasks" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
    FROM "public"."profiles"
   WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text"]))))));
+
+
+
+CREATE POLICY "Admins can delete non-owner memberships" ON "public"."org_memberships" FOR DELETE TO "authenticated" USING ((("public"."current_user_org_role"("org_id") = 'admin'::"text") AND ("role" <> 'owner'::"text")));
 
 
 
@@ -20849,6 +34676,10 @@ CREATE POLICY "Admins can delete plans" ON "public"."plans" FOR DELETE TO "authe
 
 
 CREATE POLICY "Admins can delete resource_library" ON "public"."resource_library" FOR DELETE TO "authenticated" USING ("public"."current_user_has_admin_access"());
+
+
+
+CREATE POLICY "Admins can delete system settings" ON "public"."system_settings" FOR DELETE TO "authenticated" USING ("public"."current_user_has_admin_access"());
 
 
 
@@ -20876,6 +34707,10 @@ CREATE POLICY "Admins can insert lead_scoring_config" ON "public"."lead_scoring_
 
 
 
+CREATE POLICY "Admins can insert memberships" ON "public"."org_memberships" FOR INSERT TO "authenticated" WITH CHECK (("public"."current_user_org_role"("org_id") = ANY (ARRAY['owner'::"text", 'admin'::"text"])));
+
+
+
 CREATE POLICY "Admins can insert plan pricing" ON "public"."plan_pricing" FOR INSERT TO "authenticated" WITH CHECK (("public"."current_user_has_admin_access"() OR "public"."current_user_has_super_admin_access"()));
 
 
@@ -20889,6 +34724,10 @@ CREATE POLICY "Admins can insert resource_library" ON "public"."resource_library
 
 
 CREATE POLICY "Admins can insert site analytics" ON "public"."site_analytics" FOR INSERT TO "authenticated" WITH CHECK ("public"."current_user_has_admin_access"());
+
+
+
+CREATE POLICY "Admins can insert system settings" ON "public"."system_settings" FOR INSERT TO "authenticated" WITH CHECK ("public"."current_user_has_admin_access"());
 
 
 
@@ -20910,9 +34749,11 @@ CREATE POLICY "Admins can manage SOPs" ON "public"."sop_documents" FOR SELECT TO
 
 
 
-CREATE POLICY "Admins can manage advisor profiles" ON "public"."advisor_profiles" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
+CREATE POLICY "Admins can manage advisor profiles" ON "public"."advisor_profiles" TO "authenticated" USING ((EXISTS ( SELECT 1
    FROM "public"."profiles"
-  WHERE (("profiles"."id" = ( SELECT ( SELECT "auth"."uid"() AS "uid") AS "uid")) AND ("profiles"."role" = 'admin'::"text")))));
+  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = 'admin'::"text"))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = 'admin'::"text")))));
 
 
 
@@ -21028,6 +34869,12 @@ CREATE POLICY "Admins can manage newsletter queue" ON "public"."newsletter_queue
 
 
 
+CREATE POLICY "Admins can manage notification rules" ON "public"."member_notification_rules" TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."admin_users"
+  WHERE (("admin_users"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("admin_users"."status" = 'active'::"text") AND ("admin_users"."role" = ANY (ARRAY['admin'::"text", 'super_admin'::"text"]))))));
+
+
+
 CREATE POLICY "Admins can manage onboarding steps" ON "public"."onboarding_steps" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
    FROM "public"."profiles"
   WHERE (("profiles"."id" = ( SELECT ( SELECT "auth"."uid"() AS "uid") AS "uid")) AND ("profiles"."role" = 'admin'::"text")))));
@@ -21105,14 +34952,6 @@ CREATE POLICY "Admins can manage seo_pages" ON "public"."seo_pages" FOR SELECT T
 CREATE POLICY "Admins can manage seo_sync_logs" ON "public"."seo_sync_logs" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
    FROM "public"."profiles"
   WHERE (("profiles"."id" = ( SELECT ( SELECT "auth"."uid"() AS "uid") AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text"]))))));
-
-
-
-CREATE POLICY "Admins can manage settings" ON "public"."system_settings" FOR SELECT TO "authenticated" USING (((EXISTS ( SELECT 1
-   FROM "public"."profiles"
-  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'staff'::"text", 'superadmin'::"text"]))))) OR (EXISTS ( SELECT 1
-   FROM "public"."user_roles"
-  WHERE (("user_roles"."user_id" = ( SELECT "auth"."uid"() AS "uid")) AND ("user_roles"."role" = ANY (ARRAY['super_admin'::"text", 'admin'::"text"])))))));
 
 
 
@@ -21206,13 +35045,19 @@ CREATE POLICY "Admins can update handbooks" ON "public"."handbooks" FOR UPDATE T
 
 
 
-CREATE POLICY "Admins can update lead activities" ON "public"."lead_activities" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
+CREATE POLICY "Admins can update integrations" ON "public"."integrations" FOR UPDATE TO "authenticated" USING (((EXISTS ( SELECT 1
    FROM "public"."profiles"
-  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text"]))))));
+  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text"]))))) OR (EXISTS ( SELECT 1
+   FROM "public"."user_roles"
+  WHERE (("user_roles"."user_id" = ( SELECT "auth"."uid"() AS "uid")) AND ("user_roles"."role" = ANY (ARRAY['super_admin'::"text", 'admin'::"text"]))))))) WITH CHECK (((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text"]))))) OR (EXISTS ( SELECT 1
+   FROM "public"."user_roles"
+  WHERE (("user_roles"."user_id" = ( SELECT "auth"."uid"() AS "uid")) AND ("user_roles"."role" = ANY (ARRAY['super_admin'::"text", 'admin'::"text"])))))));
 
 
 
-CREATE POLICY "Admins can update lead submissions" ON "public"."zoho_lead_submissions" FOR UPDATE TO "authenticated" USING (("public"."current_user_has_admin_access"() OR "public"."current_user_has_super_admin_access"())) WITH CHECK (("public"."current_user_has_admin_access"() OR "public"."current_user_has_super_admin_access"()));
+CREATE POLICY "Admins can update lead submissions" ON "public"."lead_submissions" FOR UPDATE TO "authenticated" USING (("public"."current_user_has_admin_access"() OR "public"."current_user_has_super_admin_access"())) WITH CHECK (("public"."current_user_has_admin_access"() OR "public"."current_user_has_super_admin_access"()));
 
 
 
@@ -21226,7 +35071,7 @@ CREATE POLICY "Admins can update lead_scoring_config" ON "public"."lead_scoring_
 
 
 
-CREATE POLICY "Admins can update memberships" ON "public"."org_memberships" FOR SELECT TO "authenticated" USING (("org_id" IN ( SELECT "public"."get_user_org_ids"(( SELECT "auth"."uid"() AS "uid")) AS "get_user_org_ids")));
+CREATE POLICY "Admins can update non-owner memberships" ON "public"."org_memberships" FOR UPDATE TO "authenticated" USING ((("public"."current_user_org_role"("org_id") = 'admin'::"text") AND ("role" <> 'owner'::"text"))) WITH CHECK ((("public"."current_user_org_role"("org_id") = 'admin'::"text") AND ("role" <> 'owner'::"text")));
 
 
 
@@ -21251,6 +35096,10 @@ CREATE POLICY "Admins can update resource_library" ON "public"."resource_library
 
 
 CREATE POLICY "Admins can update site analytics" ON "public"."site_analytics" FOR UPDATE TO "authenticated" USING ("public"."current_user_has_admin_access"()) WITH CHECK ("public"."current_user_has_admin_access"());
+
+
+
+CREATE POLICY "Admins can update system settings" ON "public"."system_settings" FOR UPDATE TO "authenticated" USING ("public"."current_user_has_admin_access"()) WITH CHECK ("public"."current_user_has_admin_access"());
 
 
 
@@ -21294,7 +35143,7 @@ CREATE POLICY "Admins can view all lead notifications" ON "public"."lead_notific
 
 
 
-CREATE POLICY "Admins can view all lead submissions" ON "public"."zoho_lead_submissions" FOR SELECT TO "authenticated" USING (("public"."current_user_has_admin_access"() OR "public"."current_user_has_super_admin_access"()));
+CREATE POLICY "Admins can view all lead submissions" ON "public"."lead_submissions" FOR SELECT TO "authenticated" USING (("public"."current_user_has_admin_access"() OR "public"."current_user_has_super_admin_access"()));
 
 
 
@@ -21387,6 +35236,14 @@ CREATE POLICY "Admins can view email tracking" ON "public"."crm_email_tracking" 
 
 
 CREATE POLICY "Admins can view generation logs" ON "public"."blog_generation_logs" FOR SELECT TO "authenticated" USING ("public"."current_user_has_advisor_or_admin_access"());
+
+
+
+CREATE POLICY "Admins can view integrations" ON "public"."integrations" FOR SELECT TO "authenticated" USING (((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text", 'staff'::"text"]))))) OR (EXISTS ( SELECT 1
+   FROM "public"."user_roles"
+  WHERE (("user_roles"."user_id" = ( SELECT "auth"."uid"() AS "uid")) AND ("user_roles"."role" = ANY (ARRAY['super_admin'::"text", 'admin'::"text"])))))));
 
 
 
@@ -21550,6 +35407,14 @@ CREATE POLICY "Advisors can delete own enrollments" ON "public"."advisor_lms_enr
 
 
 
+CREATE POLICY "Advisors can insert own profile" ON "public"."advisor_profiles" FOR INSERT TO "authenticated" WITH CHECK ((("auth"."uid"() = "id") OR (("user_id" IS NOT NULL) AND ("auth"."uid"() = "user_id"))));
+
+
+
+CREATE POLICY "Advisors can insert their own views" ON "public"."advisor_content_views" FOR INSERT TO "authenticated" WITH CHECK ((("advisor_id" = "auth"."uid"()) AND "public"."current_user_has_advisor_or_admin_access"()));
+
+
+
 CREATE POLICY "Advisors can manage own enrollments" ON "public"."advisor_lms_enrollments" FOR INSERT WITH CHECK (("advisor_id" IN ( SELECT "advisor_profiles"."id"
    FROM "public"."advisor_profiles"
   WHERE ("advisor_profiles"."id" = ( SELECT "auth"."uid"() AS "uid")))));
@@ -21592,7 +35457,7 @@ CREATE POLICY "Advisors can update own onboarding progress" ON "public"."onboard
 
 
 
-CREATE POLICY "Advisors can update own profile" ON "public"."advisor_profiles" FOR SELECT TO "authenticated" USING ((( SELECT ( SELECT "auth"."uid"() AS "uid") AS "uid") = "id"));
+CREATE POLICY "Advisors can update own profile" ON "public"."advisor_profiles" FOR UPDATE TO "authenticated" USING ((("auth"."uid"() = "id") OR (("user_id" IS NOT NULL) AND ("auth"."uid"() = "user_id")))) WITH CHECK ((("auth"."uid"() = "id") OR (("user_id" IS NOT NULL) AND ("auth"."uid"() = "user_id"))));
 
 
 
@@ -21648,11 +35513,15 @@ CREATE POLICY "Advisors can view their own views" ON "public"."advisor_content_v
 
 
 
+CREATE POLICY "Allow anonymous insert on plan_selections" ON "public"."plan_selections" FOR INSERT TO "authenticated", "anon" WITH CHECK (true);
+
+
+
+CREATE POLICY "Allow anonymous insert on rate_calculator_views" ON "public"."rate_calculator_views" FOR INSERT TO "authenticated", "anon" WITH CHECK (true);
+
+
+
 CREATE POLICY "Allow anonymous update on rate_calculator_views" ON "public"."rate_calculator_views" FOR SELECT TO "anon" USING ((( SELECT "auth"."role"() AS "role") = 'anon'::"text"));
-
-
-
-CREATE POLICY "Allow authenticated delete calendar_events" ON "public"."calendar_events" FOR SELECT TO "authenticated" USING ((("assigned_to" = ( SELECT "auth"."uid"() AS "uid")) OR ("created_by" = ( SELECT "auth"."uid"() AS "uid"))));
 
 
 
@@ -21673,10 +35542,6 @@ CREATE POLICY "Allow authenticated read all handbooks" ON "public"."handbooks" F
 
 
 CREATE POLICY "Allow authenticated read automation_execution_log" ON "public"."automation_execution_log" FOR SELECT TO "authenticated" USING (true);
-
-
-
-CREATE POLICY "Allow authenticated read calendar_events" ON "public"."calendar_events" FOR SELECT TO "authenticated" USING (true);
 
 
 
@@ -21720,6 +35585,10 @@ CREATE POLICY "Allow service role to insert advisors" ON "public"."advisors" FOR
 
 
 
+CREATE POLICY "Analytics can insert page views" ON "public"."page_views" FOR INSERT TO "authenticated", "anon" WITH CHECK (true);
+
+
+
 CREATE POLICY "Anon can insert analytics_sessions" ON "public"."analytics_sessions" FOR INSERT TO "anon" WITH CHECK (true);
 
 
@@ -21745,10 +35614,6 @@ CREATE POLICY "Anon can read analytics_sessions" ON "public"."analytics_sessions
 
 
 CREATE POLICY "Anon can read lead_routing_logs" ON "public"."lead_routing_logs" FOR SELECT TO "anon" USING (true);
-
-
-
-CREATE POLICY "Anon can read lead_submissions" ON "public"."lead_submissions" FOR SELECT TO "anon" USING (true);
 
 
 
@@ -21784,6 +35649,26 @@ CREATE POLICY "Anon can view non-sensitive settings" ON "public"."system_setting
 
 
 
+CREATE POLICY "Anon insert analytics" ON "public"."navigation_search_analytics" FOR INSERT WITH CHECK ((("auth"."role"() = 'anon'::"text") AND ("user_id" IS NULL)));
+
+
+
+CREATE POLICY "Anon or authenticated can insert routing logs" ON "public"."lead_routing_logs" FOR INSERT TO "authenticated", "anon" WITH CHECK (true);
+
+
+
+CREATE POLICY "Anyone can insert analytics events" ON "public"."analytics_events" FOR INSERT TO "authenticated", "anon" WITH CHECK (true);
+
+
+
+CREATE POLICY "Anyone can insert analytics sessions" ON "public"."analytics_sessions" FOR INSERT TO "authenticated", "anon" WITH CHECK (true);
+
+
+
+CREATE POLICY "Anyone can insert onboarding responses" ON "public"."onboarding_responses" FOR INSERT TO "authenticated", "anon" WITH CHECK (true);
+
+
+
 CREATE POLICY "Anyone can read active providers" ON "public"."providers" FOR SELECT TO "authenticated" USING (true);
 
 
@@ -21797,6 +35682,10 @@ CREATE POLICY "Anyone can read provider locations" ON "public"."provider_locatio
 
 
 CREATE POLICY "Anyone can read providers" ON "public"."providers" FOR SELECT TO "authenticated" USING (true);
+
+
+
+CREATE POLICY "Anyone can subscribe to newsletter" ON "public"."newsletter_subscribers" FOR INSERT TO "authenticated", "anon" WITH CHECK (true);
 
 
 
@@ -21836,6 +35725,10 @@ CREATE POLICY "Authenticated can view non-sensitive settings" ON "public"."syste
 
 
 
+CREATE POLICY "Authenticated users can manage saved_searches" ON "public"."saved_searches" TO "authenticated" USING (true) WITH CHECK (true);
+
+
+
 CREATE POLICY "Authenticated users can read enrollment links" ON "public"."advisor_enrollment_links" FOR SELECT TO "authenticated" USING (true);
 
 
@@ -21868,10 +35761,6 @@ CREATE POLICY "Authenticated users can view all events" ON "public"."events" FOR
 
 
 
-CREATE POLICY "Authenticated users can view all leads" ON "public"."lead_submissions" FOR SELECT TO "authenticated" USING (true);
-
-
-
 CREATE POLICY "Authenticated users can view all plan features" ON "public"."plan_features" FOR SELECT TO "authenticated" USING (true);
 
 
@@ -21893,10 +35782,6 @@ CREATE POLICY "Authenticated users can view all rate calculator views" ON "publi
 
 
 CREATE POLICY "Authenticated users can view all sharing details" ON "public"."plan_sharing_details" FOR SELECT TO "authenticated" USING (true);
-
-
-
-CREATE POLICY "Authenticated users can view email logs" ON "public"."crm_email_log" FOR SELECT TO "authenticated" USING (true);
 
 
 
@@ -21992,7 +35877,7 @@ CREATE POLICY "Members can read own transactions" ON "public"."transactions" FOR
 
 
 
-CREATE POLICY "Members can update own notifications" ON "public"."member_notifications" FOR SELECT TO "authenticated" USING (("member_id" = ( SELECT ( SELECT "auth"."uid"() AS "uid") AS "uid")));
+CREATE POLICY "Members can update own notifications" ON "public"."member_notifications" FOR UPDATE TO "authenticated" USING (("member_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("member_id" = ( SELECT "auth"."uid"() AS "uid")));
 
 
 
@@ -22048,6 +35933,90 @@ CREATE POLICY "Only owners can delete organizations" ON "public"."organizations"
 
 
 
+CREATE POLICY "Org admins can delete memberships" ON "public"."org_memberships" FOR DELETE TO "authenticated" USING ((("user_id" = ( SELECT "auth"."uid"() AS "uid")) OR ("org_id" IN ( SELECT "public"."get_user_org_ids"("auth"."uid"()) AS "get_user_org_ids"))));
+
+
+
+CREATE POLICY "Org admins can insert memberships" ON "public"."org_memberships" FOR INSERT TO "authenticated" WITH CHECK (("org_id" IN ( SELECT "public"."get_user_org_ids"("auth"."uid"()) AS "get_user_org_ids")));
+
+
+
+CREATE POLICY "Org admins can update memberships" ON "public"."org_memberships" FOR UPDATE TO "authenticated" USING (("org_id" IN ( SELECT "public"."get_user_org_ids"("auth"."uid"()) AS "get_user_org_ids"))) WITH CHECK (("org_id" IN ( SELECT "public"."get_user_org_ids"("auth"."uid"()) AS "get_user_org_ids")));
+
+
+
+CREATE POLICY "Org members can read XP data" ON "public"."crm_user_xp" FOR SELECT USING (("org_id" IN ( SELECT "org_memberships"."org_id"
+   FROM "public"."org_memberships"
+  WHERE ("org_memberships"."user_id" = "auth"."uid"()))));
+
+
+
+CREATE POLICY "Org members can read XP events" ON "public"."crm_xp_events" FOR SELECT USING (("org_id" IN ( SELECT "org_memberships"."org_id"
+   FROM "public"."org_memberships"
+  WHERE ("org_memberships"."user_id" = "auth"."uid"()))));
+
+
+
+CREATE POLICY "Org members can read achievements" ON "public"."crm_achievements" FOR SELECT USING ((("org_id" IS NULL) OR ("org_id" IN ( SELECT "org_memberships"."org_id"
+   FROM "public"."org_memberships"
+  WHERE ("org_memberships"."user_id" = "auth"."uid"())))));
+
+
+
+CREATE POLICY "Org members can read calendar events" ON "public"."calendar_events" FOR SELECT TO "authenticated" USING (((("org_id" IS NOT NULL) AND "public"."is_org_member"("org_id")) OR (("org_id" IS NULL) AND (("created_by" = "auth"."uid"()) OR ("assigned_to" = "auth"."uid"())))));
+
+
+
+CREATE POLICY "Org members can read challenge entries" ON "public"."crm_challenge_entries" FOR SELECT USING (("org_id" IN ( SELECT "org_memberships"."org_id"
+   FROM "public"."org_memberships"
+  WHERE ("org_memberships"."user_id" = "auth"."uid"()))));
+
+
+
+CREATE POLICY "Org members can read challenges" ON "public"."crm_challenges" FOR SELECT USING (("org_id" IN ( SELECT "org_memberships"."org_id"
+   FROM "public"."org_memberships"
+  WHERE ("org_memberships"."user_id" = "auth"."uid"()))));
+
+
+
+CREATE POLICY "Org members can read user achievements" ON "public"."crm_user_achievements" FOR SELECT USING (("org_id" IN ( SELECT "org_memberships"."org_id"
+   FROM "public"."org_memberships"
+  WHERE ("org_memberships"."user_id" = "auth"."uid"()))));
+
+
+
+CREATE POLICY "Org members can read win feed" ON "public"."crm_win_feed" FOR SELECT USING (("org_id" IN ( SELECT "org_memberships"."org_id"
+   FROM "public"."org_memberships"
+  WHERE ("org_memberships"."user_id" = "auth"."uid"()))));
+
+
+
+CREATE POLICY "Org members can update email logs" ON "public"."crm_email_log" FOR UPDATE TO "authenticated" USING ((("org_id" IS NOT NULL) AND "public"."is_org_member"("org_id"))) WITH CHECK ((("org_id" IS NOT NULL) AND "public"."is_org_member"("org_id")));
+
+
+
+CREATE POLICY "Org members can update win reactions" ON "public"."crm_win_feed" FOR UPDATE USING (("org_id" IN ( SELECT "org_memberships"."org_id"
+   FROM "public"."org_memberships"
+  WHERE ("org_memberships"."user_id" = "auth"."uid"()))));
+
+
+
+CREATE POLICY "Org members can view deal room participants" ON "public"."crm_deal_room_participants" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."crm_deal_rooms" "r"
+  WHERE (("r"."id" = "crm_deal_room_participants"."room_id") AND "public"."is_org_member"("r"."org_id")))));
+
+
+
+CREATE POLICY "Org members can view email logs" ON "public"."crm_email_log" FOR SELECT TO "authenticated" USING ((("org_id" IS NOT NULL) AND "public"."is_org_member"("org_id")));
+
+
+
+CREATE POLICY "Org members can view pinned items" ON "public"."crm_deal_room_pinned_items" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."crm_deal_rooms" "r"
+  WHERE (("r"."id" = "crm_deal_room_pinned_items"."room_id") AND "public"."is_org_member"("r"."org_id")))));
+
+
+
 CREATE POLICY "Owners and admins can update invites" ON "public"."org_invites" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
    FROM "public"."org_memberships"
   WHERE (("org_memberships"."org_id" = "org_invites"."org_id") AND ("org_memberships"."user_id" = ( SELECT "auth"."uid"() AS "uid")) AND ("org_memberships"."status" = 'active'::"text") AND ("org_memberships"."role" = ANY (ARRAY['owner'::"text", 'admin'::"text"]))))));
@@ -22057,6 +36026,24 @@ CREATE POLICY "Owners and admins can update invites" ON "public"."org_invites" F
 CREATE POLICY "Owners and admins can update organizations" ON "public"."organizations" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
    FROM "public"."org_memberships"
   WHERE (("org_memberships"."org_id" = "organizations"."id") AND ("org_memberships"."user_id" = ( SELECT "auth"."uid"() AS "uid")) AND ("org_memberships"."status" = 'active'::"text") AND ("org_memberships"."role" = ANY (ARRAY['owner'::"text", 'admin'::"text"]))))));
+
+
+
+CREATE POLICY "Owners can delete any membership" ON "public"."org_memberships" FOR DELETE TO "authenticated" USING (("public"."current_user_org_role"("org_id") = 'owner'::"text"));
+
+
+
+CREATE POLICY "Owners can update any membership" ON "public"."org_memberships" FOR UPDATE TO "authenticated" USING (("public"."current_user_org_role"("org_id") = 'owner'::"text")) WITH CHECK (("public"."current_user_org_role"("org_id") = 'owner'::"text"));
+
+
+
+CREATE POLICY "Pinner or owner can unpin" ON "public"."crm_deal_room_pinned_items" FOR DELETE TO "authenticated" USING ((("pinned_by" = "auth"."uid"()) OR (EXISTS ( SELECT 1
+   FROM "public"."crm_deal_room_participants" "owner"
+  WHERE (("owner"."room_id" = "crm_deal_room_pinned_items"."room_id") AND ("owner"."user_id" = "auth"."uid"()) AND ("owner"."role" = 'owner'::"text"))))));
+
+
+
+CREATE POLICY "Public can read active advisor videos" ON "public"."advisor_videos" FOR SELECT TO "anon" USING (("is_active" = true));
 
 
 
@@ -22146,6 +36133,28 @@ CREATE POLICY "Read default layout templates" ON "public"."crm_default_layout_te
 
 
 
+CREATE POLICY "Room owners or first user can add participants" ON "public"."crm_deal_room_participants" FOR INSERT TO "authenticated" WITH CHECK (((EXISTS ( SELECT 1
+   FROM "public"."crm_deal_room_participants" "existing"
+  WHERE (("existing"."room_id" = "crm_deal_room_participants"."room_id") AND ("existing"."user_id" = "auth"."uid"()) AND ("existing"."role" = 'owner'::"text")))) OR (NOT (EXISTS ( SELECT 1
+   FROM "public"."crm_deal_room_participants" "existing"
+  WHERE ("existing"."room_id" = "crm_deal_room_participants"."room_id"))))));
+
+
+
+CREATE POLICY "Room owners update participants" ON "public"."crm_deal_room_participants" FOR UPDATE TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."crm_deal_room_participants" "owner"
+  WHERE (("owner"."room_id" = "crm_deal_room_participants"."room_id") AND ("owner"."user_id" = "auth"."uid"()) AND ("owner"."role" = 'owner'::"text"))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."crm_deal_room_participants" "owner"
+  WHERE (("owner"."room_id" = "crm_deal_room_participants"."room_id") AND ("owner"."user_id" = "auth"."uid"()) AND ("owner"."role" = 'owner'::"text")))));
+
+
+
+CREATE POLICY "Room participants can pin items" ON "public"."crm_deal_room_pinned_items" FOR INSERT TO "authenticated" WITH CHECK ((("pinned_by" = "auth"."uid"()) AND (EXISTS ( SELECT 1
+   FROM "public"."crm_deal_room_participants" "p"
+  WHERE (("p"."room_id" = "crm_deal_room_pinned_items"."room_id") AND ("p"."user_id" = "auth"."uid"()))))));
+
+
+
 CREATE POLICY "Service can insert notification events" ON "public"."notification_events" FOR INSERT TO "service_role" WITH CHECK (true);
 
 
@@ -22174,11 +36183,23 @@ CREATE POLICY "Service role can manage alert logs" ON "public"."security_alert_l
 
 
 
+CREATE POLICY "Service role full access" ON "public"."auth_security_events" USING (("auth"."role"() = 'service_role'::"text"));
+
+
+
+CREATE POLICY "Service role full access" ON "public"."navigation_search_analytics" USING (("auth"."role"() = 'service_role'::"text"));
+
+
+
+CREATE POLICY "Service role full access" ON "public"."user_mfa_settings" USING (("auth"."role"() = 'service_role'::"text"));
+
+
+
+CREATE POLICY "Service role full access" ON "public"."user_sessions" USING (("auth"."role"() = 'service_role'::"text"));
+
+
+
 CREATE POLICY "Service role full access to calendar_integrations" ON "public"."crm_calendar_integrations" TO "service_role" USING (true);
-
-
-
-CREATE POLICY "Service role full access to email_sequences" ON "public"."crm_email_sequences" TO "service_role" USING (true);
 
 
 
@@ -22202,6 +36223,34 @@ CREATE POLICY "Service role full access to template_folders" ON "public"."crm_te
 
 
 
+CREATE POLICY "Service role only" ON "public"."auth_login_attempts" USING (("auth"."role"() = 'service_role'::"text"));
+
+
+
+CREATE POLICY "Service role only" ON "public"."auth_rate_limits" USING (("auth"."role"() = 'service_role'::"text"));
+
+
+
+CREATE POLICY "Service role only" ON "public"."password_history" USING (("auth"."role"() = 'service_role'::"text"));
+
+
+
+CREATE POLICY "Service role only" ON "public"."phi_access_log" USING (("auth"."role"() = 'service_role'::"text"));
+
+
+
+CREATE POLICY "Staff can insert account events" ON "public"."member_account_events" FOR INSERT TO "authenticated" WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."admin_users"
+  WHERE (("admin_users"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("admin_users"."status" = 'active'::"text")))));
+
+
+
+CREATE POLICY "Staff can insert member notifications" ON "public"."member_notifications" FOR INSERT TO "authenticated" WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."admin_users"
+  WHERE (("admin_users"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("admin_users"."status" = 'active'::"text")))));
+
+
+
 CREATE POLICY "Staff can manage all claims" ON "public"."claims" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
    FROM "public"."profiles"
   WHERE (("profiles"."id" = ( SELECT ( SELECT "auth"."uid"() AS "uid") AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'staff'::"text", 'superadmin'::"text"]))))));
@@ -22220,13 +36269,25 @@ CREATE POLICY "Staff can manage all transactions" ON "public"."transactions" FOR
 
 
 
+CREATE POLICY "Staff can read account events" ON "public"."member_account_events" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."admin_users"
+  WHERE (("admin_users"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("admin_users"."status" = 'active'::"text")))));
+
+
+
 CREATE POLICY "Staff can read all documents" ON "public"."member_documents" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
    FROM "public"."profiles"
   WHERE (("profiles"."id" = ( SELECT ( SELECT "auth"."uid"() AS "uid") AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'staff'::"text"]))))));
 
 
 
-CREATE POLICY "Staff can update assigned leads" ON "public"."lead_submissions" FOR SELECT TO "authenticated" USING (("assigned_to" = ( SELECT ( SELECT "auth"."uid"() AS "uid") AS "uid")));
+CREATE POLICY "Staff can read member notifications" ON "public"."member_notifications" FOR SELECT TO "authenticated" USING ((("member_id" = ( SELECT "auth"."uid"() AS "uid")) OR (EXISTS ( SELECT 1
+   FROM "public"."admin_users"
+  WHERE (("admin_users"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("admin_users"."status" = 'active'::"text"))))));
+
+
+
+CREATE POLICY "Staff can select quote funnel events" ON "public"."quote_calculator_funnel_events" FOR SELECT TO "authenticated" USING (("public"."current_user_has_admin_access"() OR "public"."current_user_has_super_admin_access"() OR "public"."current_user_has_extended_admin_access"()));
 
 
 
@@ -22310,7 +36371,7 @@ CREATE POLICY "Users and admins can read profiles" ON "public"."profiles" FOR SE
 
 
 
-CREATE POLICY "Users and admins can update profiles" ON "public"."profiles" FOR SELECT TO "authenticated" USING ((("id" = ( SELECT ( SELECT "auth"."uid"() AS "uid") AS "uid")) OR ((( SELECT ( SELECT "auth"."jwt"() AS "jwt") AS "jwt") ->> 'role'::"text") = 'admin'::"text")));
+CREATE POLICY "Users and admins can update profiles" ON "public"."profiles" FOR UPDATE TO "authenticated" USING ((("id" = ( SELECT "auth"."uid"() AS "uid")) OR ((( SELECT "auth"."jwt"() AS "jwt") ->> 'role'::"text") = 'admin'::"text"))) WITH CHECK ((("id" = ( SELECT "auth"."uid"() AS "uid")) OR ((( SELECT "auth"."jwt"() AS "jwt") ->> 'role'::"text") = 'admin'::"text")));
 
 
 
@@ -22432,17 +36493,17 @@ CREATE POLICY "Users can delete calendar integrations for their org" ON "public"
 
 
 
+CREATE POLICY "Users can delete deal room participants" ON "public"."crm_deal_room_participants" FOR DELETE TO "authenticated" USING ((("user_id" = "auth"."uid"()) OR (EXISTS ( SELECT 1
+   FROM "public"."crm_deal_room_participants" "owner"
+  WHERE (("owner"."room_id" = "crm_deal_room_participants"."room_id") AND ("owner"."user_id" = "auth"."uid"()) AND ("owner"."role" = 'owner'::"text"))))));
+
+
+
 CREATE POLICY "Users can delete enrollments for their org" ON "public"."crm_email_sequence_enrollments" FOR SELECT TO "authenticated" USING (("sequence_id" IN ( SELECT "crm_email_sequences"."id"
    FROM "public"."crm_email_sequences"
   WHERE ("crm_email_sequences"."org_id" IN ( SELECT "org_memberships"."org_id"
            FROM "public"."org_memberships"
           WHERE ("org_memberships"."user_id" = ( SELECT "auth"."uid"() AS "uid")))))));
-
-
-
-CREATE POLICY "Users can delete leads in their org" ON "public"."leads" FOR SELECT USING ((EXISTS ( SELECT 1
-   FROM "public"."org_memberships"
-  WHERE (("org_memberships"."org_id" = "leads"."org_id") AND ("org_memberships"."user_id" = ( SELECT "auth"."uid"() AS "uid")) AND ("org_memberships"."status" = 'active'::"text") AND ("org_memberships"."role" = ANY (ARRAY['owner'::"text", 'admin'::"text", 'manager'::"text"]))))));
 
 
 
@@ -22452,15 +36513,19 @@ CREATE POLICY "Users can delete meeting schedules for their org" ON "public"."cr
 
 
 
-CREATE POLICY "Users can delete memberships" ON "public"."org_memberships" FOR SELECT TO "authenticated" USING ((("user_id" = ( SELECT "auth"."uid"() AS "uid")) OR ("org_id" IN ( SELECT "public"."get_user_org_ids"(( SELECT "auth"."uid"() AS "uid")) AS "get_user_org_ids"))));
-
-
-
 CREATE POLICY "Users can delete notes" ON "public"."notes" FOR SELECT TO "authenticated" USING ((("created_by" = ( SELECT ( SELECT "auth"."uid"() AS "uid") AS "uid")) OR (("user_id" IS NOT NULL) AND ("user_id" = ( SELECT ( SELECT "auth"."uid"() AS "uid") AS "uid")))));
 
 
 
+CREATE POLICY "Users can delete own calendar_events" ON "public"."calendar_events" FOR DELETE TO "authenticated" USING ((("assigned_to" = "auth"."uid"()) OR ("created_by" = "auth"."uid"())));
+
+
+
 CREATE POLICY "Users can delete own navigation preferences" ON "public"."user_navigation_preferences" FOR SELECT TO "authenticated" USING (("user_id" = ( SELECT ( SELECT "auth"."uid"() AS "uid") AS "uid")));
+
+
+
+CREATE POLICY "Users can delete own notifications" ON "public"."notifications" FOR DELETE TO "authenticated" USING (("user_id" = ( SELECT "auth"."uid"() AS "uid")));
 
 
 
@@ -22473,12 +36538,6 @@ CREATE POLICY "Users can delete sequence steps for their org" ON "public"."crm_e
   WHERE ("crm_email_sequences"."org_id" IN ( SELECT "org_memberships"."org_id"
            FROM "public"."org_memberships"
           WHERE ("org_memberships"."user_id" = ( SELECT "auth"."uid"() AS "uid")))))));
-
-
-
-CREATE POLICY "Users can delete sequences for their org" ON "public"."crm_email_sequences" FOR SELECT TO "authenticated" USING (("org_id" IN ( SELECT "org_memberships"."org_id"
-   FROM "public"."org_memberships"
-  WHERE ("org_memberships"."user_id" = ( SELECT "auth"."uid"() AS "uid")))));
 
 
 
@@ -22510,19 +36569,43 @@ CREATE POLICY "Users can delete their org routing rules" ON "public"."crm_email_
 
 
 
-CREATE POLICY "Users can manage org threads" ON "public"."crm_email_threads" FOR SELECT TO "authenticated" USING ((("org_id" IN ( SELECT "org_memberships"."org_id"
-   FROM "public"."org_memberships"
-  WHERE (("org_memberships"."user_id" = ( SELECT "auth"."uid"() AS "uid")) AND ("org_memberships"."status" = 'active'::"text")))) OR "public"."current_user_has_admin_access"() OR (EXISTS ( SELECT 1
-   FROM "public"."user_roles"
-  WHERE (("user_roles"."user_id" = ( SELECT "auth"."uid"() AS "uid")) AND ("user_roles"."role" = ANY (ARRAY['crm_user'::"text", 'admin'::"text", 'super_admin'::"text"])))))));
+CREATE POLICY "Users can delete their own drafts" ON "public"."crm_email_drafts" FOR DELETE TO "authenticated" USING (("user_id" = "auth"."uid"()));
+
+
+
+CREATE POLICY "Users can delete their own signatures" ON "public"."crm_email_signatures" FOR DELETE TO "authenticated" USING (("user_id" = "auth"."uid"()));
+
+
+
+CREATE POLICY "Users can insert calendar_events" ON "public"."calendar_events" FOR INSERT TO "authenticated" WITH CHECK (("created_by" = "auth"."uid"()));
+
+
+
+CREATE POLICY "Users can insert their own XP" ON "public"."crm_user_xp" FOR INSERT WITH CHECK (("user_id" = "auth"."uid"()));
+
+
+
+CREATE POLICY "Users can insert their own XP events" ON "public"."crm_xp_events" FOR INSERT WITH CHECK (("user_id" = "auth"."uid"()));
+
+
+
+CREATE POLICY "Users can insert their own drafts" ON "public"."crm_email_drafts" FOR INSERT TO "authenticated" WITH CHECK (("user_id" = "auth"."uid"()));
+
+
+
+CREATE POLICY "Users can insert their own signatures" ON "public"."crm_email_signatures" FOR INSERT TO "authenticated" WITH CHECK (("user_id" = "auth"."uid"()));
+
+
+
+CREATE POLICY "Users can insert wins" ON "public"."crm_win_feed" FOR INSERT WITH CHECK (("user_id" = "auth"."uid"()));
+
+
+
+CREATE POLICY "Users can leave their own membership" ON "public"."org_memberships" FOR DELETE TO "authenticated" USING (("user_id" = "auth"."uid"()));
 
 
 
 CREATE POLICY "Users can manage own notification settings" ON "public"."notification_settings" TO "authenticated" USING (("user_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("user_id" = ( SELECT "auth"."uid"() AS "uid")));
-
-
-
-CREATE POLICY "Users can manage own notifications" ON "public"."notifications" TO "authenticated" USING (("user_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("user_id" = ( SELECT "auth"."uid"() AS "uid")));
 
 
 
@@ -22534,6 +36617,10 @@ CREATE POLICY "Users can manage own push subscriptions" ON "public"."device_push
 
 
 
+CREATE POLICY "Users can manage their own achievements" ON "public"."crm_user_achievements" USING (("user_id" = "auth"."uid"()));
+
+
+
 CREATE POLICY "Users can manage their own attachments" ON "public"."crm_email_attachments" FOR SELECT TO "authenticated" USING (("uploaded_by" = ( SELECT "auth"."uid"() AS "uid")));
 
 
@@ -22542,11 +36629,23 @@ CREATE POLICY "Users can manage their own bookmarks" ON "public"."advisor_conten
 
 
 
+CREATE POLICY "Users can manage their own challenge entries" ON "public"."crm_challenge_entries" USING (("user_id" = "auth"."uid"()));
+
+
+
 CREATE POLICY "Users can manage their own drafts" ON "public"."crm_email_drafts" FOR SELECT TO "authenticated" USING (("user_id" = ( SELECT "auth"."uid"() AS "uid")));
 
 
 
+CREATE POLICY "Users can manage their own notes" ON "public"."staff_notes" USING (("auth"."uid"() = "user_id")) WITH CHECK (("auth"."uid"() = "user_id"));
+
+
+
 CREATE POLICY "Users can manage their own signatures" ON "public"."crm_email_signatures" FOR SELECT TO "authenticated" USING (("user_id" = ( SELECT "auth"."uid"() AS "uid")));
+
+
+
+CREATE POLICY "Users can manage their own tasks" ON "public"."staff_tasks" USING (("auth"."uid"() = "user_id")) WITH CHECK (("auth"."uid"() = "user_id"));
 
 
 
@@ -22559,6 +36658,10 @@ CREATE POLICY "Users can read own messages" ON "public"."messages" FOR SELECT TO
 
 
 CREATE POLICY "Users can read own roles" ON "public"."user_roles" FOR SELECT TO "authenticated" USING (("user_id" = ( SELECT "auth"."uid"() AS "uid")));
+
+
+
+CREATE POLICY "Users can select own notifications" ON "public"."notifications" FOR SELECT TO "authenticated" USING (("user_id" = ( SELECT "auth"."uid"() AS "uid")));
 
 
 
@@ -22584,12 +36687,6 @@ CREATE POLICY "Users can update enrollments for their org" ON "public"."crm_emai
 
 
 
-CREATE POLICY "Users can update leads in their org" ON "public"."leads" FOR SELECT USING ((EXISTS ( SELECT 1
-   FROM "public"."org_memberships"
-  WHERE (("org_memberships"."org_id" = "leads"."org_id") AND ("org_memberships"."user_id" = ( SELECT "auth"."uid"() AS "uid")) AND ("org_memberships"."status" = 'active'::"text")))));
-
-
-
 CREATE POLICY "Users can update meeting schedules for their org" ON "public"."crm_meeting_schedules" FOR SELECT TO "authenticated" USING (("org_id" IN ( SELECT "org_memberships"."org_id"
    FROM "public"."org_memberships"
   WHERE ("org_memberships"."user_id" = ( SELECT "auth"."uid"() AS "uid")))));
@@ -22602,11 +36699,23 @@ CREATE POLICY "Users can update notes" ON "public"."notes" FOR SELECT TO "authen
 
 
 
-CREATE POLICY "Users can update own calendar_events" ON "public"."calendar_events" FOR SELECT TO "authenticated" USING ((("assigned_to" = ( SELECT "auth"."uid"() AS "uid")) OR ("created_by" = ( SELECT "auth"."uid"() AS "uid"))));
+CREATE POLICY "Users can update org threads" ON "public"."crm_email_threads" FOR UPDATE TO "authenticated" USING (("org_id" IN ( SELECT "org_memberships"."org_id"
+   FROM "public"."org_memberships"
+  WHERE ("org_memberships"."user_id" = "auth"."uid"())))) WITH CHECK (("org_id" IN ( SELECT "org_memberships"."org_id"
+   FROM "public"."org_memberships"
+  WHERE ("org_memberships"."user_id" = "auth"."uid"()))));
+
+
+
+CREATE POLICY "Users can update own calendar_events" ON "public"."calendar_events" FOR UPDATE TO "authenticated" USING ((("assigned_to" = "auth"."uid"()) OR ("created_by" = "auth"."uid"()))) WITH CHECK ((("assigned_to" = "auth"."uid"()) OR ("created_by" = "auth"."uid"())));
 
 
 
 CREATE POLICY "Users can update own navigation preferences" ON "public"."user_navigation_preferences" FOR SELECT TO "authenticated" USING (("user_id" = ( SELECT ( SELECT "auth"."uid"() AS "uid") AS "uid")));
+
+
+
+CREATE POLICY "Users can update own notifications" ON "public"."notifications" FOR UPDATE TO "authenticated" USING (("user_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("user_id" = ( SELECT "auth"."uid"() AS "uid")));
 
 
 
@@ -22627,12 +36736,6 @@ CREATE POLICY "Users can update sequence steps for their org" ON "public"."crm_e
   WHERE ("crm_email_sequences"."org_id" IN ( SELECT "org_memberships"."org_id"
            FROM "public"."org_memberships"
           WHERE ("org_memberships"."user_id" = ( SELECT "auth"."uid"() AS "uid")))))));
-
-
-
-CREATE POLICY "Users can update sequences for their org" ON "public"."crm_email_sequences" FOR SELECT TO "authenticated" USING (("org_id" IN ( SELECT "org_memberships"."org_id"
-   FROM "public"."org_memberships"
-  WHERE ("org_memberships"."user_id" = ( SELECT "auth"."uid"() AS "uid")))));
 
 
 
@@ -22661,6 +36764,18 @@ CREATE POLICY "Users can update their notifications" ON "public"."note_notificat
 CREATE POLICY "Users can update their org routing rules" ON "public"."crm_email_routing_rules" FOR SELECT TO "authenticated" USING (("org_id" IN ( SELECT "org_memberships"."org_id"
    FROM "public"."org_memberships"
   WHERE ("org_memberships"."user_id" = ( SELECT "auth"."uid"() AS "uid")))));
+
+
+
+CREATE POLICY "Users can update their own XP" ON "public"."crm_user_xp" FOR UPDATE USING (("user_id" = "auth"."uid"()));
+
+
+
+CREATE POLICY "Users can update their own drafts" ON "public"."crm_email_drafts" FOR UPDATE TO "authenticated" USING (("user_id" = "auth"."uid"())) WITH CHECK (("user_id" = "auth"."uid"()));
+
+
+
+CREATE POLICY "Users can update their own signatures" ON "public"."crm_email_signatures" FOR UPDATE TO "authenticated" USING (("user_id" = "auth"."uid"())) WITH CHECK (("user_id" = "auth"."uid"()));
 
 
 
@@ -22709,12 +36824,6 @@ CREATE POLICY "Users can view invites for their orgs" ON "public"."org_invites" 
 
 
 CREATE POLICY "Users can view lanes in their org" ON "public"."priority_lanes" FOR SELECT TO "authenticated" USING ("public"."user_has_org_access"("org_id"));
-
-
-
-CREATE POLICY "Users can view leads in their org" ON "public"."leads" FOR SELECT USING ((EXISTS ( SELECT 1
-   FROM "public"."org_memberships"
-  WHERE (("org_memberships"."org_id" = "leads"."org_id") AND ("org_memberships"."user_id" = ( SELECT "auth"."uid"() AS "uid")) AND ("org_memberships"."status" = 'active'::"text")))));
 
 
 
@@ -22786,12 +36895,6 @@ CREATE POLICY "Users can view sequence steps for their org" ON "public"."crm_ema
 
 
 
-CREATE POLICY "Users can view sequences for their org" ON "public"."crm_email_sequences" FOR SELECT TO "authenticated" USING (("org_id" IN ( SELECT "org_memberships"."org_id"
-   FROM "public"."org_memberships"
-  WHERE ("org_memberships"."user_id" = ( SELECT "auth"."uid"() AS "uid")))));
-
-
-
 CREATE POLICY "Users can view tasks in their org" ON "public"."tasks" FOR SELECT USING ((EXISTS ( SELECT 1
    FROM "public"."org_memberships"
   WHERE (("org_memberships"."org_id" = "tasks"."org_id") AND ("org_memberships"."user_id" = ( SELECT "auth"."uid"() AS "uid")) AND ("org_memberships"."status" = 'active'::"text")))));
@@ -22826,11 +36929,15 @@ CREATE POLICY "Users can view their organizations" ON "public"."organizations" F
 
 
 
-CREATE POLICY "Users can view their own submissions" ON "public"."zoho_lead_submissions" FOR SELECT TO "authenticated" USING ((( SELECT ( SELECT "auth"."uid"() AS "uid") AS "uid") = "user_id"));
+CREATE POLICY "Users can view their own submissions" ON "public"."lead_submissions" FOR SELECT TO "authenticated" USING ((( SELECT ( SELECT "auth"."uid"() AS "uid") AS "uid") = "user_id"));
 
 
 
 CREATE POLICY "Users can view their shares" ON "public"."note_shares" FOR SELECT TO "authenticated" USING ((("shared_by_user_id" = ( SELECT ( SELECT "auth"."uid"() AS "uid") AS "uid")) OR ("shared_with_user_id" = ( SELECT ( SELECT "auth"."uid"() AS "uid") AS "uid"))));
+
+
+
+CREATE POLICY "Users insert own analytics" ON "public"."navigation_search_analytics" FOR INSERT WITH CHECK ((("auth"."role"() = 'authenticated'::"text") AND (("user_id" IS NULL) OR ("user_id" = "auth"."uid"()))));
 
 
 
@@ -22854,7 +36961,23 @@ CREATE POLICY "Users manage own personal goals" ON "public"."crm_user_goals" FOR
 
 
 
+CREATE POLICY "Users read own MFA settings" ON "public"."user_mfa_settings" FOR SELECT USING ((("auth"."role"() = 'authenticated'::"text") AND ("user_id" = "auth"."uid"())));
+
+
+
 CREATE POLICY "Users read own notification_log" ON "public"."notification_log" FOR SELECT TO "authenticated" USING (("user_id" = ( SELECT "auth"."uid"() AS "uid")));
+
+
+
+CREATE POLICY "Users read own sessions" ON "public"."user_sessions" FOR SELECT USING ((("auth"."role"() = 'authenticated'::"text") AND ("user_id" = "auth"."uid"())));
+
+
+
+CREATE POLICY "Users update own MFA settings" ON "public"."user_mfa_settings" FOR UPDATE USING ((("auth"."role"() = 'authenticated'::"text") AND ("user_id" = "auth"."uid"())));
+
+
+
+CREATE POLICY "Users update own presence" ON "public"."crm_deal_room_participants" FOR UPDATE TO "authenticated" USING (("user_id" = "auth"."uid"())) WITH CHECK (("user_id" = "auth"."uid"()));
 
 
 
@@ -22880,6 +37003,23 @@ CREATE POLICY "View active links" ON "public"."approved_links" FOR SELECT TO "au
 
 CREATE POLICY "View tool permissions" ON "public"."terminal_tool_permissions" FOR SELECT TO "authenticated" USING (("is_active" = true));
 
+
+
+ALTER TABLE "public"."_backup_org_reconcile_20260701_advisor_profiles" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "_backup_org_reconcile_20260701_advisor_profiles_deny_all" ON "public"."_backup_org_reconcile_20260701_advisor_profiles" USING (false) WITH CHECK (false);
+
+
+
+ALTER TABLE "public"."_backup_org_reconcile_20260701_lead_submissions" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "_backup_org_reconcile_20260701_lead_submissions_deny_all" ON "public"."_backup_org_reconcile_20260701_lead_submissions" USING (false) WITH CHECK (false);
+
+
+
+ALTER TABLE "public"."_deprecated_leads" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."activities" ENABLE ROW LEVEL SECURITY;
@@ -22913,9 +37053,15 @@ CREATE POLICY "admin_update_contacts" ON "public"."advisor_contact_directory" FO
 ALTER TABLE "public"."admin_users" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "admin_users_delete" ON "public"."admin_users" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
+CREATE POLICY "admin_users_delete" ON "public"."admin_users" FOR DELETE TO "authenticated" USING ((EXISTS ( SELECT 1
    FROM "public"."user_roles"
-  WHERE (("user_roles"."user_id" = ( SELECT "auth"."uid"() AS "uid")) AND ("user_roles"."role" = 'super_admin'::"text")))));
+  WHERE (("user_roles"."user_id" = "auth"."uid"()) AND ("user_roles"."role" = 'super_admin'::"text")))));
+
+
+
+CREATE POLICY "admin_users_insert" ON "public"."admin_users" FOR INSERT TO "authenticated" WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."user_roles"
+  WHERE (("user_roles"."user_id" = "auth"."uid"()) AND ("user_roles"."role" = 'super_admin'::"text")))));
 
 
 
@@ -22929,9 +37075,9 @@ CREATE POLICY "admin_users_service_role" ON "public"."admin_users" TO "service_r
 
 
 
-CREATE POLICY "admin_users_update" ON "public"."admin_users" FOR SELECT TO "authenticated" USING (((( SELECT "auth"."uid"() AS "uid") = "id") OR (EXISTS ( SELECT 1
+CREATE POLICY "admin_users_update" ON "public"."admin_users" FOR UPDATE TO "authenticated" USING ((("auth"."uid"() = "id") OR (EXISTS ( SELECT 1
    FROM "public"."user_roles"
-  WHERE (("user_roles"."user_id" = ( SELECT "auth"."uid"() AS "uid")) AND ("user_roles"."role" = 'super_admin'::"text"))))));
+  WHERE (("user_roles"."user_id" = "auth"."uid"()) AND ("user_roles"."role" = 'super_admin'::"text"))))));
 
 
 
@@ -22954,6 +37100,22 @@ CREATE POLICY "advisor_access_select_own" ON "public"."advisor_access" FOR SELEC
 
 
 ALTER TABLE "public"."advisor_announcements" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "advisor_assigned_leads_select" ON "public"."lead_submissions" FOR SELECT TO "authenticated" USING ((("assigned_to" = "auth"."uid"()) AND "public"."current_user_has_advisor_or_admin_access"()));
+
+
+
+CREATE POLICY "advisor_assigned_leads_update" ON "public"."lead_submissions" FOR UPDATE TO "authenticated" USING ((("assigned_to" = "auth"."uid"()) AND "public"."current_user_has_advisor_or_admin_access"())) WITH CHECK ((("assigned_to" = "auth"."uid"()) AND "public"."current_user_has_advisor_or_admin_access"()));
+
+
+
+CREATE POLICY "advisor_assigned_members_select" ON "public"."member_profiles" FOR SELECT TO "authenticated" USING ((("assigned_advisor_id" = "auth"."uid"()) AND "public"."current_user_has_advisor_or_admin_access"()));
+
+
+
+COMMENT ON POLICY "advisor_assigned_members_select" ON "public"."member_profiles" IS 'Assigned advisors can read member_profiles where assigned_advisor_id = auth.uid().';
+
 
 
 ALTER TABLE "public"."advisor_categories" ENABLE ROW LEVEL SECURITY;
@@ -23071,6 +37233,26 @@ ALTER TABLE "public"."analytics_experiments" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."analytics_sessions" ENABLE ROW LEVEL SECURITY;
 
 
+CREATE POLICY "anon can insert leads" ON "public"."lead_submissions" FOR INSERT TO "anon" WITH CHECK (true);
+
+
+
+CREATE POLICY "anon_insert_progress" ON "public"."training_progress" FOR INSERT TO "anon" WITH CHECK ((("status" = ANY (ARRAY['not_started'::"text", 'in_progress'::"text", 'completed'::"text"])) AND (EXISTS ( SELECT 1
+   FROM "public"."advisors" "a"
+  WHERE (("a"."id")::"text" = ("training_progress"."advisor_id")::"text"))) AND (EXISTS ( SELECT 1
+   FROM "public"."training_modules" "m"
+  WHERE ((("m"."id")::"text" = ("training_progress"."module_id")::"text") AND "m"."is_active")))));
+
+
+
+CREATE POLICY "anon_read_progress" ON "public"."training_progress" FOR SELECT TO "anon" USING (true);
+
+
+
+CREATE POLICY "anon_update_progress" ON "public"."training_progress" FOR UPDATE TO "anon" USING (true) WITH CHECK (("status" = ANY (ARRAY['not_started'::"text", 'in_progress'::"text", 'completed'::"text"])));
+
+
+
 CREATE POLICY "approval_actions_select" ON "public"."crm_approval_actions" FOR SELECT TO "authenticated" USING (("request_id" IN ( SELECT "ar"."id"
    FROM ("public"."crm_approval_requests" "ar"
      JOIN "public"."org_memberships" "om" ON ((("om"."org_id" = "ar"."org_id") AND ("om"."status" = 'active'::"text"))))
@@ -23135,14 +37317,41 @@ ALTER TABLE "public"."approved_links" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."assignments" ENABLE ROW LEVEL SECURITY;
 
 
+CREATE POLICY "attachments_org_access" ON "public"."crm_attachments" USING (("org_id" IN ( SELECT "om"."org_id"
+   FROM "public"."org_memberships" "om"
+  WHERE ("om"."user_id" = "auth"."uid"()))));
+
+
+
 ALTER TABLE "public"."audit_events" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."audit_logs" ENABLE ROW LEVEL SECURITY;
 
 
+CREATE POLICY "audit_org_insert" ON "public"."crm_audit_log" FOR INSERT WITH CHECK (("org_id" IN ( SELECT "om"."org_id"
+   FROM "public"."org_memberships" "om"
+  WHERE ("om"."user_id" = "auth"."uid"()))));
+
+
+
+CREATE POLICY "audit_org_read" ON "public"."crm_audit_log" FOR SELECT USING (("org_id" IN ( SELECT "om"."org_id"
+   FROM "public"."org_memberships" "om"
+  WHERE ("om"."user_id" = "auth"."uid"()))));
+
+
+
 CREATE POLICY "audit_select_permission" ON "public"."audit_events" FOR SELECT TO "authenticated" USING ("public"."has_org_permission"("org_id", 'audit.read'::"text"));
 
+
+
+ALTER TABLE "public"."auth_login_attempts" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."auth_rate_limits" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."auth_security_events" ENABLE ROW LEVEL SECURITY;
 
 
 CREATE POLICY "authenticated_read_active_contacts" ON "public"."advisor_contact_directory" FOR SELECT TO "authenticated" USING (("is_active" = true));
@@ -23212,6 +37421,25 @@ CREATE POLICY "blog_articles_select" ON "public"."blog_articles" FOR SELECT USIN
 
 
 
+ALTER TABLE "public"."blog_authors" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "blog_authors_auth_delete" ON "public"."blog_authors" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
+
+
+
+CREATE POLICY "blog_authors_auth_insert" ON "public"."blog_authors" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
+
+
+
+CREATE POLICY "blog_authors_auth_update" ON "public"."blog_authors" FOR UPDATE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL)) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
+
+
+
+CREATE POLICY "blog_authors_public_read" ON "public"."blog_authors" FOR SELECT TO "authenticated", "anon" USING (true);
+
+
+
 ALTER TABLE "public"."blog_categories" ENABLE ROW LEVEL SECURITY;
 
 
@@ -23245,6 +37473,334 @@ ALTER TABLE "public"."claim_items" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."claims" ENABLE ROW LEVEL SECURITY;
 
 
+ALTER TABLE "public"."cms_events" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "cms_events_auth_write_delete" ON "public"."cms_events" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
+
+
+
+CREATE POLICY "cms_events_auth_write_insert" ON "public"."cms_events" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
+
+
+
+CREATE POLICY "cms_events_auth_write_update" ON "public"."cms_events" FOR UPDATE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL)) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
+
+
+
+CREATE POLICY "cms_events_public_read" ON "public"."cms_events" FOR SELECT TO "authenticated", "anon" USING (true);
+
+
+
+ALTER TABLE "public"."cms_form_submissions" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "cms_form_submissions_admin_delete" ON "public"."cms_form_submissions" FOR DELETE TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text", 'staff'::"text"]))))));
+
+
+
+CREATE POLICY "cms_form_submissions_admin_insert" ON "public"."cms_form_submissions" FOR INSERT TO "authenticated" WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text", 'staff'::"text"]))))));
+
+
+
+CREATE POLICY "cms_form_submissions_admin_select" ON "public"."cms_form_submissions" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text", 'staff'::"text"]))))));
+
+
+
+CREATE POLICY "cms_form_submissions_admin_update" ON "public"."cms_form_submissions" FOR UPDATE TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text", 'staff'::"text"])))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text", 'staff'::"text"]))))));
+
+
+
+CREATE POLICY "cms_form_submissions_anon_insert" ON "public"."cms_form_submissions" FOR INSERT TO "authenticated", "anon" WITH CHECK (true);
+
+
+
+ALTER TABLE "public"."cms_forms" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "cms_forms_admin_delete" ON "public"."cms_forms" FOR DELETE TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text", 'staff'::"text"]))))));
+
+
+
+CREATE POLICY "cms_forms_admin_insert" ON "public"."cms_forms" FOR INSERT TO "authenticated" WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text", 'staff'::"text"]))))));
+
+
+
+CREATE POLICY "cms_forms_admin_select" ON "public"."cms_forms" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text", 'staff'::"text"]))))));
+
+
+
+CREATE POLICY "cms_forms_admin_update" ON "public"."cms_forms" FOR UPDATE TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text", 'staff'::"text"])))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text", 'staff'::"text"]))))));
+
+
+
+ALTER TABLE "public"."cms_global_blocks" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "cms_global_blocks_admin_delete" ON "public"."cms_global_blocks" FOR DELETE TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text", 'staff'::"text"]))))));
+
+
+
+CREATE POLICY "cms_global_blocks_admin_insert" ON "public"."cms_global_blocks" FOR INSERT TO "authenticated" WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text", 'staff'::"text"]))))));
+
+
+
+CREATE POLICY "cms_global_blocks_admin_select" ON "public"."cms_global_blocks" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text", 'staff'::"text"]))))));
+
+
+
+CREATE POLICY "cms_global_blocks_admin_update" ON "public"."cms_global_blocks" FOR UPDATE TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text", 'staff'::"text"])))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text", 'staff'::"text"]))))));
+
+
+
+ALTER TABLE "public"."cms_media" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "cms_media_admin_delete" ON "public"."cms_media" FOR DELETE TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text", 'staff'::"text"]))))));
+
+
+
+CREATE POLICY "cms_media_admin_insert" ON "public"."cms_media" FOR INSERT TO "authenticated" WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text", 'staff'::"text"]))))));
+
+
+
+CREATE POLICY "cms_media_admin_select" ON "public"."cms_media" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text", 'staff'::"text"]))))));
+
+
+
+CREATE POLICY "cms_media_admin_update" ON "public"."cms_media" FOR UPDATE TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text", 'staff'::"text"])))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text", 'staff'::"text"]))))));
+
+
+
+ALTER TABLE "public"."cms_pages" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "cms_pages_admin_delete" ON "public"."cms_pages" FOR DELETE TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text", 'staff'::"text"]))))));
+
+
+
+CREATE POLICY "cms_pages_admin_insert" ON "public"."cms_pages" FOR INSERT TO "authenticated" WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text", 'staff'::"text"]))))));
+
+
+
+CREATE POLICY "cms_pages_admin_select_all" ON "public"."cms_pages" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text", 'staff'::"text"]))))));
+
+
+
+CREATE POLICY "cms_pages_admin_update" ON "public"."cms_pages" FOR UPDATE TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text", 'staff'::"text"])))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text", 'staff'::"text"]))))));
+
+
+
+CREATE POLICY "cms_pages_select_published" ON "public"."cms_pages" FOR SELECT TO "authenticated", "anon" USING (("is_published" = true));
+
+
+
+ALTER TABLE "public"."cms_popups" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "cms_popups_admin_delete" ON "public"."cms_popups" FOR DELETE TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text", 'staff'::"text"]))))));
+
+
+
+CREATE POLICY "cms_popups_admin_insert" ON "public"."cms_popups" FOR INSERT TO "authenticated" WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text", 'staff'::"text"]))))));
+
+
+
+CREATE POLICY "cms_popups_admin_select" ON "public"."cms_popups" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text", 'staff'::"text"]))))));
+
+
+
+CREATE POLICY "cms_popups_admin_update" ON "public"."cms_popups" FOR UPDATE TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text", 'staff'::"text"])))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text", 'staff'::"text"]))))));
+
+
+
+CREATE POLICY "cms_popups_anon_select" ON "public"."cms_popups" FOR SELECT TO "anon" USING (("is_active" = true));
+
+
+
+ALTER TABLE "public"."cms_redirects" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "cms_redirects_admin_delete" ON "public"."cms_redirects" FOR DELETE TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text", 'staff'::"text"]))))));
+
+
+
+CREATE POLICY "cms_redirects_admin_insert" ON "public"."cms_redirects" FOR INSERT TO "authenticated" WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text", 'staff'::"text"]))))));
+
+
+
+CREATE POLICY "cms_redirects_admin_select" ON "public"."cms_redirects" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text", 'staff'::"text"]))))));
+
+
+
+CREATE POLICY "cms_redirects_admin_update" ON "public"."cms_redirects" FOR UPDATE TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text", 'staff'::"text"])))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text", 'staff'::"text"]))))));
+
+
+
+CREATE POLICY "cms_redirects_public_read" ON "public"."cms_redirects" FOR SELECT TO "anon" USING (("is_active" = true));
+
+
+
+ALTER TABLE "public"."cms_resources" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "cms_resources_auth_delete" ON "public"."cms_resources" FOR DELETE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
+
+
+
+CREATE POLICY "cms_resources_auth_insert" ON "public"."cms_resources" FOR INSERT TO "authenticated" WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
+
+
+
+CREATE POLICY "cms_resources_auth_update" ON "public"."cms_resources" FOR UPDATE TO "authenticated" USING ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL)) WITH CHECK ((( SELECT "auth"."uid"() AS "uid") IS NOT NULL));
+
+
+
+CREATE POLICY "cms_resources_public_read" ON "public"."cms_resources" FOR SELECT TO "authenticated", "anon" USING (true);
+
+
+
+ALTER TABLE "public"."cms_revisions" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "cms_revisions_admin_delete" ON "public"."cms_revisions" FOR DELETE TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text", 'staff'::"text"]))))));
+
+
+
+CREATE POLICY "cms_revisions_admin_insert" ON "public"."cms_revisions" FOR INSERT TO "authenticated" WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text", 'staff'::"text"]))))));
+
+
+
+CREATE POLICY "cms_revisions_admin_select" ON "public"."cms_revisions" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text", 'staff'::"text"]))))));
+
+
+
+ALTER TABLE "public"."cms_templates" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "cms_templates_admin_delete" ON "public"."cms_templates" FOR DELETE TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text", 'staff'::"text"]))))));
+
+
+
+CREATE POLICY "cms_templates_admin_insert" ON "public"."cms_templates" FOR INSERT TO "authenticated" WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text", 'staff'::"text"]))))));
+
+
+
+CREATE POLICY "cms_templates_admin_select" ON "public"."cms_templates" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text", 'staff'::"text"]))))));
+
+
+
+CREATE POLICY "cms_templates_admin_update" ON "public"."cms_templates" FOR UPDATE TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text", 'staff'::"text"])))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text", 'staff'::"text"]))))));
+
+
+
+ALTER TABLE "public"."cms_theme" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "cms_theme_admin_select" ON "public"."cms_theme" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text", 'staff'::"text"]))))));
+
+
+
+CREATE POLICY "cms_theme_admin_update" ON "public"."cms_theme" FOR UPDATE TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text", 'staff'::"text"])))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = ( SELECT "auth"."uid"() AS "uid")) AND ("profiles"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text", 'staff'::"text"]))))));
+
+
+
+CREATE POLICY "cms_theme_anon_select" ON "public"."cms_theme" FOR SELECT TO "anon" USING (true);
+
+
+
 ALTER TABLE "public"."code_batches" ENABLE ROW LEVEL SECURITY;
 
 
@@ -23252,6 +37808,63 @@ ALTER TABLE "public"."code_inventory" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."cognito_forms" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."commission_payouts" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "commission_payouts_delete" ON "public"."commission_payouts" FOR DELETE TO "authenticated" USING ("public"."has_org_permission"("org_id", 'settings.manage'::"text"));
+
+
+
+CREATE POLICY "commission_payouts_insert" ON "public"."commission_payouts" FOR INSERT TO "authenticated" WITH CHECK ("public"."has_org_permission"("org_id", 'settings.manage'::"text"));
+
+
+
+CREATE POLICY "commission_payouts_select" ON "public"."commission_payouts" FOR SELECT TO "authenticated" USING ((("advisor_id" = "auth"."uid"()) OR "public"."user_has_org_access"("org_id") OR "public"."is_org_member"("org_id")));
+
+
+
+CREATE POLICY "commission_payouts_update" ON "public"."commission_payouts" FOR UPDATE TO "authenticated" USING ("public"."has_org_permission"("org_id", 'settings.manage'::"text")) WITH CHECK ("public"."has_org_permission"("org_id", 'settings.manage'::"text"));
+
+
+
+ALTER TABLE "public"."commission_records" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "commission_records_delete" ON "public"."commission_records" FOR DELETE TO "authenticated" USING ("public"."has_org_permission"("org_id", 'leads.delete'::"text"));
+
+
+
+CREATE POLICY "commission_records_insert" ON "public"."commission_records" FOR INSERT TO "authenticated" WITH CHECK ("public"."has_org_permission"("org_id", 'leads.write'::"text"));
+
+
+
+CREATE POLICY "commission_records_select" ON "public"."commission_records" FOR SELECT TO "authenticated" USING ((("advisor_id" = "auth"."uid"()) OR "public"."user_has_org_access"("org_id") OR "public"."is_org_member"("org_id")));
+
+
+
+CREATE POLICY "commission_records_update" ON "public"."commission_records" FOR UPDATE TO "authenticated" USING ("public"."has_org_permission"("org_id", 'leads.write'::"text")) WITH CHECK ("public"."has_org_permission"("org_id", 'leads.write'::"text"));
+
+
+
+ALTER TABLE "public"."commission_schedules" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "commission_schedules_delete" ON "public"."commission_schedules" FOR DELETE TO "authenticated" USING ("public"."has_org_permission"("org_id", 'settings.manage'::"text"));
+
+
+
+CREATE POLICY "commission_schedules_insert" ON "public"."commission_schedules" FOR INSERT TO "authenticated" WITH CHECK ("public"."has_org_permission"("org_id", 'settings.manage'::"text"));
+
+
+
+CREATE POLICY "commission_schedules_select" ON "public"."commission_schedules" FOR SELECT TO "authenticated" USING ("public"."is_org_member"("org_id"));
+
+
+
+CREATE POLICY "commission_schedules_update" ON "public"."commission_schedules" FOR UPDATE TO "authenticated" USING ("public"."has_org_permission"("org_id", 'settings.manage'::"text")) WITH CHECK ("public"."has_org_permission"("org_id", 'settings.manage'::"text"));
+
 
 
 ALTER TABLE "public"."compliance_acknowledgments" ENABLE ROW LEVEL SECURITY;
@@ -23272,7 +37885,96 @@ CREATE POLICY "compliance_documents_select" ON "public"."compliance_documents" F
 
 
 
+ALTER TABLE "public"."concierge_daily_log_entries" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "concierge_daily_log_entries_rw" ON "public"."concierge_daily_log_entries" TO "authenticated" USING ("public"."user_has_concierge_access_for_org"("org_id")) WITH CHECK ("public"."user_has_concierge_access_for_org"("org_id"));
+
+
+
+ALTER TABLE "public"."concierge_escalations" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "concierge_escalations_rw" ON "public"."concierge_escalations" TO "authenticated" USING ("public"."user_has_concierge_access_for_org"("org_id")) WITH CHECK ("public"."user_has_concierge_access_for_org"("org_id"));
+
+
+
+CREATE POLICY "concierge_handoff_insert" ON "public"."crm_concierge_handoff_log" FOR INSERT TO "authenticated" WITH CHECK ("public"."is_org_member"("org_id"));
+
+
+
+CREATE POLICY "concierge_handoff_select" ON "public"."crm_concierge_handoff_log" FOR SELECT TO "authenticated" USING ("public"."is_org_member"("org_id"));
+
+
+
+CREATE POLICY "concierge_handoff_service" ON "public"."crm_concierge_handoff_log" TO "service_role" USING (true) WITH CHECK (true);
+
+
+
+CREATE POLICY "concierge_handoff_update" ON "public"."crm_concierge_handoff_log" FOR UPDATE TO "authenticated" USING ("public"."is_org_member"("org_id")) WITH CHECK ("public"."is_org_member"("org_id"));
+
+
+
+ALTER TABLE "public"."concierge_member_off_days" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "concierge_member_off_days_rw" ON "public"."concierge_member_off_days" TO "authenticated" USING ("public"."user_has_concierge_access_for_org"("org_id")) WITH CHECK ("public"."user_has_concierge_access_for_org"("org_id"));
+
+
+
+ALTER TABLE "public"."concierge_portal_config" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "concierge_portal_config_select" ON "public"."concierge_portal_config" FOR SELECT TO "authenticated" USING ("public"."user_has_concierge_access_for_org"("org_id"));
+
+
+
+CREATE POLICY "concierge_portal_config_write" ON "public"."concierge_portal_config" TO "authenticated" USING ("public"."is_concierge_org_admin"("org_id")) WITH CHECK ("public"."is_concierge_org_admin"("org_id"));
+
+
+
+ALTER TABLE "public"."concierge_team_members" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "concierge_team_members_rw" ON "public"."concierge_team_members" TO "authenticated" USING ("public"."user_has_concierge_access_for_org"("org_id")) WITH CHECK ("public"."user_has_concierge_access_for_org"("org_id"));
+
+
+
+ALTER TABLE "public"."concierge_weekly_report_extras" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "concierge_weekly_report_extras_rw" ON "public"."concierge_weekly_report_extras" TO "authenticated" USING ("public"."user_has_concierge_access_for_org"("org_id")) WITH CHECK ("public"."user_has_concierge_access_for_org"("org_id"));
+
+
+
+ALTER TABLE "public"."contacts" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "contacts_delete" ON "public"."contacts" FOR DELETE TO "authenticated" USING ("public"."is_org_member"("org_id"));
+
+
+
+CREATE POLICY "contacts_insert" ON "public"."contacts" FOR INSERT TO "authenticated" WITH CHECK ("public"."is_org_member"("org_id"));
+
+
+
+CREATE POLICY "contacts_select" ON "public"."contacts" FOR SELECT TO "authenticated" USING ("public"."is_org_member"("org_id"));
+
+
+
+CREATE POLICY "contacts_update" ON "public"."contacts" FOR UPDATE TO "authenticated" USING ("public"."is_org_member"("org_id")) WITH CHECK ("public"."is_org_member"("org_id"));
+
+
+
 ALTER TABLE "public"."content_analytics" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "conversation_goal_config_admin" ON "public"."crm_conversation_goal_config" TO "authenticated" USING ("public"."is_org_admin"("org_id")) WITH CHECK ("public"."is_org_admin"("org_id"));
+
+
+
+CREATE POLICY "conversation_goal_config_select" ON "public"."crm_conversation_goal_config" FOR SELECT TO "authenticated" USING ("public"."is_org_member"("org_id"));
+
 
 
 ALTER TABLE "public"."conversations" ENABLE ROW LEVEL SECURITY;
@@ -23306,6 +38008,22 @@ CREATE POLICY "coverage_docs_update_member" ON "public"."coverage_documents" FOR
 ALTER TABLE "public"."coverage_documents" ENABLE ROW LEVEL SECURITY;
 
 
+CREATE POLICY "crm_ab_tests_delete" ON "public"."crm_email_ab_tests" FOR DELETE USING (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'email.templates'::"text")));
+
+
+
+CREATE POLICY "crm_ab_tests_insert" ON "public"."crm_email_ab_tests" FOR INSERT WITH CHECK (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'email.templates'::"text")));
+
+
+
+CREATE POLICY "crm_ab_tests_select" ON "public"."crm_email_ab_tests" FOR SELECT USING ("public"."is_org_member"("org_id"));
+
+
+
+CREATE POLICY "crm_ab_tests_update" ON "public"."crm_email_ab_tests" FOR UPDATE USING (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'email.templates'::"text")));
+
+
+
 ALTER TABLE "public"."crm_accounts" ENABLE ROW LEVEL SECURITY;
 
 
@@ -23325,10 +38043,13 @@ CREATE POLICY "crm_accounts_update" ON "public"."crm_accounts" FOR UPDATE TO "au
 
 
 
+ALTER TABLE "public"."crm_achievements" ENABLE ROW LEVEL SECURITY;
+
+
 ALTER TABLE "public"."crm_activities" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "crm_activities_delete" ON "public"."crm_activities" FOR SELECT TO "authenticated" USING (("public"."is_org_member"("org_id") AND (("created_by" = ( SELECT "auth"."uid"() AS "uid")) OR "public"."is_org_admin"("org_id"))));
+CREATE POLICY "crm_activities_delete" ON "public"."crm_activities" FOR DELETE TO "authenticated" USING (("created_by" = "auth"."uid"()));
 
 
 
@@ -23344,6 +38065,9 @@ CREATE POLICY "crm_activities_update" ON "public"."crm_activities" FOR UPDATE TO
 
 
 
+ALTER TABLE "public"."crm_activity_targets" ENABLE ROW LEVEL SECURITY;
+
+
 ALTER TABLE "public"."crm_approval_actions" ENABLE ROW LEVEL SECURITY;
 
 
@@ -23354,6 +38078,37 @@ ALTER TABLE "public"."crm_approval_requests" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."crm_approval_steps" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."crm_attachments" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."crm_audit_log" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "crm_cadences_delete" ON "public"."crm_follow_up_cadences" FOR DELETE USING (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'settings.manage'::"text")));
+
+
+
+CREATE POLICY "crm_cadences_insert" ON "public"."crm_follow_up_cadences" FOR INSERT WITH CHECK (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'settings.manage'::"text")));
+
+
+
+CREATE POLICY "crm_cadences_select" ON "public"."crm_follow_up_cadences" FOR SELECT USING ("public"."is_org_member"("org_id"));
+
+
+
+CREATE POLICY "crm_cadences_update" ON "public"."crm_follow_up_cadences" FOR UPDATE USING (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'settings.manage'::"text")));
+
+
+
+ALTER TABLE "public"."crm_calendar_booking_log" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "crm_calendar_booking_log_select" ON "public"."crm_calendar_booking_log" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."org_memberships" "m"
+  WHERE (("m"."user_id" = "auth"."uid"()) AND ("m"."org_id" = "crm_calendar_booking_log"."org_id") AND ("m"."status" = 'active'::"text")))));
+
 
 
 ALTER TABLE "public"."crm_calendar_integrations" ENABLE ROW LEVEL SECURITY;
@@ -23449,6 +38204,34 @@ CREATE POLICY "crm_cases_update" ON "public"."crm_cases" FOR UPDATE USING (("pub
 
 
 
+CREATE POLICY "crm_ce_delete" ON "public"."crm_community_events" FOR DELETE USING (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'community_events.write'::"text")));
+
+
+
+CREATE POLICY "crm_ce_insert" ON "public"."crm_community_events" FOR INSERT WITH CHECK (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'community_events.write'::"text")));
+
+
+
+CREATE POLICY "crm_ce_select" ON "public"."crm_community_events" FOR SELECT USING (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'community_events.read'::"text")));
+
+
+
+CREATE POLICY "crm_ce_update" ON "public"."crm_community_events" FOR UPDATE USING (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'community_events.write'::"text")));
+
+
+
+ALTER TABLE "public"."crm_challenge_entries" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."crm_challenges" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."crm_community_events" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."crm_concierge_handoff_log" ENABLE ROW LEVEL SECURITY;
+
+
 ALTER TABLE "public"."crm_contacts" ENABLE ROW LEVEL SECURITY;
 
 
@@ -23465,6 +38248,26 @@ CREATE POLICY "crm_contacts_select" ON "public"."crm_contacts" FOR SELECT TO "au
 
 
 CREATE POLICY "crm_contacts_update" ON "public"."crm_contacts" FOR UPDATE TO "authenticated" USING ("public"."has_org_permission"("org_id", 'contacts.write'::"text")) WITH CHECK ("public"."has_org_permission"("org_id", 'contacts.write'::"text"));
+
+
+
+ALTER TABLE "public"."crm_conversation_goal_config" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."crm_daily_log_corrections" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."crm_daily_log_events" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."crm_daily_log_ui_config" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "crm_daily_log_ui_config_modify" ON "public"."crm_daily_log_ui_config" USING ("public"."is_org_admin"("org_id")) WITH CHECK ("public"."is_org_admin"("org_id"));
+
+
+
+CREATE POLICY "crm_daily_log_ui_config_select" ON "public"."crm_daily_log_ui_config" FOR SELECT USING ("public"."is_org_member"("org_id"));
 
 
 
@@ -23503,6 +38306,17 @@ CREATE POLICY "crm_deal_contacts_update" ON "public"."crm_deal_contacts" FOR UPD
 
 
 
+ALTER TABLE "public"."crm_deal_predictions" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "crm_deal_predictions_select" ON "public"."crm_deal_predictions" FOR SELECT TO "authenticated" USING ("public"."is_org_member"("org_id"));
+
+
+
+CREATE POLICY "crm_deal_predictions_service_role" ON "public"."crm_deal_predictions" TO "service_role" USING (true);
+
+
+
 ALTER TABLE "public"."crm_deal_products" ENABLE ROW LEVEL SECURITY;
 
 
@@ -23529,6 +38343,64 @@ CREATE POLICY "crm_deal_products_update" ON "public"."crm_deal_products" FOR UPD
   WHERE (("d"."id" = "crm_deal_products"."deal_id") AND "public"."has_org_permission"("d"."org_id", 'deals.write'::"text"))))) WITH CHECK ((EXISTS ( SELECT 1
    FROM "public"."crm_deals" "d"
   WHERE (("d"."id" = "crm_deal_products"."deal_id") AND "public"."has_org_permission"("d"."org_id", 'deals.write'::"text")))));
+
+
+
+ALTER TABLE "public"."crm_deal_room_messages" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "crm_deal_room_messages_delete" ON "public"."crm_deal_room_messages" FOR DELETE TO "authenticated" USING ((("user_id" = "auth"."uid"()) OR (EXISTS ( SELECT 1
+   FROM "public"."crm_deal_rooms" "r"
+  WHERE (("r"."id" = "crm_deal_room_messages"."room_id") AND "public"."is_org_admin"("r"."org_id"))))));
+
+
+
+CREATE POLICY "crm_deal_room_messages_insert" ON "public"."crm_deal_room_messages" FOR INSERT TO "authenticated" WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."crm_deal_rooms" "r"
+  WHERE (("r"."id" = "crm_deal_room_messages"."room_id") AND "public"."is_org_member"("r"."org_id") AND (("r"."participants" @> "to_jsonb"(("auth"."uid"())::"text")) OR ("r"."created_by" = "auth"."uid"()) OR "public"."is_org_admin"("r"."org_id"))))));
+
+
+
+CREATE POLICY "crm_deal_room_messages_select" ON "public"."crm_deal_room_messages" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."crm_deal_rooms" "r"
+  WHERE (("r"."id" = "crm_deal_room_messages"."room_id") AND "public"."is_org_member"("r"."org_id") AND (("r"."participants" @> "to_jsonb"(("auth"."uid"())::"text")) OR ("r"."created_by" = "auth"."uid"()) OR "public"."is_org_admin"("r"."org_id"))))));
+
+
+
+CREATE POLICY "crm_deal_room_messages_service_role" ON "public"."crm_deal_room_messages" TO "service_role" USING (true);
+
+
+
+CREATE POLICY "crm_deal_room_messages_update" ON "public"."crm_deal_room_messages" FOR UPDATE TO "authenticated" USING (("user_id" = "auth"."uid"())) WITH CHECK (("user_id" = "auth"."uid"()));
+
+
+
+ALTER TABLE "public"."crm_deal_room_participants" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."crm_deal_room_pinned_items" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."crm_deal_rooms" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "crm_deal_rooms_delete" ON "public"."crm_deal_rooms" FOR DELETE TO "authenticated" USING ((("created_by" = "auth"."uid"()) OR "public"."is_org_admin"("org_id")));
+
+
+
+CREATE POLICY "crm_deal_rooms_insert" ON "public"."crm_deal_rooms" FOR INSERT TO "authenticated" WITH CHECK ("public"."is_org_member"("org_id"));
+
+
+
+CREATE POLICY "crm_deal_rooms_select" ON "public"."crm_deal_rooms" FOR SELECT TO "authenticated" USING (("public"."is_org_member"("org_id") AND (("participants" @> "to_jsonb"(("auth"."uid"())::"text")) OR ("created_by" = "auth"."uid"()) OR "public"."is_org_admin"("org_id"))));
+
+
+
+CREATE POLICY "crm_deal_rooms_service_role" ON "public"."crm_deal_rooms" TO "service_role" USING (true);
+
+
+
+CREATE POLICY "crm_deal_rooms_update" ON "public"."crm_deal_rooms" FOR UPDATE TO "authenticated" USING (("public"."is_org_member"("org_id") AND (("participants" @> "to_jsonb"(("auth"."uid"())::"text")) OR ("created_by" = "auth"."uid"()) OR "public"."is_org_admin"("org_id")))) WITH CHECK ("public"."is_org_member"("org_id"));
 
 
 
@@ -23607,6 +38479,9 @@ CREATE POLICY "crm_documents_update" ON "public"."crm_documents" FOR UPDATE USIN
 
 
 
+ALTER TABLE "public"."crm_email_ab_tests" ENABLE ROW LEVEL SECURITY;
+
+
 ALTER TABLE "public"."crm_email_attachments" ENABLE ROW LEVEL SECURITY;
 
 
@@ -23628,6 +38503,26 @@ ALTER TABLE "public"."crm_email_sequence_steps" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."crm_email_sequences" ENABLE ROW LEVEL SECURITY;
 
 
+CREATE POLICY "crm_email_sequences_delete" ON "public"."crm_email_sequences" FOR DELETE TO "authenticated" USING (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'email.templates'::"text")));
+
+
+
+CREATE POLICY "crm_email_sequences_insert" ON "public"."crm_email_sequences" FOR INSERT TO "authenticated" WITH CHECK (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'email.templates'::"text")));
+
+
+
+CREATE POLICY "crm_email_sequences_select" ON "public"."crm_email_sequences" FOR SELECT TO "authenticated" USING ("public"."is_org_member"("org_id"));
+
+
+
+CREATE POLICY "crm_email_sequences_service_all" ON "public"."crm_email_sequences" TO "service_role" USING (true) WITH CHECK (true);
+
+
+
+CREATE POLICY "crm_email_sequences_update" ON "public"."crm_email_sequences" FOR UPDATE TO "authenticated" USING (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'email.templates'::"text"))) WITH CHECK (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'email.templates'::"text")));
+
+
+
 ALTER TABLE "public"."crm_email_signatures" ENABLE ROW LEVEL SECURITY;
 
 
@@ -23635,6 +38530,31 @@ ALTER TABLE "public"."crm_email_threads" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."crm_email_tracking" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."crm_family_members" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "crm_family_members_delete" ON "public"."crm_family_members" FOR DELETE TO "authenticated" USING ("public"."has_org_permission"("org_id", 'contacts.delete'::"text"));
+
+
+
+CREATE POLICY "crm_family_members_insert" ON "public"."crm_family_members" FOR INSERT TO "authenticated" WITH CHECK ("public"."has_org_permission"("org_id", 'contacts.write'::"text"));
+
+
+
+CREATE POLICY "crm_family_members_select" ON "public"."crm_family_members" FOR SELECT TO "authenticated" USING ("public"."is_org_member"("org_id"));
+
+
+
+CREATE POLICY "crm_family_members_update" ON "public"."crm_family_members" FOR UPDATE TO "authenticated" USING ("public"."has_org_permission"("org_id", 'contacts.write'::"text")) WITH CHECK ("public"."has_org_permission"("org_id", 'contacts.write'::"text"));
+
+
+
+ALTER TABLE "public"."crm_focus_items" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."crm_follow_up_cadences" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."crm_forecast_entries" ENABLE ROW LEVEL SECURITY;
@@ -23682,6 +38602,13 @@ CREATE POLICY "crm_forecasts_select" ON "public"."crm_forecasts" FOR SELECT TO "
 
 
 CREATE POLICY "crm_forecasts_update" ON "public"."crm_forecasts" FOR UPDATE TO "authenticated" USING ("public"."has_org_permission"("org_id", 'deals.write'::"text")) WITH CHECK ("public"."has_org_permission"("org_id", 'deals.write'::"text"));
+
+
+
+ALTER TABLE "public"."crm_integration_accounts" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "crm_integration_accounts_mutate" ON "public"."crm_integration_accounts" TO "authenticated" USING (("public"."is_org_member"("org_id") AND (("user_id" IS NULL) OR ("user_id" = "auth"."uid"())))) WITH CHECK (("public"."is_org_member"("org_id") AND (("user_id" IS NULL) OR ("user_id" = "auth"."uid"()))));
 
 
 
@@ -23748,6 +38675,21 @@ CREATE POLICY "crm_invoices_update" ON "public"."crm_invoices" FOR UPDATE TO "au
 
 
 
+CREATE POLICY "crm_lead_cadence_insert" ON "public"."crm_lead_cadence_state" FOR INSERT WITH CHECK ("public"."is_org_member"("org_id"));
+
+
+
+CREATE POLICY "crm_lead_cadence_select" ON "public"."crm_lead_cadence_state" FOR SELECT USING ("public"."is_org_member"("org_id"));
+
+
+
+ALTER TABLE "public"."crm_lead_cadence_state" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "crm_lead_cadence_update" ON "public"."crm_lead_cadence_state" FOR UPDATE USING ("public"."is_org_member"("org_id"));
+
+
+
 ALTER TABLE "public"."crm_lead_health_quotes" ENABLE ROW LEVEL SECURITY;
 
 
@@ -23792,10 +38734,202 @@ CREATE POLICY "crm_lead_plan_interests_update" ON "public"."crm_lead_plan_intere
 
 
 
+ALTER TABLE "public"."crm_lead_quote_history" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "crm_lead_quote_history_delete" ON "public"."crm_lead_quote_history" FOR DELETE TO "authenticated" USING ("public"."is_org_member"("org_id"));
+
+
+
+CREATE POLICY "crm_lead_quote_history_insert" ON "public"."crm_lead_quote_history" FOR INSERT TO "authenticated" WITH CHECK ("public"."is_org_member"("org_id"));
+
+
+
+CREATE POLICY "crm_lead_quote_history_select" ON "public"."crm_lead_quote_history" FOR SELECT TO "authenticated" USING ("public"."is_org_member"("org_id"));
+
+
+
+CREATE POLICY "crm_lead_quote_history_update" ON "public"."crm_lead_quote_history" FOR UPDATE TO "authenticated" USING ("public"."is_org_member"("org_id")) WITH CHECK ("public"."is_org_member"("org_id"));
+
+
+
+ALTER TABLE "public"."crm_lead_source_types" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "crm_lead_source_types_select" ON "public"."crm_lead_source_types" FOR SELECT TO "authenticated" USING (true);
+
+
+
+ALTER TABLE "public"."crm_lead_time_entries" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "crm_lead_time_entries_delete" ON "public"."crm_lead_time_entries" FOR DELETE TO "authenticated" USING ("public"."is_org_member"("org_id"));
+
+
+
+CREATE POLICY "crm_lead_time_entries_insert" ON "public"."crm_lead_time_entries" FOR INSERT TO "authenticated" WITH CHECK ("public"."is_org_member"("org_id"));
+
+
+
+CREATE POLICY "crm_lead_time_entries_select" ON "public"."crm_lead_time_entries" FOR SELECT TO "authenticated" USING ("public"."is_org_member"("org_id"));
+
+
+
+ALTER TABLE "public"."crm_linkedin_config" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "crm_linkedin_config_insert" ON "public"."crm_linkedin_config" FOR INSERT WITH CHECK (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'settings.manage'::"text")));
+
+
+
+CREATE POLICY "crm_linkedin_config_select" ON "public"."crm_linkedin_config" FOR SELECT USING ("public"."is_org_member"("org_id"));
+
+
+
+CREATE POLICY "crm_linkedin_config_update" ON "public"."crm_linkedin_config" FOR UPDATE USING (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'settings.manage'::"text")));
+
+
+
+ALTER TABLE "public"."crm_master_templates" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "crm_master_templates_delete" ON "public"."crm_master_templates" FOR DELETE TO "authenticated" USING (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'templates.master.manage'::"text")));
+
+
+
+CREATE POLICY "crm_master_templates_insert" ON "public"."crm_master_templates" FOR INSERT TO "authenticated" WITH CHECK (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'templates.master.manage'::"text")));
+
+
+
+CREATE POLICY "crm_master_templates_select" ON "public"."crm_master_templates" FOR SELECT TO "authenticated" USING ("public"."is_org_member"("org_id"));
+
+
+
+CREATE POLICY "crm_master_templates_service" ON "public"."crm_master_templates" TO "service_role" USING (true) WITH CHECK (true);
+
+
+
+CREATE POLICY "crm_master_templates_update" ON "public"."crm_master_templates" FOR UPDATE TO "authenticated" USING (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'templates.master.manage'::"text"))) WITH CHECK (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'templates.master.manage'::"text")));
+
+
+
 ALTER TABLE "public"."crm_meeting_bookings" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."crm_meeting_schedules" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."crm_mentions" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "crm_mentions_insert" ON "public"."crm_mentions" FOR INSERT TO "authenticated" WITH CHECK ("public"."is_org_member"("org_id"));
+
+
+
+CREATE POLICY "crm_mentions_select" ON "public"."crm_mentions" FOR SELECT TO "authenticated" USING (("mentioned_user_id" = "auth"."uid"()));
+
+
+
+CREATE POLICY "crm_mentions_service_role" ON "public"."crm_mentions" TO "service_role" USING (true);
+
+
+
+CREATE POLICY "crm_mentions_update" ON "public"."crm_mentions" FOR UPDATE TO "authenticated" USING (("mentioned_user_id" = "auth"."uid"())) WITH CHECK (("mentioned_user_id" = "auth"."uid"()));
+
+
+
+CREATE POLICY "crm_milestones_delete" ON "public"."crm_quarterly_milestones" FOR DELETE USING (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'targets.manage'::"text")));
+
+
+
+CREATE POLICY "crm_milestones_insert" ON "public"."crm_quarterly_milestones" FOR INSERT WITH CHECK (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'targets.manage'::"text")));
+
+
+
+CREATE POLICY "crm_milestones_select" ON "public"."crm_quarterly_milestones" FOR SELECT USING ("public"."is_org_member"("org_id"));
+
+
+
+CREATE POLICY "crm_milestones_update" ON "public"."crm_quarterly_milestones" FOR UPDATE USING (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'targets.manage'::"text")));
+
+
+
+CREATE POLICY "crm_oa_delete" ON "public"."crm_outside_advisors" FOR DELETE USING (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'outside_advisors.write'::"text")));
+
+
+
+CREATE POLICY "crm_oa_insert" ON "public"."crm_outside_advisors" FOR INSERT WITH CHECK (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'outside_advisors.write'::"text")));
+
+
+
+CREATE POLICY "crm_oa_select" ON "public"."crm_outside_advisors" FOR SELECT USING (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'outside_advisors.read'::"text")));
+
+
+
+CREATE POLICY "crm_oa_update" ON "public"."crm_outside_advisors" FOR UPDATE USING (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'outside_advisors.write'::"text")));
+
+
+
+ALTER TABLE "public"."crm_oe_reactivation_runs" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "crm_oe_reactivation_runs_all" ON "public"."crm_oe_reactivation_runs" TO "authenticated" USING ("public"."is_org_member"("org_id")) WITH CHECK ("public"."is_org_member"("org_id"));
+
+
+
+ALTER TABLE "public"."crm_optout_keywords" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "crm_optout_keywords_delete" ON "public"."crm_optout_keywords" FOR DELETE TO "authenticated" USING ((("org_id" IS NOT NULL) AND "public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'settings.manage'::"text")));
+
+
+
+CREATE POLICY "crm_optout_keywords_insert" ON "public"."crm_optout_keywords" FOR INSERT TO "authenticated" WITH CHECK ((("org_id" IS NOT NULL) AND "public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'settings.manage'::"text")));
+
+
+
+CREATE POLICY "crm_optout_keywords_select" ON "public"."crm_optout_keywords" FOR SELECT TO "authenticated" USING ((("org_id" IS NULL) OR "public"."is_org_member"("org_id")));
+
+
+
+CREATE POLICY "crm_optout_keywords_update" ON "public"."crm_optout_keywords" FOR UPDATE TO "authenticated" USING ((("org_id" IS NOT NULL) AND "public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'settings.manage'::"text"))) WITH CHECK ((("org_id" IS NOT NULL) AND "public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'settings.manage'::"text")));
+
+
+
+ALTER TABLE "public"."crm_outside_advisors" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."crm_performance_alert_log" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."crm_performance_lag_config" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "crm_performance_lag_config_modify" ON "public"."crm_performance_lag_config" USING ("public"."is_org_admin"("org_id")) WITH CHECK ("public"."is_org_admin"("org_id"));
+
+
+
+CREATE POLICY "crm_performance_lag_config_select" ON "public"."crm_performance_lag_config" FOR SELECT USING ("public"."is_org_member"("org_id"));
+
+
+
+ALTER TABLE "public"."crm_phone_numbers" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "crm_phone_numbers_delete" ON "public"."crm_phone_numbers" FOR DELETE TO "authenticated" USING ("public"."has_org_permission"("org_id", 'contacts.delete'::"text"));
+
+
+
+CREATE POLICY "crm_phone_numbers_insert" ON "public"."crm_phone_numbers" FOR INSERT TO "authenticated" WITH CHECK ("public"."has_org_permission"("org_id", 'contacts.write'::"text"));
+
+
+
+CREATE POLICY "crm_phone_numbers_select" ON "public"."crm_phone_numbers" FOR SELECT TO "authenticated" USING ("public"."is_org_member"("org_id"));
+
+
+
+CREATE POLICY "crm_phone_numbers_update" ON "public"."crm_phone_numbers" FOR UPDATE TO "authenticated" USING ("public"."has_org_permission"("org_id", 'contacts.write'::"text")) WITH CHECK ("public"."has_org_permission"("org_id", 'contacts.write'::"text"));
+
 
 
 ALTER TABLE "public"."crm_pipeline_stages" ENABLE ROW LEVEL SECURITY;
@@ -23853,6 +38987,50 @@ CREATE POLICY "crm_price_books_update" ON "public"."crm_price_books" FOR UPDATE 
 
 
 
+ALTER TABLE "public"."crm_product_form_fields" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "crm_product_form_fields_delete" ON "public"."crm_product_form_fields" FOR DELETE USING (("org_id" IN ( SELECT "org_memberships"."org_id"
+   FROM "public"."org_memberships"
+  WHERE (("org_memberships"."user_id" = "auth"."uid"()) AND ("org_memberships"."status" = 'active'::"text")))));
+
+
+
+CREATE POLICY "crm_product_form_fields_insert" ON "public"."crm_product_form_fields" FOR INSERT WITH CHECK (("org_id" IN ( SELECT "org_memberships"."org_id"
+   FROM "public"."org_memberships"
+  WHERE (("org_memberships"."user_id" = "auth"."uid"()) AND ("org_memberships"."status" = 'active'::"text")))));
+
+
+
+CREATE POLICY "crm_product_form_fields_select" ON "public"."crm_product_form_fields" FOR SELECT USING (("org_id" IN ( SELECT "org_memberships"."org_id"
+   FROM "public"."org_memberships"
+  WHERE (("org_memberships"."user_id" = "auth"."uid"()) AND ("org_memberships"."status" = 'active'::"text")))));
+
+
+
+CREATE POLICY "crm_product_form_fields_update" ON "public"."crm_product_form_fields" FOR UPDATE USING (("org_id" IN ( SELECT "org_memberships"."org_id"
+   FROM "public"."org_memberships"
+  WHERE (("org_memberships"."user_id" = "auth"."uid"()) AND ("org_memberships"."status" = 'active'::"text")))));
+
+
+
+ALTER TABLE "public"."crm_product_lines" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "crm_product_lines_select" ON "public"."crm_product_lines" FOR SELECT USING ((("org_id" IS NULL) OR (EXISTS ( SELECT 1
+   FROM "public"."org_memberships" "m"
+  WHERE (("m"."org_id" = "crm_product_lines"."org_id") AND ("m"."user_id" = "auth"."uid"()) AND ("m"."status" = 'active'::"text"))))));
+
+
+
+CREATE POLICY "crm_product_lines_write" ON "public"."crm_product_lines" USING ((("org_id" IS NOT NULL) AND (EXISTS ( SELECT 1
+   FROM "public"."org_memberships" "m"
+  WHERE (("m"."org_id" = "crm_product_lines"."org_id") AND ("m"."user_id" = "auth"."uid"()) AND ("m"."status" = 'active'::"text") AND ("m"."role" = ANY (ARRAY['owner'::"text", 'admin'::"text"]))))))) WITH CHECK ((("org_id" IS NOT NULL) AND (EXISTS ( SELECT 1
+   FROM "public"."org_memberships" "m"
+  WHERE (("m"."org_id" = "crm_product_lines"."org_id") AND ("m"."user_id" = "auth"."uid"()) AND ("m"."status" = 'active'::"text") AND ("m"."role" = ANY (ARRAY['owner'::"text", 'admin'::"text"])))))));
+
+
+
 ALTER TABLE "public"."crm_products" ENABLE ROW LEVEL SECURITY;
 
 
@@ -23876,6 +39054,48 @@ ALTER TABLE "public"."crm_purchase_order_line_items" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."crm_purchase_orders" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."crm_quarterly_milestones" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."crm_quote_line_item_answers" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "crm_quote_line_item_answers_delete" ON "public"."crm_quote_line_item_answers" FOR DELETE USING (("line_item_id" IN ( SELECT "li"."id"
+   FROM ("public"."crm_quote_line_items" "li"
+     JOIN "public"."crm_quotes" "q" ON (("q"."id" = "li"."quote_id")))
+  WHERE ("q"."org_id" IN ( SELECT "org_memberships"."org_id"
+           FROM "public"."org_memberships"
+          WHERE (("org_memberships"."user_id" = "auth"."uid"()) AND ("org_memberships"."status" = 'active'::"text")))))));
+
+
+
+CREATE POLICY "crm_quote_line_item_answers_insert" ON "public"."crm_quote_line_item_answers" FOR INSERT WITH CHECK (("line_item_id" IN ( SELECT "li"."id"
+   FROM ("public"."crm_quote_line_items" "li"
+     JOIN "public"."crm_quotes" "q" ON (("q"."id" = "li"."quote_id")))
+  WHERE ("q"."org_id" IN ( SELECT "org_memberships"."org_id"
+           FROM "public"."org_memberships"
+          WHERE (("org_memberships"."user_id" = "auth"."uid"()) AND ("org_memberships"."status" = 'active'::"text")))))));
+
+
+
+CREATE POLICY "crm_quote_line_item_answers_select" ON "public"."crm_quote_line_item_answers" FOR SELECT USING (("line_item_id" IN ( SELECT "li"."id"
+   FROM ("public"."crm_quote_line_items" "li"
+     JOIN "public"."crm_quotes" "q" ON (("q"."id" = "li"."quote_id")))
+  WHERE ("q"."org_id" IN ( SELECT "org_memberships"."org_id"
+           FROM "public"."org_memberships"
+          WHERE (("org_memberships"."user_id" = "auth"."uid"()) AND ("org_memberships"."status" = 'active'::"text")))))));
+
+
+
+CREATE POLICY "crm_quote_line_item_answers_update" ON "public"."crm_quote_line_item_answers" FOR UPDATE USING (("line_item_id" IN ( SELECT "li"."id"
+   FROM ("public"."crm_quote_line_items" "li"
+     JOIN "public"."crm_quotes" "q" ON (("q"."id" = "li"."quote_id")))
+  WHERE ("q"."org_id" IN ( SELECT "org_memberships"."org_id"
+           FROM "public"."org_memberships"
+          WHERE (("org_memberships"."user_id" = "auth"."uid"()) AND ("org_memberships"."status" = 'active'::"text")))))));
+
 
 
 ALTER TABLE "public"."crm_quote_line_items" ENABLE ROW LEVEL SECURITY;
@@ -23907,6 +39127,33 @@ CREATE POLICY "crm_quote_line_items_update" ON "public"."crm_quote_line_items" F
 
 
 
+ALTER TABLE "public"."crm_quote_templates" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "crm_quote_templates_delete" ON "public"."crm_quote_templates" FOR DELETE USING (("org_id" IN ( SELECT "org_memberships"."org_id"
+   FROM "public"."org_memberships"
+  WHERE (("org_memberships"."user_id" = "auth"."uid"()) AND ("org_memberships"."status" = 'active'::"text")))));
+
+
+
+CREATE POLICY "crm_quote_templates_insert" ON "public"."crm_quote_templates" FOR INSERT WITH CHECK (("org_id" IN ( SELECT "org_memberships"."org_id"
+   FROM "public"."org_memberships"
+  WHERE (("org_memberships"."user_id" = "auth"."uid"()) AND ("org_memberships"."status" = 'active'::"text")))));
+
+
+
+CREATE POLICY "crm_quote_templates_select" ON "public"."crm_quote_templates" FOR SELECT USING (("org_id" IN ( SELECT "org_memberships"."org_id"
+   FROM "public"."org_memberships"
+  WHERE (("org_memberships"."user_id" = "auth"."uid"()) AND ("org_memberships"."status" = 'active'::"text")))));
+
+
+
+CREATE POLICY "crm_quote_templates_update" ON "public"."crm_quote_templates" FOR UPDATE USING (("org_id" IN ( SELECT "org_memberships"."org_id"
+   FROM "public"."org_memberships"
+  WHERE (("org_memberships"."user_id" = "auth"."uid"()) AND ("org_memberships"."status" = 'active'::"text")))));
+
+
+
 ALTER TABLE "public"."crm_quotes" ENABLE ROW LEVEL SECURITY;
 
 
@@ -23926,6 +39173,116 @@ CREATE POLICY "crm_quotes_update" ON "public"."crm_quotes" FOR UPDATE TO "authen
 
 
 
+ALTER TABLE "public"."crm_recruit_cadence_state" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."crm_recruiting_pipeline_stages" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."crm_recruiting_records" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "crm_ref_partners_delete" ON "public"."crm_referral_partners" FOR DELETE USING (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'referrals.write'::"text")));
+
+
+
+CREATE POLICY "crm_ref_partners_insert" ON "public"."crm_referral_partners" FOR INSERT WITH CHECK (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'referrals.write'::"text")));
+
+
+
+CREATE POLICY "crm_ref_partners_select" ON "public"."crm_referral_partners" FOR SELECT USING (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'referrals.read'::"text")));
+
+
+
+CREATE POLICY "crm_ref_partners_update" ON "public"."crm_referral_partners" FOR UPDATE USING (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'referrals.write'::"text")));
+
+
+
+ALTER TABLE "public"."crm_referral_partners" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."crm_referrals" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "crm_referrals_delete" ON "public"."crm_referrals" FOR DELETE USING (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'referrals.write'::"text")));
+
+
+
+CREATE POLICY "crm_referrals_insert" ON "public"."crm_referrals" FOR INSERT WITH CHECK (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'referrals.write'::"text")));
+
+
+
+CREATE POLICY "crm_referrals_select" ON "public"."crm_referrals" FOR SELECT USING (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'referrals.read'::"text")));
+
+
+
+CREATE POLICY "crm_referrals_update" ON "public"."crm_referrals" FOR UPDATE USING (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'referrals.write'::"text")));
+
+
+
+ALTER TABLE "public"."crm_rep_daily_log_entries" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "crm_rep_daily_log_mutate" ON "public"."crm_rep_daily_log_entries" TO "authenticated" USING (("public"."is_org_member"("org_id") AND ("user_id" = "auth"."uid"()))) WITH CHECK (("public"."is_org_member"("org_id") AND ("user_id" = "auth"."uid"())));
+
+
+
+CREATE POLICY "crm_rep_daily_log_select" ON "public"."crm_rep_daily_log_entries" FOR SELECT TO "authenticated" USING ("public"."is_org_member"("org_id"));
+
+
+
+ALTER TABLE "public"."crm_rep_message_templates" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."crm_rep_roster" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "crm_rep_roster_modify_admin" ON "public"."crm_rep_roster" USING ("public"."is_org_admin"("org_id")) WITH CHECK ("public"."is_org_admin"("org_id"));
+
+
+
+CREATE POLICY "crm_rep_roster_select_org_members" ON "public"."crm_rep_roster" FOR SELECT USING ("public"."is_org_member"("org_id"));
+
+
+
+CREATE POLICY "crm_rep_roster_service" ON "public"."crm_rep_roster" TO "service_role" USING (true) WITH CHECK (true);
+
+
+
+CREATE POLICY "crm_rep_templates_mutate" ON "public"."crm_rep_message_templates" TO "authenticated" USING (("public"."is_org_member"("org_id") AND ("user_id" = "auth"."uid"()))) WITH CHECK (("public"."is_org_member"("org_id") AND ("user_id" = "auth"."uid"())));
+
+
+
+CREATE POLICY "crm_rep_templates_select" ON "public"."crm_rep_message_templates" FOR SELECT TO "authenticated" USING ("public"."is_org_member"("org_id"));
+
+
+
+ALTER TABLE "public"."crm_round_robin_audit" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."crm_round_robin_config" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "crm_rr_audit_insert" ON "public"."crm_round_robin_audit" FOR INSERT WITH CHECK ("public"."is_org_member"("org_id"));
+
+
+
+CREATE POLICY "crm_rr_audit_select" ON "public"."crm_round_robin_audit" FOR SELECT USING ("public"."is_org_member"("org_id"));
+
+
+
+CREATE POLICY "crm_rr_config_insert" ON "public"."crm_round_robin_config" FOR INSERT WITH CHECK (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'round_robin.manage'::"text")));
+
+
+
+CREATE POLICY "crm_rr_config_select" ON "public"."crm_round_robin_config" FOR SELECT USING ("public"."is_org_member"("org_id"));
+
+
+
+CREATE POLICY "crm_rr_config_update" ON "public"."crm_round_robin_config" FOR UPDATE USING (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'round_robin.manage'::"text")));
+
+
+
 ALTER TABLE "public"."crm_sales_order_line_items" ENABLE ROW LEVEL SECURITY;
 
 
@@ -23935,7 +39292,11 @@ ALTER TABLE "public"."crm_sales_orders" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."crm_saved_views" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "crm_saved_views_delete" ON "public"."crm_saved_views" FOR SELECT USING (("owner_id" = ( SELECT "auth"."uid"() AS "uid")));
+CREATE POLICY "crm_saved_views_delete" ON "public"."crm_saved_views" FOR DELETE TO "authenticated" USING (("owner_id" = ( SELECT "auth"."uid"() AS "uid")));
+
+
+
+CREATE POLICY "crm_saved_views_insert" ON "public"."crm_saved_views" FOR INSERT TO "authenticated" WITH CHECK (("public"."is_org_member"("org_id") AND ("owner_id" = "auth"."uid"())));
 
 
 
@@ -23943,8 +39304,122 @@ CREATE POLICY "crm_saved_views_select" ON "public"."crm_saved_views" FOR SELECT 
 
 
 
-CREATE POLICY "crm_saved_views_update" ON "public"."crm_saved_views" FOR SELECT USING (("owner_id" = ( SELECT "auth"."uid"() AS "uid")));
+CREATE POLICY "crm_saved_views_update" ON "public"."crm_saved_views" FOR UPDATE TO "authenticated" USING (("owner_id" = ( SELECT "auth"."uid"() AS "uid"))) WITH CHECK (("owner_id" = ( SELECT "auth"."uid"() AS "uid")));
 
+
+
+ALTER TABLE "public"."crm_sequence_triggers" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "crm_sequence_triggers_delete" ON "public"."crm_sequence_triggers" FOR DELETE TO "authenticated" USING ("public"."is_org_admin"("org_id"));
+
+
+
+CREATE POLICY "crm_sequence_triggers_insert" ON "public"."crm_sequence_triggers" FOR INSERT TO "authenticated" WITH CHECK ("public"."is_org_admin"("org_id"));
+
+
+
+CREATE POLICY "crm_sequence_triggers_select" ON "public"."crm_sequence_triggers" FOR SELECT TO "authenticated" USING ("public"."is_org_member"("org_id"));
+
+
+
+CREATE POLICY "crm_sequence_triggers_service_role" ON "public"."crm_sequence_triggers" TO "service_role" USING (true);
+
+
+
+CREATE POLICY "crm_sequence_triggers_update" ON "public"."crm_sequence_triggers" FOR UPDATE TO "authenticated" USING ("public"."is_org_admin"("org_id")) WITH CHECK ("public"."is_org_admin"("org_id"));
+
+
+
+ALTER TABLE "public"."crm_sla_config" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "crm_sla_config_insert" ON "public"."crm_sla_config" FOR INSERT WITH CHECK (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'sla.manage'::"text")));
+
+
+
+CREATE POLICY "crm_sla_config_select" ON "public"."crm_sla_config" FOR SELECT USING ("public"."is_org_member"("org_id"));
+
+
+
+CREATE POLICY "crm_sla_config_update" ON "public"."crm_sla_config" FOR UPDATE USING (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'sla.manage'::"text")));
+
+
+
+ALTER TABLE "public"."crm_social_platform_connections" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "crm_social_platform_connections_delete" ON "public"."crm_social_platform_connections" FOR DELETE USING (("org_id" IN ( SELECT "org_memberships"."org_id"
+   FROM "public"."org_memberships"
+  WHERE ("org_memberships"."user_id" = "auth"."uid"()))));
+
+
+
+CREATE POLICY "crm_social_platform_connections_insert" ON "public"."crm_social_platform_connections" FOR INSERT WITH CHECK (("org_id" IN ( SELECT "org_memberships"."org_id"
+   FROM "public"."org_memberships"
+  WHERE ("org_memberships"."user_id" = "auth"."uid"()))));
+
+
+
+CREATE POLICY "crm_social_platform_connections_select" ON "public"."crm_social_platform_connections" FOR SELECT USING (("org_id" IN ( SELECT "org_memberships"."org_id"
+   FROM "public"."org_memberships"
+  WHERE ("org_memberships"."user_id" = "auth"."uid"()))));
+
+
+
+CREATE POLICY "crm_social_platform_connections_update" ON "public"."crm_social_platform_connections" FOR UPDATE USING (("org_id" IN ( SELECT "org_memberships"."org_id"
+   FROM "public"."org_memberships"
+  WHERE ("org_memberships"."user_id" = "auth"."uid"()))));
+
+
+
+ALTER TABLE "public"."crm_social_posts" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "crm_social_posts_delete" ON "public"."crm_social_posts" FOR DELETE USING (("org_id" IN ( SELECT "org_memberships"."org_id"
+   FROM "public"."org_memberships"
+  WHERE ("org_memberships"."user_id" = "auth"."uid"()))));
+
+
+
+CREATE POLICY "crm_social_posts_insert" ON "public"."crm_social_posts" FOR INSERT WITH CHECK (("org_id" IN ( SELECT "org_memberships"."org_id"
+   FROM "public"."org_memberships"
+  WHERE ("org_memberships"."user_id" = "auth"."uid"()))));
+
+
+
+CREATE POLICY "crm_social_posts_select" ON "public"."crm_social_posts" FOR SELECT USING (("org_id" IN ( SELECT "org_memberships"."org_id"
+   FROM "public"."org_memberships"
+  WHERE ("org_memberships"."user_id" = "auth"."uid"()))));
+
+
+
+CREATE POLICY "crm_social_posts_update" ON "public"."crm_social_posts" FOR UPDATE USING (("org_id" IN ( SELECT "org_memberships"."org_id"
+   FROM "public"."org_memberships"
+  WHERE ("org_memberships"."user_id" = "auth"."uid"()))));
+
+
+
+ALTER TABLE "public"."crm_special_project_types" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "crm_special_project_types_delete" ON "public"."crm_special_project_types" FOR DELETE USING ("public"."is_org_admin"("org_id"));
+
+
+
+CREATE POLICY "crm_special_project_types_insert" ON "public"."crm_special_project_types" FOR INSERT WITH CHECK ("public"."is_org_admin"("org_id"));
+
+
+
+CREATE POLICY "crm_special_project_types_select" ON "public"."crm_special_project_types" FOR SELECT USING ("public"."is_org_member"("org_id"));
+
+
+
+CREATE POLICY "crm_special_project_types_update" ON "public"."crm_special_project_types" FOR UPDATE USING ("public"."is_org_admin"("org_id")) WITH CHECK ("public"."is_org_admin"("org_id"));
+
+
+
+ALTER TABLE "public"."crm_special_projects" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."crm_studio_fields" ENABLE ROW LEVEL SECURITY;
@@ -23962,13 +39437,38 @@ ALTER TABLE "public"."crm_studio_validation_rules" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."crm_studio_views" ENABLE ROW LEVEL SECURITY;
 
 
+CREATE POLICY "crm_targets_delete" ON "public"."crm_activity_targets" FOR DELETE USING (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'targets.manage'::"text")));
+
+
+
+CREATE POLICY "crm_targets_insert" ON "public"."crm_activity_targets" FOR INSERT WITH CHECK (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'targets.manage'::"text")));
+
+
+
+CREATE POLICY "crm_targets_select" ON "public"."crm_activity_targets" FOR SELECT USING ("public"."is_org_member"("org_id"));
+
+
+
+CREATE POLICY "crm_targets_update" ON "public"."crm_activity_targets" FOR UPDATE USING (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'targets.manage'::"text")));
+
+
+
 ALTER TABLE "public"."crm_template_folders" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."crm_templates" ENABLE ROW LEVEL SECURITY;
 
 
+ALTER TABLE "public"."crm_user_achievements" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."crm_user_conversation_goal_overrides" ENABLE ROW LEVEL SECURITY;
+
+
 ALTER TABLE "public"."crm_user_goals" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."crm_user_xp" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."crm_vendors" ENABLE ROW LEVEL SECURITY;
@@ -24041,10 +39541,51 @@ CREATE POLICY "crm_website_quote_sync_select" ON "public"."crm_website_quote_syn
 
 
 
+ALTER TABLE "public"."crm_win_feed" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."crm_workspaces" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."crm_xp_events" ENABLE ROW LEVEL SECURITY;
+
+
 ALTER TABLE "public"."daily_analytics_summary" ENABLE ROW LEVEL SECURITY;
 
 
+CREATE POLICY "daily_log_events_delete_self" ON "public"."crm_daily_log_events" FOR DELETE TO "authenticated" USING (("public"."is_org_member"("org_id") AND ("user_id" = "auth"."uid"()) AND ("manual" = true)));
+
+
+
+CREATE POLICY "daily_log_events_insert_self" ON "public"."crm_daily_log_events" FOR INSERT TO "authenticated" WITH CHECK (("public"."is_org_member"("org_id") AND ("user_id" = "auth"."uid"()) AND ("manual" = true)));
+
+
+
+CREATE POLICY "daily_log_events_select" ON "public"."crm_daily_log_events" FOR SELECT TO "authenticated" USING ("public"."is_org_member"("org_id"));
+
+
+
+CREATE POLICY "daily_log_events_service" ON "public"."crm_daily_log_events" TO "service_role" USING (true) WITH CHECK (true);
+
+
+
+CREATE POLICY "daily_log_events_update_self" ON "public"."crm_daily_log_events" FOR UPDATE TO "authenticated" USING (("public"."is_org_member"("org_id") AND ("user_id" = "auth"."uid"()) AND ("manual" = true))) WITH CHECK (("public"."is_org_member"("org_id") AND ("user_id" = "auth"."uid"()) AND ("manual" = true)));
+
+
+
+CREATE POLICY "deprecated_leads_deny_all" ON "public"."_deprecated_leads" USING (false) WITH CHECK (false);
+
+
+
 ALTER TABLE "public"."device_push_subscriptions" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "dl_corrections_select_admin" ON "public"."crm_daily_log_corrections" FOR SELECT TO "authenticated" USING ("public"."is_org_admin"("org_id"));
+
+
+
+CREATE POLICY "dl_corrections_service" ON "public"."crm_daily_log_corrections" TO "service_role" USING (true) WITH CHECK (true);
+
 
 
 CREATE POLICY "doc_access_delete_member" ON "public"."document_access_log" FOR SELECT TO "authenticated" USING ((("accessed_by" = ( SELECT ( SELECT "auth"."uid"() AS "uid") AS "uid")) OR "public"."is_staff_or_admin"()));
@@ -24074,6 +39615,25 @@ CREATE POLICY "educational_content_admin_update" ON "public"."educational_conten
 
 
 CREATE POLICY "educational_content_select" ON "public"."educational_content" FOR SELECT USING ((("is_active" = true) OR "public"."current_user_has_admin_access"()));
+
+
+
+ALTER TABLE "public"."email_log" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "email_log_delete" ON "public"."email_log" FOR DELETE TO "authenticated" USING ("public"."is_org_member"("org_id"));
+
+
+
+CREATE POLICY "email_log_insert" ON "public"."email_log" FOR INSERT TO "authenticated" WITH CHECK ("public"."is_org_member"("org_id"));
+
+
+
+CREATE POLICY "email_log_select" ON "public"."email_log" FOR SELECT TO "authenticated" USING ("public"."is_org_member"("org_id"));
+
+
+
+CREATE POLICY "email_log_update" ON "public"."email_log" FOR UPDATE TO "authenticated" USING ("public"."is_org_member"("org_id")) WITH CHECK ("public"."is_org_member"("org_id"));
 
 
 
@@ -24142,7 +39702,26 @@ CREATE POLICY "external_lms_lessons_select" ON "public"."external_lms_lessons" F
 ALTER TABLE "public"."faq_items" ENABLE ROW LEVEL SECURITY;
 
 
+ALTER TABLE "public"."feature_flags" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "feature_flags_read" ON "public"."feature_flags" FOR SELECT TO "authenticated" USING (true);
+
+
+
+CREATE POLICY "focus_items_user_access" ON "public"."crm_focus_items" USING (("user_id" = "auth"."uid"()));
+
+
+
 ALTER TABLE "public"."form_submissions" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "form_submissions_advisor_insert" ON "public"."form_submissions" FOR INSERT TO "authenticated" WITH CHECK ((("advisor_id" = "auth"."uid"()) AND "public"."current_user_has_advisor_or_admin_access"()));
+
+
+
+CREATE POLICY "form_submissions_advisor_update" ON "public"."form_submissions" FOR UPDATE TO "authenticated" USING ((("advisor_id" = "auth"."uid"()) AND "public"."current_user_has_advisor_or_admin_access"())) WITH CHECK ((("advisor_id" = "auth"."uid"()) AND "public"."current_user_has_advisor_or_admin_access"()));
+
 
 
 CREATE POLICY "form_submissions_select" ON "public"."form_submissions" FOR SELECT TO "authenticated" USING (true);
@@ -24167,7 +39746,36 @@ ALTER TABLE "public"."healthcare_plan_categories" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."immunizations" ENABLE ROW LEVEL SECURITY;
 
 
+ALTER TABLE "public"."impersonation_log" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."insurance_carriers" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "insurance_carriers_delete" ON "public"."insurance_carriers" FOR DELETE TO "authenticated" USING ("public"."has_org_permission"("org_id", 'settings.manage'::"text"));
+
+
+
+CREATE POLICY "insurance_carriers_global_select" ON "public"."insurance_carriers" FOR SELECT TO "authenticated" USING (("org_id" IS NULL));
+
+
+
+CREATE POLICY "insurance_carriers_insert" ON "public"."insurance_carriers" FOR INSERT TO "authenticated" WITH CHECK ("public"."has_org_permission"("org_id", 'settings.manage'::"text"));
+
+
+
+CREATE POLICY "insurance_carriers_select" ON "public"."insurance_carriers" FOR SELECT TO "authenticated" USING ("public"."is_org_member"("org_id"));
+
+
+
+CREATE POLICY "insurance_carriers_update" ON "public"."insurance_carriers" FOR UPDATE TO "authenticated" USING ("public"."has_org_permission"("org_id", 'settings.manage'::"text")) WITH CHECK ("public"."has_org_permission"("org_id", 'settings.manage'::"text"));
+
+
+
 ALTER TABLE "public"."integration_health" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."integrations" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."interaction_logs" ENABLE ROW LEVEL SECURITY;
@@ -24207,9 +39815,6 @@ ALTER TABLE "public"."lead_submissions" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."lead_tasks" ENABLE ROW LEVEL SECURITY;
-
-
-ALTER TABLE "public"."leads" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."mail_accounts" ENABLE ROW LEVEL SECURITY;
@@ -24340,6 +39945,9 @@ ALTER TABLE "public"."meeting_invitations" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."meeting_templates" ENABLE ROW LEVEL SECURITY;
 
 
+ALTER TABLE "public"."member_account_events" ENABLE ROW LEVEL SECURITY;
+
+
 ALTER TABLE "public"."member_coverage" ENABLE ROW LEVEL SECURITY;
 
 
@@ -24361,10 +39969,36 @@ ALTER TABLE "public"."member_dependents" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."member_documents" ENABLE ROW LEVEL SECURITY;
 
 
+ALTER TABLE "public"."member_notification_rules" ENABLE ROW LEVEL SECURITY;
+
+
 ALTER TABLE "public"."member_notifications" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."member_profiles" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."message_templates" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "message_templates_delete" ON "public"."message_templates" FOR DELETE TO "authenticated" USING (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'email.templates'::"text")));
+
+
+
+CREATE POLICY "message_templates_insert" ON "public"."message_templates" FOR INSERT TO "authenticated" WITH CHECK (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'email.templates'::"text")));
+
+
+
+CREATE POLICY "message_templates_select" ON "public"."message_templates" FOR SELECT TO "authenticated" USING ("public"."is_org_member"("org_id"));
+
+
+
+CREATE POLICY "message_templates_service_all" ON "public"."message_templates" TO "service_role" USING (true) WITH CHECK (true);
+
+
+
+CREATE POLICY "message_templates_update" ON "public"."message_templates" FOR UPDATE TO "authenticated" USING (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'email.templates'::"text"))) WITH CHECK (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'email.templates'::"text")));
+
 
 
 ALTER TABLE "public"."messages" ENABLE ROW LEVEL SECURITY;
@@ -24378,6 +40012,9 @@ ALTER TABLE "public"."navigation_analytics" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."navigation_items" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."navigation_search_analytics" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."newsletter_campaigns" ENABLE ROW LEVEL SECURITY;
@@ -24423,6 +40060,15 @@ ALTER TABLE "public"."onboarding_steps" ENABLE ROW LEVEL SECURITY;
 
 
 CREATE POLICY "org_delete_owner" ON "public"."orgs" FOR DELETE TO "authenticated" USING ("public"."is_org_role"("id", 'owner'::"text"));
+
+
+
+ALTER TABLE "public"."org_feature_overrides" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "org_feature_overrides_read" ON "public"."org_feature_overrides" FOR SELECT TO "authenticated" USING (("org_id" IN ( SELECT "om"."org_id"
+   FROM "public"."org_memberships" "om"
+  WHERE (("om"."user_id" = "auth"."uid"()) AND ("om"."status" = 'active'::"text")))));
 
 
 
@@ -24477,23 +40123,32 @@ CREATE POLICY "org_lead_tasks_update" ON "public"."lead_tasks" FOR UPDATE TO "au
 
 
 
-CREATE POLICY "org_leads_delete" ON "public"."zoho_lead_submissions" FOR DELETE TO "authenticated" USING ((("org_id" IS NOT NULL) AND "public"."has_org_permission"("org_id", 'leads.delete'::"text")));
+CREATE POLICY "org_leads_delete" ON "public"."lead_submissions" FOR DELETE TO "authenticated" USING ((("org_id" IS NOT NULL) AND "public"."has_org_permission"("org_id", 'leads.delete'::"text")));
 
 
 
-CREATE POLICY "org_leads_insert" ON "public"."zoho_lead_submissions" FOR INSERT TO "authenticated" WITH CHECK ((("org_id" IS NOT NULL) AND "public"."is_org_member"("org_id")));
+CREATE POLICY "org_leads_insert" ON "public"."lead_submissions" FOR INSERT TO "authenticated" WITH CHECK ((("org_id" IS NOT NULL) AND "public"."is_org_member"("org_id")));
 
 
 
-CREATE POLICY "org_leads_select" ON "public"."zoho_lead_submissions" FOR SELECT TO "authenticated" USING ((("org_id" IS NOT NULL) AND "public"."is_org_member"("org_id")));
+CREATE POLICY "org_leads_select" ON "public"."lead_submissions" FOR SELECT TO "authenticated" USING ((("org_id" IS NOT NULL) AND "public"."is_org_member"("org_id")));
 
 
 
-CREATE POLICY "org_leads_update" ON "public"."zoho_lead_submissions" FOR UPDATE TO "authenticated" USING ((("org_id" IS NOT NULL) AND "public"."is_org_member"("org_id"))) WITH CHECK ((("org_id" IS NOT NULL) AND "public"."is_org_member"("org_id")));
+CREATE POLICY "org_leads_update" ON "public"."lead_submissions" FOR UPDATE TO "authenticated" USING ((("org_id" IS NOT NULL) AND "public"."is_org_member"("org_id"))) WITH CHECK ((("org_id" IS NOT NULL) AND "public"."is_org_member"("org_id")));
 
 
 
 ALTER TABLE "public"."org_memberships" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."org_module_licenses" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "org_module_licenses_read" ON "public"."org_module_licenses" FOR SELECT TO "authenticated" USING (("org_id" IN ( SELECT "om"."org_id"
+   FROM "public"."org_memberships" "om"
+  WHERE (("om"."user_id" = "auth"."uid"()) AND ("om"."status" = 'active'::"text")))));
+
 
 
 CREATE POLICY "org_pipeline_stages_delete" ON "public"."crm_pipeline_stages" FOR DELETE TO "authenticated" USING ((("org_id" IS NOT NULL) AND "public"."has_org_permission"("org_id", 'pipeline.delete'::"text")));
@@ -24512,6 +40167,21 @@ CREATE POLICY "org_pipeline_stages_update" ON "public"."crm_pipeline_stages" FOR
 
 
 
+ALTER TABLE "public"."org_portal_access" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "org_portal_access_admin_write" ON "public"."org_portal_access" TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."user_roles" "ur"
+  WHERE (("ur"."user_id" = "auth"."uid"()) AND ("ur"."role" = ANY (ARRAY['super_admin'::"text", 'admin'::"text"])))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."user_roles" "ur"
+  WHERE (("ur"."user_id" = "auth"."uid"()) AND ("ur"."role" = ANY (ARRAY['super_admin'::"text", 'admin'::"text"]))))));
+
+
+
+CREATE POLICY "org_portal_access_select" ON "public"."org_portal_access" FOR SELECT TO "authenticated", "anon" USING (true);
+
+
+
 CREATE POLICY "org_select_member" ON "public"."orgs" FOR SELECT TO "authenticated" USING ("public"."is_org_member"("id"));
 
 
@@ -24520,7 +40190,28 @@ CREATE POLICY "org_update_admin" ON "public"."orgs" FOR UPDATE TO "authenticated
 
 
 
+ALTER TABLE "public"."organization_id_map" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "organization_id_map_admin_write" ON "public"."organization_id_map" TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."user_roles" "ur"
+  WHERE (("ur"."user_id" = "auth"."uid"()) AND ("ur"."role" = ANY (ARRAY['super_admin'::"text", 'admin'::"text"])))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."user_roles" "ur"
+  WHERE (("ur"."user_id" = "auth"."uid"()) AND ("ur"."role" = ANY (ARRAY['super_admin'::"text", 'admin'::"text"]))))));
+
+
+
+CREATE POLICY "organization_id_map_select" ON "public"."organization_id_map" FOR SELECT TO "authenticated", "anon" USING (true);
+
+
+
 ALTER TABLE "public"."organizations" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "organizations_portal_tenant_resolution" ON "public"."organizations" FOR SELECT TO "authenticated", "anon" USING ((EXISTS ( SELECT 1
+   FROM "public"."org_portal_access" "opa"
+  WHERE (("opa"."org_id" = "organizations"."id") AND ("opa"."enabled" = true)))));
+
 
 
 ALTER TABLE "public"."orgs" ENABLE ROW LEVEL SECURITY;
@@ -24535,10 +40226,21 @@ ALTER TABLE "public"."page_performance" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."page_views" ENABLE ROW LEVEL SECURITY;
 
 
+ALTER TABLE "public"."password_history" ENABLE ROW LEVEL SECURITY;
+
+
 ALTER TABLE "public"."payment_methods" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."payment_processors" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "perf_alert_select" ON "public"."crm_performance_alert_log" FOR SELECT TO "authenticated" USING ("public"."is_org_member"("org_id"));
+
+
+
+CREATE POLICY "perf_alert_service" ON "public"."crm_performance_alert_log" TO "service_role" USING (true) WITH CHECK (true);
+
 
 
 ALTER TABLE "public"."performance_goals" ENABLE ROW LEVEL SECURITY;
@@ -24553,6 +40255,9 @@ ALTER TABLE "public"."permissions" ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "permissions_select_authenticated" ON "public"."permissions" FOR SELECT TO "authenticated" USING (true);
 
+
+
+ALTER TABLE "public"."phi_access_log" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."plan_category_features" ENABLE ROW LEVEL SECURITY;
@@ -24625,7 +40330,30 @@ ALTER TABLE "public"."priority_items" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."priority_lanes" ENABLE ROW LEVEL SECURITY;
 
 
+ALTER TABLE "public"."product_modules" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "product_modules_read" ON "public"."product_modules" FOR SELECT TO "authenticated" USING ((("is_active" = true) AND ("is_public" = true)));
+
+
+
 ALTER TABLE "public"."profiles" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "profiles_insert_own" ON "public"."profiles" FOR INSERT WITH CHECK (("auth"."uid"() = "id"));
+
+
+
+CREATE POLICY "profiles_select_authenticated" ON "public"."profiles" FOR SELECT TO "authenticated" USING (true);
+
+
+
+CREATE POLICY "profiles_select_policy" ON "public"."profiles" FOR SELECT USING (true);
+
+
+
+CREATE POLICY "profiles_update_own" ON "public"."profiles" FOR UPDATE USING (("auth"."uid"() = "id"));
+
 
 
 ALTER TABLE "public"."promo_code_usage" ENABLE ROW LEVEL SECURITY;
@@ -24640,11 +40368,22 @@ ALTER TABLE "public"."provider_locations" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."providers" ENABLE ROW LEVEL SECURITY;
 
 
+CREATE POLICY "public_read_active_training" ON "public"."training_modules" FOR SELECT TO "anon" USING (("is_active" = true));
+
+
+
+CREATE POLICY "public_read_published_bulletins" ON "public"."advisor_content" FOR SELECT TO "anon" USING ((("content_type" = 'bulletin'::"text") AND ("is_published" = true)));
+
+
+
 ALTER TABLE "public"."quick_actions" ENABLE ROW LEVEL SECURITY;
 
 
 CREATE POLICY "quick_actions_select" ON "public"."quick_actions" FOR SELECT TO "authenticated" USING (true);
 
+
+
+ALTER TABLE "public"."quote_calculator_funnel_events" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."rate_calculator_views" ENABLE ROW LEVEL SECURITY;
@@ -24666,6 +40405,46 @@ CREATE POLICY "rate_configuration_admin_update" ON "public"."rate_configuration"
 
 
 CREATE POLICY "rate_configuration_select" ON "public"."rate_configuration" FOR SELECT USING ((("is_active" = true) OR "public"."current_user_has_admin_access"()));
+
+
+
+CREATE POLICY "recruit_cadence_state_org_select" ON "public"."crm_recruit_cadence_state" FOR SELECT USING ("public"."is_org_member"("org_id"));
+
+
+
+CREATE POLICY "recruit_cadence_state_org_write" ON "public"."crm_recruit_cadence_state" USING ("public"."has_org_permission"("org_id", 'recruiting.write'::"text")) WITH CHECK ("public"."has_org_permission"("org_id", 'recruiting.write'::"text"));
+
+
+
+CREATE POLICY "recruiting_records_delete" ON "public"."crm_recruiting_records" FOR DELETE TO "authenticated" USING (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'recruiting.write'::"text")));
+
+
+
+CREATE POLICY "recruiting_records_insert" ON "public"."crm_recruiting_records" FOR INSERT TO "authenticated" WITH CHECK (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'recruiting.write'::"text")));
+
+
+
+CREATE POLICY "recruiting_records_select" ON "public"."crm_recruiting_records" FOR SELECT TO "authenticated" USING (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'recruiting.read'::"text")));
+
+
+
+CREATE POLICY "recruiting_records_service" ON "public"."crm_recruiting_records" TO "service_role" USING (true) WITH CHECK (true);
+
+
+
+CREATE POLICY "recruiting_records_update" ON "public"."crm_recruiting_records" FOR UPDATE TO "authenticated" USING (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'recruiting.write'::"text"))) WITH CHECK (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'recruiting.write'::"text")));
+
+
+
+CREATE POLICY "recruiting_stages_select" ON "public"."crm_recruiting_pipeline_stages" FOR SELECT TO "authenticated" USING (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'recruiting.read'::"text")));
+
+
+
+CREATE POLICY "recruiting_stages_service" ON "public"."crm_recruiting_pipeline_stages" TO "service_role" USING (true) WITH CHECK (true);
+
+
+
+CREATE POLICY "recruiting_stages_write" ON "public"."crm_recruiting_pipeline_stages" TO "authenticated" USING (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'recruiting.write'::"text"))) WITH CHECK (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'recruiting.write'::"text")));
 
 
 
@@ -24704,6 +40483,9 @@ CREATE POLICY "roleperm_update_owner" ON "public"."role_permissions" FOR UPDATE 
 ALTER TABLE "public"."saved_reports" ENABLE ROW LEVEL SECURITY;
 
 
+ALTER TABLE "public"."saved_searches" ENABLE ROW LEVEL SECURITY;
+
+
 ALTER TABLE "public"."scoring_rules" ENABLE ROW LEVEL SECURITY;
 
 
@@ -24737,10 +40519,74 @@ ALTER TABLE "public"."seo_pages" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."seo_sync_logs" ENABLE ROW LEVEL SECURITY;
 
 
+ALTER TABLE "public"."sequence_enrollments" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "sequence_enrollments_delete" ON "public"."sequence_enrollments" FOR DELETE TO "authenticated" USING ("public"."is_org_member"("org_id"));
+
+
+
+CREATE POLICY "sequence_enrollments_insert" ON "public"."sequence_enrollments" FOR INSERT TO "authenticated" WITH CHECK ("public"."is_org_member"("org_id"));
+
+
+
+CREATE POLICY "sequence_enrollments_select" ON "public"."sequence_enrollments" FOR SELECT TO "authenticated" USING ("public"."is_org_member"("org_id"));
+
+
+
+CREATE POLICY "sequence_enrollments_update" ON "public"."sequence_enrollments" FOR UPDATE TO "authenticated" USING ("public"."is_org_member"("org_id")) WITH CHECK ("public"."is_org_member"("org_id"));
+
+
+
+ALTER TABLE "public"."sequence_steps" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "sequence_steps_delete" ON "public"."sequence_steps" FOR DELETE TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."sequences" "s"
+  WHERE (("s"."id" = "sequence_steps"."sequence_id") AND "public"."is_org_member"("s"."org_id")))));
+
+
+
+CREATE POLICY "sequence_steps_insert" ON "public"."sequence_steps" FOR INSERT TO "authenticated" WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."sequences" "s"
+  WHERE (("s"."id" = "sequence_steps"."sequence_id") AND "public"."is_org_member"("s"."org_id")))));
+
+
+
+CREATE POLICY "sequence_steps_select" ON "public"."sequence_steps" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."sequences" "s"
+  WHERE (("s"."id" = "sequence_steps"."sequence_id") AND "public"."is_org_member"("s"."org_id")))));
+
+
+
+CREATE POLICY "sequence_steps_update" ON "public"."sequence_steps" FOR UPDATE TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."sequences" "s"
+  WHERE (("s"."id" = "sequence_steps"."sequence_id") AND "public"."is_org_member"("s"."org_id"))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."sequences" "s"
+  WHERE (("s"."id" = "sequence_steps"."sequence_id") AND "public"."is_org_member"("s"."org_id")))));
+
+
+
 ALTER TABLE "public"."sequences" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "sequences_select" ON "public"."sequences" FOR SELECT TO "authenticated" USING (true);
+CREATE POLICY "sequences_delete" ON "public"."sequences" FOR DELETE TO "authenticated" USING (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'email.templates'::"text")));
+
+
+
+CREATE POLICY "sequences_insert" ON "public"."sequences" FOR INSERT TO "authenticated" WITH CHECK (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'email.templates'::"text")));
+
+
+
+CREATE POLICY "sequences_select" ON "public"."sequences" FOR SELECT TO "authenticated" USING ("public"."is_org_member"("org_id"));
+
+
+
+CREATE POLICY "sequences_service_all" ON "public"."sequences" TO "service_role" USING (true) WITH CHECK (true);
+
+
+
+CREATE POLICY "sequences_update" ON "public"."sequences" FOR UPDATE TO "authenticated" USING (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'email.templates'::"text"))) WITH CHECK (("public"."is_org_member"("org_id") AND "public"."has_org_permission"("org_id", 'email.templates'::"text")));
 
 
 
@@ -24818,6 +40664,140 @@ CREATE POLICY "sop_documents_select" ON "public"."sop_documents" FOR SELECT TO "
 
 
 
+CREATE POLICY "special_projects_delete_self" ON "public"."crm_special_projects" FOR DELETE TO "authenticated" USING (("public"."is_org_member"("org_id") AND ("user_id" = "auth"."uid"())));
+
+
+
+CREATE POLICY "special_projects_insert_self" ON "public"."crm_special_projects" FOR INSERT TO "authenticated" WITH CHECK (("public"."is_org_member"("org_id") AND ("user_id" = "auth"."uid"())));
+
+
+
+CREATE POLICY "special_projects_select" ON "public"."crm_special_projects" FOR SELECT TO "authenticated" USING ("public"."is_org_member"("org_id"));
+
+
+
+CREATE POLICY "special_projects_service" ON "public"."crm_special_projects" TO "service_role" USING (true) WITH CHECK (true);
+
+
+
+CREATE POLICY "special_projects_update_self" ON "public"."crm_special_projects" FOR UPDATE TO "authenticated" USING (("public"."is_org_member"("org_id") AND ("user_id" = "auth"."uid"()))) WITH CHECK (("public"."is_org_member"("org_id") AND ("user_id" = "auth"."uid"())));
+
+
+
+ALTER TABLE "public"."staff_attendance_events" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "staff_attendance_events_select" ON "public"."staff_attendance_events" FOR SELECT TO "authenticated" USING ((("user_id" = "auth"."uid"()) OR ("actor_id" = "auth"."uid"()) OR "public"."is_staff_hr"()));
+
+
+
+ALTER TABLE "public"."staff_attendance_sessions" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "staff_attendance_sessions_select" ON "public"."staff_attendance_sessions" FOR SELECT TO "authenticated" USING ((("user_id" = "auth"."uid"()) OR "public"."is_staff_hr"()));
+
+
+
+ALTER TABLE "public"."staff_departments" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "staff_departments_hr_write" ON "public"."staff_departments" TO "authenticated" USING ("public"."is_staff_hr"()) WITH CHECK ("public"."is_staff_hr"());
+
+
+
+CREATE POLICY "staff_departments_select" ON "public"."staff_departments" FOR SELECT TO "authenticated" USING (("auth"."uid"() IS NOT NULL));
+
+
+
+ALTER TABLE "public"."staff_notes" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "staff_notes_rw" ON "public"."staff_notes" TO "authenticated" USING ((("user_id" = "auth"."uid"()) AND ("org_id" IN ( SELECT "om"."org_id"
+   FROM "public"."org_memberships" "om"
+  WHERE (("om"."user_id" = "auth"."uid"()) AND ("om"."status" = 'active'::"text")))))) WITH CHECK ((("user_id" = "auth"."uid"()) AND ("org_id" IN ( SELECT "om"."org_id"
+   FROM "public"."org_memberships" "om"
+  WHERE (("om"."user_id" = "auth"."uid"()) AND ("om"."status" = 'active'::"text"))))));
+
+
+
+ALTER TABLE "public"."staff_office_locations" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "staff_office_locations_hr_write" ON "public"."staff_office_locations" TO "authenticated" USING ("public"."is_staff_hr"()) WITH CHECK ("public"."is_staff_hr"());
+
+
+
+CREATE POLICY "staff_office_locations_select" ON "public"."staff_office_locations" FOR SELECT TO "authenticated" USING (("is_active" OR "public"."is_staff_hr"()));
+
+
+
+ALTER TABLE "public"."staff_profiles" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "staff_profiles_select" ON "public"."staff_profiles" FOR SELECT TO "authenticated" USING ((("user_id" = "auth"."uid"()) OR "public"."is_staff_hr"()));
+
+
+
+CREATE POLICY "staff_profiles_self_insert" ON "public"."staff_profiles" FOR INSERT TO "authenticated" WITH CHECK ((("user_id" = "auth"."uid"()) AND ("remote_status" = ANY (ARRAY['ineligible'::"public"."staff_remote_status", 'pending'::"public"."staff_remote_status"]))));
+
+
+
+CREATE POLICY "staff_profiles_self_update" ON "public"."staff_profiles" FOR UPDATE TO "authenticated" USING ((("user_id" = "auth"."uid"()) OR "public"."is_staff_hr"())) WITH CHECK ((("user_id" = "auth"."uid"()) OR "public"."is_staff_hr"()));
+
+
+
+ALTER TABLE "public"."staff_tasks" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "staff_tasks_rw" ON "public"."staff_tasks" TO "authenticated" USING ((("user_id" = "auth"."uid"()) AND ("org_id" IN ( SELECT "om"."org_id"
+   FROM "public"."org_memberships" "om"
+  WHERE (("om"."user_id" = "auth"."uid"()) AND ("om"."status" = 'active'::"text")))))) WITH CHECK ((("user_id" = "auth"."uid"()) AND ("org_id" IN ( SELECT "om"."org_id"
+   FROM "public"."org_memberships" "om"
+  WHERE (("om"."user_id" = "auth"."uid"()) AND ("om"."status" = 'active'::"text"))))));
+
+
+
+ALTER TABLE "public"."staff_time_documents" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "staff_time_documents_owner_hr" ON "public"."staff_time_documents" TO "authenticated" USING (("public"."is_staff_hr"() OR (EXISTS ( SELECT 1
+   FROM "public"."staff_time_requests" "r"
+  WHERE (("r"."id" = "staff_time_documents"."request_id") AND ("r"."user_id" = "auth"."uid"())))))) WITH CHECK (("public"."is_staff_hr"() OR (("uploaded_by" = "auth"."uid"()) AND (EXISTS ( SELECT 1
+   FROM "public"."staff_time_requests" "r"
+  WHERE (("r"."id" = "staff_time_documents"."request_id") AND ("r"."user_id" = "auth"."uid"())))))));
+
+
+
+CREATE POLICY "staff_time_events_insert" ON "public"."staff_time_request_events" FOR INSERT TO "authenticated" WITH CHECK ((("actor_id" = "auth"."uid"()) AND ("public"."is_staff_hr"() OR (EXISTS ( SELECT 1
+   FROM "public"."staff_time_requests" "r"
+  WHERE (("r"."id" = "staff_time_request_events"."request_id") AND ("r"."user_id" = "auth"."uid"())))))));
+
+
+
+CREATE POLICY "staff_time_events_owner_hr" ON "public"."staff_time_request_events" FOR SELECT TO "authenticated" USING (("public"."is_staff_hr"() OR (EXISTS ( SELECT 1
+   FROM "public"."staff_time_requests" "r"
+  WHERE (("r"."id" = "staff_time_request_events"."request_id") AND ("r"."user_id" = "auth"."uid"()))))));
+
+
+
+ALTER TABLE "public"."staff_time_request_events" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."staff_time_requests" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "staff_time_requests_owner_insert" ON "public"."staff_time_requests" FOR INSERT TO "authenticated" WITH CHECK (("user_id" = "auth"."uid"()));
+
+
+
+CREATE POLICY "staff_time_requests_owner_select" ON "public"."staff_time_requests" FOR SELECT TO "authenticated" USING ((("user_id" = "auth"."uid"()) OR "public"."is_staff_hr"()));
+
+
+
+CREATE POLICY "staff_time_requests_owner_update" ON "public"."staff_time_requests" FOR UPDATE TO "authenticated" USING (((("user_id" = "auth"."uid"()) AND ("status" = 'pending'::"public"."staff_time_request_status")) OR "public"."is_staff_hr"())) WITH CHECK (((("user_id" = "auth"."uid"()) AND ("status" = ANY (ARRAY['pending'::"public"."staff_time_request_status", 'cancelled'::"public"."staff_time_request_status"]))) OR "public"."is_staff_hr"()));
+
+
+
 CREATE POLICY "studio_fields_org_access" ON "public"."crm_studio_fields" FOR SELECT USING (("org_id" IN ( SELECT "org_memberships"."org_id"
    FROM "public"."org_memberships"
   WHERE ("org_memberships"."user_id" = ( SELECT "auth"."uid"() AS "uid")))));
@@ -24845,6 +40825,12 @@ CREATE POLICY "studio_validation_org_access" ON "public"."crm_studio_validation_
 CREATE POLICY "studio_views_org_access" ON "public"."crm_studio_views" FOR SELECT USING ((("org_id" IN ( SELECT "org_memberships"."org_id"
    FROM "public"."org_memberships"
   WHERE ("org_memberships"."user_id" = ( SELECT "auth"."uid"() AS "uid")))) AND (("visibility" = 'org'::"text") OR ("visibility" = 'team'::"text") OR ("owner_id" = ( SELECT "auth"."uid"() AS "uid")) OR ("created_by" = ( SELECT "auth"."uid"() AS "uid")))));
+
+
+
+CREATE POLICY "super_admins_read_impersonation_logs" ON "public"."impersonation_log" FOR SELECT USING ((EXISTS ( SELECT 1
+   FROM "public"."user_roles"
+  WHERE (("user_roles"."user_id" = "auth"."uid"()) AND ("user_roles"."role" = 'super_admin'::"text")))));
 
 
 
@@ -24915,6 +40901,17 @@ CREATE POLICY "user_achievements_select" ON "public"."user_achievements" FOR SEL
 
 
 
+CREATE POLICY "user_conv_goal_admin" ON "public"."crm_user_conversation_goal_overrides" TO "authenticated" USING ("public"."is_org_admin"("org_id")) WITH CHECK ("public"."is_org_admin"("org_id"));
+
+
+
+CREATE POLICY "user_conv_goal_select" ON "public"."crm_user_conversation_goal_overrides" FOR SELECT TO "authenticated" USING ("public"."is_org_member"("org_id"));
+
+
+
+ALTER TABLE "public"."user_mfa_settings" ENABLE ROW LEVEL SECURITY;
+
+
 ALTER TABLE "public"."user_navigation_preferences" ENABLE ROW LEVEL SECURITY;
 
 
@@ -24925,6 +40922,9 @@ ALTER TABLE "public"."user_presence" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."user_roles" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."user_sessions" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."utm_campaigns" ENABLE ROW LEVEL SECURITY;
@@ -24952,7 +40952,83 @@ ALTER TABLE "public"."visit_summaries" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "public"."webhook_delivery_logs" ENABLE ROW LEVEL SECURITY;
 
 
+ALTER TABLE "public"."white_label_configs" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "white_label_configs_read" ON "public"."white_label_configs" FOR SELECT TO "authenticated" USING (("org_id" IN ( SELECT "om"."org_id"
+   FROM "public"."org_memberships" "om"
+  WHERE (("om"."user_id" = "auth"."uid"()) AND ("om"."status" = 'active'::"text")))));
+
+
+
+ALTER TABLE "public"."white_label_email_templates" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "white_label_email_templates_read" ON "public"."white_label_email_templates" FOR SELECT TO "authenticated" USING (("org_id" IN ( SELECT "om"."org_id"
+   FROM "public"."org_memberships" "om"
+  WHERE (("om"."user_id" = "auth"."uid"()) AND ("om"."status" = 'active'::"text")))));
+
+
+
 ALTER TABLE "public"."wordpress_courses" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."workflow_steps" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "workflow_steps_delete" ON "public"."workflow_steps" FOR DELETE TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."workflows" "w"
+  WHERE (("w"."id" = "workflow_steps"."workflow_id") AND "public"."is_org_member"("w"."org_id")))));
+
+
+
+CREATE POLICY "workflow_steps_insert" ON "public"."workflow_steps" FOR INSERT TO "authenticated" WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."workflows" "w"
+  WHERE (("w"."id" = "workflow_steps"."workflow_id") AND "public"."is_org_member"("w"."org_id")))));
+
+
+
+CREATE POLICY "workflow_steps_select" ON "public"."workflow_steps" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."workflows" "w"
+  WHERE (("w"."id" = "workflow_steps"."workflow_id") AND "public"."is_org_member"("w"."org_id")))));
+
+
+
+CREATE POLICY "workflow_steps_update" ON "public"."workflow_steps" FOR UPDATE TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."workflows" "w"
+  WHERE (("w"."id" = "workflow_steps"."workflow_id") AND "public"."is_org_member"("w"."org_id"))))) WITH CHECK ((EXISTS ( SELECT 1
+   FROM "public"."workflows" "w"
+  WHERE (("w"."id" = "workflow_steps"."workflow_id") AND "public"."is_org_member"("w"."org_id")))));
+
+
+
+ALTER TABLE "public"."workflows" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "workflows_delete" ON "public"."workflows" FOR DELETE TO "authenticated" USING ("public"."is_org_member"("org_id"));
+
+
+
+CREATE POLICY "workflows_insert" ON "public"."workflows" FOR INSERT TO "authenticated" WITH CHECK ("public"."is_org_member"("org_id"));
+
+
+
+CREATE POLICY "workflows_select" ON "public"."workflows" FOR SELECT TO "authenticated" USING ("public"."is_org_member"("org_id"));
+
+
+
+CREATE POLICY "workflows_update" ON "public"."workflows" FOR UPDATE TO "authenticated" USING ("public"."is_org_member"("org_id")) WITH CHECK ("public"."is_org_member"("org_id"));
+
+
+
+CREATE POLICY "workspace_org_access" ON "public"."crm_workspaces" USING (("org_id" IN ( SELECT "org_memberships"."org_id"
+   FROM "public"."org_memberships"
+  WHERE ("org_memberships"."user_id" = "auth"."uid"()))));
+
+
+
+CREATE POLICY "zoho_errors_anonymous_insert" ON "public"."zoho_salesiq_errors" FOR INSERT TO "authenticated", "anon" WITH CHECK (true);
+
 
 
 CREATE POLICY "zoho_errors_authenticated_read" ON "public"."zoho_salesiq_errors" FOR SELECT TO "authenticated" USING (true);
@@ -24960,13 +41036,6 @@ CREATE POLICY "zoho_errors_authenticated_read" ON "public"."zoho_salesiq_errors"
 
 
 CREATE POLICY "zoho_health_authenticated_read" ON "public"."zoho_salesiq_health_checks" FOR SELECT TO "authenticated" USING (true);
-
-
-
-ALTER TABLE "public"."zoho_lead_submissions" ENABLE ROW LEVEL SECURITY;
-
-
-CREATE POLICY "zoho_lead_submissions_anon_select" ON "public"."zoho_lead_submissions" FOR SELECT TO "anon" USING (("created_at" > ("now"() - '00:00:05'::interval)));
 
 
 
@@ -24980,12 +41049,19 @@ GRANT USAGE ON SCHEMA "public" TO "postgres";
 GRANT USAGE ON SCHEMA "public" TO "anon";
 GRANT USAGE ON SCHEMA "public" TO "authenticated";
 GRANT USAGE ON SCHEMA "public" TO "service_role";
+GRANT USAGE ON SCHEMA "public" TO "board_sync_reader";
 
 
 
 GRANT ALL ON FUNCTION "public"."accept_org_invite"("invite_token" "text") TO "anon";
 GRANT ALL ON FUNCTION "public"."accept_org_invite"("invite_token" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."accept_org_invite"("invite_token" "text") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."activate_module_for_org"("p_org_id" "uuid", "p_module_slug" "text", "p_license_source" "text", "p_trial_days" integer) TO "anon";
+GRANT ALL ON FUNCTION "public"."activate_module_for_org"("p_org_id" "uuid", "p_module_slug" "text", "p_license_source" "text", "p_trial_days" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."activate_module_for_org"("p_org_id" "uuid", "p_module_slug" "text", "p_license_source" "text", "p_trial_days" integer) TO "service_role";
 
 
 
@@ -25001,6 +41077,19 @@ GRANT ALL ON FUNCTION "public"."add_to_priority_lane"("p_org_id" "uuid", "p_lane
 
 
 
+REVOKE ALL ON FUNCTION "public"."admin_purge_user_dependencies"("p_user_id" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_purge_user_dependencies"("p_user_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."admin_purge_user_dependencies"("p_user_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."admin_purge_user_dependencies"("p_user_id" "uuid") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."advisor_can_access_lead"("p_lead_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."advisor_can_access_lead"("p_lead_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."advisor_can_access_lead"("p_lead_id" "uuid") TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."aggregate_daily_analytics"("target_date" "date") TO "anon";
 GRANT ALL ON FUNCTION "public"."aggregate_daily_analytics"("target_date" "date") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."aggregate_daily_analytics"("target_date" "date") TO "service_role";
@@ -25013,7 +41102,7 @@ GRANT ALL ON FUNCTION "public"."array_append_unique"("arr" "text"[], "new_value"
 
 
 
-GRANT ALL ON FUNCTION "public"."assign_user_role"("target_user_id" "uuid", "target_role" "text") TO "anon";
+REVOKE ALL ON FUNCTION "public"."assign_user_role"("target_user_id" "uuid", "target_role" "text") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."assign_user_role"("target_user_id" "uuid", "target_role" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."assign_user_role"("target_user_id" "uuid", "target_role" "text") TO "service_role";
 
@@ -25022,6 +41111,12 @@ GRANT ALL ON FUNCTION "public"."assign_user_role"("target_user_id" "uuid", "targ
 GRANT ALL ON FUNCTION "public"."auth_uid"() TO "anon";
 GRANT ALL ON FUNCTION "public"."auth_uid"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."auth_uid"() TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."board_list_schema_migrations"() FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."board_list_schema_migrations"() TO "service_role";
+GRANT ALL ON FUNCTION "public"."board_list_schema_migrations"() TO "board_sync_reader";
 
 
 
@@ -25073,6 +41168,13 @@ GRANT ALL ON FUNCTION "public"."check_repeat_lead"("p_email" "text", "p_phone" "
 
 
 
+REVOKE ALL ON FUNCTION "public"."clean_expired_rate_limits"() FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."clean_expired_rate_limits"() TO "anon";
+GRANT ALL ON FUNCTION "public"."clean_expired_rate_limits"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."clean_expired_rate_limits"() TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."cleanup_old_page_views"() TO "anon";
 GRANT ALL ON FUNCTION "public"."cleanup_old_page_views"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."cleanup_old_page_views"() TO "service_role";
@@ -25088,6 +41190,54 @@ GRANT ALL ON FUNCTION "public"."cleanup_old_security_alert_logs"() TO "service_r
 GRANT ALL ON FUNCTION "public"."clear_must_change_password_after_reset"() TO "anon";
 GRANT ALL ON FUNCTION "public"."clear_must_change_password_after_reset"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."clear_must_change_password_after_reset"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."cms_forms_set_updated_at"() TO "anon";
+GRANT ALL ON FUNCTION "public"."cms_forms_set_updated_at"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."cms_forms_set_updated_at"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."cms_global_blocks_set_updated_at"() TO "anon";
+GRANT ALL ON FUNCTION "public"."cms_global_blocks_set_updated_at"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."cms_global_blocks_set_updated_at"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."cms_media_set_updated_at"() TO "anon";
+GRANT ALL ON FUNCTION "public"."cms_media_set_updated_at"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."cms_media_set_updated_at"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."cms_pages_set_updated_at"() TO "anon";
+GRANT ALL ON FUNCTION "public"."cms_pages_set_updated_at"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."cms_pages_set_updated_at"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."cms_popups_set_updated_at"() TO "anon";
+GRANT ALL ON FUNCTION "public"."cms_popups_set_updated_at"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."cms_popups_set_updated_at"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."cms_redirects_set_updated_at"() TO "anon";
+GRANT ALL ON FUNCTION "public"."cms_redirects_set_updated_at"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."cms_redirects_set_updated_at"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."cms_templates_set_updated_at"() TO "anon";
+GRANT ALL ON FUNCTION "public"."cms_templates_set_updated_at"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."cms_templates_set_updated_at"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."cms_theme_set_updated_at"() TO "anon";
+GRANT ALL ON FUNCTION "public"."cms_theme_set_updated_at"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."cms_theme_set_updated_at"() TO "service_role";
 
 
 
@@ -25121,9 +41271,656 @@ GRANT ALL ON FUNCTION "public"."create_organization_with_owner"("org_name" "text
 
 
 
+REVOKE ALL ON FUNCTION "public"."crm_active_pipeline_stages"("p_org_id" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."crm_active_pipeline_stages"("p_org_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_active_pipeline_stages"("p_org_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_active_pipeline_stages"("p_org_id" "uuid") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_activity_cadence_pause"() TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_activity_cadence_pause"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_activity_cadence_pause"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_activity_summary_filtered"("p_org_id" "uuid", "p_month" integer, "p_year" integer, "p_rep_ids" "uuid"[]) TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_activity_summary_filtered"("p_org_id" "uuid", "p_month" integer, "p_year" integer, "p_rep_ids" "uuid"[]) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_activity_summary_filtered"("p_org_id" "uuid", "p_month" integer, "p_year" integer, "p_rep_ids" "uuid"[]) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_activity_summary_vs_targets"("p_org_id" "uuid", "p_month" integer, "p_year" integer) TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_activity_summary_vs_targets"("p_org_id" "uuid", "p_month" integer, "p_year" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_activity_summary_vs_targets"("p_org_id" "uuid", "p_month" integer, "p_year" integer) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_advisor_performance"("p_org_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_advisor_performance"("p_org_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_advisor_performance"("p_org_id" "uuid") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_age_to_nurture"("p_org_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_age_to_nurture"("p_org_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_age_to_nurture"("p_org_id" "uuid") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_annual_conversion_by_rep"("p_org_id" "uuid", "p_year" integer) TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_annual_conversion_by_rep"("p_org_id" "uuid", "p_year" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_annual_conversion_by_rep"("p_org_id" "uuid", "p_year" integer) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_annual_lead_trend"("p_org_id" "uuid", "p_year" integer) TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_annual_lead_trend"("p_org_id" "uuid", "p_year" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_annual_lead_trend"("p_org_id" "uuid", "p_year" integer) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_annual_revenue_trend"("p_org_id" "uuid", "p_year" integer) TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_annual_revenue_trend"("p_org_id" "uuid", "p_year" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_annual_revenue_trend"("p_org_id" "uuid", "p_year" integer) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_annual_source_distribution"("p_org_id" "uuid", "p_year" integer) TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_annual_source_distribution"("p_org_id" "uuid", "p_year" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_annual_source_distribution"("p_org_id" "uuid", "p_year" integer) TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."crm_apply_enrollment_won"("p_lead_id" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."crm_apply_enrollment_won"("p_lead_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_apply_enrollment_won"("p_lead_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_apply_enrollment_won"("p_lead_id" "uuid") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."crm_apply_lead_opt_out"("p_lead_id" "uuid", "p_reason" "text", "p_phrase" "text") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."crm_apply_lead_opt_out"("p_lead_id" "uuid", "p_reason" "text", "p_phrase" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_apply_lead_opt_out"("p_lead_id" "uuid", "p_reason" "text", "p_phrase" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_apply_lead_opt_out"("p_lead_id" "uuid", "p_reason" "text", "p_phrase" "text") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."crm_assign_leads_round_robin"("p_lead_ids" "uuid"[], "p_org_id" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."crm_assign_leads_round_robin"("p_lead_ids" "uuid"[], "p_org_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_assign_leads_round_robin"("p_lead_ids" "uuid"[], "p_org_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_assign_leads_round_robin"("p_lead_ids" "uuid"[], "p_org_id" "uuid") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_award_xp"("p_user_id" "uuid", "p_org_id" "uuid", "p_action" "text", "p_xp_amount" integer, "p_entity_type" "text", "p_entity_id" "uuid", "p_description" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_award_xp"("p_user_id" "uuid", "p_org_id" "uuid", "p_action" "text", "p_xp_amount" integer, "p_entity_type" "text", "p_entity_id" "uuid", "p_description" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_award_xp"("p_user_id" "uuid", "p_org_id" "uuid", "p_action" "text", "p_xp_amount" integer, "p_entity_type" "text", "p_entity_id" "uuid", "p_description" "text") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."crm_bulk_update_leads"("p_lead_ids" "uuid"[], "p_updates" "jsonb") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."crm_bulk_update_leads"("p_lead_ids" "uuid"[], "p_updates" "jsonb") TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_bulk_update_leads"("p_lead_ids" "uuid"[], "p_updates" "jsonb") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_bulk_update_leads"("p_lead_ids" "uuid"[], "p_updates" "jsonb") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_business_days_back"("from_date" "date", "n" integer) TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_business_days_back"("from_date" "date", "n" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_business_days_back"("from_date" "date", "n" integer) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_calc_business_hour_deadline"("p_start" timestamp with time zone, "p_hours" numeric, "p_bh_start" time without time zone, "p_bh_end" time without time zone, "p_business_days" integer[], "p_timezone" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_calc_business_hour_deadline"("p_start" timestamp with time zone, "p_hours" numeric, "p_bh_start" time without time zone, "p_bh_end" time without time zone, "p_business_days" integer[], "p_timezone" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_calc_business_hour_deadline"("p_start" timestamp with time zone, "p_hours" numeric, "p_bh_start" time without time zone, "p_bh_end" time without time zone, "p_business_days" integer[], "p_timezone" "text") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_calculate_deal_win_probability"("p_deal_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_calculate_deal_win_probability"("p_deal_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_calculate_deal_win_probability"("p_deal_id" "uuid") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."crm_check_quoted_sla"("p_org_id" "uuid", "p_sla_hours" integer) FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."crm_check_quoted_sla"("p_org_id" "uuid", "p_sla_hours" integer) TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_check_quoted_sla"("p_org_id" "uuid", "p_sla_hours" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_check_quoted_sla"("p_org_id" "uuid", "p_sla_hours" integer) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_classify_log_section"("p_activity_type" "text", "p_source" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_classify_log_section"("p_activity_type" "text", "p_source" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_classify_log_section"("p_activity_type" "text", "p_source" "text") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_community_event_bump_counter"() TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_community_event_bump_counter"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_community_event_bump_counter"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_concierge_handoff_emit"() TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_concierge_handoff_emit"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_concierge_handoff_emit"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_conversion_rates"("p_org_id" "uuid", "p_month" integer, "p_year" integer) TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_conversion_rates"("p_org_id" "uuid", "p_month" integer, "p_year" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_conversion_rates"("p_org_id" "uuid", "p_month" integer, "p_year" integer) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_conversion_rates_filtered"("p_org_id" "uuid", "p_month" integer, "p_year" integer, "p_rep_ids" "uuid"[]) TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_conversion_rates_filtered"("p_org_id" "uuid", "p_month" integer, "p_year" integer, "p_rep_ids" "uuid"[]) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_conversion_rates_filtered"("p_org_id" "uuid", "p_month" integer, "p_year" integer, "p_rep_ids" "uuid"[]) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_count_conversations"("p_org_id" "uuid", "p_user_id" "uuid", "p_date" "date") TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_count_conversations"("p_org_id" "uuid", "p_user_id" "uuid", "p_date" "date") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_count_conversations"("p_org_id" "uuid", "p_user_id" "uuid", "p_date" "date") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_count_leads_worked"("p_org_id" "uuid", "p_user_id" "uuid", "p_date" "date") TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_count_leads_worked"("p_org_id" "uuid", "p_user_id" "uuid", "p_date" "date") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_count_leads_worked"("p_org_id" "uuid", "p_user_id" "uuid", "p_date" "date") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_daily_log_add_manual"("p_org_id" "uuid", "p_section" "text", "p_activity_type" "text", "p_description" "text", "p_occurred_at" timestamp with time zone, "p_metadata" "jsonb") TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_daily_log_add_manual"("p_org_id" "uuid", "p_section" "text", "p_activity_type" "text", "p_description" "text", "p_occurred_at" timestamp with time zone, "p_metadata" "jsonb") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_daily_log_add_manual"("p_org_id" "uuid", "p_section" "text", "p_activity_type" "text", "p_description" "text", "p_occurred_at" timestamp with time zone, "p_metadata" "jsonb") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_daily_log_add_manual_v2"("p_org_id" "uuid", "p_section" "text", "p_activity_type" "text", "p_description" "text", "p_occurred_at" timestamp with time zone, "p_metadata" "jsonb", "p_prospect_name" "text", "p_company_name" "text", "p_linked_record_type" "text", "p_linked_record_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_daily_log_add_manual_v2"("p_org_id" "uuid", "p_section" "text", "p_activity_type" "text", "p_description" "text", "p_occurred_at" timestamp with time zone, "p_metadata" "jsonb", "p_prospect_name" "text", "p_company_name" "text", "p_linked_record_type" "text", "p_linked_record_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_daily_log_add_manual_v2"("p_org_id" "uuid", "p_section" "text", "p_activity_type" "text", "p_description" "text", "p_occurred_at" timestamp with time zone, "p_metadata" "jsonb", "p_prospect_name" "text", "p_company_name" "text", "p_linked_record_type" "text", "p_linked_record_id" "uuid") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_daily_log_admin_delete"("p_event_id" "uuid", "p_reason" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_daily_log_admin_delete"("p_event_id" "uuid", "p_reason" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_daily_log_admin_delete"("p_event_id" "uuid", "p_reason" "text") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_daily_log_admin_edit"("p_event_id" "uuid", "p_patch" "jsonb", "p_reason" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_daily_log_admin_edit"("p_event_id" "uuid", "p_patch" "jsonb", "p_reason" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_daily_log_admin_edit"("p_event_id" "uuid", "p_patch" "jsonb", "p_reason" "text") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_daily_log_rollup"() TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_daily_log_rollup"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_daily_log_rollup"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_daily_log_search"("p_org_id" "uuid", "p_q" "text", "p_from" "date", "p_to" "date", "p_user_id" "uuid", "p_section" "text", "p_activity_type" "text", "p_source" "text", "p_linked_record_type" "text", "p_linked_record_id" "uuid", "p_limit" integer, "p_offset" integer) TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_daily_log_search"("p_org_id" "uuid", "p_q" "text", "p_from" "date", "p_to" "date", "p_user_id" "uuid", "p_section" "text", "p_activity_type" "text", "p_source" "text", "p_linked_record_type" "text", "p_linked_record_id" "uuid", "p_limit" integer, "p_offset" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_daily_log_search"("p_org_id" "uuid", "p_q" "text", "p_from" "date", "p_to" "date", "p_user_id" "uuid", "p_section" "text", "p_activity_type" "text", "p_source" "text", "p_linked_record_type" "text", "p_linked_record_id" "uuid", "p_limit" integer, "p_offset" integer) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_daily_log_ui_config_seed_org"() TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_daily_log_ui_config_seed_org"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_daily_log_ui_config_seed_org"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_daily_log_ui_config_touch_updated_at"() TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_daily_log_ui_config_touch_updated_at"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_daily_log_ui_config_touch_updated_at"() TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."crm_detect_opt_out"("p_body" "text", "p_org_id" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."crm_detect_opt_out"("p_body" "text", "p_org_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_detect_opt_out"("p_body" "text", "p_org_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_detect_opt_out"("p_body" "text", "p_org_id" "uuid") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."crm_detect_opt_out_keywords"("p_body" "text") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."crm_detect_opt_out_keywords"("p_body" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_detect_opt_out_keywords"("p_body" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_detect_opt_out_keywords"("p_body" "text") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_dispatch_performance_lag_notification"("p_org_id" "uuid", "p_alert_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_dispatch_performance_lag_notification"("p_org_id" "uuid", "p_alert_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_dispatch_performance_lag_notification"("p_org_id" "uuid", "p_alert_id" "uuid") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_dl_emit_from_activity"() TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_dl_emit_from_activity"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_dl_emit_from_activity"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_dl_emit_from_email_log"() TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_dl_emit_from_email_log"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_dl_emit_from_email_log"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_dl_emit_from_lead_profile_edit"() TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_dl_emit_from_lead_profile_edit"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_dl_emit_from_lead_profile_edit"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_dl_emit_from_signature_create"() TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_dl_emit_from_signature_create"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_dl_emit_from_signature_create"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_dl_emit_from_special_project"() TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_dl_emit_from_special_project"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_dl_emit_from_special_project"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_dl_emit_from_task_complete"() TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_dl_emit_from_task_complete"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_dl_emit_from_task_complete"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_dl_emit_from_template_create"() TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_dl_emit_from_template_create"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_dl_emit_from_template_create"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_enroll_lead_in_cadence"("p_lead_id" "uuid", "p_cadence_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_enroll_lead_in_cadence"("p_lead_id" "uuid", "p_cadence_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_enroll_lead_in_cadence"("p_lead_id" "uuid", "p_cadence_id" "uuid") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_get_entity_viewers"("p_entity_type" "text", "p_entity_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_get_entity_viewers"("p_entity_type" "text", "p_entity_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_get_entity_viewers"("p_entity_type" "text", "p_entity_id" "uuid") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_get_leaderboard"("p_org_id" "uuid", "p_period" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_get_leaderboard"("p_org_id" "uuid", "p_period" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_get_leaderboard"("p_org_id" "uuid", "p_period" "text") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_get_stuck_leads"("p_org_id" "uuid", "p_days_threshold" integer) TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_get_stuck_leads"("p_org_id" "uuid", "p_days_threshold" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_get_stuck_leads"("p_org_id" "uuid", "p_days_threshold" integer) TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."crm_global_search"("p_org_id" "uuid", "p_query" "text", "p_limit" integer) TO "anon";
 GRANT ALL ON FUNCTION "public"."crm_global_search"("p_org_id" "uuid", "p_query" "text", "p_limit" integer) TO "authenticated";
 GRANT ALL ON FUNCTION "public"."crm_global_search"("p_org_id" "uuid", "p_query" "text", "p_limit" integer) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_individual_performance"("p_org_id" "uuid", "p_month" integer, "p_year" integer) TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_individual_performance"("p_org_id" "uuid", "p_month" integer, "p_year" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_individual_performance"("p_org_id" "uuid", "p_month" integer, "p_year" integer) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_individual_performance_filtered"("p_org_id" "uuid", "p_month" integer, "p_year" integer, "p_rep_ids" "uuid"[]) TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_individual_performance_filtered"("p_org_id" "uuid", "p_month" integer, "p_year" integer, "p_rep_ids" "uuid"[]) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_individual_performance_filtered"("p_org_id" "uuid", "p_month" integer, "p_year" integer, "p_rep_ids" "uuid"[]) TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."crm_is_lead_manager"("p_org_id" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."crm_is_lead_manager"("p_org_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_is_lead_manager"("p_org_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_is_lead_manager"("p_org_id" "uuid") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_lead_after_insert_automation"() TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_lead_after_insert_automation"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_lead_after_insert_automation"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_lead_app_started_stamp"() TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_lead_app_started_stamp"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_lead_app_started_stamp"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_lead_assignment_stage_promote"() TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_lead_assignment_stage_promote"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_lead_assignment_stage_promote"() TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."crm_lead_bump_last_touched"() FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."crm_lead_bump_last_touched"() TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_lead_bump_last_touched"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_lead_bump_last_touched"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_lead_contact_cadence_pause"() TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_lead_contact_cadence_pause"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_lead_contact_cadence_pause"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_lead_default_org_on_insert"() TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_lead_default_org_on_insert"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_lead_default_org_on_insert"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_lead_quoted_to_working_advance"() TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_lead_quoted_to_working_advance"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_lead_quoted_to_working_advance"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_lead_source_breakdown_monthly"("p_org_id" "uuid", "p_month" integer, "p_year" integer) TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_lead_source_breakdown_monthly"("p_org_id" "uuid", "p_month" integer, "p_year" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_lead_source_breakdown_monthly"("p_org_id" "uuid", "p_month" integer, "p_year" integer) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_lead_stage_cadence_pause"() TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_lead_stage_cadence_pause"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_lead_stage_cadence_pause"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_lead_stage_quote_timestamps"() TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_lead_stage_quote_timestamps"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_lead_stage_quote_timestamps"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_lead_stage_velocity"("p_org_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_lead_stage_velocity"("p_org_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_lead_stage_velocity"("p_org_id" "uuid") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_lead_start_quote_cadence"() TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_lead_start_quote_cadence"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_lead_start_quote_cadence"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_lead_workflow_subsection_sync"() TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_lead_workflow_subsection_sync"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_lead_workflow_subsection_sync"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_leads_inhouse_vs_selfgen"("p_org_id" "uuid", "p_month" integer, "p_year" integer) TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_leads_inhouse_vs_selfgen"("p_org_id" "uuid", "p_month" integer, "p_year" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_leads_inhouse_vs_selfgen"("p_org_id" "uuid", "p_month" integer, "p_year" integer) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_leads_split_2026"("p_org_id" "uuid", "p_month" integer, "p_year" integer, "p_rep_ids" "uuid"[], "p_ytd" boolean) TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_leads_split_2026"("p_org_id" "uuid", "p_month" integer, "p_year" integer, "p_rep_ids" "uuid"[], "p_ytd" boolean) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_leads_split_2026"("p_org_id" "uuid", "p_month" integer, "p_year" integer, "p_rep_ids" "uuid"[], "p_ytd" boolean) TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."crm_log_activity"("p_activity_type" "text", "p_title" "text", "p_description" "text", "p_lead_id" "uuid", "p_contact_id" "uuid", "p_account_id" "uuid", "p_deal_id" "uuid", "p_metadata" "jsonb", "p_subject" "text", "p_org_id" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."crm_log_activity"("p_activity_type" "text", "p_title" "text", "p_description" "text", "p_lead_id" "uuid", "p_contact_id" "uuid", "p_account_id" "uuid", "p_deal_id" "uuid", "p_metadata" "jsonb", "p_subject" "text", "p_org_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_log_activity"("p_activity_type" "text", "p_title" "text", "p_description" "text", "p_lead_id" "uuid", "p_contact_id" "uuid", "p_account_id" "uuid", "p_deal_id" "uuid", "p_metadata" "jsonb", "p_subject" "text", "p_org_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_log_activity"("p_activity_type" "text", "p_title" "text", "p_description" "text", "p_lead_id" "uuid", "p_contact_id" "uuid", "p_account_id" "uuid", "p_deal_id" "uuid", "p_metadata" "jsonb", "p_subject" "text", "p_org_id" "uuid") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."crm_mark_lead_lost"("p_lead_id" "uuid", "p_reason" "text") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."crm_mark_lead_lost"("p_lead_id" "uuid", "p_reason" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_mark_lead_lost"("p_lead_id" "uuid", "p_reason" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_mark_lead_lost"("p_lead_id" "uuid", "p_reason" "text") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."crm_mark_preliminary_quote_sent"("p_lead_id" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."crm_mark_preliminary_quote_sent"("p_lead_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_mark_preliminary_quote_sent"("p_lead_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_mark_preliminary_quote_sent"("p_lead_id" "uuid") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."crm_master_template_bump_usage"("p_template_id" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."crm_master_template_bump_usage"("p_template_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_master_template_bump_usage"("p_template_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_master_template_bump_usage"("p_template_id" "uuid") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_master_templates_touch_updated_at"() TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_master_templates_touch_updated_at"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_master_templates_touch_updated_at"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_outside_advisor_production"("p_org_id" "uuid", "p_month" integer, "p_year" integer) TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_outside_advisor_production"("p_org_id" "uuid", "p_month" integer, "p_year" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_outside_advisor_production"("p_org_id" "uuid", "p_month" integer, "p_year" integer) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_pause_cadence_on_owner_change"() TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_pause_cadence_on_owner_change"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_pause_cadence_on_owner_change"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_perflag_business_day_window"("p_today" "date", "p_n" integer) TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_perflag_business_day_window"("p_today" "date", "p_n" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_perflag_business_day_window"("p_today" "date", "p_n" integer) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_perflag_distinct_business_days"("p_org_id" "uuid", "p_user_id" "uuid", "p_section_filter" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_perflag_distinct_business_days"("p_org_id" "uuid", "p_user_id" "uuid", "p_section_filter" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_perflag_distinct_business_days"("p_org_id" "uuid", "p_user_id" "uuid", "p_section_filter" "text") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_perflag_metric_for_user"("p_org_id" "uuid", "p_user_id" "uuid", "p_window_start" "date", "p_window_end" "date", "p_metric_kind" "text", "p_section_filter" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_perflag_metric_for_user"("p_org_id" "uuid", "p_user_id" "uuid", "p_window_start" "date", "p_window_end" "date", "p_metric_kind" "text", "p_section_filter" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_perflag_metric_for_user"("p_org_id" "uuid", "p_user_id" "uuid", "p_window_start" "date", "p_window_end" "date", "p_metric_kind" "text", "p_section_filter" "text") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_perflag_metric_for_user"("p_org_id" "uuid", "p_user_id" "uuid", "p_window_start" "date", "p_window_end" "date", "p_metric_kind" "text", "p_section_filter" "text", "p_business_days_only" boolean) TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_perflag_metric_for_user"("p_org_id" "uuid", "p_user_id" "uuid", "p_window_start" "date", "p_window_end" "date", "p_metric_kind" "text", "p_section_filter" "text", "p_business_days_only" boolean) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_perflag_metric_for_user"("p_org_id" "uuid", "p_user_id" "uuid", "p_window_start" "date", "p_window_end" "date", "p_metric_kind" "text", "p_section_filter" "text", "p_business_days_only" boolean) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_performance_lag_config_seed_org"() TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_performance_lag_config_seed_org"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_performance_lag_config_seed_org"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_performance_lag_config_touch_updated_at"() TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_performance_lag_config_touch_updated_at"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_performance_lag_config_touch_updated_at"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_pipeline_breakdown"("p_org_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_pipeline_breakdown"("p_org_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_pipeline_breakdown"("p_org_id" "uuid") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_plan_type_stats"("p_org_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_plan_type_stats"("p_org_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_plan_type_stats"("p_org_id" "uuid") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."crm_promote_stale_quotes_to_nurture"("p_org_id" "uuid", "p_stale_after" interval) FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."crm_promote_stale_quotes_to_nurture"("p_org_id" "uuid", "p_stale_after" interval) TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_promote_stale_quotes_to_nurture"("p_org_id" "uuid", "p_stale_after" interval) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_promote_stale_quotes_to_nurture"("p_org_id" "uuid", "p_stale_after" interval) TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."crm_record_lead_engagement"("p_lead_id" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."crm_record_lead_engagement"("p_lead_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_record_lead_engagement"("p_lead_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_record_lead_engagement"("p_lead_id" "uuid") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_recruiting_pipeline_lock_guard"() TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_recruiting_pipeline_lock_guard"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_recruiting_pipeline_lock_guard"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_recruiting_records_touch"() TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_recruiting_records_touch"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_recruiting_records_touch"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_register_engagement_signal"("p_lead_id" "uuid", "p_signal_type" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_register_engagement_signal"("p_lead_id" "uuid", "p_signal_type" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_register_engagement_signal"("p_lead_id" "uuid", "p_signal_type" "text") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."crm_report_application_dropoff"("p_org_id" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."crm_report_application_dropoff"("p_org_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_report_application_dropoff"("p_org_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_report_application_dropoff"("p_org_id" "uuid") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."crm_report_lead_stage_counts"("p_org_id" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."crm_report_lead_stage_counts"("p_org_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_report_lead_stage_counts"("p_org_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_report_lead_stage_counts"("p_org_id" "uuid") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."crm_report_stalled_leads"("p_org_id" "uuid", "p_threshold_days" integer) FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."crm_report_stalled_leads"("p_org_id" "uuid", "p_threshold_days" integer) TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_report_stalled_leads"("p_org_id" "uuid", "p_threshold_days" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_report_stalled_leads"("p_org_id" "uuid", "p_threshold_days" integer) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_revenue_closed_sales"("p_org_id" "uuid", "p_month" integer, "p_year" integer) TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_revenue_closed_sales"("p_org_id" "uuid", "p_month" integer, "p_year" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_revenue_closed_sales"("p_org_id" "uuid", "p_month" integer, "p_year" integer) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_revenue_closed_sales_filtered"("p_org_id" "uuid", "p_month" integer, "p_year" integer, "p_rep_ids" "uuid"[]) TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_revenue_closed_sales_filtered"("p_org_id" "uuid", "p_month" integer, "p_year" integer, "p_rep_ids" "uuid"[]) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_revenue_closed_sales_filtered"("p_org_id" "uuid", "p_month" integer, "p_year" integer, "p_rep_ids" "uuid"[]) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_sales_cancellations_leads_snapshot"("p_org_id" "uuid", "p_period_start" timestamp with time zone, "p_period_end" timestamp with time zone, "p_user_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_sales_cancellations_leads_snapshot"("p_org_id" "uuid", "p_period_start" timestamp with time zone, "p_period_end" timestamp with time zone, "p_user_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_sales_cancellations_leads_snapshot"("p_org_id" "uuid", "p_period_start" timestamp with time zone, "p_period_end" timestamp with time zone, "p_user_id" "uuid") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_sales_cancellations_leads_snapshot_v2"("p_org_id" "uuid", "p_period_start" timestamp with time zone, "p_period_end" timestamp with time zone, "p_user_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_sales_cancellations_leads_snapshot_v2"("p_org_id" "uuid", "p_period_start" timestamp with time zone, "p_period_end" timestamp with time zone, "p_user_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_sales_cancellations_leads_snapshot_v2"("p_org_id" "uuid", "p_period_start" timestamp with time zone, "p_period_end" timestamp with time zone, "p_user_id" "uuid") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_scan_performance_lag"("p_org_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_scan_performance_lag"("p_org_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_scan_performance_lag"("p_org_id" "uuid") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_scan_stalled_in_stage"("p_org_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_scan_stalled_in_stage"("p_org_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_scan_stalled_in_stage"("p_org_id" "uuid") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_seed_recruiting_pipeline_stages"("p_org_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_seed_recruiting_pipeline_stages"("p_org_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_seed_recruiting_pipeline_stages"("p_org_id" "uuid") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."crm_seed_sales_plan_2026_demo"("p_org_id" "uuid", "p_leonardo_email" "text", "p_tupac_email" "text", "p_adam_email" "text") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."crm_seed_sales_plan_2026_demo"("p_org_id" "uuid", "p_leonardo_email" "text", "p_tupac_email" "text", "p_adam_email" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_seed_sales_plan_2026_demo"("p_org_id" "uuid", "p_leonardo_email" "text", "p_tupac_email" "text", "p_adam_email" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_seed_sales_plan_2026_demo"("p_org_id" "uuid", "p_leonardo_email" "text", "p_tupac_email" "text", "p_adam_email" "text") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_sla_config_validate_escalation_emails"() TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_sla_config_validate_escalation_emails"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_sla_config_validate_escalation_emails"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_special_project_types_touch_updated_at"() TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_special_project_types_touch_updated_at"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_special_project_types_touch_updated_at"() TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."crm_strip_reply_quoted_and_signature"("p_body" "text") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."crm_strip_reply_quoted_and_signature"("p_body" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_strip_reply_quoted_and_signature"("p_body" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_strip_reply_quoted_and_signature"("p_body" "text") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_today_summary"("p_org_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_today_summary"("p_org_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_today_summary"("p_org_id" "uuid") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."crm_tracking_to_engagement_signal"() FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."crm_tracking_to_engagement_signal"() TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_tracking_to_engagement_signal"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_tracking_to_engagement_signal"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."crm_validate_deal_product_line"() TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_validate_deal_product_line"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_validate_deal_product_line"() TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."crm_validate_lead_source"() FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."crm_validate_lead_source"() TO "anon";
+GRANT ALL ON FUNCTION "public"."crm_validate_lead_source"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."crm_validate_lead_source"() TO "service_role";
 
 
 
@@ -25142,6 +41939,12 @@ GRANT ALL ON FUNCTION "public"."current_user_has_advisor_command_access"() TO "s
 GRANT ALL ON FUNCTION "public"."current_user_has_advisor_or_admin_access"() TO "anon";
 GRANT ALL ON FUNCTION "public"."current_user_has_advisor_or_admin_access"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."current_user_has_advisor_or_admin_access"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."current_user_has_concierge_portal_access"() TO "anon";
+GRANT ALL ON FUNCTION "public"."current_user_has_concierge_portal_access"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."current_user_has_concierge_portal_access"() TO "service_role";
 
 
 
@@ -25172,6 +41975,12 @@ GRANT ALL ON FUNCTION "public"."current_user_is_super_admin"() TO "service_role"
 GRANT ALL ON FUNCTION "public"."current_user_org_ids"() TO "anon";
 GRANT ALL ON FUNCTION "public"."current_user_org_ids"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."current_user_org_ids"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."current_user_org_role"("p_org_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."current_user_org_role"("p_org_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."current_user_org_role"("p_org_id" "uuid") TO "service_role";
 
 
 
@@ -25211,9 +42020,22 @@ GRANT ALL ON FUNCTION "public"."ensure_advisor_profile_on_role_grant"() TO "serv
 
 
 
+REVOKE ALL ON FUNCTION "public"."ensure_user_in_advisor_announcements_channel"("p_user_id" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."ensure_user_in_advisor_announcements_channel"("p_user_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."ensure_user_in_advisor_announcements_channel"("p_user_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."ensure_user_in_advisor_announcements_channel"("p_user_id" "uuid") TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."fan_out_chat_notification"() TO "anon";
 GRANT ALL ON FUNCTION "public"."fan_out_chat_notification"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."fan_out_chat_notification"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."fn_lead_stage_change_notify"() TO "anon";
+GRANT ALL ON FUNCTION "public"."fn_lead_stage_change_notify"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."fn_lead_stage_change_notify"() TO "service_role";
 
 
 
@@ -25247,6 +42069,12 @@ GRANT ALL ON FUNCTION "public"."generate_meeting_room_name"() TO "service_role";
 
 
 
+GRANT ALL ON FUNCTION "public"."generate_member_notification_from_event"() TO "anon";
+GRANT ALL ON FUNCTION "public"."generate_member_notification_from_event"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."generate_member_notification_from_event"() TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."generate_module_permissions"("p_module_api_name" "text") TO "anon";
 GRANT ALL ON FUNCTION "public"."generate_module_permissions"("p_module_api_name" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."generate_module_permissions"("p_module_api_name" "text") TO "service_role";
@@ -25277,33 +42105,15 @@ GRANT ALL ON FUNCTION "public"."generate_ticket_number"() TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."generate_tracking_token"() TO "anon";
-GRANT ALL ON FUNCTION "public"."generate_tracking_token"() TO "authenticated";
-GRANT ALL ON FUNCTION "public"."generate_tracking_token"() TO "service_role";
-
-
-
 GRANT ALL ON FUNCTION "public"."get_active_advisor_emails"() TO "anon";
 GRANT ALL ON FUNCTION "public"."get_active_advisor_emails"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_active_advisor_emails"() TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."get_active_advisor_meeting"() TO "anon";
-GRANT ALL ON FUNCTION "public"."get_active_advisor_meeting"() TO "authenticated";
-GRANT ALL ON FUNCTION "public"."get_active_advisor_meeting"() TO "service_role";
-
-
-
 GRANT ALL ON FUNCTION "public"."get_activity_feed"("p_user_id" "uuid", "p_org_id" "uuid", "p_limit" integer, "p_offset" integer) TO "anon";
 GRANT ALL ON FUNCTION "public"."get_activity_feed"("p_user_id" "uuid", "p_org_id" "uuid", "p_limit" integer, "p_offset" integer) TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_activity_feed"("p_user_id" "uuid", "p_org_id" "uuid", "p_limit" integer, "p_offset" integer) TO "service_role";
-
-
-
-GRANT ALL ON FUNCTION "public"."get_advisor_hierarchy_tree"("root_advisor_id" "text") TO "anon";
-GRANT ALL ON FUNCTION "public"."get_advisor_hierarchy_tree"("root_advisor_id" "text") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."get_advisor_hierarchy_tree"("root_advisor_id" "text") TO "service_role";
 
 
 
@@ -25361,12 +42171,6 @@ GRANT ALL ON FUNCTION "public"."get_filtered_leads"("p_stage" "text", "p_priorit
 
 
 
-GRANT ALL ON FUNCTION "public"."get_hierarchy_stats"("root_advisor_id" "text") TO "anon";
-GRANT ALL ON FUNCTION "public"."get_hierarchy_stats"("root_advisor_id" "text") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."get_hierarchy_stats"("root_advisor_id" "text") TO "service_role";
-
-
-
 GRANT ALL ON FUNCTION "public"."get_highest_role"("check_user_id" "uuid") TO "anon";
 GRANT ALL ON FUNCTION "public"."get_highest_role"("check_user_id" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_highest_role"("check_user_id" "uuid") TO "service_role";
@@ -25415,15 +42219,15 @@ GRANT ALL ON FUNCTION "public"."get_leaderboard"("p_org_id" "uuid", "p_metric" "
 
 
 
-GRANT ALL ON FUNCTION "public"."get_meeting_with_stats"("p_meeting_id" "uuid") TO "anon";
-GRANT ALL ON FUNCTION "public"."get_meeting_with_stats"("p_meeting_id" "uuid") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."get_meeting_with_stats"("p_meeting_id" "uuid") TO "service_role";
-
-
-
 GRANT ALL ON FUNCTION "public"."get_metric_timeseries"("p_metric_name" "text", "p_start_date" timestamp with time zone, "p_end_date" timestamp with time zone, "p_granularity" "text") TO "anon";
 GRANT ALL ON FUNCTION "public"."get_metric_timeseries"("p_metric_name" "text", "p_start_date" timestamp with time zone, "p_end_date" timestamp with time zone, "p_granularity" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_metric_timeseries"("p_metric_name" "text", "p_start_date" timestamp with time zone, "p_end_date" timestamp with time zone, "p_granularity" "text") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."get_my_org_permissions_snapshot"("p_org_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."get_my_org_permissions_snapshot"("p_org_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_my_org_permissions_snapshot"("p_org_id" "uuid") TO "service_role";
 
 
 
@@ -25463,6 +42267,18 @@ GRANT ALL ON FUNCTION "public"."get_or_create_user_preferences"("p_user_id" "uui
 
 
 
+GRANT ALL ON FUNCTION "public"."get_org_features"("p_org_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."get_org_features"("p_org_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_org_features"("p_org_id" "uuid") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."get_org_modules"("p_org_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."get_org_modules"("p_org_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_org_modules"("p_org_id" "uuid") TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."get_plan_rate"("p_plan_slug" "text", "p_age" integer, "p_member_type" "text", "p_iua_amount" numeric, "p_effective_date" "date") TO "anon";
 GRANT ALL ON FUNCTION "public"."get_plan_rate"("p_plan_slug" "text", "p_age" integer, "p_member_type" "text", "p_iua_amount" numeric, "p_effective_date" "date") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_plan_rate"("p_plan_slug" "text", "p_age" integer, "p_member_type" "text", "p_iua_amount" numeric, "p_effective_date" "date") TO "service_role";
@@ -25481,21 +42297,29 @@ GRANT ALL ON FUNCTION "public"."get_power_list"("p_org_id" "uuid", "p_user_id" "
 
 
 
+REVOKE ALL ON FUNCTION "public"."get_quote_results_analytics"("p_days" integer) FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."get_quote_results_analytics"("p_days" integer) TO "anon";
+GRANT ALL ON FUNCTION "public"."get_quote_results_analytics"("p_days" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_quote_results_analytics"("p_days" integer) TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."get_recent_searches"("p_user_id" "uuid", "p_limit" integer) TO "anon";
 GRANT ALL ON FUNCTION "public"."get_recent_searches"("p_user_id" "uuid", "p_limit" integer) TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_recent_searches"("p_user_id" "uuid", "p_limit" integer) TO "service_role";
 
 
 
+REVOKE ALL ON FUNCTION "public"."get_staff_time_calendar"("p_org_id" "uuid", "p_from" timestamp with time zone, "p_to" timestamp with time zone) FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."get_staff_time_calendar"("p_org_id" "uuid", "p_from" timestamp with time zone, "p_to" timestamp with time zone) TO "anon";
+GRANT ALL ON FUNCTION "public"."get_staff_time_calendar"("p_org_id" "uuid", "p_from" timestamp with time zone, "p_to" timestamp with time zone) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."get_staff_time_calendar"("p_org_id" "uuid", "p_from" timestamp with time zone, "p_to" timestamp with time zone) TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."get_trending_keywords"("p_site_url" "text", "p_days" integer, "p_limit" integer, "p_direction" "text") TO "anon";
 GRANT ALL ON FUNCTION "public"."get_trending_keywords"("p_site_url" "text", "p_days" integer, "p_limit" integer, "p_direction" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_trending_keywords"("p_site_url" "text", "p_days" integer, "p_limit" integer, "p_direction" "text") TO "service_role";
-
-
-
-GRANT ALL ON FUNCTION "public"."get_unified_user_roles"() TO "anon";
-GRANT ALL ON FUNCTION "public"."get_unified_user_roles"() TO "authenticated";
-GRANT ALL ON FUNCTION "public"."get_unified_user_roles"() TO "service_role";
 
 
 
@@ -25601,6 +42425,12 @@ GRANT ALL ON FUNCTION "public"."handle_crm_deal_products_updated_at"() TO "servi
 
 
 
+GRANT ALL ON FUNCTION "public"."handle_crm_deal_rooms_updated_at"() TO "anon";
+GRANT ALL ON FUNCTION "public"."handle_crm_deal_rooms_updated_at"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."handle_crm_deal_rooms_updated_at"() TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."handle_crm_deal_stages_updated_at"() TO "anon";
 GRANT ALL ON FUNCTION "public"."handle_crm_deal_stages_updated_at"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."handle_crm_deal_stages_updated_at"() TO "service_role";
@@ -25676,6 +42506,18 @@ GRANT ALL ON FUNCTION "public"."handle_crm_quotes_updated_at"() TO "service_role
 GRANT ALL ON FUNCTION "public"."handle_crm_saved_views_updated_at"() TO "anon";
 GRANT ALL ON FUNCTION "public"."handle_crm_saved_views_updated_at"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."handle_crm_saved_views_updated_at"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."handle_crm_sp2026_updated_at"() TO "anon";
+GRANT ALL ON FUNCTION "public"."handle_crm_sp2026_updated_at"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."handle_crm_sp2026_updated_at"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."handle_crm_workspaces_updated_at"() TO "anon";
+GRANT ALL ON FUNCTION "public"."handle_crm_workspaces_updated_at"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."handle_crm_workspaces_updated_at"() TO "service_role";
 
 
 
@@ -25757,6 +42599,12 @@ GRANT ALL ON FUNCTION "public"."increment_email_tracking"() TO "service_role";
 
 
 
+GRANT ALL ON FUNCTION "public"."increment_form_submission_count"("form_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."increment_form_submission_count"("form_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."increment_form_submission_count"("form_id" "uuid") TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."increment_message_template_times_used"("template_id" "uuid") TO "anon";
 GRANT ALL ON FUNCTION "public"."increment_message_template_times_used"("template_id" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."increment_message_template_times_used"("template_id" "uuid") TO "service_role";
@@ -25805,6 +42653,24 @@ GRANT ALL ON FUNCTION "public"."is_admin"() TO "service_role";
 
 
 
+GRANT ALL ON FUNCTION "public"."is_concierge_org_admin"("p_org_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."is_concierge_org_admin"("p_org_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."is_concierge_org_admin"("p_org_id" "uuid") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."is_inside_sales_rep"("p_user_id" "uuid", "p_org_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."is_inside_sales_rep"("p_user_id" "uuid", "p_org_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."is_inside_sales_rep"("p_user_id" "uuid", "p_org_id" "uuid") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."is_lead_eligible_rep"("p_user_id" "uuid", "p_org_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."is_lead_eligible_rep"("p_user_id" "uuid", "p_org_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."is_lead_eligible_rep"("p_user_id" "uuid", "p_org_id" "uuid") TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."is_org_admin"("p_org_id" "uuid") TO "anon";
 GRANT ALL ON FUNCTION "public"."is_org_admin"("p_org_id" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."is_org_admin"("p_org_id" "uuid") TO "service_role";
@@ -25820,6 +42686,13 @@ GRANT ALL ON FUNCTION "public"."is_org_member"("p_org_id" "uuid") TO "service_ro
 GRANT ALL ON FUNCTION "public"."is_org_role"("p_org_id" "uuid", "p_role" "text") TO "anon";
 GRANT ALL ON FUNCTION "public"."is_org_role"("p_org_id" "uuid", "p_role" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."is_org_role"("p_org_id" "uuid", "p_role" "text") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."is_staff_hr"() FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."is_staff_hr"() TO "anon";
+GRANT ALL ON FUNCTION "public"."is_staff_hr"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."is_staff_hr"() TO "service_role";
 
 
 
@@ -25853,6 +42726,18 @@ GRANT ALL ON FUNCTION "public"."move_priority_item"("p_item_id" "uuid", "p_new_l
 
 
 
+GRANT ALL ON FUNCTION "public"."org_has_feature"("p_org_id" "uuid", "p_feature_slug" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."org_has_feature"("p_org_id" "uuid", "p_feature_slug" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."org_has_feature"("p_org_id" "uuid", "p_feature_slug" "text") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."org_has_module"("p_org_id" "uuid", "p_module_slug" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."org_has_module"("p_org_id" "uuid", "p_module_slug" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."org_has_module"("p_org_id" "uuid", "p_module_slug" "text") TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."recalculate_deal_amount"() TO "anon";
 GRANT ALL ON FUNCTION "public"."recalculate_deal_amount"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."recalculate_deal_amount"() TO "service_role";
@@ -25871,6 +42756,19 @@ GRANT ALL ON FUNCTION "public"."recalculate_quote_totals"() TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."quote_calculator_funnel_events" TO "anon";
+GRANT ALL ON TABLE "public"."quote_calculator_funnel_events" TO "authenticated";
+GRANT ALL ON TABLE "public"."quote_calculator_funnel_events" TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."record_quote_calculator_event"("payload" "jsonb") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."record_quote_calculator_event"("payload" "jsonb") TO "anon";
+GRANT ALL ON FUNCTION "public"."record_quote_calculator_event"("payload" "jsonb") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."record_quote_calculator_event"("payload" "jsonb") TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."remove_user_role"("target_user_id" "uuid", "target_role" "text") TO "anon";
 GRANT ALL ON FUNCTION "public"."remove_user_role"("target_user_id" "uuid", "target_role" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."remove_user_role"("target_user_id" "uuid", "target_role" "text") TO "service_role";
@@ -25880,6 +42778,12 @@ GRANT ALL ON FUNCTION "public"."remove_user_role"("target_user_id" "uuid", "targ
 GRANT ALL ON FUNCTION "public"."render_email_signature"("p_signature_id" "uuid", "p_override_vars" "jsonb") TO "anon";
 GRANT ALL ON FUNCTION "public"."render_email_signature"("p_signature_id" "uuid", "p_override_vars" "jsonb") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."render_email_signature"("p_signature_id" "uuid", "p_override_vars" "jsonb") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."resolve_org_id"("p_slug" "text", "p_purpose" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."resolve_org_id"("p_slug" "text", "p_purpose" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."resolve_org_id"("p_slug" "text", "p_purpose" "text") TO "service_role";
 
 
 
@@ -25949,6 +42853,12 @@ GRANT ALL ON FUNCTION "public"."search_users_with_roles"("search_email" "text") 
 
 
 
+GRANT ALL ON FUNCTION "public"."set_updated_at"() TO "anon";
+GRANT ALL ON FUNCTION "public"."set_updated_at"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."set_updated_at"() TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."setup_catherine_superadmin_profile"("user_email" "text", "user_id" "uuid") TO "anon";
 GRANT ALL ON FUNCTION "public"."setup_catherine_superadmin_profile"("user_email" "text", "user_id" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."setup_catherine_superadmin_profile"("user_email" "text", "user_id" "uuid") TO "service_role";
@@ -25967,15 +42877,54 @@ GRANT ALL ON FUNCTION "public"."setup_test_advisor_profile"("user_email" "text",
 
 
 
-GRANT ALL ON FUNCTION "public"."share_note_with_role"("p_note_id" "uuid", "p_target_role" "text", "p_permission_level" "text", "p_share_message" "text") TO "anon";
-GRANT ALL ON FUNCTION "public"."share_note_with_role"("p_note_id" "uuid", "p_target_role" "text", "p_permission_level" "text", "p_share_message" "text") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."share_note_with_role"("p_note_id" "uuid", "p_target_role" "text", "p_permission_level" "text", "p_share_message" "text") TO "service_role";
-
-
-
 GRANT ALL ON FUNCTION "public"."snooze_priority_item"("p_item_id" "uuid", "p_until" timestamp with time zone, "p_reason" "text") TO "anon";
 GRANT ALL ON FUNCTION "public"."snooze_priority_item"("p_item_id" "uuid", "p_until" timestamp with time zone, "p_reason" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."snooze_priority_item"("p_item_id" "uuid", "p_until" timestamp with time zone, "p_reason" "text") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."staff_attendance_correct"("p_session_id" "uuid", "p_clock_in_at" timestamp with time zone, "p_clock_out_at" timestamp with time zone, "p_notes" "text", "p_force_close" boolean) FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."staff_attendance_correct"("p_session_id" "uuid", "p_clock_in_at" timestamp with time zone, "p_clock_out_at" timestamp with time zone, "p_notes" "text", "p_force_close" boolean) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."staff_attendance_correct"("p_session_id" "uuid", "p_clock_in_at" timestamp with time zone, "p_clock_out_at" timestamp with time zone, "p_notes" "text", "p_force_close" boolean) TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."staff_attendance_punch"("p_action" "public"."staff_attendance_punch_action", "p_lat" double precision, "p_lng" double precision, "p_accuracy_m" double precision, "p_client_ts" timestamp with time zone, "p_idempotency_key" "text") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."staff_attendance_punch"("p_action" "public"."staff_attendance_punch_action", "p_lat" double precision, "p_lng" double precision, "p_accuracy_m" double precision, "p_client_ts" timestamp with time zone, "p_idempotency_key" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."staff_attendance_punch"("p_action" "public"."staff_attendance_punch_action", "p_lat" double precision, "p_lng" double precision, "p_accuracy_m" double precision, "p_client_ts" timestamp with time zone, "p_idempotency_key" "text") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."staff_default_org_id"() FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."staff_default_org_id"() TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."staff_profiles" TO "anon";
+GRANT ALL ON TABLE "public"."staff_profiles" TO "authenticated";
+GRANT ALL ON TABLE "public"."staff_profiles" TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."staff_ensure_profile"("p_org_id" "uuid", "p_user_id" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."staff_ensure_profile"("p_org_id" "uuid", "p_user_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."staff_ensure_profile"("p_org_id" "uuid", "p_user_id" "uuid") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."staff_haversine_m"("lat1" double precision, "lng1" double precision, "lat2" double precision, "lng2" double precision) FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."staff_haversine_m"("lat1" double precision, "lng1" double precision, "lat2" double precision, "lng2" double precision) TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."staff_is_remote_eligible"("p_user_id" "uuid", "p_at" timestamp with time zone) FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."staff_is_remote_eligible"("p_user_id" "uuid", "p_at" timestamp with time zone) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."staff_is_remote_eligible"("p_user_id" "uuid", "p_at" timestamp with time zone) TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."staff_remote_window_id"("p_org_id" "uuid", "p_user_id" "uuid", "p_at" timestamp with time zone) FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."staff_remote_window_id"("p_org_id" "uuid", "p_user_id" "uuid", "p_at" timestamp with time zone) TO "service_role";
 
 
 
@@ -25988,6 +42937,26 @@ GRANT ALL ON FUNCTION "public"."start_advisor_meeting"("p_meeting_id" "uuid") TO
 GRANT ALL ON FUNCTION "public"."start_bulletin_notification"("p_bulletin_id" "uuid", "p_sent_by" "uuid") TO "anon";
 GRANT ALL ON FUNCTION "public"."start_bulletin_notification"("p_bulletin_id" "uuid", "p_sent_by" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."start_bulletin_notification"("p_bulletin_id" "uuid", "p_sent_by" "uuid") TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."lead_submissions" TO "anon";
+GRANT ALL ON TABLE "public"."lead_submissions" TO "authenticated";
+GRANT ALL ON TABLE "public"."lead_submissions" TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."submit_public_lead"("payload" "jsonb") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."submit_public_lead"("payload" "jsonb") TO "anon";
+GRANT ALL ON FUNCTION "public"."submit_public_lead"("payload" "jsonb") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."submit_public_lead"("payload" "jsonb") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."submit_trusted_lead"("payload" "jsonb") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."submit_trusted_lead"("payload" "jsonb") TO "anon";
+GRANT ALL ON FUNCTION "public"."submit_trusted_lead"("payload" "jsonb") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."submit_trusted_lead"("payload" "jsonb") TO "service_role";
 
 
 
@@ -26012,6 +42981,53 @@ GRANT ALL ON FUNCTION "public"."sync_roles_to_legacy"() TO "service_role";
 GRANT ALL ON FUNCTION "public"."sync_user_to_itsts"() TO "anon";
 GRANT ALL ON FUNCTION "public"."sync_user_to_itsts"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."sync_user_to_itsts"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."translate_org_id"("p_org_id" "uuid", "p_target_purpose" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."translate_org_id"("p_org_id" "uuid", "p_target_purpose" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."translate_org_id"("p_org_id" "uuid", "p_target_purpose" "text") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."trg_advisor_profiles_sync_announcements_channel"() TO "anon";
+GRANT ALL ON FUNCTION "public"."trg_advisor_profiles_sync_announcements_channel"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."trg_advisor_profiles_sync_announcements_channel"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."trg_crm_attachments_updated_at"() TO "anon";
+GRANT ALL ON FUNCTION "public"."trg_crm_attachments_updated_at"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."trg_crm_attachments_updated_at"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."trg_org_memberships_sync_announcements_channel"() TO "anon";
+GRANT ALL ON FUNCTION "public"."trg_org_memberships_sync_announcements_channel"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."trg_org_memberships_sync_announcements_channel"() TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."trg_staff_attendance_link_remote_request"() FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."trg_staff_attendance_link_remote_request"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."trg_staff_hr_set_updated_at"() TO "anon";
+GRANT ALL ON FUNCTION "public"."trg_staff_hr_set_updated_at"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."trg_staff_hr_set_updated_at"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."trg_staff_profiles_remote_guard"() TO "anon";
+GRANT ALL ON FUNCTION "public"."trg_staff_profiles_remote_guard"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."trg_staff_profiles_remote_guard"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."trg_staff_time_requests_updated_at"() TO "anon";
+GRANT ALL ON FUNCTION "public"."trg_staff_time_requests_updated_at"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."trg_staff_time_requests_updated_at"() TO "service_role";
 
 
 
@@ -26117,6 +43133,12 @@ GRANT ALL ON FUNCTION "public"."update_crm_deals_search"() TO "service_role";
 
 
 
+GRANT ALL ON FUNCTION "public"."update_crm_family_members_search"() TO "anon";
+GRANT ALL ON FUNCTION "public"."update_crm_family_members_search"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."update_crm_family_members_search"() TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."update_crm_plan_interest_updated_at"() TO "anon";
 GRANT ALL ON FUNCTION "public"."update_crm_plan_interest_updated_at"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."update_crm_plan_interest_updated_at"() TO "service_role";
@@ -26126,6 +43148,18 @@ GRANT ALL ON FUNCTION "public"."update_crm_plan_interest_updated_at"() TO "servi
 GRANT ALL ON FUNCTION "public"."update_crm_products_search"() TO "anon";
 GRANT ALL ON FUNCTION "public"."update_crm_products_search"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."update_crm_products_search"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."update_crm_social_platform_connections_updated_at"() TO "anon";
+GRANT ALL ON FUNCTION "public"."update_crm_social_platform_connections_updated_at"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."update_crm_social_platform_connections_updated_at"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."update_crm_social_posts_updated_at"() TO "anon";
+GRANT ALL ON FUNCTION "public"."update_crm_social_posts_updated_at"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."update_crm_social_posts_updated_at"() TO "service_role";
 
 
 
@@ -26159,9 +43193,21 @@ GRANT ALL ON FUNCTION "public"."update_handbooks_updated_at"() TO "service_role"
 
 
 
+GRANT ALL ON FUNCTION "public"."update_integrations_updated_at"() TO "anon";
+GRANT ALL ON FUNCTION "public"."update_integrations_updated_at"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."update_integrations_updated_at"() TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."update_lead_stage_changed_at"() TO "anon";
 GRANT ALL ON FUNCTION "public"."update_lead_stage_changed_at"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."update_lead_stage_changed_at"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."update_lead_submission_updated_at"() TO "anon";
+GRANT ALL ON FUNCTION "public"."update_lead_submission_updated_at"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."update_lead_submission_updated_at"() TO "service_role";
 
 
 
@@ -26267,9 +43313,9 @@ GRANT ALL ON FUNCTION "public"."update_user_roles_updated_at"() TO "service_role
 
 
 
-GRANT ALL ON FUNCTION "public"."update_zoho_lead_submission_updated_at"() TO "anon";
-GRANT ALL ON FUNCTION "public"."update_zoho_lead_submission_updated_at"() TO "authenticated";
-GRANT ALL ON FUNCTION "public"."update_zoho_lead_submission_updated_at"() TO "service_role";
+GRANT ALL ON FUNCTION "public"."user_has_concierge_access_for_org"("p_org_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."user_has_concierge_access_for_org"("p_org_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."user_has_concierge_access_for_org"("p_org_id" "uuid") TO "service_role";
 
 
 
@@ -26318,6 +43364,18 @@ GRANT ALL ON FUNCTION "public"."user_organization_roles_insert_trigger"() TO "se
 GRANT ALL ON FUNCTION "public"."user_organization_roles_update_trigger"() TO "anon";
 GRANT ALL ON FUNCTION "public"."user_organization_roles_update_trigger"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."user_organization_roles_update_trigger"() TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."_backup_org_reconcile_20260701_advisor_profiles" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."_backup_org_reconcile_20260701_lead_submissions" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."_deprecated_leads" TO "service_role";
 
 
 
@@ -26573,6 +43631,24 @@ GRANT ALL ON TABLE "public"."audit_logs" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."auth_login_attempts" TO "anon";
+GRANT ALL ON TABLE "public"."auth_login_attempts" TO "authenticated";
+GRANT ALL ON TABLE "public"."auth_login_attempts" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."auth_rate_limits" TO "anon";
+GRANT ALL ON TABLE "public"."auth_rate_limits" TO "authenticated";
+GRANT ALL ON TABLE "public"."auth_rate_limits" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."auth_security_events" TO "anon";
+GRANT ALL ON TABLE "public"."auth_security_events" TO "authenticated";
+GRANT ALL ON TABLE "public"."auth_security_events" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."automation_execution_log" TO "anon";
 GRANT ALL ON TABLE "public"."automation_execution_log" TO "authenticated";
 GRANT ALL ON TABLE "public"."automation_execution_log" TO "service_role";
@@ -26600,6 +43676,12 @@ GRANT ALL ON TABLE "public"."benefits" TO "service_role";
 GRANT ALL ON TABLE "public"."blog_articles" TO "anon";
 GRANT ALL ON TABLE "public"."blog_articles" TO "authenticated";
 GRANT ALL ON TABLE "public"."blog_articles" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."blog_authors" TO "anon";
+GRANT ALL ON TABLE "public"."blog_authors" TO "authenticated";
+GRANT ALL ON TABLE "public"."blog_authors" TO "service_role";
 
 
 
@@ -26669,6 +43751,78 @@ GRANT ALL ON TABLE "public"."claims" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."cms_events" TO "anon";
+GRANT ALL ON TABLE "public"."cms_events" TO "authenticated";
+GRANT ALL ON TABLE "public"."cms_events" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."cms_form_submissions" TO "anon";
+GRANT ALL ON TABLE "public"."cms_form_submissions" TO "authenticated";
+GRANT ALL ON TABLE "public"."cms_form_submissions" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."cms_forms" TO "anon";
+GRANT ALL ON TABLE "public"."cms_forms" TO "authenticated";
+GRANT ALL ON TABLE "public"."cms_forms" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."cms_global_blocks" TO "anon";
+GRANT ALL ON TABLE "public"."cms_global_blocks" TO "authenticated";
+GRANT ALL ON TABLE "public"."cms_global_blocks" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."cms_media" TO "anon";
+GRANT ALL ON TABLE "public"."cms_media" TO "authenticated";
+GRANT ALL ON TABLE "public"."cms_media" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."cms_pages" TO "anon";
+GRANT ALL ON TABLE "public"."cms_pages" TO "authenticated";
+GRANT ALL ON TABLE "public"."cms_pages" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."cms_popups" TO "anon";
+GRANT ALL ON TABLE "public"."cms_popups" TO "authenticated";
+GRANT ALL ON TABLE "public"."cms_popups" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."cms_redirects" TO "anon";
+GRANT ALL ON TABLE "public"."cms_redirects" TO "authenticated";
+GRANT ALL ON TABLE "public"."cms_redirects" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."cms_resources" TO "anon";
+GRANT ALL ON TABLE "public"."cms_resources" TO "authenticated";
+GRANT ALL ON TABLE "public"."cms_resources" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."cms_revisions" TO "anon";
+GRANT ALL ON TABLE "public"."cms_revisions" TO "authenticated";
+GRANT ALL ON TABLE "public"."cms_revisions" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."cms_templates" TO "anon";
+GRANT ALL ON TABLE "public"."cms_templates" TO "authenticated";
+GRANT ALL ON TABLE "public"."cms_templates" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."cms_theme" TO "anon";
+GRANT ALL ON TABLE "public"."cms_theme" TO "authenticated";
+GRANT ALL ON TABLE "public"."cms_theme" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."code_batches" TO "anon";
 GRANT ALL ON TABLE "public"."code_batches" TO "authenticated";
 GRANT ALL ON TABLE "public"."code_batches" TO "service_role";
@@ -26687,6 +43841,24 @@ GRANT ALL ON TABLE "public"."cognito_forms" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."commission_payouts" TO "anon";
+GRANT ALL ON TABLE "public"."commission_payouts" TO "authenticated";
+GRANT ALL ON TABLE "public"."commission_payouts" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."commission_records" TO "anon";
+GRANT ALL ON TABLE "public"."commission_records" TO "authenticated";
+GRANT ALL ON TABLE "public"."commission_records" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."commission_schedules" TO "anon";
+GRANT ALL ON TABLE "public"."commission_schedules" TO "authenticated";
+GRANT ALL ON TABLE "public"."commission_schedules" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."compliance_acknowledgments" TO "anon";
 GRANT ALL ON TABLE "public"."compliance_acknowledgments" TO "authenticated";
 GRANT ALL ON TABLE "public"."compliance_acknowledgments" TO "service_role";
@@ -26696,6 +43868,48 @@ GRANT ALL ON TABLE "public"."compliance_acknowledgments" TO "service_role";
 GRANT ALL ON TABLE "public"."compliance_documents" TO "anon";
 GRANT ALL ON TABLE "public"."compliance_documents" TO "authenticated";
 GRANT ALL ON TABLE "public"."compliance_documents" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."concierge_daily_log_entries" TO "anon";
+GRANT ALL ON TABLE "public"."concierge_daily_log_entries" TO "authenticated";
+GRANT ALL ON TABLE "public"."concierge_daily_log_entries" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."concierge_escalations" TO "anon";
+GRANT ALL ON TABLE "public"."concierge_escalations" TO "authenticated";
+GRANT ALL ON TABLE "public"."concierge_escalations" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."concierge_member_off_days" TO "anon";
+GRANT ALL ON TABLE "public"."concierge_member_off_days" TO "authenticated";
+GRANT ALL ON TABLE "public"."concierge_member_off_days" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."concierge_portal_config" TO "anon";
+GRANT ALL ON TABLE "public"."concierge_portal_config" TO "authenticated";
+GRANT ALL ON TABLE "public"."concierge_portal_config" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."concierge_team_members" TO "anon";
+GRANT ALL ON TABLE "public"."concierge_team_members" TO "authenticated";
+GRANT ALL ON TABLE "public"."concierge_team_members" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."concierge_weekly_report_extras" TO "anon";
+GRANT ALL ON TABLE "public"."concierge_weekly_report_extras" TO "authenticated";
+GRANT ALL ON TABLE "public"."concierge_weekly_report_extras" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."contacts" TO "anon";
+GRANT ALL ON TABLE "public"."contacts" TO "authenticated";
+GRANT ALL ON TABLE "public"."contacts" TO "service_role";
 
 
 
@@ -26735,9 +43949,21 @@ GRANT ALL ON TABLE "public"."coverage_documents" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."crm_achievements" TO "anon";
+GRANT ALL ON TABLE "public"."crm_achievements" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_achievements" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."crm_activities" TO "anon";
 GRANT ALL ON TABLE "public"."crm_activities" TO "authenticated";
 GRANT ALL ON TABLE "public"."crm_activities" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."crm_activity_targets" TO "anon";
+GRANT ALL ON TABLE "public"."crm_activity_targets" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_activity_targets" TO "service_role";
 
 
 
@@ -26762,6 +43988,24 @@ GRANT ALL ON TABLE "public"."crm_approval_requests" TO "service_role";
 GRANT ALL ON TABLE "public"."crm_approval_steps" TO "anon";
 GRANT ALL ON TABLE "public"."crm_approval_steps" TO "authenticated";
 GRANT ALL ON TABLE "public"."crm_approval_steps" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."crm_attachments" TO "anon";
+GRANT ALL ON TABLE "public"."crm_attachments" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_attachments" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."crm_audit_log" TO "anon";
+GRANT ALL ON TABLE "public"."crm_audit_log" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_audit_log" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."crm_calendar_booking_log" TO "anon";
+GRANT ALL ON TABLE "public"."crm_calendar_booking_log" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_calendar_booking_log" TO "service_role";
 
 
 
@@ -26795,6 +44039,54 @@ GRANT ALL ON TABLE "public"."crm_cases" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."crm_challenge_entries" TO "anon";
+GRANT ALL ON TABLE "public"."crm_challenge_entries" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_challenge_entries" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."crm_challenges" TO "anon";
+GRANT ALL ON TABLE "public"."crm_challenges" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_challenges" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."crm_community_events" TO "anon";
+GRANT ALL ON TABLE "public"."crm_community_events" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_community_events" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."crm_concierge_handoff_log" TO "anon";
+GRANT ALL ON TABLE "public"."crm_concierge_handoff_log" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_concierge_handoff_log" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."crm_conversation_goal_config" TO "anon";
+GRANT ALL ON TABLE "public"."crm_conversation_goal_config" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_conversation_goal_config" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."crm_daily_log_corrections" TO "anon";
+GRANT ALL ON TABLE "public"."crm_daily_log_corrections" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_daily_log_corrections" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."crm_daily_log_events" TO "anon";
+GRANT ALL ON TABLE "public"."crm_daily_log_events" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_daily_log_events" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."crm_daily_log_ui_config" TO "anon";
+GRANT ALL ON TABLE "public"."crm_daily_log_ui_config" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_daily_log_ui_config" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."crm_dashboard_layouts" TO "anon";
 GRANT ALL ON TABLE "public"."crm_dashboard_layouts" TO "authenticated";
 GRANT ALL ON TABLE "public"."crm_dashboard_layouts" TO "service_role";
@@ -26813,9 +44105,39 @@ GRANT ALL ON TABLE "public"."crm_deal_contacts" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."crm_deal_predictions" TO "anon";
+GRANT ALL ON TABLE "public"."crm_deal_predictions" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_deal_predictions" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."crm_deal_products" TO "anon";
 GRANT ALL ON TABLE "public"."crm_deal_products" TO "authenticated";
 GRANT ALL ON TABLE "public"."crm_deal_products" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."crm_deal_room_messages" TO "anon";
+GRANT ALL ON TABLE "public"."crm_deal_room_messages" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_deal_room_messages" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."crm_deal_room_participants" TO "anon";
+GRANT ALL ON TABLE "public"."crm_deal_room_participants" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_deal_room_participants" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."crm_deal_room_pinned_items" TO "anon";
+GRANT ALL ON TABLE "public"."crm_deal_room_pinned_items" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_deal_room_pinned_items" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."crm_deal_rooms" TO "anon";
+GRANT ALL ON TABLE "public"."crm_deal_rooms" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_deal_rooms" TO "service_role";
 
 
 
@@ -26846,6 +44168,12 @@ GRANT ALL ON TABLE "public"."crm_default_layout_templates" TO "service_role";
 GRANT ALL ON TABLE "public"."crm_documents" TO "anon";
 GRANT ALL ON TABLE "public"."crm_documents" TO "authenticated";
 GRANT ALL ON TABLE "public"."crm_documents" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."crm_email_ab_tests" TO "anon";
+GRANT ALL ON TABLE "public"."crm_email_ab_tests" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_email_ab_tests" TO "service_role";
 
 
 
@@ -26909,6 +44237,24 @@ GRANT ALL ON TABLE "public"."crm_email_tracking" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."crm_family_members" TO "anon";
+GRANT ALL ON TABLE "public"."crm_family_members" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_family_members" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."crm_focus_items" TO "anon";
+GRANT ALL ON TABLE "public"."crm_focus_items" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_focus_items" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."crm_follow_up_cadences" TO "anon";
+GRANT ALL ON TABLE "public"."crm_follow_up_cadences" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_follow_up_cadences" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."crm_forecast_entries" TO "anon";
 GRANT ALL ON TABLE "public"."crm_forecast_entries" TO "authenticated";
 GRANT ALL ON TABLE "public"."crm_forecast_entries" TO "service_role";
@@ -26924,6 +44270,12 @@ GRANT ALL ON TABLE "public"."crm_forecasts" TO "service_role";
 GRANT ALL ON SEQUENCE "public"."crm_health_quote_number_seq" TO "anon";
 GRANT ALL ON SEQUENCE "public"."crm_health_quote_number_seq" TO "authenticated";
 GRANT ALL ON SEQUENCE "public"."crm_health_quote_number_seq" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."crm_integration_accounts" TO "anon";
+GRANT ALL ON TABLE "public"."crm_integration_accounts" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_integration_accounts" TO "service_role";
 
 
 
@@ -26945,6 +44297,12 @@ GRANT ALL ON TABLE "public"."crm_invoices" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."crm_lead_cadence_state" TO "anon";
+GRANT ALL ON TABLE "public"."crm_lead_cadence_state" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_lead_cadence_state" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."crm_lead_health_quotes" TO "anon";
 GRANT ALL ON TABLE "public"."crm_lead_health_quotes" TO "authenticated";
 GRANT ALL ON TABLE "public"."crm_lead_health_quotes" TO "service_role";
@@ -26957,6 +44315,36 @@ GRANT ALL ON TABLE "public"."crm_lead_plan_interests" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."crm_lead_quote_history" TO "anon";
+GRANT ALL ON TABLE "public"."crm_lead_quote_history" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_lead_quote_history" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."crm_lead_source_types" TO "anon";
+GRANT ALL ON TABLE "public"."crm_lead_source_types" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_lead_source_types" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."crm_lead_time_entries" TO "anon";
+GRANT ALL ON TABLE "public"."crm_lead_time_entries" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_lead_time_entries" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."crm_linkedin_config" TO "anon";
+GRANT ALL ON TABLE "public"."crm_linkedin_config" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_linkedin_config" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."crm_master_templates" TO "anon";
+GRANT ALL ON TABLE "public"."crm_master_templates" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_master_templates" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."crm_meeting_bookings" TO "anon";
 GRANT ALL ON TABLE "public"."crm_meeting_bookings" TO "authenticated";
 GRANT ALL ON TABLE "public"."crm_meeting_bookings" TO "service_role";
@@ -26966,6 +44354,48 @@ GRANT ALL ON TABLE "public"."crm_meeting_bookings" TO "service_role";
 GRANT ALL ON TABLE "public"."crm_meeting_schedules" TO "anon";
 GRANT ALL ON TABLE "public"."crm_meeting_schedules" TO "authenticated";
 GRANT ALL ON TABLE "public"."crm_meeting_schedules" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."crm_mentions" TO "anon";
+GRANT ALL ON TABLE "public"."crm_mentions" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_mentions" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."crm_oe_reactivation_runs" TO "anon";
+GRANT ALL ON TABLE "public"."crm_oe_reactivation_runs" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_oe_reactivation_runs" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."crm_optout_keywords" TO "anon";
+GRANT ALL ON TABLE "public"."crm_optout_keywords" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_optout_keywords" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."crm_outside_advisors" TO "anon";
+GRANT ALL ON TABLE "public"."crm_outside_advisors" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_outside_advisors" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."crm_performance_alert_log" TO "anon";
+GRANT ALL ON TABLE "public"."crm_performance_alert_log" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_performance_alert_log" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."crm_performance_lag_config" TO "anon";
+GRANT ALL ON TABLE "public"."crm_performance_lag_config" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_performance_lag_config" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."crm_phone_numbers" TO "anon";
+GRANT ALL ON TABLE "public"."crm_phone_numbers" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_phone_numbers" TO "service_role";
 
 
 
@@ -26987,6 +44417,18 @@ GRANT ALL ON TABLE "public"."crm_price_books" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."crm_product_form_fields" TO "anon";
+GRANT ALL ON TABLE "public"."crm_product_form_fields" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_product_form_fields" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."crm_product_lines" TO "anon";
+GRANT ALL ON TABLE "public"."crm_product_lines" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_product_lines" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."crm_products" TO "anon";
 GRANT ALL ON TABLE "public"."crm_products" TO "authenticated";
 GRANT ALL ON TABLE "public"."crm_products" TO "service_role";
@@ -27005,15 +44447,93 @@ GRANT ALL ON TABLE "public"."crm_purchase_orders" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."crm_quarterly_milestones" TO "anon";
+GRANT ALL ON TABLE "public"."crm_quarterly_milestones" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_quarterly_milestones" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."crm_quote_line_item_answers" TO "anon";
+GRANT ALL ON TABLE "public"."crm_quote_line_item_answers" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_quote_line_item_answers" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."crm_quote_line_items" TO "anon";
 GRANT ALL ON TABLE "public"."crm_quote_line_items" TO "authenticated";
 GRANT ALL ON TABLE "public"."crm_quote_line_items" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."crm_quote_templates" TO "anon";
+GRANT ALL ON TABLE "public"."crm_quote_templates" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_quote_templates" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."crm_quotes" TO "anon";
 GRANT ALL ON TABLE "public"."crm_quotes" TO "authenticated";
 GRANT ALL ON TABLE "public"."crm_quotes" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."crm_recruit_cadence_state" TO "anon";
+GRANT ALL ON TABLE "public"."crm_recruit_cadence_state" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_recruit_cadence_state" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."crm_recruiting_pipeline_stages" TO "anon";
+GRANT ALL ON TABLE "public"."crm_recruiting_pipeline_stages" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_recruiting_pipeline_stages" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."crm_recruiting_records" TO "anon";
+GRANT ALL ON TABLE "public"."crm_recruiting_records" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_recruiting_records" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."crm_referral_partners" TO "anon";
+GRANT ALL ON TABLE "public"."crm_referral_partners" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_referral_partners" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."crm_referrals" TO "anon";
+GRANT ALL ON TABLE "public"."crm_referrals" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_referrals" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."crm_rep_daily_log_entries" TO "anon";
+GRANT ALL ON TABLE "public"."crm_rep_daily_log_entries" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_rep_daily_log_entries" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."crm_rep_message_templates" TO "anon";
+GRANT ALL ON TABLE "public"."crm_rep_message_templates" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_rep_message_templates" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."crm_rep_roster" TO "anon";
+GRANT ALL ON TABLE "public"."crm_rep_roster" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_rep_roster" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."crm_round_robin_audit" TO "anon";
+GRANT ALL ON TABLE "public"."crm_round_robin_audit" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_round_robin_audit" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."crm_round_robin_config" TO "anon";
+GRANT ALL ON TABLE "public"."crm_round_robin_config" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_round_robin_config" TO "service_role";
 
 
 
@@ -27029,9 +44549,102 @@ GRANT ALL ON TABLE "public"."crm_sales_orders" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."crm_salesperson_roster" TO "service_role";
+GRANT SELECT ON TABLE "public"."crm_salesperson_roster" TO "authenticated";
+
+
+
 GRANT ALL ON TABLE "public"."crm_saved_views" TO "anon";
 GRANT ALL ON TABLE "public"."crm_saved_views" TO "authenticated";
 GRANT ALL ON TABLE "public"."crm_saved_views" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."crm_sequence_triggers" TO "anon";
+GRANT ALL ON TABLE "public"."crm_sequence_triggers" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_sequence_triggers" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."crm_sla_config" TO "anon";
+GRANT ALL ON TABLE "public"."crm_sla_config" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_sla_config" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."crm_social_platform_connections" TO "anon";
+GRANT ALL ON TABLE "public"."crm_social_platform_connections" TO "service_role";
+GRANT DELETE ON TABLE "public"."crm_social_platform_connections" TO "authenticated";
+
+
+
+GRANT SELECT("id") ON TABLE "public"."crm_social_platform_connections" TO "authenticated";
+
+
+
+GRANT SELECT("org_id"),INSERT("org_id") ON TABLE "public"."crm_social_platform_connections" TO "authenticated";
+
+
+
+GRANT SELECT("provider"),INSERT("provider") ON TABLE "public"."crm_social_platform_connections" TO "authenticated";
+
+
+
+GRANT SELECT("connection_status"),INSERT("connection_status"),UPDATE("connection_status") ON TABLE "public"."crm_social_platform_connections" TO "authenticated";
+
+
+
+GRANT SELECT("display_name"),INSERT("display_name"),UPDATE("display_name") ON TABLE "public"."crm_social_platform_connections" TO "authenticated";
+
+
+
+GRANT SELECT("metadata"),INSERT("metadata"),UPDATE("metadata") ON TABLE "public"."crm_social_platform_connections" TO "authenticated";
+
+
+
+GRANT SELECT("sync_error"),INSERT("sync_error"),UPDATE("sync_error") ON TABLE "public"."crm_social_platform_connections" TO "authenticated";
+
+
+
+GRANT SELECT("last_synced_at"),INSERT("last_synced_at"),UPDATE("last_synced_at") ON TABLE "public"."crm_social_platform_connections" TO "authenticated";
+
+
+
+GRANT SELECT("connected_by"),INSERT("connected_by"),UPDATE("connected_by") ON TABLE "public"."crm_social_platform_connections" TO "authenticated";
+
+
+
+GRANT SELECT("created_at") ON TABLE "public"."crm_social_platform_connections" TO "authenticated";
+
+
+
+GRANT SELECT("updated_at") ON TABLE "public"."crm_social_platform_connections" TO "authenticated";
+
+
+
+GRANT SELECT("token_expires_at") ON TABLE "public"."crm_social_platform_connections" TO "authenticated";
+
+
+
+GRANT SELECT("oauth_scope") ON TABLE "public"."crm_social_platform_connections" TO "authenticated";
+
+
+
+GRANT ALL ON TABLE "public"."crm_social_posts" TO "anon";
+GRANT ALL ON TABLE "public"."crm_social_posts" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_social_posts" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."crm_special_project_types" TO "anon";
+GRANT ALL ON TABLE "public"."crm_special_project_types" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_special_project_types" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."crm_special_projects" TO "anon";
+GRANT ALL ON TABLE "public"."crm_special_projects" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_special_projects" TO "service_role";
 
 
 
@@ -27077,9 +44690,52 @@ GRANT ALL ON TABLE "public"."crm_templates" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."crm_user_achievements" TO "anon";
+GRANT ALL ON TABLE "public"."crm_user_achievements" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_user_achievements" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."crm_user_conversation_goal_overrides" TO "anon";
+GRANT ALL ON TABLE "public"."crm_user_conversation_goal_overrides" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_user_conversation_goal_overrides" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."crm_user_goals" TO "anon";
 GRANT ALL ON TABLE "public"."crm_user_goals" TO "authenticated";
 GRANT ALL ON TABLE "public"."crm_user_goals" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."crm_user_xp" TO "anon";
+GRANT ALL ON TABLE "public"."crm_user_xp" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_user_xp" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."crm_v_application_dropoff" TO "service_role";
+GRANT SELECT ON TABLE "public"."crm_v_application_dropoff" TO "authenticated";
+
+
+
+GRANT ALL ON TABLE "public"."crm_v_call_breakdown" TO "service_role";
+GRANT SELECT ON TABLE "public"."crm_v_call_breakdown" TO "authenticated";
+
+
+
+GRANT ALL ON TABLE "public"."crm_v_conversion_by_source" TO "service_role";
+GRANT SELECT ON TABLE "public"."crm_v_conversion_by_source" TO "authenticated";
+
+
+
+GRANT ALL ON TABLE "public"."crm_v_pipeline_movement" TO "service_role";
+GRANT SELECT ON TABLE "public"."crm_v_pipeline_movement" TO "authenticated";
+
+
+
+GRANT ALL ON TABLE "public"."crm_v_special_project_rollup" TO "service_role";
+GRANT SELECT ON TABLE "public"."crm_v_special_project_rollup" TO "authenticated";
 
 
 
@@ -27107,6 +44763,24 @@ GRANT ALL ON TABLE "public"."crm_website_quote_sync" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."crm_win_feed" TO "anon";
+GRANT ALL ON TABLE "public"."crm_win_feed" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_win_feed" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."crm_workspaces" TO "anon";
+GRANT ALL ON TABLE "public"."crm_workspaces" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_workspaces" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."crm_xp_events" TO "anon";
+GRANT ALL ON TABLE "public"."crm_xp_events" TO "authenticated";
+GRANT ALL ON TABLE "public"."crm_xp_events" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."daily_analytics_summary" TO "anon";
 GRANT ALL ON TABLE "public"."daily_analytics_summary" TO "authenticated";
 GRANT ALL ON TABLE "public"."daily_analytics_summary" TO "service_role";
@@ -27128,6 +44802,12 @@ GRANT ALL ON TABLE "public"."document_access_log" TO "service_role";
 GRANT ALL ON TABLE "public"."educational_content" TO "anon";
 GRANT ALL ON TABLE "public"."educational_content" TO "authenticated";
 GRANT ALL ON TABLE "public"."educational_content" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."email_log" TO "anon";
+GRANT ALL ON TABLE "public"."email_log" TO "authenticated";
+GRANT ALL ON TABLE "public"."email_log" TO "service_role";
 
 
 
@@ -27197,6 +44877,12 @@ GRANT ALL ON TABLE "public"."faq_items" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."feature_flags" TO "anon";
+GRANT ALL ON TABLE "public"."feature_flags" TO "authenticated";
+GRANT ALL ON TABLE "public"."feature_flags" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."form_submissions" TO "anon";
 GRANT ALL ON TABLE "public"."form_submissions" TO "authenticated";
 GRANT ALL ON TABLE "public"."form_submissions" TO "service_role";
@@ -27239,9 +44925,27 @@ GRANT ALL ON TABLE "public"."immunizations" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."impersonation_log" TO "anon";
+GRANT ALL ON TABLE "public"."impersonation_log" TO "authenticated";
+GRANT ALL ON TABLE "public"."impersonation_log" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."insurance_carriers" TO "anon";
+GRANT ALL ON TABLE "public"."insurance_carriers" TO "authenticated";
+GRANT ALL ON TABLE "public"."insurance_carriers" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."integration_health" TO "anon";
 GRANT ALL ON TABLE "public"."integration_health" TO "authenticated";
 GRANT ALL ON TABLE "public"."integration_health" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."integrations" TO "anon";
+GRANT ALL ON TABLE "public"."integrations" TO "authenticated";
+GRANT ALL ON TABLE "public"."integrations" TO "service_role";
 
 
 
@@ -27287,21 +44991,9 @@ GRANT ALL ON TABLE "public"."lead_scoring_config" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."lead_submissions" TO "anon";
-GRANT ALL ON TABLE "public"."lead_submissions" TO "authenticated";
-GRANT ALL ON TABLE "public"."lead_submissions" TO "service_role";
-
-
-
 GRANT ALL ON TABLE "public"."lead_tasks" TO "anon";
 GRANT ALL ON TABLE "public"."lead_tasks" TO "authenticated";
 GRANT ALL ON TABLE "public"."lead_tasks" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."leads" TO "anon";
-GRANT ALL ON TABLE "public"."leads" TO "authenticated";
-GRANT ALL ON TABLE "public"."leads" TO "service_role";
 
 
 
@@ -27395,6 +45087,12 @@ GRANT ALL ON TABLE "public"."meeting_templates" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."member_account_events" TO "anon";
+GRANT ALL ON TABLE "public"."member_account_events" TO "authenticated";
+GRANT ALL ON TABLE "public"."member_account_events" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."member_coverage" TO "anon";
 GRANT ALL ON TABLE "public"."member_coverage" TO "authenticated";
 GRANT ALL ON TABLE "public"."member_coverage" TO "service_role";
@@ -27413,6 +45111,12 @@ GRANT ALL ON TABLE "public"."member_documents" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."member_notification_rules" TO "anon";
+GRANT ALL ON TABLE "public"."member_notification_rules" TO "authenticated";
+GRANT ALL ON TABLE "public"."member_notification_rules" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."member_notifications" TO "anon";
 GRANT ALL ON TABLE "public"."member_notifications" TO "authenticated";
 GRANT ALL ON TABLE "public"."member_notifications" TO "service_role";
@@ -27422,6 +45126,12 @@ GRANT ALL ON TABLE "public"."member_notifications" TO "service_role";
 GRANT ALL ON TABLE "public"."member_profiles" TO "anon";
 GRANT ALL ON TABLE "public"."member_profiles" TO "authenticated";
 GRANT ALL ON TABLE "public"."member_profiles" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."message_templates" TO "anon";
+GRANT ALL ON TABLE "public"."message_templates" TO "authenticated";
+GRANT ALL ON TABLE "public"."message_templates" TO "service_role";
 
 
 
@@ -27440,6 +45150,12 @@ GRANT ALL ON TABLE "public"."navigation_analytics" TO "service_role";
 GRANT ALL ON TABLE "public"."navigation_items" TO "anon";
 GRANT ALL ON TABLE "public"."navigation_items" TO "authenticated";
 GRANT ALL ON TABLE "public"."navigation_items" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."navigation_search_analytics" TO "anon";
+GRANT ALL ON TABLE "public"."navigation_search_analytics" TO "authenticated";
+GRANT ALL ON TABLE "public"."navigation_search_analytics" TO "service_role";
 
 
 
@@ -27527,6 +45243,12 @@ GRANT ALL ON TABLE "public"."onboarding_steps" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."org_feature_overrides" TO "anon";
+GRANT ALL ON TABLE "public"."org_feature_overrides" TO "authenticated";
+GRANT ALL ON TABLE "public"."org_feature_overrides" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."org_invites" TO "anon";
 GRANT ALL ON TABLE "public"."org_invites" TO "authenticated";
 GRANT ALL ON TABLE "public"."org_invites" TO "service_role";
@@ -27536,6 +45258,24 @@ GRANT ALL ON TABLE "public"."org_invites" TO "service_role";
 GRANT ALL ON TABLE "public"."org_memberships" TO "anon";
 GRANT ALL ON TABLE "public"."org_memberships" TO "authenticated";
 GRANT ALL ON TABLE "public"."org_memberships" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."org_module_licenses" TO "anon";
+GRANT ALL ON TABLE "public"."org_module_licenses" TO "authenticated";
+GRANT ALL ON TABLE "public"."org_module_licenses" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."org_portal_access" TO "anon";
+GRANT ALL ON TABLE "public"."org_portal_access" TO "authenticated";
+GRANT ALL ON TABLE "public"."org_portal_access" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."organization_id_map" TO "anon";
+GRANT ALL ON TABLE "public"."organization_id_map" TO "authenticated";
+GRANT ALL ON TABLE "public"."organization_id_map" TO "service_role";
 
 
 
@@ -27557,6 +45297,12 @@ GRANT ALL ON TABLE "public"."orgs" TO "service_role";
 
 
 
+GRANT SELECT,MAINTAIN ON TABLE "public"."organizations_unified" TO "anon";
+GRANT SELECT,MAINTAIN ON TABLE "public"."organizations_unified" TO "authenticated";
+GRANT ALL ON TABLE "public"."organizations_unified" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."outlook_config" TO "anon";
 GRANT ALL ON TABLE "public"."outlook_config" TO "authenticated";
 GRANT ALL ON TABLE "public"."outlook_config" TO "service_role";
@@ -27566,6 +45312,12 @@ GRANT ALL ON TABLE "public"."outlook_config" TO "service_role";
 GRANT ALL ON TABLE "public"."page_performance" TO "anon";
 GRANT ALL ON TABLE "public"."page_performance" TO "authenticated";
 GRANT ALL ON TABLE "public"."page_performance" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."password_history" TO "anon";
+GRANT ALL ON TABLE "public"."password_history" TO "authenticated";
+GRANT ALL ON TABLE "public"."password_history" TO "service_role";
 
 
 
@@ -27590,6 +45342,12 @@ GRANT ALL ON TABLE "public"."performance_goals" TO "service_role";
 GRANT ALL ON TABLE "public"."permissions" TO "anon";
 GRANT ALL ON TABLE "public"."permissions" TO "authenticated";
 GRANT ALL ON TABLE "public"."permissions" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."phi_access_log" TO "anon";
+GRANT ALL ON TABLE "public"."phi_access_log" TO "authenticated";
+GRANT ALL ON TABLE "public"."phi_access_log" TO "service_role";
 
 
 
@@ -27650,6 +45408,12 @@ GRANT ALL ON TABLE "public"."priority_items" TO "service_role";
 GRANT ALL ON TABLE "public"."priority_lanes" TO "anon";
 GRANT ALL ON TABLE "public"."priority_lanes" TO "authenticated";
 GRANT ALL ON TABLE "public"."priority_lanes" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."product_modules" TO "anon";
+GRANT ALL ON TABLE "public"."product_modules" TO "authenticated";
+GRANT ALL ON TABLE "public"."product_modules" TO "service_role";
 
 
 
@@ -27731,6 +45495,12 @@ GRANT ALL ON TABLE "public"."saved_reports" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."saved_searches" TO "anon";
+GRANT ALL ON TABLE "public"."saved_searches" TO "authenticated";
+GRANT ALL ON TABLE "public"."saved_searches" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."scoring_rules" TO "anon";
 GRANT ALL ON TABLE "public"."scoring_rules" TO "authenticated";
 GRANT ALL ON TABLE "public"."scoring_rules" TO "service_role";
@@ -27797,6 +45567,18 @@ GRANT ALL ON TABLE "public"."seo_sync_logs" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."sequence_enrollments" TO "anon";
+GRANT ALL ON TABLE "public"."sequence_enrollments" TO "authenticated";
+GRANT ALL ON TABLE "public"."sequence_enrollments" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."sequence_steps" TO "anon";
+GRANT ALL ON TABLE "public"."sequence_steps" TO "authenticated";
+GRANT ALL ON TABLE "public"."sequence_steps" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."sequences" TO "anon";
 GRANT ALL ON TABLE "public"."sequences" TO "authenticated";
 GRANT ALL ON TABLE "public"."sequences" TO "service_role";
@@ -27836,6 +45618,60 @@ GRANT ALL ON TABLE "public"."sop_categories" TO "service_role";
 GRANT ALL ON TABLE "public"."sop_documents" TO "anon";
 GRANT ALL ON TABLE "public"."sop_documents" TO "authenticated";
 GRANT ALL ON TABLE "public"."sop_documents" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."staff_attendance_events" TO "anon";
+GRANT ALL ON TABLE "public"."staff_attendance_events" TO "authenticated";
+GRANT ALL ON TABLE "public"."staff_attendance_events" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."staff_attendance_sessions" TO "anon";
+GRANT ALL ON TABLE "public"."staff_attendance_sessions" TO "authenticated";
+GRANT ALL ON TABLE "public"."staff_attendance_sessions" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."staff_departments" TO "anon";
+GRANT ALL ON TABLE "public"."staff_departments" TO "authenticated";
+GRANT ALL ON TABLE "public"."staff_departments" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."staff_notes" TO "anon";
+GRANT ALL ON TABLE "public"."staff_notes" TO "authenticated";
+GRANT ALL ON TABLE "public"."staff_notes" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."staff_office_locations" TO "anon";
+GRANT ALL ON TABLE "public"."staff_office_locations" TO "authenticated";
+GRANT ALL ON TABLE "public"."staff_office_locations" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."staff_tasks" TO "anon";
+GRANT ALL ON TABLE "public"."staff_tasks" TO "authenticated";
+GRANT ALL ON TABLE "public"."staff_tasks" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."staff_time_documents" TO "anon";
+GRANT ALL ON TABLE "public"."staff_time_documents" TO "authenticated";
+GRANT ALL ON TABLE "public"."staff_time_documents" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."staff_time_request_events" TO "anon";
+GRANT ALL ON TABLE "public"."staff_time_request_events" TO "authenticated";
+GRANT ALL ON TABLE "public"."staff_time_request_events" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."staff_time_requests" TO "anon";
+GRANT ALL ON TABLE "public"."staff_time_requests" TO "authenticated";
+GRANT ALL ON TABLE "public"."staff_time_requests" TO "service_role";
 
 
 
@@ -27917,6 +45753,12 @@ GRANT ALL ON TABLE "public"."user_achievements" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."user_mfa_settings" TO "anon";
+GRANT ALL ON TABLE "public"."user_mfa_settings" TO "authenticated";
+GRANT ALL ON TABLE "public"."user_mfa_settings" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."user_navigation_preferences" TO "anon";
 GRANT ALL ON TABLE "public"."user_navigation_preferences" TO "authenticated";
 GRANT ALL ON TABLE "public"."user_navigation_preferences" TO "service_role";
@@ -27941,6 +45783,12 @@ GRANT ALL ON TABLE "public"."user_roles" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."user_sessions" TO "anon";
+GRANT ALL ON TABLE "public"."user_sessions" TO "authenticated";
+GRANT ALL ON TABLE "public"."user_sessions" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."utm_campaigns" TO "anon";
 GRANT ALL ON TABLE "public"."utm_campaigns" TO "authenticated";
 GRANT ALL ON TABLE "public"."utm_campaigns" TO "service_role";
@@ -27959,9 +45807,27 @@ GRANT ALL ON TABLE "public"."webhook_delivery_logs" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."zoho_lead_submissions" TO "anon";
-GRANT ALL ON TABLE "public"."zoho_lead_submissions" TO "authenticated";
-GRANT ALL ON TABLE "public"."zoho_lead_submissions" TO "service_role";
+GRANT ALL ON TABLE "public"."white_label_configs" TO "anon";
+GRANT ALL ON TABLE "public"."white_label_configs" TO "authenticated";
+GRANT ALL ON TABLE "public"."white_label_configs" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."white_label_email_templates" TO "anon";
+GRANT ALL ON TABLE "public"."white_label_email_templates" TO "authenticated";
+GRANT ALL ON TABLE "public"."white_label_email_templates" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."workflow_steps" TO "anon";
+GRANT ALL ON TABLE "public"."workflow_steps" TO "authenticated";
+GRANT ALL ON TABLE "public"."workflow_steps" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."workflows" TO "anon";
+GRANT ALL ON TABLE "public"."workflows" TO "authenticated";
+GRANT ALL ON TABLE "public"."workflows" TO "service_role";
 
 
 
@@ -28003,8 +45869,161 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "service_role";
 
 
+-- ============================================================
+-- STORAGE BUCKETS
+-- ============================================================
+-- `supabase db dump --schema public` does not emit these. Without them a
+-- fresh stack has no buckets, so every upload path (handbook PDFs, avatars,
+-- ticket attachments) fails in local development.
+
+INSERT INTO "storage"."buckets" ("id", "name", "public", "file_size_limit", "allowed_mime_types") VALUES
+  ('advisor-avatars',    'advisor-avatars',    true,    5242880, ARRAY['image/png','image/jpeg','image/webp','image/gif']),
+  ('advisor-documents',  'advisor-documents',  true,  209715200, ARRAY['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','application/pdf','image/png','image/jpeg','image/gif','image/webp','application/msword','application/vnd.ms-excel','application/vnd.openxmlformats-officedocument.wordprocessingml.document','application/vnd.openxmlformats-officedocument.presentationml.presentation','application/vnd.ms-powerpoint']),
+  ('avatars',            'avatars',            true,    5242880, ARRAY['image/png','image/jpeg','image/webp','image/gif']),
+  ('blog-images',        'blog-images',        true,    5242880, ARRAY['image/png','image/jpeg','image/webp']),
+  ('crm-attachments',    'crm-attachments',    false,        NULL, NULL),
+  ('crm-documents',      'crm-documents',      false,        NULL, NULL),
+  ('event-images',       'event-images',       true,   10485760, ARRAY['image/jpeg','image/jpg','image/png','image/webp','image/gif']),
+  ('GroupLogo',          'GroupLogo',          true,        NULL, NULL),
+  ('staff-hr-documents', 'staff-hr-documents', false,  10485760, ARRAY['application/pdf','image/jpeg','image/png','image/webp']),
+  ('ticket-attachments', 'ticket-attachments', false,  15728640, NULL)
+ON CONFLICT ("id") DO NOTHING;
 
 
+-- ============================================================
+-- STORAGE RLS POLICIES
+-- ============================================================
+-- Dumped from production's storage schema. These reference public schema
+-- helpers (current_user_has_admin_access, is_staff_hr), so they must come
+-- after the public schema above.
+
+CREATE POLICY "Admins can manage all advisor avatars" ON "storage"."objects" TO "authenticated" USING ((("bucket_id" = 'advisor-avatars'::"text") AND (EXISTS ( SELECT 1
+   FROM "public"."user_roles" "ur"
+  WHERE (("ur"."user_id" = "auth"."uid"()) AND ("ur"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text"]))))))) WITH CHECK ((("bucket_id" = 'advisor-avatars'::"text") AND (EXISTS ( SELECT 1
+   FROM "public"."user_roles" "ur"
+  WHERE (("ur"."user_id" = "auth"."uid"()) AND ("ur"."role" = ANY (ARRAY['admin'::"text", 'superadmin'::"text"])))))));
+
+CREATE POLICY "Admins can manage all ticket attachments" ON "storage"."objects" TO "authenticated" USING ((("bucket_id" = 'ticket-attachments'::"text") AND (EXISTS ( SELECT 1
+   FROM "public"."user_roles" "ur"
+  WHERE (("ur"."user_id" = "auth"."uid"()) AND ("ur"."role" = ANY (ARRAY['admin'::"text", 'super_admin'::"text", 'superadmin'::"text"]))))))) WITH CHECK ((("bucket_id" = 'ticket-attachments'::"text") AND (EXISTS ( SELECT 1
+   FROM "public"."user_roles" "ur"
+  WHERE (("ur"."user_id" = "auth"."uid"()) AND ("ur"."role" = ANY (ARRAY['admin'::"text", 'super_admin'::"text", 'superadmin'::"text"])))))));
+
+CREATE POLICY "Advisors can delete own ticket attachments" ON "storage"."objects" FOR DELETE TO "authenticated" USING ((("bucket_id" = 'ticket-attachments'::"text") AND (("storage"."foldername"("name"))[1] = ("auth"."uid"())::"text")));
+
+CREATE POLICY "Advisors can delete their own avatar" ON "storage"."objects" FOR DELETE TO "authenticated" USING ((("bucket_id" = 'advisor-avatars'::"text") AND (("storage"."foldername"("name"))[1] = ("auth"."uid"())::"text")));
+
+CREATE POLICY "Advisors can read own ticket attachments" ON "storage"."objects" FOR SELECT TO "authenticated" USING ((("bucket_id" = 'ticket-attachments'::"text") AND (("storage"."foldername"("name"))[1] = ("auth"."uid"())::"text")));
+
+CREATE POLICY "Advisors can update own ticket attachments" ON "storage"."objects" FOR UPDATE TO "authenticated" USING ((("bucket_id" = 'ticket-attachments'::"text") AND (("storage"."foldername"("name"))[1] = ("auth"."uid"())::"text"))) WITH CHECK ((("bucket_id" = 'ticket-attachments'::"text") AND (("storage"."foldername"("name"))[1] = ("auth"."uid"())::"text")));
+
+CREATE POLICY "Advisors can update their own avatar" ON "storage"."objects" FOR UPDATE TO "authenticated" USING ((("bucket_id" = 'advisor-avatars'::"text") AND (("storage"."foldername"("name"))[1] = ("auth"."uid"())::"text"))) WITH CHECK ((("bucket_id" = 'advisor-avatars'::"text") AND (("storage"."foldername"("name"))[1] = ("auth"."uid"())::"text")));
+
+CREATE POLICY "Advisors can upload own ticket attachments" ON "storage"."objects" FOR INSERT TO "authenticated" WITH CHECK ((("bucket_id" = 'ticket-attachments'::"text") AND (("storage"."foldername"("name"))[1] = ("auth"."uid"())::"text")));
+
+CREATE POLICY "Advisors can upload their own avatar" ON "storage"."objects" FOR INSERT TO "authenticated" WITH CHECK ((("bucket_id" = 'advisor-avatars'::"text") AND (("storage"."foldername"("name"))[1] = ("auth"."uid"())::"text")));
+
+CREATE POLICY "Authenticated users can delete blog images" ON "storage"."objects" FOR DELETE TO "authenticated" USING (("bucket_id" = 'blog-images'::"text"));
+
+CREATE POLICY "Authenticated users can delete event images" ON "storage"."objects" FOR DELETE TO "authenticated" USING (("bucket_id" = 'event-images'::"text"));
+
+CREATE POLICY "Authenticated users can update blog images" ON "storage"."objects" FOR UPDATE TO "authenticated" USING (("bucket_id" = 'blog-images'::"text")) WITH CHECK (("bucket_id" = 'blog-images'::"text"));
+
+CREATE POLICY "Authenticated users can update event images" ON "storage"."objects" FOR UPDATE TO "authenticated" USING (("bucket_id" = 'event-images'::"text")) WITH CHECK (("bucket_id" = 'event-images'::"text"));
+
+CREATE POLICY "Authenticated users can upload blog images" ON "storage"."objects" FOR INSERT TO "authenticated" WITH CHECK (("bucket_id" = 'blog-images'::"text"));
+
+CREATE POLICY "Authenticated users can upload event images" ON "storage"."objects" FOR INSERT TO "authenticated" WITH CHECK ((("bucket_id" = 'event-images'::"text") AND (("storage"."foldername"("name"))[1] IS DISTINCT FROM '.emptyFolderPlaceholder'::"text")));
+
+CREATE POLICY "Avatars are publicly readable" ON "storage"."objects" FOR SELECT USING (("bucket_id" = 'avatars'::"text"));
+
+CREATE POLICY "Public can read event images" ON "storage"."objects" FOR SELECT USING (("bucket_id" = 'event-images'::"text"));
+
+CREATE POLICY "Public read access for advisor avatars" ON "storage"."objects" FOR SELECT USING (("bucket_id" = 'advisor-avatars'::"text"));
+
+CREATE POLICY "Public read access for blog images" ON "storage"."objects" FOR SELECT USING (("bucket_id" = 'blog-images'::"text"));
+
+CREATE POLICY "Users delete own avatar files" ON "storage"."objects" FOR DELETE TO "authenticated" USING ((("bucket_id" = 'avatars'::"text") AND (("storage"."foldername"("name"))[1] = ("auth"."uid"())::"text")));
+
+CREATE POLICY "Users update own avatar files" ON "storage"."objects" FOR UPDATE TO "authenticated" USING ((("bucket_id" = 'avatars'::"text") AND (("storage"."foldername"("name"))[1] = ("auth"."uid"())::"text"))) WITH CHECK ((("bucket_id" = 'avatars'::"text") AND (("storage"."foldername"("name"))[1] = ("auth"."uid"())::"text")));
+
+CREATE POLICY "Users upload avatars to own folder" ON "storage"."objects" FOR INSERT TO "authenticated" WITH CHECK ((("bucket_id" = 'avatars'::"text") AND (("storage"."foldername"("name"))[1] = ("auth"."uid"())::"text")));
+
+CREATE POLICY "advisor_documents_admin_delete" ON "storage"."objects" FOR DELETE TO "authenticated" USING ((("bucket_id" = 'advisor-documents'::"text") AND ("public"."current_user_has_admin_access"() OR "public"."current_user_has_super_admin_access"())));
+
+CREATE POLICY "advisor_documents_admin_insert" ON "storage"."objects" FOR INSERT TO "authenticated" WITH CHECK ((("bucket_id" = 'advisor-documents'::"text") AND ("public"."current_user_has_admin_access"() OR "public"."current_user_has_super_admin_access"())));
+
+CREATE POLICY "advisor_documents_admin_update" ON "storage"."objects" FOR UPDATE TO "authenticated" USING ((("bucket_id" = 'advisor-documents'::"text") AND ("public"."current_user_has_admin_access"() OR "public"."current_user_has_super_admin_access"())));
+
+CREATE POLICY "advisor_documents_public_read" ON "storage"."objects" FOR SELECT TO "authenticated", "anon" USING (("bucket_id" = 'advisor-documents'::"text"));
+
+CREATE POLICY "crm_attachments_bucket_delete" ON "storage"."objects" FOR DELETE USING (("bucket_id" = 'crm-attachments'::"text"));
+
+CREATE POLICY "crm_attachments_bucket_insert" ON "storage"."objects" FOR INSERT WITH CHECK (("bucket_id" = 'crm-attachments'::"text"));
+
+CREATE POLICY "crm_attachments_bucket_select" ON "storage"."objects" FOR SELECT USING (("bucket_id" = 'crm-attachments'::"text"));
+
+CREATE POLICY "staff_hr_documents_delete" ON "storage"."objects" FOR DELETE TO "authenticated" USING ((("bucket_id" = 'staff-hr-documents'::"text") AND ("public"."is_staff_hr"() OR (("storage"."foldername"("name"))[2] = ("auth"."uid"())::"text"))));
+
+CREATE POLICY "staff_hr_documents_insert" ON "storage"."objects" FOR INSERT TO "authenticated" WITH CHECK ((("bucket_id" = 'staff-hr-documents'::"text") AND (("storage"."foldername"("name"))[2] = ("auth"."uid"())::"text")));
+
+CREATE POLICY "staff_hr_documents_select" ON "storage"."objects" FOR SELECT TO "authenticated" USING ((("bucket_id" = 'staff-hr-documents'::"text") AND ("public"."is_staff_hr"() OR (("storage"."foldername"("name"))[2] = ("auth"."uid"())::"text"))));
 
 
+-- ============================================================
+-- API-ROLE PRIVILEGE PINNING
+-- ============================================================
+-- A local Supabase stack ships with
+--   ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES
+--     TO anon, authenticated;
+-- already in place, so every table this baseline creates is born with full
+-- anon and authenticated privileges.
+--
+-- pg_dump does not compensate for that. It emits the ACL it found on
+-- production as plain GRANTs and no REVOKEs, because it assumes a fresh
+-- database hands out nothing by default. For objects where production
+-- deliberately revoked API-role access -- the org-reconcile backups, the
+-- deprecated leads table and the CRM reporting views hardened in
+-- 20260826131737 -- replaying the dump alone silently re-opens them, and a
+-- local stack ends up strictly more permissive than production.
+--
+-- Everything below restates production's actual grants for the eleven
+-- objects whose privileges are not the default. Objects at full default
+-- privileges are omitted: the local defaults already match.
+-- ============================================================
 
+-- Org-reconcile backups and the deprecated leads table: service_role only.
+-- These hold real lead and advisor PII and must never be API-reachable.
+REVOKE ALL ON TABLE "public"."_backup_org_reconcile_20260701_advisor_profiles" FROM "anon", "authenticated";
+REVOKE ALL ON TABLE "public"."_backup_org_reconcile_20260701_lead_submissions" FROM "anon", "authenticated";
+REVOKE ALL ON TABLE "public"."_deprecated_leads"                               FROM "anon", "authenticated";
+
+-- CRM reporting views: readable by signed-in users only, never anon.
+-- They are security_invoker, so the caller's RLS still applies on read.
+REVOKE ALL ON TABLE "public"."crm_salesperson_roster"        FROM "anon", "authenticated";
+REVOKE ALL ON TABLE "public"."crm_v_application_dropoff"     FROM "anon", "authenticated";
+REVOKE ALL ON TABLE "public"."crm_v_call_breakdown"          FROM "anon", "authenticated";
+REVOKE ALL ON TABLE "public"."crm_v_conversion_by_source"    FROM "anon", "authenticated";
+REVOKE ALL ON TABLE "public"."crm_v_pipeline_movement"       FROM "anon", "authenticated";
+REVOKE ALL ON TABLE "public"."crm_v_special_project_rollup"  FROM "anon", "authenticated";
+
+GRANT SELECT ON TABLE "public"."crm_salesperson_roster"       TO "authenticated";
+GRANT SELECT ON TABLE "public"."crm_v_application_dropoff"    TO "authenticated";
+GRANT SELECT ON TABLE "public"."crm_v_call_breakdown"         TO "authenticated";
+GRANT SELECT ON TABLE "public"."crm_v_conversion_by_source"   TO "authenticated";
+GRANT SELECT ON TABLE "public"."crm_v_pipeline_movement"      TO "authenticated";
+GRANT SELECT ON TABLE "public"."crm_v_special_project_rollup" TO "authenticated";
+
+-- organizations_unified: read-only for both API roles.
+REVOKE ALL ON TABLE "public"."organizations_unified" FROM "anon", "authenticated";
+GRANT SELECT ON TABLE "public"."organizations_unified" TO "anon", "authenticated";
+
+-- crm_social_platform_connections mirrors production exactly: anon holds
+-- full DML and authenticated holds only DELETE. That distribution looks
+-- inverted and is flagged for review, but the baseline's job is to
+-- reproduce production, not to quietly change it. Any correction belongs in
+-- its own migration so it is reviewed on its own merits.
+REVOKE ALL ON TABLE "public"."crm_social_platform_connections" FROM "anon", "authenticated";
+GRANT SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER
+  ON TABLE "public"."crm_social_platform_connections" TO "anon";
+GRANT DELETE ON TABLE "public"."crm_social_platform_connections" TO "authenticated";

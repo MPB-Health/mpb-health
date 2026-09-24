@@ -60,7 +60,12 @@ schema_paths = []
 enabled = true
 # Specifies an ordered list of seed files to load during db reset.
 # Supports glob patterns relative to supabase directory: "./seeds/*.sql"
-sql_paths = []
+#
+# The baseline is a schema-only dump, so the CRM lookup tables it creates come
+# up empty and lead intake fails closed against them. ./seeds holds that
+# reference vocabulary for local and CI stacks only -- production already has
+# the rows and seed files never run against it.
+sql_paths = ["./seeds/*.sql"]
 
 [db.network_restrictions]
 # Enable management of network restrictions.

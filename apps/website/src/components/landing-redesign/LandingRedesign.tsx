@@ -387,7 +387,7 @@ export function LandingRedesign() {
           style={reduce ? undefined : { y: heroContentY, opacity: heroContentOpacity }}
         >
           <motion.p variants={heroItem} className="lr-hero__kicker">
-            The community-based alternative to traditional insurance.
+            The Affordable Alternative to Health Insurance
           </motion.p>
           <motion.h1 variants={heroItem} className="lr-hero__headline">
             Healthcare that uplifts you

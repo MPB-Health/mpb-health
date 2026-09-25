@@ -61,6 +61,14 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
         label: 'HSA HealthShare Member Guidelines',
         url: '/docs/HSA%20HealthShare%20Member%20Guidelines%20(1)%201.pdf',
       },
+      {
+        label: 'MPB Flow HSA',
+        url: 'https://mpb.health/3d-flip-book/flow-hsa',
+      },
+      {
+        label: 'MPB Flow HSA Guidelines',
+        url: 'https://mpb.health/3d-flip-book/flow-hsa-guidelines',
+      },
     ],
     keywords: [
       'eligibility',
@@ -85,6 +93,9 @@ export const TRAINING_RESOURCES: TrainingResource[] = [
       'HSA HealthShare',
       'Secure HSA',
       'HSA member guidelines',
+      'MPB Flow HSA',
+      'Flow HSA',
+      'Flow HSA guidelines',
     ],
   },
   {
